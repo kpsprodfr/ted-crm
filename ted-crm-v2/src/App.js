@@ -719,7 +719,7 @@ function CRMApp({ user, onLogout }) {
             <button onClick={saveBackup} style={{ ...btnSecondary, background:"transparent", color:"#ccc", border:"1px solid #444", height:32, fontSize:12 }}>💾 Sauvegarder</button>
             <button onClick={()=>restoreRef.current?.click()} style={{ ...btnSecondary, background:"transparent", color:"#ccc", border:"1px solid #444", height:32, fontSize:12 }}>🔄 Restaurer</button>
             <input ref={restoreRef} type="file" accept=".json" style={{display:"none"}} onChange={handleRestoreFile} />
-            <button onClick={()=>setModalCorbeille(true)} style={{ ...btnSecondary, background:"transparent", color:"#ccc", border:"1px solid #444", height:32, fontSize:12 }}>🗑 Corbeille</button>
+            <button onClick={()=>setModalCorbeille(true)} style={{ background:"transparent", color:"#ccc", border:"1px solid #444", borderRadius:7, padding:"0 12px", height:32, fontSize:12, cursor:"pointer", whiteSpace:"nowrap" }}>🗑 Corbeille</button>
             <button onClick={onLogout} style={{ ...btnSecondary, background:"transparent", color:"#ccc", border:"1px solid #444", height:32, fontSize:12 }}>Déconnexion</button>
           </div>
         </header>
