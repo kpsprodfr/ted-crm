@@ -756,14 +756,8 @@ function CRMApp({ user, onLogout }) {
                   {c.tel && <p style={{ fontSize:12, color:'#555', fontWeight:600, margin:'2px 0' }}>{c.tel}</p>}
                   {c.commentaire && <p style={{ fontSize:11, color:'#aaa', margin:'3px 0 0', fontStyle:'italic', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>"{c.commentaire}"</p>}
                 </div>
-                <div style={{ position:'relative', flexShrink:0 }}>
-                  <button onClick={()=>setMobileAction(mobileAction?.id===c.id ? null : c)} style={{ background: mobileAction?.id===c.id ? '#111' : '#f5f5f5', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, color: mobileAction?.id===c.id ? '#fff' : '#555', cursor:'pointer', letterSpacing:1 }}>•••</button>
-                  {mobileAction?.id===c.id && (
-                    <div style={{ position:'absolute', top:40, right:0, background:'#fff', borderRadius:12, boxShadow:'0 4px 20px rgba(0,0,0,0.18)', zIndex:100, minWidth:160, overflow:'hidden', border:'1px solid #f0f0f0' }}>
-                      <button onPointerDown={()=>{ setModalEdit(c); setMobileAction(null); }} style={{ width:'100%', padding:'13px 16px', background:'none', border:'none', borderBottom:'1px solid #f5f5f5', fontSize:14, fontWeight:600, color:'#1d4ed8', cursor:'pointer', textAlign:'left', display:'flex', alignItems:'center', gap:10 }}>✏️ Modifier</button>
-                      <button onPointerDown={()=>{ setModalDelete(c); setMobileAction(null); }} style={{ width:'100%', padding:'13px 16px', background:'none', border:'none', fontSize:14, fontWeight:600, color:'#dc2626', cursor:'pointer', textAlign:'left', display:'flex', alignItems:'center', gap:10 }}>🗑 Supprimer</button>
-                    </div>
-                  )}
+                <div style={{ flexShrink:0 }}>
+                  <button onClick={e=>{ const r=e.currentTarget.getBoundingClientRect(); setMobileAction(mobileAction?.id===c.id ? null : {...c, _rect:r}); }} style={{ background: mobileAction?.id===c.id ? '#111' : '#f5f5f5', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, color: mobileAction?.id===c.id ? '#fff' : '#555', cursor:'pointer', letterSpacing:1 }}>•••</button>
                 </div>
               </div>
               {/* Bouton Appeler — séparé en dessous à droite */}
@@ -930,8 +924,22 @@ function CRMApp({ user, onLogout }) {
         </button>
       )}
 
-      {/* Fermer le menu si on tape ailleurs */}
-      {mobileAction && <div onPointerDown={()=>setMobileAction(null)} style={{ position:'fixed', inset:0, zIndex:99 }} />}
+      {/* Menu ••• fixe positionné au bouton */}
+      {mobileAction && isMobile && (() => {
+        const r = mobileAction._rect;
+        const menuW = 170;
+        const left = Math.min(r.right - menuW, window.innerWidth - menuW - 8);
+        const top = r.bottom + 6;
+        return (
+          <>
+            <div onPointerDown={()=>setMobileAction(null)} style={{ position:'fixed', inset:0, zIndex:300 }} />
+            <div style={{ position:'fixed', top, left, width:menuW, background:'#fff', borderRadius:12, boxShadow:'0 6px 24px rgba(0,0,0,0.18)', zIndex:301, overflow:'hidden', border:'1px solid #f0f0f0' }}>
+              <button onPointerDown={()=>{ setModalEdit(mobileAction); setMobileAction(null); }} style={{ width:'100%', padding:'13px 16px', background:'none', border:'none', borderBottom:'1px solid #f5f5f5', fontSize:14, fontWeight:600, color:'#1d4ed8', cursor:'pointer', textAlign:'left', display:'flex', alignItems:'center', gap:10 }}>✏️ Modifier</button>
+              <button onPointerDown={()=>{ setModalDelete(mobileAction); setMobileAction(null); }} style={{ width:'100%', padding:'13px 16px', background:'none', border:'none', fontSize:14, fontWeight:600, color:'#dc2626', cursor:'pointer', textAlign:'left', display:'flex', alignItems:'center', gap:10 }}>🗑 Supprimer</button>
+            </div>
+          </>
+        );
+      })()}
 
       {/* Modals */}
       {modalAdd && <ClientForm existingClients={clients} onSave={addClient} onCancel={()=>setModalAdd(false)} />}
