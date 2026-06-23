@@ -289,6 +289,23 @@ function ImportModal({ onImport, onCancel, existingClients }) {
 }
 
 // ─── Main CRM App ─────────────────────────────────────────────────────────────
+const mobileCSS = `
+  @media (max-width: 768px) {
+    header { padding: 0 12px !important; height: 50px !important; }
+    header h1 { font-size: 13px !important; letter-spacing: 1px !important; }
+    header img { height: 26px !important; }
+    main { padding: 12px 8px !important; }
+    .dash-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; margin-bottom: 12px !important; }
+    table { font-size: 11px !important; }
+    th, td { padding: 6px 8px !important; }
+    .search-bar { font-size: 12px !important; }
+    .filters-row { gap: 6px !important; }
+    .filters-row select { font-size: 11px !important; height: 32px !important; padding: 0 6px !important; }
+    .export-btns { display: none !important; }
+    button { font-size: 12px !important; }
+  }
+`;
+
 function CRMApp({ user, onLogout }) {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -433,6 +450,7 @@ function CRMApp({ user, onLogout }) {
 
   return (
     <div style={{ fontFamily:"'Inter','Segoe UI',Arial,sans-serif", minHeight:"100vh", background:"#f8f8f8", color:"#111" }}>
+      <style>{mobileCSS}</style>
       {/* Header */}
       <header style={{ background:"#111", color:"#fff", padding:"0 20px", display:"flex", alignItems:"center", justifyContent:"space-between", height:56, borderBottom:`3px solid ${G}` }}>
         <h1 style={{ fontSize:16, fontWeight:700, letterSpacing:2, color:"#fff", margin:0 }}><img src={require('./logo.png')} alt="TED" style={{height:32, marginRight:10, verticalAlign:'middle', filter:'brightness(0) invert(1)'}} /><span style={{color:G}}>TED</span> — FICHIER CLIENTS</h1>
