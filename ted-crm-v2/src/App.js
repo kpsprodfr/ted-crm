@@ -81,17 +81,23 @@ const fg = { marginBottom:14 };
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 function Toast({ msg, type, onClose }) {
-  useEffect(() => { const t = setTimeout(onClose, 2500); return () => clearTimeout(t); }, [onClose]);
-  const isSuccess = type === "success";
+  useEffect(() => { const t = setTimeout(onClose, 2000); return () => clearTimeout(t); }, [onClose]);
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none" }}>
-      <div style={{ background: isSuccess ? "#111" : "#dc2626", borderRadius:20, padding:"28px 40px", display:"flex", flexDirection:"column", alignItems:"center", gap:14, boxShadow:"0 20px 60px rgba(0,0,0,0.3)", animation:"popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)", minWidth:200, maxWidth:280, textAlign:"center" }}>
-        <div style={{ width:64, height:64, borderRadius:"50%", background: isSuccess ? "#E8C547" : "#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:32, animation:"scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both" }}>
-          {isSuccess ? "✓" : "✕"}
+    <>
+      <style>{`
+        @keyframes popIn { from { opacity:0; transform:scale(0.5); } to { opacity:1; transform:scale(1); } }
+        @keyframes scaleIn { from { transform:scale(0) rotate(-180deg); } to { transform:scale(1) rotate(0deg); } }
+        @keyframes fadeOut { from { opacity:1; } to { opacity:0; } }
+      `}</style>
+      <div style={{ position:"fixed", inset:0, zIndex:99999, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.4)", pointerEvents:"none" }}>
+        <div style={{ background:"#fff", borderRadius:24, padding:"36px 48px", display:"flex", flexDirection:"column", alignItems:"center", gap:18, boxShadow:"0 24px 80px rgba(0,0,0,0.25)", animation:"popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)", minWidth:240, maxWidth:320, textAlign:"center" }}>
+          <div style={{ width:80, height:80, borderRadius:"50%", background: type==="error" ? "#fef2f2" : "#f0fdf4", border:`4px solid ${type==="error" ? "#dc2626" : "#22c55e"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:40, color: type==="error" ? "#dc2626" : "#22c55e", fontWeight:700, animation:"scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both" }}>
+            {type === "error" ? "✕" : "✓"}
+          </div>
+          <p style={{ color: type==="error" ? "#dc2626" : "#16a34a", fontWeight:700, fontSize:18, margin:0, lineHeight:1.4 }}>{msg}</p>
         </div>
-        <p style={{ color:"#fff", fontWeight:700, fontSize:16, margin:0, lineHeight:1.3 }}>{msg}</p>
       </div>
-    </div>
+    </>
   );
 }
 
