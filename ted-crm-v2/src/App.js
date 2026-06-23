@@ -435,7 +435,7 @@ function CRMApp({ user, onLogout }) {
     <div style={{ fontFamily:"'Inter','Segoe UI',Arial,sans-serif", minHeight:"100vh", background:"#f8f8f8", color:"#111" }}>
       {/* Header */}
       <header style={{ background:"#111", color:"#fff", padding:"0 20px", display:"flex", alignItems:"center", justifyContent:"space-between", height:56, borderBottom:`3px solid ${G}` }}>
-        <h1 style={{ fontSize:16, fontWeight:700, letterSpacing:2, color:"#fff", margin:0 }}><span style={{color:G}}>TED</span> — FICHIER CLIENTS</h1>
+        <h1 style={{ fontSize:16, fontWeight:700, letterSpacing:2, color:"#fff", margin:0 }}><img src={require('./logo.png')} alt="TED" style={{height:32, marginRight:10, verticalAlign:'middle', filter:'brightness(0) invert(1)'}} /><span style={{color:G}}>TED</span> — FICHIER CLIENTS</h1>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
           <span style={{ fontSize:12, color:"#888", marginRight:4 }}>{user.email}</span>
           <button onClick={saveBackup} style={{ ...btnSecondary, background:"transparent", color:"#ccc", border:"1px solid #444", height:32, fontSize:12 }}>💾 Sauvegarder</button>
