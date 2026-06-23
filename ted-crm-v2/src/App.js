@@ -90,14 +90,20 @@ function Toast({ msg, type, onClose }) {
 function Modal({ title, onClose, children, footer, maxW=520 }) {
   const isMobile = window.innerWidth < 768;
   return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1000, display:"flex", alignItems: isMobile ? "flex-end" : "center", justifyContent:"center", padding: isMobile ? 0 : "1rem" }} onClick={onClose}>
-      <div style={{ background:"#fff", borderRadius: isMobile ? '16px 16px 0 0' : 12, width:"100%", maxWidth: isMobile ? '100%' : maxW, position: isMobile ? 'fixed' : 'relative', bottom: isMobile ? 0 : 'auto', left: isMobile ? 0 : 'auto', right: isMobile ? 0 : 'auto', overflow:"hidden", maxHeight:"90vh", display:"flex", flexDirection:"column" }} onClick={e=>e.stopPropagation()}>
+    <div
+      style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1000, display:"flex", alignItems: isMobile ? "flex-end" : "center", justifyContent:"center", padding: isMobile ? 0 : "1rem" }}
+      onPointerDown={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        style={{ background:"#fff", borderRadius: isMobile ? '16px 16px 0 0' : 12, width:"100%", maxWidth: isMobile ? '100%' : maxW, overflow:"hidden", maxHeight:"90vh", display:"flex", flexDirection:"column" }}
+        onPointerDown={e => e.stopPropagation()}
+      >
         <div style={{ background:"#111", color:"#fff", padding:"14px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
           <span style={{ fontWeight:700, fontSize:15 }}>{title}</span>
-          <button onClick={onClose} style={{ background:"none", border:"none", color:"#fff", fontSize:20, cursor:"pointer" }}>✕</button>
+          <button type="button" onClick={onClose} style={{ background:"none", border:"none", color:"#fff", fontSize:20, cursor:"pointer" }}>✕</button>
         </div>
-        <div style={{ padding:"18px", overflowY:"auto", flex:1 }}>{children}</div>
-        {footer && <div style={{ padding: isMobile ? "12px 16px 24px" : "0 18px 18px", display:"flex", gap:8, justifyContent:"flex-end", flexShrink:0, background:'#fff', position:'relative', zIndex:1001 }}>{footer}</div>}
+        <div style={{ padding:"18px", overflowY:"auto", flex:1, WebkitOverflowScrolling:"touch" }}>{children}</div>
+        {footer && <div style={{ padding: isMobile ? "12px 16px 24px" : "0 18px 18px", display:"flex", gap:8, justifyContent:"flex-end", flexShrink:0, background:'#fff' }}>{footer}</div>}
       </div>
     </div>
   );
@@ -106,8 +112,8 @@ function Modal({ title, onClose, children, footer, maxW=520 }) {
 function ConfirmModal({ title, msg, onOk, onCancel, okLabel="Confirmer", danger=false }) {
   return (
     <Modal title={title} onClose={onCancel} maxW={400} footer={[
-      <button key="c" onClick={onCancel} style={btnSecondary}>Annuler</button>,
-      <button key="o" onClick={onOk} style={danger?btnDanger:btnPrimary}>{okLabel}</button>
+      <button key="c" type="button" onPointerDown={onCancel} style={{...btnSecondary, touchAction:"manipulation"}}>Annuler</button>,
+      <button key="o" type="button" onPointerDown={onOk} style={{...(danger?btnDanger:btnPrimary), touchAction:"manipulation"}}>{okLabel}</button>
     ]}>
       <p style={{ fontSize:14, lineHeight:1.65, margin:0 }}>{msg}</p>
     </Modal>
@@ -246,15 +252,15 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
         title={isEdit ? "Modifier le client" : "Ajouter un client"}
         onClose={onCancel}
         footer={[
-          <button key="c" onClick={onCancel} style={{
+          <button key="c" type="button" onPointerDown={onCancel} style={{
             background: "#fff", border: "1.5px solid #ddd", borderRadius: 8,
             padding: "0 14px", height: 48, fontWeight: 500, fontSize: 15,
-            cursor: "pointer", flex: 1
+            cursor: "pointer", flex: 1, touchAction: "manipulation"
           }}>Annuler</button>,
-          <button key="s" onClick={handleSubmit} style={{
+          <button key="s" type="button" onPointerDown={handleSubmit} style={{
             background: "#E8C547", color: "#111", border: "none", borderRadius: 8,
             padding: "0 16px", height: 48, fontWeight: 700, fontSize: 15,
-            cursor: "pointer", flex: 2
+            cursor: "pointer", flex: 2, touchAction: "manipulation"
           }}>{isEdit ? "Enregistrer les modifications" : "Enregistrer"}</button>
         ]}
       >
