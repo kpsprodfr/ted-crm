@@ -181,9 +181,20 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
   const [errors, setErrors] = useState({});
   const [dupWarn, setDupWarn] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [dupClient, setDupClient] = useState(null);
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })); setErrors(e => ({ ...e, [k]: "" })); }
-  function handleTel(v) { set("tel", v.replace(/\D/g, "").slice(0, 10)); }
+  function handleTel(v) {
+    const clean = v.replace(/\D/g, "").slice(0, 10);
+    set("tel", clean);
+    if (clean.length === 10) {
+      const others = existingClients.filter(c => !isEdit || c.id !== initial?.id);
+      const found = others.find(c => c.tel === clean);
+      if (found) { setDupClient(found); } else { setDupClient(null); }
+    } else {
+      setDupClient(null);
+    }
+  }
 
   function validate() {
     const e = {};
@@ -259,16 +270,16 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
             padding: "0 14px", height: 48, fontWeight: 500, fontSize: 15,
             cursor: "pointer", flex: 1, touchAction: "manipulation"
           }}>Annuler</button>,
-          <button key="s" type="button" onPointerDown={handleSubmit} style={{
-            background: success ? "#22c55e" : "#E8C547",
-            color: success ? "#fff" : "#111",
+          <button key="s" type="button" onPointerDown={dupClient ? undefined : handleSubmit} disabled={!!dupClient} style={{
+            background: dupClient ? "#ddd" : (success ? "#22c55e" : "#E8C547"),
+            color: dupClient ? "#999" : (success ? "#fff" : "#111"),
             border: "none", borderRadius: 8,
             height: 52, fontWeight: 700, fontSize: 16,
-            cursor: "pointer", flex: 2, touchAction: "manipulation",
+            cursor: dupClient ? "not-allowed" : "pointer", flex: 2, touchAction: "manipulation",
             transition: "all 0.3s ease",
             transform: success ? "scale(1.03)" : "scale(1)",
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8
-          }}>{success ? "✓ Enregistré !" : (isEdit ? "Enregistrer les modifications" : "Enregistrer")}</button>
+          }}>{dupClient ? "⚠ Client existant" : success ? "✓ Enregistré !" : isEdit ? "Enregistrer les modifications" : "Enregistrer"}</button>
         ]}
       >
         <div style={fieldGroup}>
@@ -277,6 +288,23 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
             value={form.genre} onChange={e => set("genre", e.target.value)}>
             {GENRES.map(g => <option key={g}>{g}</option>)}
           </select>
+        </div>
+
+        <div style={fieldGroup}>
+          <label style={labelStyle}>Téléphone <span style={{ color: "#dc2626" }}>*</span></label>
+          <input style={inputStyle(errors.tel)} value={form.tel}
+            onChange={e => handleTel(e.target.value)} inputMode="numeric" placeholder="0612345678" maxLength={10} />
+          {errors.tel && <p style={{ fontSize: 12, color: "#dc2626", marginTop: 4 }}>{errors.tel}</p>}
+          {dupClient && (
+            <div style={{ background:"#fef2f2", border:"2px solid #dc2626", borderRadius:10, padding:"12px 14px", marginTop:8, display:"flex", alignItems:"center", gap:10 }}>
+              <span style={{fontSize:24}}>⚠️</span>
+              <div>
+                <p style={{fontWeight:700, color:"#dc2626", fontSize:14, margin:0}}>Client déjà existant !</p>
+                <p style={{fontSize:13, color:"#333", margin:"4px 0 0"}}><strong>{dupClient.prenom} {dupClient.nom}{dupClient.entreprise ? ` — ${dupClient.entreprise}` : ""}</strong></p>
+                <p style={{fontSize:12, color:"#666", margin:"2px 0 0"}}>📞 {dupClient.tel}{dupClient.mail ? ` · ${dupClient.mail}` : ""}</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {form.genre === "Entreprise" && (
@@ -304,13 +332,6 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
           <input style={inputStyle(errors.prenom)} value={form.prenom}
             onChange={e => set("prenom", e.target.value)} placeholder="Jean" />
           {errors.prenom && <p style={{ fontSize: 12, color: "#dc2626", marginTop: 4 }}>{errors.prenom}</p>}
-        </div>
-
-        <div style={fieldGroup}>
-          <label style={labelStyle}>Téléphone <span style={{ color: "#dc2626" }}>*</span></label>
-          <input style={inputStyle(errors.tel)} value={form.tel}
-            onChange={e => handleTel(e.target.value)} inputMode="numeric" placeholder="0612345678" maxLength={10} />
-          {errors.tel && <p style={{ fontSize: 12, color: "#dc2626", marginTop: 4 }}>{errors.tel}</p>}
         </div>
 
         <div style={fieldGroup}>
