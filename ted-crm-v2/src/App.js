@@ -97,7 +97,7 @@ function Modal({ title, onClose, children, footer, maxW=520 }) {
           <button onClick={onClose} style={{ background:"none", border:"none", color:"#fff", fontSize:20, cursor:"pointer" }}>✕</button>
         </div>
         <div style={{ padding:"18px", overflowY:"auto", flex:1 }}>{children}</div>
-        {footer && <div style={{ padding: isMobile ? "12px 16px 24px" : "0 18px 18px", display:"flex", gap:8, justifyContent:"flex-end", flexShrink:0, background:'#fff' }}>{footer}</div>}
+        {footer && <div style={{ padding: isMobile ? "12px 16px 24px" : "0 18px 18px", display:"flex", gap:8, justifyContent:"flex-end", flexShrink:0, background:'#fff', position:'relative', zIndex:1001 }}>{footer}</div>}
       </div>
     </div>
   );
@@ -746,7 +746,7 @@ function CRMApp({ user, onLogout }) {
       </main>
 
       {/* Bouton fixe mobile */}
-      {isMobile && (
+      {isMobile && !modalAdd && !modalEdit && !modalDelete && (
         <button
           onClick={()=>setModalAdd(true)}
           style={{position:'fixed', bottom:0, left:0, right:0, height:60, background:G, color:'#111', border:'none', fontSize:16, fontWeight:700, cursor:'pointer', zIndex:500, boxShadow:'0 -4px 20px rgba(0,0,0,0.15)'}}
