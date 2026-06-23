@@ -760,9 +760,9 @@ function CRMApp({ user, onLogout }) {
                   <button onClick={()=>setModalDelete(c)} style={{ background:'#fff0f0', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, cursor:'pointer' }}>🗑</button>
                 </div>
               </div>
-              {/* Bouton Appeler — séparé en dessous à gauche */}
+              {/* Bouton Appeler — séparé en dessous à droite */}
               {c.tel && (
-                <div style={{ marginTop:10 }}>
+                <div style={{ marginTop:10, display:'flex', justifyContent:'flex-end' }}>
                   <a href={`tel:${c.tel}`} style={{ display:'inline-flex', alignItems:'center', gap:6, background:G, color:'#111', borderRadius:10, padding:'7px 18px', fontSize:14, fontWeight:700, textDecoration:'none', boxShadow:'0 2px 6px rgba(232,197,71,0.35)' }}>
                     📞 Appeler
                   </a>
