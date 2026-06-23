@@ -163,19 +163,25 @@ function LoginPage({ onLogin }) {
 function ClientForm({ initial, onSave, onCancel, existingClients }) {
   const isEdit = !!initial?.id;
   const isMobile = window.innerWidth < 768;
-  const [form, setForm] = useState({ genre:initial?.genre||"Non renseigné", nom:initial?.nom||"", prenom:initial?.prenom||"", tel:initial?.tel||"", mail:initial?.mail||"", commentaire:initial?.commentaire||"", entreprise:initial?.entreprise||"" });
+  const [form, setForm] = useState({
+    genre: initial?.genre || "Non renseigné",
+    nom: initial?.nom || "",
+    prenom: initial?.prenom || "",
+    tel: initial?.tel || "",
+    mail: initial?.mail || "",
+    commentaire: initial?.commentaire || "",
+    entreprise: initial?.entreprise || ""
+  });
   const [errors, setErrors] = useState({});
   const [dupWarn, setDupWarn] = useState(null);
 
-  function set(k,v) { setForm(f=>({...f,[k]:v})); setErrors(e=>({...e,[k]:""})); }
-  function handleTel(v) { set("tel", v.replace(/\D/g,"").slice(0,10)); }
+  function set(k, v) { setForm(f => ({ ...f, [k]: v })); setErrors(e => ({ ...e, [k]: "" })); }
+  function handleTel(v) { set("tel", v.replace(/\D/g, "").slice(0, 10)); }
 
   function validate() {
     const e = {};
     if (form.genre === "Entreprise") {
-      if (!form.entreprise || !form.entreprise.trim()) {
-        e.entreprise = "Le nom de l'entreprise est obligatoire.";
-      }
+      if (!form.entreprise || !form.entreprise.trim()) e.entreprise = "Le nom de l'entreprise est obligatoire.";
     } else {
       if (!form.nom.trim()) e.nom = "Le nom est obligatoire.";
       if (!form.prenom.trim()) e.prenom = "Le prénom est obligatoire.";
@@ -188,81 +194,126 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
 
   function checkDup() {
     const others = existingClients.filter(c => !isEdit || c.id !== initial.id);
-    if (form.tel && others.some(c => c.tel === form.tel)) return `Le téléphone ${form.tel} est déjà utilisé.`;
-    if (form.mail && others.some(c => c.mail && c.mail.toLowerCase() === form.mail.toLowerCase())) return `L'adresse ${form.mail} est déjà utilisée.`;
+    if (form.tel && others.some(c => c.tel === form.tel)) return `Le téléphone ${form.tel} est déjà utilisé par un autre client.`;
+    if (form.mail && form.mail.trim() && others.some(c => c.mail && c.mail.toLowerCase() === form.mail.toLowerCase())) return `L'adresse ${form.mail} est déjà utilisée.`;
     return null;
   }
 
   function doSave() {
-    const saved = { ...(initial||{}), id:initial?.id, genre:form.genre, nom:capitalize(form.nom.trim()), prenom:capitalize(form.prenom.trim()), tel:form.tel, mail:form.mail.trim().toLowerCase(), commentaire:form.commentaire.trim(), entreprise:form.entreprise.trim(), created_at:initial?.created_at||new Date().toISOString() };
+    const saved = {
+      ...(initial || {}),
+      id: initial?.id,
+      genre: form.genre,
+      nom: capitalize(form.nom.trim()),
+      prenom: capitalize(form.prenom.trim()),
+      tel: form.tel,
+      mail: form.mail.trim().toLowerCase(),
+      commentaire: form.commentaire.trim(),
+      entreprise: form.entreprise.trim(),
+      created_at: initial?.created_at || new Date().toISOString()
+    };
     onSave(saved);
     setDupWarn(null);
   }
 
   function handleSubmit() {
     const e = validate();
-    if (Object.keys(e).length) { setErrors(e); return; }
+    if (Object.keys(e).length > 0) { setErrors(e); return; }
     const dup = checkDup();
     if (dup) { setDupWarn(dup); return; }
     doSave();
   }
 
+  const inputStyle = (err) => ({
+    width: "100%", height: 44, border: `1.5px solid ${err ? "#dc2626" : "#ddd"}`,
+    borderRadius: 7, padding: "0 12px", fontSize: 16, outline: "none", boxSizing: "border-box"
+  });
+  const labelStyle = { display: "block", fontSize: 12, fontWeight: 600, color: "#444", marginBottom: 5 };
+  const fieldGroup = { marginBottom: 14 };
+
   return (
     <>
-      {dupWarn && <ConfirmModal title="Doublon potentiel" msg={`Un client similaire existe déjà. ${dupWarn} Voulez-vous tout de même continuer ?`} onOk={()=>{setDupWarn(null);doSave()}} onCancel={()=>setDupWarn(null)} okLabel="Ajouter quand même" />}
-      <Modal title={isEdit?"Modifier le client":"Ajouter un client"} onClose={onCancel} footer={[
-        <button key="c" onClick={onCancel} style={isMobile ? {...btnSecondary, height:48, fontSize:15, flex:1} : btnSecondary}>Annuler</button>,
-        <button key="s" onClick={handleSubmit} style={isMobile ? {...btnPrimary, height:48, fontSize:15, flex:1} : btnPrimary}>{isEdit?"Enregistrer les modifications":"Enregistrer"}</button>
-      ]}>
-        <div style={fg}>
-          <label style={lbl}>Genre</label>
-          <select style={{ ...inp(false), height:44, fontSize:'16px' }} value={form.genre} onChange={e=>set("genre",e.target.value)}>
-            {GENRES.map(g=><option key={g}>{g}</option>)}
+      {dupWarn && (
+        <ConfirmModal
+          title="Doublon détecté"
+          msg={`Attention : ${dupWarn} Voulez-vous tout de même continuer ?`}
+          onOk={() => { setDupWarn(null); doSave(); }}
+          onCancel={() => setDupWarn(null)}
+          okLabel="Ajouter quand même"
+        />
+      )}
+      <Modal
+        title={isEdit ? "Modifier le client" : "Ajouter un client"}
+        onClose={onCancel}
+        footer={[
+          <button key="c" onClick={onCancel} style={{
+            background: "#fff", border: "1.5px solid #ddd", borderRadius: 8,
+            padding: "0 14px", height: 48, fontWeight: 500, fontSize: 15,
+            cursor: "pointer", flex: 1
+          }}>Annuler</button>,
+          <button key="s" onClick={handleSubmit} style={{
+            background: "#E8C547", color: "#111", border: "none", borderRadius: 8,
+            padding: "0 16px", height: 48, fontWeight: 700, fontSize: 15,
+            cursor: "pointer", flex: 2
+          }}>{isEdit ? "Enregistrer les modifications" : "Enregistrer"}</button>
+        ]}
+      >
+        <div style={fieldGroup}>
+          <label style={labelStyle}>Genre</label>
+          <select style={{ width: "100%", height: 44, border: "1.5px solid #ddd", borderRadius: 7, padding: "0 12px", fontSize: 16, background: "#fff", outline: "none" }}
+            value={form.genre} onChange={e => set("genre", e.target.value)}>
+            {GENRES.map(g => <option key={g}>{g}</option>)}
           </select>
         </div>
+
         {form.genre === "Entreprise" && (
-          <div style={fg}>
-            <label style={lbl}>
-              Nom de l'entreprise <span style={{color:"#dc2626"}}>*</span>
-            </label>
-            <input
-              style={inp(errors.entreprise)}
-              value={form.entreprise}
-              onChange={e=>set("entreprise",e.target.value)}
-              placeholder="Nom de l'entreprise"
-            />
-            {errors.entreprise && <p style={{fontSize:11,color:"#dc2626",marginTop:4}}>{errors.entreprise}</p>}
+          <div style={fieldGroup}>
+            <label style={labelStyle}>Nom de l'entreprise <span style={{ color: "#dc2626" }}>*</span></label>
+            <input style={inputStyle(errors.entreprise)} value={form.entreprise}
+              onChange={e => set("entreprise", e.target.value)} placeholder="Nom de l'entreprise" />
+            {errors.entreprise && <p style={{ fontSize: 12, color: "#dc2626", marginTop: 4 }}>{errors.entreprise}</p>}
           </div>
         )}
-        <div style={isMobile ? {display:'flex', flexDirection:'column', gap:0} : {display:"grid", gridTemplateColumns:"1fr 1fr", gap:12}}>
-          <div style={fg}>
-            <label style={lbl}>Nom {form.genre !== "Entreprise" && <span style={{color:"#dc2626"}}>*</span>}{form.genre === "Entreprise" && <span style={{color:"#999", fontSize:11}}> (facultatif)</span>}</label>
-            <input style={inp(errors.nom)} value={form.nom} onChange={e=>set("nom",e.target.value)} placeholder="Dupont" />
-            {errors.nom && <p style={{ fontSize:11, color:"#dc2626", marginTop:4 }}>{errors.nom}</p>}
-          </div>
-          <div style={fg}>
-            <label style={lbl}>Prénom {form.genre !== "Entreprise" && <span style={{color:"#dc2626"}}>*</span>}{form.genre === "Entreprise" && <span style={{color:"#999", fontSize:11}}> (facultatif)</span>}</label>
-            <input style={inp(errors.prenom)} value={form.prenom} onChange={e=>set("prenom",e.target.value)} placeholder="Jean" />
-            {errors.prenom && <p style={{ fontSize:11, color:"#dc2626", marginTop:4 }}>{errors.prenom}</p>}
-          </div>
+
+        <div style={fieldGroup}>
+          <label style={labelStyle}>
+            Nom {form.genre !== "Entreprise" ? <span style={{ color: "#dc2626" }}>*</span> : <span style={{ color: "#999", fontSize: 11 }}> (facultatif)</span>}
+          </label>
+          <input style={inputStyle(errors.nom)} value={form.nom}
+            onChange={e => set("nom", e.target.value)} placeholder="Dupont" />
+          {errors.nom && <p style={{ fontSize: 12, color: "#dc2626", marginTop: 4 }}>{errors.nom}</p>}
         </div>
-        <div style={isMobile ? {display:'flex', flexDirection:'column', gap:0} : {display:"grid", gridTemplateColumns:"1fr 1fr", gap:12}}>
-          <div style={fg}>
-            <label style={lbl}>Téléphone <span style={{color:"#dc2626"}}>*</span></label>
-            <input style={inp(errors.tel)} value={form.tel} onChange={e=>handleTel(e.target.value)} inputMode="numeric" placeholder="0612345678" maxLength={10} />
-            {errors.tel && <p style={{ fontSize:11, color:"#dc2626", marginTop:4 }}>{errors.tel}</p>}
-          </div>
-          <div style={fg}>
-            <label style={lbl}>Mail</label>
-            <input style={inp(errors.mail)} value={form.mail} onChange={e=>set("mail",e.target.value)} placeholder="exemple@mail.fr" type="email" />
-            {errors.mail && <p style={{ fontSize:11, color:"#dc2626", marginTop:4 }}>{errors.mail}</p>}
-          </div>
+
+        <div style={fieldGroup}>
+          <label style={labelStyle}>
+            Prénom {form.genre !== "Entreprise" ? <span style={{ color: "#dc2626" }}>*</span> : <span style={{ color: "#999", fontSize: 11 }}> (facultatif)</span>}
+          </label>
+          <input style={inputStyle(errors.prenom)} value={form.prenom}
+            onChange={e => set("prenom", e.target.value)} placeholder="Jean" />
+          {errors.prenom && <p style={{ fontSize: 12, color: "#dc2626", marginTop: 4 }}>{errors.prenom}</p>}
         </div>
-        <div style={fg}>
-          <label style={lbl}>Commentaire</label>
-          <textarea style={{ width:"100%", border:"1.5px solid #ddd", borderRadius:7, padding:"8px 10px", fontSize:'16px', outline:"none", boxSizing:"border-box", resize:"vertical", minHeight:65 }} value={form.commentaire} onChange={e=>set("commentaire",e.target.value)} placeholder="Notes sur ce client…" />
+
+        <div style={fieldGroup}>
+          <label style={labelStyle}>Téléphone <span style={{ color: "#dc2626" }}>*</span></label>
+          <input style={inputStyle(errors.tel)} value={form.tel}
+            onChange={e => handleTel(e.target.value)} inputMode="numeric" placeholder="0612345678" maxLength={10} />
+          {errors.tel && <p style={{ fontSize: 12, color: "#dc2626", marginTop: 4 }}>{errors.tel}</p>}
         </div>
-        {isEdit && <p style={{ fontSize:12, color:"#999", margin:0 }}>Date d'ajout : {formatDate(initial.created_at)} — non modifiable</p>}
+
+        <div style={fieldGroup}>
+          <label style={labelStyle}>Mail</label>
+          <input style={inputStyle(errors.mail)} value={form.mail}
+            onChange={e => set("mail", e.target.value)} placeholder="exemple@mail.fr" type="email" />
+          {errors.mail && <p style={{ fontSize: 12, color: "#dc2626", marginTop: 4 }}>{errors.mail}</p>}
+        </div>
+
+        <div style={fieldGroup}>
+          <label style={labelStyle}>Commentaire</label>
+          <textarea style={{ width: "100%", border: "1.5px solid #ddd", borderRadius: 7, padding: "10px 12px", fontSize: 16, outline: "none", boxSizing: "border-box", resize: "vertical", minHeight: 80 }}
+            value={form.commentaire} onChange={e => set("commentaire", e.target.value)} placeholder="Notes sur ce client…" />
+        </div>
+
+        {isEdit && <p style={{ fontSize: 12, color: "#999", margin: 0 }}>Date d'ajout : {formatDate(initial.created_at)} — non modifiable</p>}
       </Modal>
     </>
   );
