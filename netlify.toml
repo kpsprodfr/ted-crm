@@ -1,0 +1,4 @@
+[build]
+  base = "ted-crm-v2"
+  command = "CI=false npm run build"
+  publish = "build"
