@@ -81,20 +81,20 @@ const fg = { marginBottom:14 };
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 function Toast({ msg, type, onClose }) {
-  useEffect(() => { const t = setTimeout(onClose, 2000); return () => clearTimeout(t); }, [onClose]);
+  useEffect(() => { const t = setTimeout(onClose, 1500); return () => clearTimeout(t); }, [onClose]);
   return (
     <>
       <style>{`
-        @keyframes popIn { from { opacity:0; transform:scale(0.5); } to { opacity:1; transform:scale(1); } }
-        @keyframes scaleIn { from { transform:scale(0) rotate(-180deg); } to { transform:scale(1) rotate(0deg); } }
-        @keyframes fadeOut { from { opacity:1; } to { opacity:0; } }
+        @keyframes popIn { 0% { opacity:0; transform:scale(0.6); } 70% { transform:scale(1.05); } 100% { opacity:1; transform:scale(1); } }
+        @keyframes checkIn { 0% { transform:scale(0) rotate(-90deg); opacity:0; } 60% { transform:scale(1.2) rotate(10deg); } 100% { transform:scale(1) rotate(0deg); opacity:1; } }
+        @keyframes fadeOverlay { 0% { opacity:0; } 100% { opacity:1; } }
       `}</style>
-      <div style={{ position:"fixed", inset:0, zIndex:99999, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.4)", pointerEvents:"none" }}>
-        <div style={{ background:"#fff", borderRadius:24, padding:"36px 48px", display:"flex", flexDirection:"column", alignItems:"center", gap:18, boxShadow:"0 24px 80px rgba(0,0,0,0.25)", animation:"popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)", minWidth:240, maxWidth:320, textAlign:"center" }}>
-          <div style={{ width:80, height:80, borderRadius:"50%", background: type==="error" ? "#fef2f2" : "#f0fdf4", border:`4px solid ${type==="error" ? "#dc2626" : "#22c55e"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:40, color: type==="error" ? "#dc2626" : "#22c55e", fontWeight:700, animation:"scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both" }}>
+      <div style={{ position:"fixed", inset:0, zIndex:99999, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.35)", pointerEvents:"none", animation:"fadeOverlay 0.15s ease" }}>
+        <div style={{ background:"#fff", borderRadius:24, padding:"32px 44px", display:"flex", flexDirection:"column", alignItems:"center", gap:16, boxShadow:"0 24px 80px rgba(0,0,0,0.25)", animation:"popIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)", minWidth:220, maxWidth:300, textAlign:"center" }}>
+          <div style={{ width:72, height:72, borderRadius:"50%", background: type==="error" ? "#fef2f2" : "#f0fdf4", border:`4px solid ${type==="error" ? "#dc2626" : "#22c55e"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:38, color: type==="error" ? "#dc2626" : "#22c55e", fontWeight:700, animation:"checkIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both" }}>
             {type === "error" ? "✕" : "✓"}
           </div>
-          <p style={{ color: type==="error" ? "#dc2626" : "#16a34a", fontWeight:700, fontSize:18, margin:0, lineHeight:1.4 }}>{msg}</p>
+          <p style={{ color: type==="error" ? "#dc2626" : "#16a34a", fontWeight:700, fontSize:17, margin:0, lineHeight:1.4 }}>{msg}</p>
         </div>
       </div>
     </>
