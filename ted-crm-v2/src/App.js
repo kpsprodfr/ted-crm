@@ -519,6 +519,7 @@ function CRMApp({ user, onLogout }) {
   const [activeTab, setActiveTab] = useState("tous");
   const [showSearch, setShowSearch] = useState(false);
   const [modalCorbeille, setModalCorbeille] = useState(false);
+  const [mobileAction, setMobileAction] = useState(null);
   const deleteGuard = useRef(false);
   const isMobile = useIsMobile();
 
@@ -756,8 +757,7 @@ function CRMApp({ user, onLogout }) {
                   {c.commentaire && <p style={{ fontSize:11, color:'#aaa', margin:'3px 0 0', fontStyle:'italic', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>"{c.commentaire}"</p>}
                 </div>
                 <div style={{ display:'flex', gap:6, flexShrink:0 }}>
-                  <button onClick={()=>setModalEdit(c)} style={{ background:'#f0f6ff', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, cursor:'pointer' }}>✏️</button>
-                  <button onClick={()=>setModalDelete(c)} style={{ background:'#fff0f0', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, cursor:'pointer' }}>🗑</button>
+                  <button onClick={()=>setMobileAction(c)} style={{ background:'#f5f5f5', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, cursor:'pointer' }}>•••</button>
                 </div>
               </div>
               {/* Bouton Appeler — séparé en dessous à droite */}
@@ -922,6 +922,24 @@ function CRMApp({ user, onLogout }) {
         <button onClick={()=>setModalAdd(true)} style={{ position:'fixed', bottom:0, left:0, right:0, height:64, background:G, color:'#111', border:'none', fontSize:17, fontWeight:800, cursor:'pointer', zIndex:500, boxShadow:'0 -4px 20px rgba(0,0,0,0.12)', display:'flex', alignItems:'center', justifyContent:'center', gap:10, paddingBottom:'env(safe-area-inset-bottom)' }}>
           <span style={{ fontSize:24 }}>+</span> Ajouter un client
         </button>
+      )}
+
+      {/* Action sheet mobile */}
+      {mobileAction && isMobile && (
+        <div onPointerDown={()=>setMobileAction(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.4)', zIndex:1000, display:'flex', alignItems:'flex-end' }}>
+          <div onPointerDown={e=>e.stopPropagation()} style={{ width:'100%', background:'#fff', borderRadius:'20px 20px 0 0', padding:'16px 16px 32px' }}>
+            <div style={{ width:40, height:4, background:'#ddd', borderRadius:99, margin:'0 auto 16px' }} />
+            <p style={{ fontWeight:700, fontSize:15, color:'#111', margin:'0 0 16px', textAlign:'center', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+              {mobileAction.genre==='Entreprise' ? (mobileAction.entreprise||mobileAction.nom) : `${mobileAction.nom||''} ${mobileAction.prenom||''}`}
+            </p>
+            <button onPointerDown={()=>{ setModalEdit(mobileAction); setMobileAction(null); }} style={{ width:'100%', height:52, background:'#f0f6ff', border:'none', borderRadius:12, fontSize:16, fontWeight:600, color:'#1d4ed8', cursor:'pointer', marginBottom:10, display:'flex', alignItems:'center', justifyContent:'center', gap:10 }}>
+              ✏️ Modifier
+            </button>
+            <button onPointerDown={()=>{ setModalDelete(mobileAction); setMobileAction(null); }} style={{ width:'100%', height:52, background:'#fff0f0', border:'none', borderRadius:12, fontSize:16, fontWeight:600, color:'#dc2626', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:10 }}>
+              🗑 Supprimer
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Modals */}
