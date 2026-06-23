@@ -471,52 +471,44 @@ function CRMApp({ user, onLogout }) {
 
   // ─── CRUD ─────────────────────────────────────────────────────────────────
   async function addClient(c) {
-    const payload = { genre:c.genre, nom:c.nom, prenom:c.prenom, tel:c.tel, mail:c.mail, commentaire:c.commentaire, created_at:c.created_at, entreprise:c.entreprise||"" };
-    console.log("[addClient] payload envoyé à Supabase :", payload);
-    const { data, error } = await supabase.from("clients").insert([payload]).select().single();
-    if (error) {
-      console.error("[addClient] Erreur Supabase :", JSON.stringify(error, null, 2));
-      console.error("[addClient] message:", error.message, "| code:", error.code, "| details:", error.details, "| hint:", error.hint);
-      showToast(`Erreur ajout : ${error.message}`, "error");
-      return;
-    }
-    setClients(prev => [data, ...prev]);
+    const tempId = genId();
+    const newClient = { ...c, id: tempId, genre: c.genre||"Non renseigné", nom: c.nom||"", prenom: c.prenom||"", tel: c.tel||"", mail: c.mail||"", commentaire: c.commentaire||"", entreprise: c.entreprise||"", created_at: c.created_at||new Date().toISOString() };
+    setClients(prev => [newClient, ...prev]);
     setModalAdd(false);
     showToast("Client ajouté avec succès ✓");
     setPage(1);
+    const { data, error } = await supabase.from("clients").insert([{ genre:newClient.genre, nom:newClient.nom, prenom:newClient.prenom, tel:newClient.tel, mail:newClient.mail, commentaire:newClient.commentaire, entreprise:newClient.entreprise, created_at:newClient.created_at }]).select().single();
+    if (error) {
+      setClients(prev => prev.filter(x => x.id !== tempId));
+      showToast("Erreur lors de l'ajout : " + error.message, "error");
+      return;
+    }
+    setClients(prev => prev.map(x => x.id === tempId ? data : x));
   }
 
   async function editClient(c) {
-    const payload = { genre:c.genre, nom:c.nom, prenom:c.prenom, tel:c.tel, mail:c.mail, commentaire:c.commentaire, entreprise:c.entreprise||"" };
-    console.log("[editClient] payload envoyé à Supabase :", payload);
-    const { error } = await supabase.from("clients").update(payload).eq("id", c.id);
-    if (error) {
-      console.error("[editClient] Erreur Supabase :", JSON.stringify(error, null, 2));
-      console.error("[editClient] message:", error.message, "| code:", error.code, "| details:", error.details, "| hint:", error.hint);
-      showToast(`Erreur modification : ${error.message}`, "error");
-      return;
-    }
     setClients(prev => prev.map(x => x.id === c.id ? {...x, ...c} : x));
     setModalEdit(null);
     showToast("Client modifié avec succès ✓");
+    const { error } = await supabase.from("clients").update({ genre:c.genre, nom:c.nom, prenom:c.prenom, tel:c.tel, mail:c.mail, commentaire:c.commentaire, entreprise:c.entreprise||"" }).eq("id", c.id);
+    if (error) {
+      showToast("Erreur lors de la modification", "error");
+      loadClients();
+    }
   }
 
   async function deleteClient(id) {
     if (deleteGuard.current) return;
     deleteGuard.current = true;
+    setClients(prev => prev.filter(x => x.id !== id));
+    setModalDelete(null);
+    showToast("Client supprimé ✓");
     const { error } = await supabase.from("clients").delete().eq("id", id);
     if (error) {
       showToast("Erreur lors de la suppression", "error");
-      deleteGuard.current = false;
-      return;
+      loadClients();
     }
-    setClients(prev => {
-      const updated = prev.filter(x => x.id !== id);
-      return [...updated];
-    });
-    setModalDelete(null);
-    showToast("Client supprimé ✓");
-    setTimeout(() => { deleteGuard.current = false; }, 1000);
+    setTimeout(() => { deleteGuard.current = false; }, 500);
   }
 
   async function importClients(rows) {
