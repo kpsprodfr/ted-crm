@@ -505,8 +505,15 @@ function CRMApp({ user, onLogout }) {
     if (deleteGuard.current) return;
     deleteGuard.current = true;
     const { error } = await supabase.from("clients").delete().eq("id", id);
-    if (error) { showToast("Erreur lors de la suppression", "error"); deleteGuard.current = false; return; }
-    setClients(prev => prev.filter(x => x.id !== id));
+    if (error) {
+      showToast("Erreur lors de la suppression", "error");
+      deleteGuard.current = false;
+      return;
+    }
+    setClients(prev => {
+      const updated = prev.filter(x => x.id !== id);
+      return [...updated];
+    });
     setModalDelete(null);
     showToast("Client supprimé ✓");
     setTimeout(() => { deleteGuard.current = false; }, 1000);
