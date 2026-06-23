@@ -173,12 +173,14 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
   function validate() {
     const e = {};
     if (form.genre === "Entreprise") {
-      if (!form.entreprise || !form.entreprise.trim()) e.entreprise = "Le nom de l'entreprise est obligatoire.";
+      if (!form.entreprise || !form.entreprise.trim()) {
+        e.entreprise = "Le nom de l'entreprise est obligatoire.";
+      }
     } else {
       if (!form.nom.trim()) e.nom = "Le nom est obligatoire.";
       if (!form.prenom.trim()) e.prenom = "Le prénom est obligatoire.";
     }
-    if (!form.tel.trim()) e.tel = "Le téléphone est obligatoire.";
+    if (!form.tel || !form.tel.trim()) e.tel = "Le téléphone est obligatoire.";
     if (form.tel && !/^\d{10}$/.test(form.tel)) e.tel = "Le numéro doit contenir uniquement 10 chiffres.";
     if (form.mail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.mail)) e.mail = "Adresse mail invalide.";
     return e;
@@ -220,8 +222,16 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
         </div>
         {form.genre === "Entreprise" && (
           <div style={fg}>
-            <label style={lbl}>Nom de l'entreprise</label>
-            <input style={inp(false)} value={form.entreprise} onChange={e=>set("entreprise",e.target.value)} placeholder="Nom de l'entreprise" />
+            <label style={lbl}>
+              Nom de l'entreprise <span style={{color:"#dc2626"}}>*</span>
+            </label>
+            <input
+              style={inp(errors.entreprise)}
+              value={form.entreprise}
+              onChange={e=>set("entreprise",e.target.value)}
+              placeholder="Nom de l'entreprise"
+            />
+            {errors.entreprise && <p style={{fontSize:11,color:"#dc2626",marginTop:4}}>{errors.entreprise}</p>}
           </div>
         )}
         <div style={isMobile ? {display:'flex', flexDirection:'column', gap:0} : {display:"grid", gridTemplateColumns:"1fr 1fr", gap:12}}>
