@@ -294,23 +294,18 @@ function ImportModal({ onImport, onCancel, existingClients }) {
   );
 }
 
+// ─── Mobile hook ──────────────────────────────────────────────────────────────
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  return isMobile;
+}
+
 // ─── Main CRM App ─────────────────────────────────────────────────────────────
-const mobileCSS = `
-  @media (max-width: 768px) {
-    header { padding: 0 12px !important; height: 50px !important; }
-    header h1 { font-size: 13px !important; letter-spacing: 1px !important; }
-    header img { height: 26px !important; }
-    main { padding: 12px 8px !important; }
-    .dash-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; margin-bottom: 12px !important; }
-    table { font-size: 11px !important; }
-    th, td { padding: 6px 8px !important; }
-    .search-bar { font-size: 12px !important; }
-    .filters-row { gap: 6px !important; }
-    .filters-row select { font-size: 11px !important; height: 32px !important; padding: 0 6px !important; }
-    .export-btns { display: none !important; }
-    button { font-size: 12px !important; }
-  }
-`;
 
 function CRMApp({ user, onLogout }) {
   const [clients, setClients] = useState([]);
@@ -329,7 +324,9 @@ function CRMApp({ user, onLogout }) {
   const [modalComment, setModalComment] = useState(null);
   const [toast, setToast] = useState(null);
   const [hoverRow, setHoverRow] = useState(null);
+  const [showFilters, setShowFilters] = useState(false);
   const deleteGuard = useRef(false);
+  const isMobile = useIsMobile();
 
   const showToast = useCallback((msg, type="success") => setToast({msg,type}), []);
 
@@ -456,116 +453,179 @@ function CRMApp({ user, onLogout }) {
 
   return (
     <div style={{ fontFamily:"'Inter','Segoe UI',Arial,sans-serif", minHeight:"100vh", background:"#f8f8f8", color:"#111" }}>
-      <style>{mobileCSS}</style>
       {/* Header */}
-      <header style={{ background:"#111", color:"#fff", padding:"0 20px", display:"flex", alignItems:"center", justifyContent:"space-between", height:56, borderBottom:`3px solid ${G}` }}>
-        <h1 style={{ fontSize:16, fontWeight:700, letterSpacing:2, color:"#fff", margin:0 }}><img src={require('./logo.png')} alt="TED" style={{height:32, marginRight:10, verticalAlign:'middle', filter:'brightness(0) invert(1)'}} /><span style={{color:G}}>TED</span> — FICHIER CLIENTS</h1>
-        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-          <span style={{ fontSize:12, color:"#888", marginRight:4 }}>{user.email}</span>
-          <button onClick={saveBackup} style={{ ...btnSecondary, background:"transparent", color:"#ccc", border:"1px solid #444", height:32, fontSize:12 }}>💾 Sauvegarder</button>
-          <button onClick={()=>restoreRef.current?.click()} style={{ ...btnSecondary, background:"transparent", color:"#ccc", border:"1px solid #444", height:32, fontSize:12 }}>🔄 Restaurer</button>
+      <header style={{ background:"#111", color:"#fff", padding: isMobile ? "0 12px" : "0 20px", display:"flex", alignItems:"center", justifyContent:"space-between", height: isMobile ? 50 : 56, borderBottom:`3px solid ${G}` }}>
+        <h1 style={{ fontSize: isMobile ? 13 : 16, fontWeight:700, letterSpacing: isMobile ? 1 : 2, color:"#fff", margin:0 }}>
+          <img src={require('./logo.png')} alt="TED" style={{height: isMobile ? 26 : 32, marginRight:8, verticalAlign:'middle', filter:'brightness(0) invert(1)'}} />
+          <span style={{color:G}}>TED</span>{isMobile ? " CRM" : " — FICHIER CLIENTS"}
+        </h1>
+        <div style={{ display:"flex", gap: isMobile ? 4 : 8, alignItems:"center" }}>
+          {!isMobile && <span style={{ fontSize:12, color:"#888", marginRight:4 }}>{user.email}</span>}
+          {!isMobile && <button onClick={saveBackup} style={{ ...btnSecondary, background:"transparent", color:"#ccc", border:"1px solid #444", height:32, fontSize:12 }}>💾 Sauvegarder</button>}
+          {!isMobile && <button onClick={()=>restoreRef.current?.click()} style={{ ...btnSecondary, background:"transparent", color:"#ccc", border:"1px solid #444", height:32, fontSize:12 }}>🔄 Restaurer</button>}
           <input ref={restoreRef} type="file" accept=".json" style={{display:"none"}} onChange={handleRestoreFile} />
           <button onClick={onLogout} style={{ ...btnSecondary, background:"transparent", color:"#ccc", border:"1px solid #444", height:32, fontSize:12 }}>Déconnexion</button>
         </div>
       </header>
 
-      <main style={{ maxWidth:1400, margin:"0 auto", padding:"20px 16px" }}>
+      <main style={{ maxWidth:1400, margin:"0 auto", padding: isMobile ? "12px 8px" : "20px 16px" }}>
         {/* Dashboard */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))", gap:14, marginBottom:20 }}>
-          <div style={{ background:"#fff", borderRadius:10, border:"1.5px solid #e5e5e5", padding:"14px 18px", textAlign:"center" }}>
-            <div style={{ fontSize:11, fontWeight:700, letterSpacing:1.5, color:"#888", textTransform:"uppercase", marginBottom:6 }}>Total clients</div>
-            <div style={{ fontSize:36, fontWeight:700, color:"#111" }}>{clients.length}</div>
-            <div style={{ fontSize:12, color:"#bbb", marginTop:3 }}>dans la base</div>
+        <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr 1fr 1fr" : "repeat(auto-fit,minmax(160px,1fr))", gap: isMobile ? 8 : 14, marginBottom: isMobile ? 12 : 20 }}>
+          <div style={{ background:"#fff", borderRadius:10, border:"1.5px solid #e5e5e5", padding: isMobile ? "10px 8px" : "14px 18px", textAlign:"center" }}>
+            <div style={{ fontSize: isMobile ? 9 : 11, fontWeight:700, letterSpacing:1, color:"#888", textTransform:"uppercase", marginBottom:4 }}>Total</div>
+            <div style={{ fontSize: isMobile ? 26 : 36, fontWeight:700, color:"#111" }}>{clients.length}</div>
+            {!isMobile && <div style={{ fontSize:12, color:"#bbb", marginTop:3 }}>dans la base</div>}
           </div>
-          <div style={{ background:"#fff", borderRadius:10, border:"1.5px solid #e5e5e5", padding:"14px 18px", textAlign:"center" }}>
-            <div style={{ fontSize:11, fontWeight:700, letterSpacing:1.5, color:"#888", textTransform:"uppercase", marginBottom:6 }}>Date du jour</div>
-            <div style={{ fontSize:22, fontWeight:700, color:"#111", paddingTop:7 }}>{new Date().toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"numeric"})}</div>
+          <div style={{ background:"#fff", borderRadius:10, border:"1.5px solid #e5e5e5", padding: isMobile ? "10px 8px" : "14px 18px", textAlign:"center" }}>
+            <div style={{ fontSize: isMobile ? 9 : 11, fontWeight:700, letterSpacing:1, color:"#888", textTransform:"uppercase", marginBottom:4 }}>Aujourd'hui</div>
+            <div style={{ fontSize: isMobile ? 13 : 22, fontWeight:700, color:"#111", paddingTop: isMobile ? 4 : 7 }}>{new Date().toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"numeric"})}</div>
           </div>
-          <div style={{ background:"#fff", borderRadius:10, border:"1.5px solid #e5e5e5", padding:"14px 18px", textAlign:"center" }}>
-            <div style={{ fontSize:11, fontWeight:700, letterSpacing:1.5, color:"#888", textTransform:"uppercase", marginBottom:6 }}>Nouveaux — {getCurrentMonthName().toUpperCase()}</div>
-            <div style={{ fontSize:36, fontWeight:700, color:G }}>{newMonth}</div>
-            <div style={{ fontSize:12, color:"#bbb", marginTop:3 }}>ce mois-ci</div>
+          <div style={{ background:"#fff", borderRadius:10, border:"1.5px solid #e5e5e5", padding: isMobile ? "10px 8px" : "14px 18px", textAlign:"center" }}>
+            <div style={{ fontSize: isMobile ? 9 : 11, fontWeight:700, letterSpacing:1, color:"#888", textTransform:"uppercase", marginBottom:4 }}>{isMobile ? "Ce mois" : `Nouveaux — ${getCurrentMonthName().toUpperCase()}`}</div>
+            <div style={{ fontSize: isMobile ? 26 : 36, fontWeight:700, color:G }}>{newMonth}</div>
+            {!isMobile && <div style={{ fontSize:12, color:"#bbb", marginTop:3 }}>ce mois-ci</div>}
           </div>
         </div>
 
         {/* Search + Add */}
         <div style={{ display:"flex", flexWrap:"wrap", gap:10, alignItems:"center", marginBottom:12 }}>
-          <div style={{ position:"relative", flex:1, minWidth:220 }}>
+          <div style={{ position:"relative", flex:1, minWidth: isMobile ? "100%" : 220 }}>
             <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:"#bbb", fontSize:15, pointerEvents:"none" }}>🔍</span>
-            <input style={{ width:"100%", height:40, border:"1.5px solid #ddd", borderRadius:8, padding:"0 36px 0 40px", fontSize:13, background:"#fff", outline:"none", boxSizing:"border-box" }} value={search} onChange={e=>{setSearch(e.target.value);setPage(1)}} placeholder="Rechercher par nom, prénom, téléphone, mail, date, mois, genre ou commentaire…" />
+            <input style={{ width:"100%", height:40, border:"1.5px solid #ddd", borderRadius:8, padding:"0 36px 0 40px", fontSize:13, background:"#fff", outline:"none", boxSizing:"border-box" }} value={search} onChange={e=>{setSearch(e.target.value);setPage(1)}} placeholder={isMobile ? "Rechercher…" : "Rechercher par nom, prénom, téléphone, mail, date, mois, genre ou commentaire…"} />
             {search && <button onClick={()=>{setSearch("");setPage(1)}} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:"#aaa", fontSize:16, padding:2 }}>✕</button>}
           </div>
-          <button onClick={()=>setModalAdd(true)} style={btnPrimary}>+ Ajouter un client</button>
+          {!isMobile && <button onClick={()=>setModalAdd(true)} style={btnPrimary}>+ Ajouter un client</button>}
         </div>
 
         {/* Filters */}
-        <div style={{ display:"flex", flexWrap:"wrap", gap:8, alignItems:"center", marginBottom:14 }}>
-          <select style={sel} value={filterGenre} onChange={e=>{setFilterGenre(e.target.value);setPage(1)}}><option value="">Tous les genres</option>{GENRES.map(g=><option key={g}>{g}</option>)}</select>
-          <select style={sel} value={filterMonth} onChange={e=>{setFilterMonth(e.target.value);setPage(1)}}><option value="">Tous les mois</option>{MONTHS_FR.map((m,i)=><option key={i+1} value={i+1}>{m}</option>)}</select>
-          <select style={sel} value={pageSize} onChange={e=>{setPageSize(Number(e.target.value));setPage(1)}}>{PAGE_SIZES.map(n=><option key={n} value={n}>{n} par page</option>)}</select>
-          {(filterGenre||filterMonth||search) && <button onClick={()=>{setFilterGenre("");setFilterMonth("");setSearch("");setPage(1)}} style={{ ...btnSecondary, fontSize:12 }}>✕ Réinitialiser</button>}
-          <div style={{ marginLeft:"auto", display:"flex", gap:8 }}>
-            <button onClick={()=>exportToCSV(filtered)} style={btnSecondary}>⬇ CSV</button>
-            <button onClick={()=>exportToXLSX(filtered)} style={btnSecondary}>⬇ Excel</button>
-            <button onClick={()=>setModalImport(true)} style={btnSecondary}>⬆ Importer</button>
+        {isMobile ? (
+          <div style={{ marginBottom:12 }}>
+            <div style={{ display:"flex", gap:8, marginBottom: showFilters ? 8 : 0 }}>
+              <button onClick={()=>setShowFilters(f=>!f)} style={{ ...btnSecondary, fontSize:12, flex:1 }}>
+                {showFilters ? "▲ Masquer filtres" : "▼ Filtres"}{(filterGenre||filterMonth) ? " •" : ""}
+              </button>
+              {(filterGenre||filterMonth||search) && <button onClick={()=>{setFilterGenre("");setFilterMonth("");setSearch("");setPage(1)}} style={{ ...btnSecondary, fontSize:12 }}>✕</button>}
+            </div>
+            {showFilters && (
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                <select style={{...sel, width:"100%"}} value={filterGenre} onChange={e=>{setFilterGenre(e.target.value);setPage(1)}}><option value="">Tous les genres</option>{GENRES.map(g=><option key={g}>{g}</option>)}</select>
+                <select style={{...sel, width:"100%"}} value={filterMonth} onChange={e=>{setFilterMonth(e.target.value);setPage(1)}}><option value="">Tous les mois</option>{MONTHS_FR.map((m,i)=><option key={i+1} value={i+1}>{m}</option>)}</select>
+              </div>
+            )}
           </div>
-        </div>
-
-        {/* Table */}
-        <div style={{ background:"#fff", borderRadius:10, border:"1.5px solid #e5e5e5", overflow:"hidden" }}>
-          <div style={{ overflowX:"auto" }}>
-            <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
-              <thead>
-                <tr>
-                  <Th col="genre" label="Genre"/>
-                  <Th col="nom" label="Nom"/>
-                  <Th col="prenom" label="Prénom"/>
-                  <Th col="tel" label="Téléphone"/>
-                  <Th col="mail" label="Mail"/>
-                  <Th col="created_at" label="Date d'ajout"/>
-                  <th style={{ background:"#111", color:"#fff", padding:"10px 12px", textAlign:"left", fontWeight:600, fontSize:12 }}>Commentaire</th>
-                  <th style={{ background:"#111", color:"#fff", padding:"10px 12px", textAlign:"left", fontWeight:600, fontSize:12 }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pageClients.length === 0 && (
-                  <tr><td colSpan={8} style={{ textAlign:"center", padding:"3rem", color:"#bbb", fontSize:14 }}>{(search||filterGenre||filterMonth)?"Aucun client trouvé":"Aucun client dans la base"}</td></tr>
-                )}
-                {pageClients.map((c, i) => {
-                  const isHov = hoverRow === c.id;
-                  const bg = isHov?"#fffbea":i%2===0?"#fff":"#f9f9f9";
-                  const td = { padding:"9px 12px", borderBottom:"1px solid #f0f0f0", verticalAlign:"middle", background:bg };
-                  return (
-                    <tr key={c.id} onMouseEnter={()=>setHoverRow(c.id)} onMouseLeave={()=>setHoverRow(null)}>
-                      <td style={td}><span style={badge(c.genre)}>{c.genre||"—"}</span></td>
-                      <td style={{...td,fontWeight:600}}>{c.genre==="Entreprise" && c.entreprise ? c.entreprise : c.nom||"—"}</td>
-                      <td style={td}>{c.prenom||"—"}</td>
-                      <td style={{...td,fontFamily:"'Courier New',monospace"}}>{c.tel||"—"}</td>
-                      <td style={{...td,fontSize:12,color:"#3b82f6",maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.mail||"—"}</td>
-                      <td style={{...td,whiteSpace:"nowrap"}}>{formatDate(c.created_at)}</td>
-                      <td style={{...td,maxWidth:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",cursor:c.commentaire?"pointer":"default",color:c.commentaire?"#555":"#ccc"}} onClick={()=>c.commentaire&&setModalComment(c)} title={c.commentaire||""}>{c.commentaire||"—"}</td>
-                      <td style={{...td,whiteSpace:"nowrap"}}>
-                        <button onClick={()=>setModalEdit(c)} style={{ background:"none", border:"none", cursor:"pointer", borderRadius:5, padding:"3px 6px", fontSize:16, color:"#3b82f6" }} title="Modifier">✏️</button>
-                        <button onClick={()=>setModalDelete(c)} style={{ background:"none", border:"none", cursor:"pointer", borderRadius:5, padding:"3px 6px", fontSize:16, color:"#dc2626" }} title="Supprimer">🗑</button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination */}
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", borderTop:"1px solid #eee", flexWrap:"wrap", gap:8 }}>
-            <span style={{ fontSize:12, color:"#999" }}>{filtered.length===0?"0 résultat":`${(safePage-1)*pageSize+1}–${Math.min(safePage*pageSize,filtered.length)} sur ${filtered.length} client(s)`}</span>
-            <div style={{ display:"flex", gap:4 }}>
-              {[["«",1],["‹",safePage-1]].map(([label,p])=><button key={label} disabled={safePage<=1} onClick={()=>setPage(p)} style={{ height:30, minWidth:30, border:"1.5px solid #ddd", borderRadius:6, background:"#fff", cursor:safePage<=1?"not-allowed":"pointer", fontSize:12, padding:"0 8px", color:safePage<=1?"#ccc":"#333" }}>{label}</button>)}
-              {Array.from({length:Math.min(5,totalPages)},(_,i)=>{let p=i+1;if(totalPages>5){if(safePage<=3)p=i+1;else if(safePage>=totalPages-2)p=totalPages-4+i;else p=safePage-2+i}return <button key={p} onClick={()=>setPage(p)} style={{ height:30, minWidth:30, border:`1.5px solid ${p===safePage?G:"#ddd"}`, borderRadius:6, background:p===safePage?G:"#fff", cursor:"pointer", fontSize:12, fontWeight:p===safePage?700:400, padding:"0 8px" }}>{p}</button>})}
-              {[["›",safePage+1],["»",totalPages]].map(([label,p])=><button key={label} disabled={safePage>=totalPages} onClick={()=>setPage(p)} style={{ height:30, minWidth:30, border:"1.5px solid #ddd", borderRadius:6, background:"#fff", cursor:safePage>=totalPages?"not-allowed":"pointer", fontSize:12, padding:"0 8px", color:safePage>=totalPages?"#ccc":"#333" }}>{label}</button>)}
+        ) : (
+          <div style={{ display:"flex", flexWrap:"wrap", gap:8, alignItems:"center", marginBottom:14 }}>
+            <select style={sel} value={filterGenre} onChange={e=>{setFilterGenre(e.target.value);setPage(1)}}><option value="">Tous les genres</option>{GENRES.map(g=><option key={g}>{g}</option>)}</select>
+            <select style={sel} value={filterMonth} onChange={e=>{setFilterMonth(e.target.value);setPage(1)}}><option value="">Tous les mois</option>{MONTHS_FR.map((m,i)=><option key={i+1} value={i+1}>{m}</option>)}</select>
+            <select style={sel} value={pageSize} onChange={e=>{setPageSize(Number(e.target.value));setPage(1)}}>{PAGE_SIZES.map(n=><option key={n} value={n}>{n} par page</option>)}</select>
+            {(filterGenre||filterMonth||search) && <button onClick={()=>{setFilterGenre("");setFilterMonth("");setSearch("");setPage(1)}} style={{ ...btnSecondary, fontSize:12 }}>✕ Réinitialiser</button>}
+            <div style={{ marginLeft:"auto", display:"flex", gap:8 }}>
+              <button onClick={()=>exportToCSV(filtered)} style={btnSecondary}>⬇ CSV</button>
+              <button onClick={()=>exportToXLSX(filtered)} style={btnSecondary}>⬇ Excel</button>
+              <button onClick={()=>setModalImport(true)} style={btnSecondary}>⬆ Importer</button>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Cards (mobile) or Table (desktop) */}
+        {isMobile ? (
+          <div style={{paddingBottom:80}}>
+            {pageClients.length === 0 && (
+              <div style={{ textAlign:"center", padding:"3rem", color:"#bbb", fontSize:14 }}>{(search||filterGenre||filterMonth)?"Aucun client trouvé":"Aucun client dans la base"}</div>
+            )}
+            {pageClients.map((c) => (
+              <div key={c.id} style={{background:'#fff', borderRadius:12, border:'1.5px solid #eee', padding:'12px 14px', marginBottom:10}}>
+                <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6}}>
+                  <div style={{display:'flex', alignItems:'center', gap:8, flexWrap:'wrap'}}>
+                    <span style={badge(c.genre)}>{c.genre}</span>
+                    <span style={{fontWeight:700, fontSize:16}}>{c.nom} {c.prenom}</span>
+                  </div>
+                  <div>
+                    <button onClick={()=>setModalEdit(c)} style={{background:'none',border:'none',fontSize:20,cursor:'pointer',padding:'2px 6px'}}>✏️</button>
+                    <button onClick={()=>setModalDelete(c)} style={{background:'none',border:'none',fontSize:20,cursor:'pointer',padding:'2px 6px'}}>🗑</button>
+                  </div>
+                </div>
+                {c.entreprise && <div style={{fontSize:13,color:'#6d28d9',fontWeight:600,marginBottom:4}}>{c.entreprise}</div>}
+                {c.tel && <div style={{fontSize:13,color:'#555'}}>📞 {c.tel}</div>}
+                {c.mail && <div style={{fontSize:12,color:'#3b82f6',marginTop:2}}>{c.mail}</div>}
+                <div style={{fontSize:11,color:'#bbb',marginTop:4}}>{formatDate(c.created_at)}</div>
+                {c.commentaire && <div style={{fontSize:12,color:'#888',marginTop:4,fontStyle:'italic'}}>"{c.commentaire}"</div>}
+              </div>
+            ))}
+            {/* Pagination mobile */}
+            {totalPages > 1 && (
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:16, padding:"12px 0" }}>
+                <button disabled={safePage<=1} onClick={()=>setPage(safePage-1)} style={{ height:40, width:40, border:"1.5px solid #ddd", borderRadius:8, background:"#fff", cursor:safePage<=1?"not-allowed":"pointer", fontSize:18, color:safePage<=1?"#ccc":"#333" }}>‹</button>
+                <span style={{ fontSize:13, color:"#555" }}>Page {safePage} / {totalPages}</span>
+                <button disabled={safePage>=totalPages} onClick={()=>setPage(safePage+1)} style={{ height:40, width:40, border:"1.5px solid #ddd", borderRadius:8, background:"#fff", cursor:safePage>=totalPages?"not-allowed":"pointer", fontSize:18, color:safePage>=totalPages?"#ccc":"#333" }}>›</button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{ background:"#fff", borderRadius:10, border:"1.5px solid #e5e5e5", overflow:"hidden" }}>
+            <div style={{ overflowX:"auto" }}>
+              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
+                <thead>
+                  <tr>
+                    <Th col="genre" label="Genre"/>
+                    <Th col="nom" label="Nom"/>
+                    <Th col="prenom" label="Prénom"/>
+                    <Th col="tel" label="Téléphone"/>
+                    <Th col="mail" label="Mail"/>
+                    <Th col="created_at" label="Date d'ajout"/>
+                    <th style={{ background:"#111", color:"#fff", padding:"10px 12px", textAlign:"left", fontWeight:600, fontSize:12 }}>Commentaire</th>
+                    <th style={{ background:"#111", color:"#fff", padding:"10px 12px", textAlign:"left", fontWeight:600, fontSize:12 }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageClients.length === 0 && (
+                    <tr><td colSpan={8} style={{ textAlign:"center", padding:"3rem", color:"#bbb", fontSize:14 }}>{(search||filterGenre||filterMonth)?"Aucun client trouvé":"Aucun client dans la base"}</td></tr>
+                  )}
+                  {pageClients.map((c, i) => {
+                    const isHov = hoverRow === c.id;
+                    const bg = isHov?"#fffbea":i%2===0?"#fff":"#f9f9f9";
+                    const td = { padding:"9px 12px", borderBottom:"1px solid #f0f0f0", verticalAlign:"middle", background:bg };
+                    return (
+                      <tr key={c.id} onMouseEnter={()=>setHoverRow(c.id)} onMouseLeave={()=>setHoverRow(null)}>
+                        <td style={td}><span style={badge(c.genre)}>{c.genre||"—"}</span></td>
+                        <td style={{...td,fontWeight:600}}>{c.genre==="Entreprise" && c.entreprise ? c.entreprise : c.nom||"—"}</td>
+                        <td style={td}>{c.prenom||"—"}</td>
+                        <td style={{...td,fontFamily:"'Courier New',monospace"}}>{c.tel||"—"}</td>
+                        <td style={{...td,fontSize:12,color:"#3b82f6",maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.mail||"—"}</td>
+                        <td style={{...td,whiteSpace:"nowrap"}}>{formatDate(c.created_at)}</td>
+                        <td style={{...td,maxWidth:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",cursor:c.commentaire?"pointer":"default",color:c.commentaire?"#555":"#ccc"}} onClick={()=>c.commentaire&&setModalComment(c)} title={c.commentaire||""}>{c.commentaire||"—"}</td>
+                        <td style={{...td,whiteSpace:"nowrap"}}>
+                          <button onClick={()=>setModalEdit(c)} style={{ background:"none", border:"none", cursor:"pointer", borderRadius:5, padding:"3px 6px", fontSize:16, color:"#3b82f6" }} title="Modifier">✏️</button>
+                          <button onClick={()=>setModalDelete(c)} style={{ background:"none", border:"none", cursor:"pointer", borderRadius:5, padding:"3px 6px", fontSize:16, color:"#dc2626" }} title="Supprimer">🗑</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {/* Pagination desktop */}
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", borderTop:"1px solid #eee", flexWrap:"wrap", gap:8 }}>
+              <span style={{ fontSize:12, color:"#999" }}>{filtered.length===0?"0 résultat":`${(safePage-1)*pageSize+1}–${Math.min(safePage*pageSize,filtered.length)} sur ${filtered.length} client(s)`}</span>
+              <div style={{ display:"flex", gap:4 }}>
+                {[["«",1],["‹",safePage-1]].map(([label,p])=><button key={label} disabled={safePage<=1} onClick={()=>setPage(p)} style={{ height:30, minWidth:30, border:"1.5px solid #ddd", borderRadius:6, background:"#fff", cursor:safePage<=1?"not-allowed":"pointer", fontSize:12, padding:"0 8px", color:safePage<=1?"#ccc":"#333" }}>{label}</button>)}
+                {Array.from({length:Math.min(5,totalPages)},(_,i)=>{let p=i+1;if(totalPages>5){if(safePage<=3)p=i+1;else if(safePage>=totalPages-2)p=totalPages-4+i;else p=safePage-2+i}return <button key={p} onClick={()=>setPage(p)} style={{ height:30, minWidth:30, border:`1.5px solid ${p===safePage?G:"#ddd"}`, borderRadius:6, background:p===safePage?G:"#fff", cursor:"pointer", fontSize:12, fontWeight:p===safePage?700:400, padding:"0 8px" }}>{p}</button>})}
+                {[["›",safePage+1],["»",totalPages]].map(([label,p])=><button key={label} disabled={safePage>=totalPages} onClick={()=>setPage(p)} style={{ height:30, minWidth:30, border:"1.5px solid #ddd", borderRadius:6, background:"#fff", cursor:safePage>=totalPages?"not-allowed":"pointer", fontSize:12, padding:"0 8px", color:safePage>=totalPages?"#ccc":"#333" }}>{label}</button>)}
+              </div>
+            </div>
+          </div>
+        )}
       </main>
+
+      {/* Bouton fixe mobile */}
+      {isMobile && (
+        <button
+          onClick={()=>setModalAdd(true)}
+          style={{position:'fixed', bottom:0, left:0, right:0, height:60, background:G, color:'#111', border:'none', fontSize:16, fontWeight:700, cursor:'pointer', zIndex:500, boxShadow:'0 -4px 20px rgba(0,0,0,0.15)'}}
+        >
+          + Ajouter un client
+        </button>
+      )}
 
       {/* Modals */}
       {modalAdd && <ClientForm existingClients={clients} onSave={addClient} onCancel={()=>setModalAdd(false)} />}
