@@ -161,7 +161,7 @@ function LoginPage({ onLogin }) {
 // ─── Client Form ──────────────────────────────────────────────────────────────
 function ClientForm({ initial, onSave, onCancel, existingClients }) {
   const isEdit = !!initial?.id;
-  const [form, setForm] = useState({ genre:initial?.genre||"Non renseigné", nom:initial?.nom||"", prenom:initial?.prenom||"", tel:initial?.tel||"", mail:initial?.mail||"", commentaire:initial?.commentaire||"" });
+  const [form, setForm] = useState({ genre:initial?.genre||"Non renseigné", nom:initial?.nom||"", prenom:initial?.prenom||"", tel:initial?.tel||"", mail:initial?.mail||"", commentaire:initial?.commentaire||"", entreprise:initial?.entreprise||"" });
   const [errors, setErrors] = useState({});
   const [dupWarn, setDupWarn] = useState(null);
 
@@ -185,7 +185,7 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
   }
 
   function doSave() {
-    const saved = { ...(initial||{}), id:initial?.id, genre:form.genre, nom:capitalize(form.nom.trim()), prenom:capitalize(form.prenom.trim()), tel:form.tel, mail:form.mail.trim().toLowerCase(), commentaire:form.commentaire.trim(), created_at:initial?.created_at||new Date().toISOString() };
+    const saved = { ...(initial||{}), id:initial?.id, genre:form.genre, nom:capitalize(form.nom.trim()), prenom:capitalize(form.prenom.trim()), tel:form.tel, mail:form.mail.trim().toLowerCase(), commentaire:form.commentaire.trim(), entreprise:form.entreprise.trim(), created_at:initial?.created_at||new Date().toISOString() };
     onSave(saved);
     setDupWarn(null);
   }
@@ -211,6 +211,12 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
             {GENRES.map(g=><option key={g}>{g}</option>)}
           </select>
         </div>
+        {form.genre === "Entreprise" && (
+          <div style={fg}>
+            <label style={lbl}>Nom de l'entreprise</label>
+            <input style={inp(false)} value={form.entreprise} onChange={e=>set("entreprise",e.target.value)} placeholder="Nom de l'entreprise" />
+          </div>
+        )}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
           <div style={fg}>
             <label style={lbl}>Nom <span style={{color:"#dc2626"}}>*</span></label>
@@ -532,7 +538,7 @@ function CRMApp({ user, onLogout }) {
                   return (
                     <tr key={c.id} onMouseEnter={()=>setHoverRow(c.id)} onMouseLeave={()=>setHoverRow(null)}>
                       <td style={td}><span style={badge(c.genre)}>{c.genre||"—"}</span></td>
-                      <td style={{...td,fontWeight:600}}>{c.nom||"—"}</td>
+                      <td style={{...td,fontWeight:600}}>{c.genre==="Entreprise" && c.entreprise ? c.entreprise : c.nom||"—"}</td>
                       <td style={td}>{c.prenom||"—"}</td>
                       <td style={{...td,fontFamily:"'Courier New',monospace"}}>{c.tel||"—"}</td>
                       <td style={{...td,fontSize:12,color:"#3b82f6",maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.mail||"—"}</td>
