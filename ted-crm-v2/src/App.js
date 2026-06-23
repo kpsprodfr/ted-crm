@@ -419,6 +419,72 @@ function ImportModal({ onImport, onCancel, existingClients }) {
   );
 }
 
+// ─── Corbeille Modal ──────────────────────────────────────────────────────────
+function CorbeilleModal({ onClose, showToast }) {
+  const [deleted, setDeleted] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.from("clients").select("*").not("deleted_at", "is", null).order("deleted_at", { ascending: false })
+      .then(({ data }) => { setDeleted(data || []); setLoading(false); });
+  }, []);
+
+  async function restore(id) {
+    await supabase.from("clients").update({ deleted_at: null, deleted_by: null }).eq("id", id);
+    setDeleted(prev => prev.filter(c => c.id !== id));
+    showToast("Client restauré ✓");
+  }
+
+  async function deletePermanently(id) {
+    if (!window.confirm("Supprimer définitivement ce client ? Cette action est irréversible.")) return;
+    await supabase.from("clients").delete().eq("id", id);
+    setDeleted(prev => prev.filter(c => c.id !== id));
+    showToast("Client supprimé définitivement");
+  }
+
+  async function emptyTrash() {
+    if (!window.confirm(`Vider la corbeille ? ${deleted.length} client(s) seront supprimés définitivement.`)) return;
+    await supabase.from("clients").delete().not("deleted_at", "is", null);
+    setDeleted([]);
+    showToast("Corbeille vidée ✓");
+  }
+
+  const footer = deleted.length > 0 ? [
+    <button key="empty" onClick={emptyTrash} style={{ background:"#dc2626", color:"#fff", border:"none", borderRadius:8, padding:"0 16px", height:44, fontWeight:700, fontSize:13, cursor:"pointer" }}>🗑 Vider la corbeille ({deleted.length})</button>
+  ] : null;
+
+  return (
+    <Modal title="🗑 Corbeille" onClose={onClose} maxW={600} footer={footer}>
+      {loading && <p style={{ textAlign:"center", color:"#999", padding:"2rem" }}>Chargement...</p>}
+      {!loading && deleted.length === 0 && (
+        <div style={{ textAlign:"center", padding:"3rem" }}>
+          <div style={{ fontSize:48, marginBottom:12 }}>🗑</div>
+          <p style={{ color:"#bbb", fontSize:15 }}>La corbeille est vide</p>
+        </div>
+      )}
+      {!loading && deleted.map(c => (
+        <div key={c.id} style={{ background:"#fff", border:"1.5px solid #f0f0f0", borderRadius:12, padding:"14px", marginBottom:10, display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+          <div style={{ flex:1 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+              <span style={badge(c.genre)}>{c.genre}</span>
+              <span style={{ fontWeight:700, fontSize:15 }}>{c.genre === "Entreprise" ? (c.entreprise||c.nom) : `${c.nom} ${c.prenom}`}</span>
+            </div>
+            {c.tel && <p style={{ fontSize:13, color:"#555", margin:"2px 0" }}>📞 {c.tel}</p>}
+            <p style={{ fontSize:11, color:"#bbb", margin:"4px 0 0" }}>
+              Supprimé le {new Date(c.deleted_at).toLocaleDateString("fr-FR")} à {new Date(c.deleted_at).toLocaleTimeString("fr-FR", { hour:"2-digit", minute:"2-digit" })}
+              {c.deleted_by ? ` par ${c.deleted_by}` : ""}
+            </p>
+          </div>
+          <div style={{ display:"flex", gap:8, flexShrink:0 }}>
+            <button onClick={()=>restore(c.id)} style={{ background:"#f0fdf4", border:"1.5px solid #22c55e", borderRadius:8, padding:"0 12px", height:36, fontWeight:600, fontSize:12, cursor:"pointer", color:"#16a34a" }}>↩ Restaurer</button>
+            <button onClick={()=>deletePermanently(c.id)} style={{ background:"#fef2f2", border:"1.5px solid #dc2626", borderRadius:8, padding:"0 12px", height:36, fontWeight:600, fontSize:12, cursor:"pointer", color:"#dc2626" }}>✕ Supprimer</button>
+          </div>
+        </div>
+      ))}
+    </Modal>
+  );
+}
+
 // ─── Mobile hook ──────────────────────────────────────────────────────────────
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -452,6 +518,7 @@ function CRMApp({ user, onLogout }) {
   const [showFilters, setShowFilters] = useState(false);
   const [activeTab, setActiveTab] = useState("tous");
   const [showSearch, setShowSearch] = useState(false);
+  const [modalCorbeille, setModalCorbeille] = useState(false);
   const deleteGuard = useRef(false);
   const isMobile = useIsMobile();
 
@@ -464,7 +531,7 @@ function CRMApp({ user, onLogout }) {
 
   async function loadClients() {
     setLoading(true);
-    const { data, error } = await supabase.from("clients").select("*").order("created_at", { ascending: false });
+    const { data, error } = await supabase.from("clients").select("*").is("deleted_at", null).order("created_at", { ascending: false });
     if (error) { showToast("Erreur de chargement", "error"); }
     else { setClients(data || []); }
     setLoading(false);
@@ -503,8 +570,8 @@ function CRMApp({ user, onLogout }) {
     deleteGuard.current = true;
     setClients(prev => prev.filter(x => x.id !== id));
     setModalDelete(null);
-    showToast("Client supprimé ✓");
-    const { error } = await supabase.from("clients").delete().eq("id", id);
+    showToast("Client déplacé dans la corbeille ✓");
+    const { error } = await supabase.from("clients").update({ deleted_at: new Date().toISOString(), deleted_by: user.email }).eq("id", id);
     if (error) {
       showToast("Erreur lors de la suppression", "error");
       loadClients();
@@ -652,6 +719,7 @@ function CRMApp({ user, onLogout }) {
             <button onClick={saveBackup} style={{ ...btnSecondary, background:"transparent", color:"#ccc", border:"1px solid #444", height:32, fontSize:12 }}>💾 Sauvegarder</button>
             <button onClick={()=>restoreRef.current?.click()} style={{ ...btnSecondary, background:"transparent", color:"#ccc", border:"1px solid #444", height:32, fontSize:12 }}>🔄 Restaurer</button>
             <input ref={restoreRef} type="file" accept=".json" style={{display:"none"}} onChange={handleRestoreFile} />
+            <button onClick={()=>setModalCorbeille(true)} style={{ ...btnSecondary, background:"transparent", color:"#ccc", border:"1px solid #444", height:32, fontSize:12 }}>🗑 Corbeille</button>
             <button onClick={onLogout} style={{ ...btnSecondary, background:"transparent", color:"#ccc", border:"1px solid #444", height:32, fontSize:12 }}>Déconnexion</button>
           </div>
         </header>
@@ -937,6 +1005,7 @@ function CRMApp({ user, onLogout }) {
       {modalDelete && <ConfirmModal title="Supprimer ce client ?" msg={`Êtes-vous sûr de vouloir supprimer définitivement ${modalDelete.prenom} ${modalDelete.nom} ? Cette action est irréversible.`} onOk={()=>deleteClient(modalDelete.id)} onCancel={()=>setModalDelete(null)} okLabel="Supprimer définitivement" danger />}
       {modalImport && <ImportModal existingClients={clients} onImport={importClients} onCancel={()=>setModalImport(false)} />}
       {modalComment && <Modal title={`Commentaire — ${modalComment.prenom} ${modalComment.nom}`} onClose={()=>setModalComment(null)}><p style={{fontSize:14,lineHeight:1.7,margin:0}}>{modalComment.commentaire}</p></Modal>}
+      {modalCorbeille && !isMobile && <CorbeilleModal onClose={()=>{ setModalCorbeille(false); loadClients(); }} showToast={showToast} />}
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
     </div>
   );
