@@ -709,18 +709,20 @@ function CRMApp({ user, onLogout }) {
 
       {/* ═══ DESKTOP HEADER ═══ */}
       {!isMobile && (
-        <header style={{ background:"#111", color:"#fff", padding:"0 20px", display:"flex", alignItems:"center", justifyContent:"space-between", height:56, borderBottom:`3px solid ${G}` }}>
-          <h1 style={{ fontSize:16, fontWeight:700, letterSpacing:2, color:"#fff", margin:0 }}>
-            <img src={require('./logo.png')} alt="TED" style={{height:32, marginRight:8, verticalAlign:'middle', filter:'brightness(0) invert(1)'}} />
-            <span style={{color:G}}>TED</span> — FICHIER CLIENTS
-          </h1>
-          <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-            <span style={{ fontSize:12, color:"#888", marginRight:4 }}>{user.email}</span>
-            <button onClick={saveBackup} style={{ ...btnSecondary, background:"transparent", color:"#ccc", border:"1px solid #444", height:32, fontSize:12 }}>💾 Sauvegarder</button>
-            <button onClick={()=>restoreRef.current?.click()} style={{ ...btnSecondary, background:"transparent", color:"#ccc", border:"1px solid #444", height:32, fontSize:12 }}>🔄 Restaurer</button>
+        <header style={{background:"#111", color:"#fff", padding:"0 20px", display:"flex", alignItems:"center", justifyContent:"space-between", height:56, borderBottom:`3px solid ${G}`, flexShrink:0}}>
+          <div style={{display:"flex", alignItems:"center", gap:10}}>
+            <img src={require('./logo.png')} alt="TED" style={{height:30, filter:'brightness(0) invert(1)'}} onError={e=>e.target.style.display='none'} />
+            <h1 style={{fontSize:15, fontWeight:700, letterSpacing:2, color:"#fff", margin:0}}>
+              <span style={{color:G}}>TED</span> — FICHIER CLIENTS
+            </h1>
+          </div>
+          <div style={{display:"flex", gap:6, alignItems:"center", flexShrink:0}}>
+            <span style={{fontSize:11, color:"#666", marginRight:4, maxWidth:120, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{user.email}</span>
+            <button onClick={saveBackup} title="Sauvegarder" style={{background:"transparent", color:"#ccc", border:"1px solid #444", borderRadius:7, width:32, height:32, cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center"}}>💾</button>
+            <button onClick={()=>restoreRef.current?.click()} title="Restaurer" style={{background:"transparent", color:"#ccc", border:"1px solid #444", borderRadius:7, width:32, height:32, cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center"}}>🔄</button>
             <input ref={restoreRef} type="file" accept=".json" style={{display:"none"}} onChange={handleRestoreFile} />
-            <button onClick={()=>setModalCorbeille(true)} style={{ background:"transparent", color:"#ccc", border:"1px solid #444", borderRadius:7, padding:"0 12px", height:32, fontSize:12, cursor:"pointer", whiteSpace:"nowrap" }}>🗑 Corbeille</button>
-            <button onClick={onLogout} style={{ ...btnSecondary, background:"transparent", color:"#ccc", border:"1px solid #444", height:32, fontSize:12 }}>Déconnexion</button>
+            <button onClick={()=>setModalCorbeille(true)} style={{background:"transparent", color:G, border:`1px solid ${G}`, borderRadius:7, padding:"0 10px", height:32, fontSize:12, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap"}}>🗑 Corbeille</button>
+            <button onClick={onLogout} style={{background:"transparent", color:"#ccc", border:"1px solid #444", borderRadius:7, padding:"0 10px", height:32, fontSize:12, cursor:"pointer"}}>⎋ Quitter</button>
           </div>
         </header>
       )}
