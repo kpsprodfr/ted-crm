@@ -207,6 +207,9 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
 
   function validate() {
     const e = {};
+    if (!form.genre || form.genre === "Non renseigné") {
+      e.genre = "Veuillez sélectionner un genre.";
+    }
     if (form.genre === "Entreprise") {
       if (!form.entreprise || !form.entreprise.trim()) e.entreprise = "Le nom de l'entreprise est obligatoire.";
     } else {
@@ -295,11 +298,13 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
         ]}
       >
         <div style={fieldGroup}>
-          <label style={labelStyle}>Genre</label>
-          <select style={{ width: "100%", height: 44, border: "1.5px solid #ddd", borderRadius: 7, padding: "0 12px", fontSize: 16, background: "#fff", outline: "none" }}
+          <label style={labelStyle}>Genre <span style={{color:"#dc2626"}}>*</span></label>
+          <select style={{ width:"100%", height:44, border:`1.5px solid ${errors.genre ? "#dc2626" : "#ddd"}`, borderRadius:7, padding:"0 12px", fontSize:16, background:"#fff", outline:"none" }}
             value={form.genre} onChange={e => set("genre", e.target.value)}>
-            {GENRES.map(g => <option key={g}>{g}</option>)}
+            <option value="Non renseigné">-- Sélectionner --</option>
+            {GENRES.filter(g => g !== "Non renseigné").map(g => <option key={g}>{g}</option>)}
           </select>
+          {errors.genre && <p style={{fontSize:12, color:"#dc2626", marginTop:4}}>{errors.genre}</p>}
         </div>
 
         <div style={fieldGroup}>
