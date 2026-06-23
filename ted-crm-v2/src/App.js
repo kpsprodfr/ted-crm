@@ -684,22 +684,11 @@ function CRMApp({ user, onLogout }) {
             <span style={{ color:'#fff', fontWeight:800, fontSize:15, letterSpacing:0.5 }}>TED <span style={{color:G}}>CRM</span></span>
           </div>
           <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-            <button onClick={()=>setShowSearch(s=>!s)} style={{ background:showSearch?G:'rgba(255,255,255,0.1)', border:'none', borderRadius:8, width:36, height:36, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, cursor:'pointer', color:showSearch?'#111':'#fff' }}>🔍</button>
             <button onClick={()=>{ if(window.confirm('Voulez-vous vraiment vous déconnecter ?')) onLogout(); }} style={{ background:'rgba(255,255,255,0.1)', border:'none', borderRadius:8, width:36, height:36, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, cursor:'pointer', color:'#fff' }}>⎋</button>
           </div>
         </header>
       )}
 
-      {/* ═══ MOBILE SEARCH BAR ═══ */}
-      {isMobile && showSearch && (
-        <div style={{ position:'fixed', top:56, left:0, right:0, background:'#fff', padding:'10px 14px', borderBottom:'1px solid #eee', zIndex:199, boxShadow:'0 4px 12px rgba(0,0,0,0.1)', animation:'slideDownFade 0.2s ease' }}>
-          <div style={{ position:'relative' }}>
-            <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#bbb' }}>🔍</span>
-            <input autoFocus value={search} onChange={e=>{setSearch(e.target.value);setPage(1)}} placeholder="Rechercher..." style={{ width:'100%', height:44, border:`2px solid ${G}`, borderRadius:12, padding:'0 36px 0 40px', fontSize:16, outline:'none', boxSizing:'border-box', background:'#fffbea' }} />
-            {search && <button onClick={()=>{setSearch('');setPage(1)}} style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', fontSize:18, cursor:'pointer', color:'#aaa' }}>✕</button>}
-          </div>
-        </div>
-      )}
 
       {/* ═══ DESKTOP HEADER ═══ */}
       {!isMobile && (
@@ -724,7 +713,7 @@ function CRMApp({ user, onLogout }) {
 
       {/* ═══ MOBILE DASHBOARD ═══ */}
       {isMobile && (
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, padding:'8px 12px', marginTop: showSearch ? 120 : 68 }}>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, padding:'8px 12px', marginTop:68 }}>
           {[
             { label:'Total', value:clients.length, gold:false, icon:'👥' },
             { label:getCurrentMonthName().slice(0,4), value:newMonth, gold:true, icon:'✨' },
@@ -754,6 +743,17 @@ function CRMApp({ user, onLogout }) {
         </div>
       )}
 
+      {/* ═══ MOBILE SEARCH ═══ */}
+      {isMobile && (
+        <div style={{ padding:'8px 12px 4px' }}>
+          <div style={{ position:'relative' }}>
+            <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#bbb', fontSize:14 }}>🔍</span>
+            <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1)}} placeholder="Rechercher..." style={{ width:'100%', height:40, border:'1.5px solid #eee', borderRadius:12, padding:'0 36px 0 36px', fontSize:16, outline:'none', boxSizing:'border-box', background:'#f8f8f8' }} />
+            {search && <button onClick={()=>{setSearch('');setPage(1)}} style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', fontSize:18, cursor:'pointer', color:'#aaa' }}>✕</button>}
+          </div>
+        </div>
+      )}
+
       {/* ═══ MOBILE CARDS ═══ */}
       {isMobile && (
         <div style={{ padding:'4px 12px 80px' }}>
@@ -765,30 +765,26 @@ function CRMApp({ user, onLogout }) {
           )}
           {pageClients.map((c,i) => (
             <div key={c.id} style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:'12px', marginBottom:8, boxShadow:'0 2px 8px rgba(0,0,0,0.05)', animation:'slideUpFade 0.25s ease both', animationDelay:`${i*0.04}s` }}>
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
+              <div style={{ display:'flex', alignItems:'flex-start', gap:8 }}>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:5 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:4 }}>
                     <span style={badge(c.genre)}>{c.genre}</span>
                     <span style={{ fontWeight:700, fontSize:15, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                       {c.genre==='Entreprise' ? (c.entreprise||c.nom||'—') : `${c.nom||''} ${c.prenom||''}`}
                     </span>
                   </div>
-                  {c.genre==='Entreprise' && (c.nom||c.prenom) && (
-                    <p style={{ fontSize:12, color:'#999', margin:'0 0 4px' }}>{c.nom} {c.prenom}</p>
-                  )}
-                  {c.tel && (
-                    <a href={`tel:${c.tel}`} style={{ display:'inline-flex', alignItems:'center', gap:5, background:G, color:'#111', borderRadius:8, padding:'4px 10px', fontSize:13, fontWeight:700, textDecoration:'none', marginBottom:3 }}>📞 {c.tel}</a>
-                  )}
                   {c.mail && <p style={{ fontSize:11, color:'#3b82f6', margin:'2px 0', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.mail}</p>}
                   {c.commentaire && <p style={{ fontSize:11, color:'#aaa', margin:'3px 0 0', fontStyle:'italic', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>"{c.commentaire}"</p>}
                 </div>
-                <div style={{ display:'flex', flexDirection:'column', gap:5, flexShrink:0 }}>
-                  <button onClick={()=>setModalEdit(c)} style={{ background:'#f0f6ff', border:'none', borderRadius:8, width:36, height:36, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, cursor:'pointer' }}>✏️</button>
-                  <button onClick={()=>setModalDelete(c)} style={{ background:'#fff0f0', border:'none', borderRadius:8, width:36, height:36, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, cursor:'pointer' }}>🗑</button>
+                <div style={{ display:'flex', flexDirection:'column', gap:5, flexShrink:0, alignItems:'flex-end' }}>
+                  <div style={{ display:'flex', gap:4 }}>
+                    <button onClick={()=>setModalEdit(c)} style={{ background:'#f0f6ff', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, cursor:'pointer' }}>✏️</button>
+                    <button onClick={()=>setModalDelete(c)} style={{ background:'#fff0f0', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, cursor:'pointer' }}>🗑</button>
+                  </div>
+                  {c.tel && (
+                    <a href={`tel:${c.tel}`} style={{ display:'inline-flex', alignItems:'center', gap:5, background:G, color:'#111', borderRadius:10, padding:'6px 12px', fontSize:13, fontWeight:700, textDecoration:'none', boxShadow:'0 2px 6px rgba(232,197,71,0.4)', whiteSpace:'nowrap' }}>📞 {c.tel}</a>
+                  )}
                 </div>
-              </div>
-              <div style={{ marginTop:8, paddingTop:6, borderTop:'1px solid #f5f5f5', fontSize:11, color:'#ccc', textAlign:'right' }}>
-                Ajouté le {formatDate(c.created_at)}
               </div>
             </div>
           ))}
