@@ -393,6 +393,7 @@ function CRMApp({ user, onLogout }) {
   const [toast, setToast] = useState(null);
   const [hoverRow, setHoverRow] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [activeTab, setActiveTab] = useState("tous");
   const deleteGuard = useRef(false);
   const isMobile = useIsMobile();
 
@@ -487,6 +488,8 @@ function CRMApp({ user, onLogout }) {
 
   const filtered = useMemo(() => {
     let list = [...clients];
+    if (activeTab === "particuliers") list = list.filter(c => c.genre !== "Entreprise");
+    if (activeTab === "entreprises") list = list.filter(c => c.genre === "Entreprise");
     if (filterGenre) list = list.filter(c => c.genre === filterGenre);
     if (filterMonth) list = list.filter(c => { const d = new Date(c.created_at); return !isNaN(d) && (d.getMonth()+1) === parseInt(filterMonth); });
     if (search.trim()) {
@@ -503,7 +506,7 @@ function CRMApp({ user, onLogout }) {
       return sortDir==="asc"?va.localeCompare(vb):vb.localeCompare(va);
     });
     return list;
-  }, [clients, search, filterGenre, filterMonth, sortKey, sortDir]);
+  }, [clients, search, filterGenre, filterMonth, sortKey, sortDir, activeTab]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, totalPages);
@@ -553,6 +556,30 @@ function CRMApp({ user, onLogout }) {
             <div style={{ fontSize: isMobile ? 26 : 36, fontWeight:700, color:G }}>{newMonth}</div>
             {!isMobile && <div style={{ fontSize:12, color:"#bbb", marginTop:3 }}>ce mois-ci</div>}
           </div>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display:"flex", gap:0, marginBottom:16, background:"#f0f0f0", borderRadius:10, padding:3, overflowX:"auto", width: isMobile ? "100%" : "fit-content" }}>
+          {[
+            { id:"tous", label:"👥 Tous", count: clients.length },
+            { id:"particuliers", label:"🙍 Particuliers", count: clients.filter(c=>c.genre!=="Entreprise").length },
+            { id:"entreprises", label:"🏢 Entreprises", count: clients.filter(c=>c.genre==="Entreprise").length }
+          ].map(tab => (
+            <button key={tab.id} onClick={()=>{setActiveTab(tab.id);setPage(1)}} style={{
+              background: activeTab===tab.id ? "#111" : "transparent",
+              color: activeTab===tab.id ? "#fff" : "#666",
+              border: "none", borderRadius: 8,
+              padding: "8px 16px", fontSize: 13,
+              fontWeight: activeTab===tab.id ? 700 : 400,
+              cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.15s"
+            }}>
+              {tab.label} <span style={{
+                background: activeTab===tab.id ? "#E8C547" : "#ddd",
+                color: activeTab===tab.id ? "#111" : "#888",
+                borderRadius: 99, padding: "1px 7px", fontSize: 11, fontWeight: 700, marginLeft: 4
+              }}>{tab.count}</span>
+            </button>
+          ))}
         </div>
 
         {/* Search + Add */}
@@ -637,8 +664,17 @@ function CRMApp({ user, onLogout }) {
                 <thead>
                   <tr>
                     <Th col="genre" label="Genre"/>
-                    <Th col="nom" label="Nom"/>
-                    <Th col="prenom" label="Prénom"/>
+                    {activeTab === "entreprises" ? (
+                      <>
+                        <Th col="entreprise" label="Entreprise"/>
+                        <Th col="nom" label="Contact"/>
+                      </>
+                    ) : (
+                      <>
+                        <Th col="nom" label="Nom"/>
+                        <Th col="prenom" label="Prénom"/>
+                      </>
+                    )}
                     <Th col="tel" label="Téléphone"/>
                     <Th col="mail" label="Mail"/>
                     <Th col="created_at" label="Date d'ajout"/>
@@ -657,8 +693,17 @@ function CRMApp({ user, onLogout }) {
                     return (
                       <tr key={c.id} onMouseEnter={()=>setHoverRow(c.id)} onMouseLeave={()=>setHoverRow(null)}>
                         <td style={td}><span style={badge(c.genre)}>{c.genre||"—"}</span></td>
-                        <td style={{...td,fontWeight:600}}>{c.genre==="Entreprise" ? <span style={{color:'#065f46',fontWeight:700}}>{c.entreprise||"—"}</span> : c.nom||"—"}</td>
-                        <td style={td}>{c.genre==="Entreprise" ? <span style={{fontSize:11,color:'#999'}}>{c.nom} {c.prenom}</span> : c.prenom||"—"}</td>
+                        {activeTab === "entreprises" ? (
+                          <>
+                            <td style={{...td,fontWeight:700,color:"#065f46"}}>{c.entreprise||"—"}</td>
+                            <td style={td}>{c.nom||""} {c.prenom||""}</td>
+                          </>
+                        ) : (
+                          <>
+                            <td style={{...td,fontWeight:600}}>{c.genre==="Entreprise" ? <span style={{color:'#065f46',fontWeight:700}}>{c.entreprise||"—"}</span> : c.nom||"—"}</td>
+                            <td style={td}>{c.genre==="Entreprise" ? <span style={{fontSize:11,color:'#999'}}>{c.nom} {c.prenom}</span> : c.prenom||"—"}</td>
+                          </>
+                        )}
                         <td style={{...td,fontFamily:"'Courier New',monospace"}}>{c.tel||"—"}</td>
                         <td style={{...td,fontSize:12,color:"#3b82f6",maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.mail||"—"}</td>
                         <td style={{...td,whiteSpace:"nowrap"}}>{formatDate(c.created_at)}</td>
