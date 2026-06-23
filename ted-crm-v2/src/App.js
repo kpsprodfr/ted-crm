@@ -765,6 +765,7 @@ function CRMApp({ user, onLogout }) {
           )}
           {pageClients.map((c,i) => (
             <div key={c.id} style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:'12px', marginBottom:8, boxShadow:'0 2px 8px rgba(0,0,0,0.05)', animation:'slideUpFade 0.25s ease both', animationDelay:`${i*0.04}s` }}>
+              {/* Ligne principale : infos + boutons ✏️🗑 */}
               <div style={{ display:'flex', alignItems:'flex-start', gap:8 }}>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:4 }}>
@@ -776,16 +777,19 @@ function CRMApp({ user, onLogout }) {
                   {c.mail && <p style={{ fontSize:11, color:'#3b82f6', margin:'2px 0', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.mail}</p>}
                   {c.commentaire && <p style={{ fontSize:11, color:'#aaa', margin:'3px 0 0', fontStyle:'italic', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>"{c.commentaire}"</p>}
                 </div>
-                <div style={{ display:'flex', flexDirection:'column', gap:5, flexShrink:0, alignItems:'flex-end' }}>
-                  <div style={{ display:'flex', gap:4 }}>
-                    <button onClick={()=>setModalEdit(c)} style={{ background:'#f0f6ff', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, cursor:'pointer' }}>✏️</button>
-                    <button onClick={()=>setModalDelete(c)} style={{ background:'#fff0f0', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, cursor:'pointer' }}>🗑</button>
-                  </div>
-                  {c.tel && (
-                    <a href={`tel:${c.tel}`} style={{ display:'inline-flex', alignItems:'center', gap:5, background:G, color:'#111', borderRadius:10, padding:'6px 12px', fontSize:13, fontWeight:700, textDecoration:'none', boxShadow:'0 2px 6px rgba(232,197,71,0.4)', whiteSpace:'nowrap' }}>📞 {c.tel}</a>
-                  )}
+                <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+                  <button onClick={()=>setModalEdit(c)} style={{ background:'#f0f6ff', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, cursor:'pointer' }}>✏️</button>
+                  <button onClick={()=>setModalDelete(c)} style={{ background:'#fff0f0', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, cursor:'pointer' }}>🗑</button>
                 </div>
               </div>
+              {/* Bouton Appeler — séparé, en dessous */}
+              {c.tel && (
+                <div style={{ marginTop:10 }}>
+                  <a href={`tel:${c.tel}`} style={{ display:'inline-flex', alignItems:'center', gap:6, background:G, color:'#111', borderRadius:10, padding:'7px 16px', fontSize:14, fontWeight:700, textDecoration:'none', boxShadow:'0 2px 6px rgba(232,197,71,0.35)' }}>
+                    📞 Appeler
+                  </a>
+                </div>
+              )}
             </div>
           ))}
           {totalPages > 1 && (
