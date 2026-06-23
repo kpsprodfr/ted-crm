@@ -678,33 +678,31 @@ function CRMApp({ user, onLogout }) {
 
       {/* ═══ MOBILE HEADER (fixed) ═══ */}
       {isMobile && (
-        <header style={{ position:'fixed', top:0, left:0, right:0, height:56, background:'#111', zIndex:200, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 14px', borderBottom:`3px solid ${G}` }}>
-          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <img src={require('./logo.png')} alt="TED" style={{ height:28, filter:'brightness(0) invert(1)', verticalAlign:'middle' }} />
-            <span style={{ color:'#fff', fontWeight:700, fontSize:14, letterSpacing:1 }}><span style={{color:G}}>TED</span> CRM</span>
+        <header style={{ position:'fixed', top:0, left:0, right:0, background:'#111', borderBottom:`3px solid ${G}`, zIndex:200, padding:'0 12px' }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', height:50 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <img src={require('./logo.png')} alt="TED" style={{ height:26, filter:'brightness(0) invert(1)' }} onError={e=>e.target.style.display='none'} />
+              <span style={{ color:'#fff', fontWeight:800, fontSize:14 }}>TED <span style={{color:G}}>CRM</span></span>
+            </div>
+            <button
+              type="button"
+              onClick={()=>{ if(window.confirm('Voulez-vous vraiment vous déconnecter ?')) onLogout(); }}
+              style={{ background:'none', border:'none', color:'#888', fontSize:12, cursor:'pointer', padding:'4px 8px' }}
+            >⎋ Quitter</button>
           </div>
-          <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-            <button type="button" onPointerDown={()=>setShowSearch(s=>!s)} className="btn-mobile" style={{ background:showSearch?G:'rgba(255,255,255,0.1)', border:'none', borderRadius:10, width:38, height:38, fontSize:18, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', touchAction:'manipulation' }}>🔍</button>
-            <button type="button" onPointerDown={onLogout} className="btn-mobile" style={{ background:'rgba(255,255,255,0.08)', border:'1px solid #333', borderRadius:10, height:38, padding:'0 12px', fontSize:12, color:'#ccc', cursor:'pointer', fontWeight:500, touchAction:'manipulation' }}>✕</button>
+          <div style={{ paddingBottom:8 }}>
+            <div style={{ position:'relative' }}>
+              <span style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:'#bbb', fontSize:14, pointerEvents:'none' }}>🔍</span>
+              <input
+                value={search}
+                onChange={e=>{setSearch(e.target.value);setPage(1)}}
+                placeholder="Rechercher..."
+                style={{ width:'100%', height:36, border:'1.5px solid #333', borderRadius:10, padding:'0 32px 0 32px', fontSize:16, outline:'none', boxSizing:'border-box', background:'#222', color:'#fff' }}
+              />
+              {search && <button type="button" onClick={()=>{setSearch('');setPage(1)}} style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', color:'#888', fontSize:16, cursor:'pointer' }}>✕</button>}
+            </div>
           </div>
         </header>
-      )}
-
-      {/* ═══ MOBILE SEARCH BAR (slides down) ═══ */}
-      {isMobile && showSearch && (
-        <div style={{ position:'fixed', top:59, left:0, right:0, zIndex:190, background:'#fff', padding:'10px 14px', borderBottom:'1px solid #eee', boxShadow:'0 4px 20px rgba(0,0,0,0.1)', animation:'slideDownFade 0.18s ease' }}>
-          <div style={{ position:'relative' }}>
-            <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#bbb', fontSize:16, pointerEvents:'none' }}>🔍</span>
-            <input
-              autoFocus
-              style={{ width:'100%', height:44, border:'1.5px solid #e5e5e5', borderRadius:12, padding:'0 40px 0 42px', fontSize:16, background:'#f8f8f8', outline:'none', boxSizing:'border-box' }}
-              value={search}
-              onChange={e=>{setSearch(e.target.value);setPage(1)}}
-              placeholder="Nom, téléphone, mail…"
-            />
-            {search && <button type="button" onPointerDown={()=>{setSearch("");setPage(1)}} style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'#aaa', fontSize:18, padding:4, touchAction:'manipulation' }}>✕</button>}
-          </div>
-        </div>
       )}
 
       {/* ═══ DESKTOP HEADER ═══ */}
@@ -730,7 +728,7 @@ function CRMApp({ user, onLogout }) {
 
       {/* ═══ MOBILE CONTENT ═══ */}
       {isMobile && (
-        <div style={{ paddingTop: showSearch ? 116 : 68, paddingBottom: 80, paddingLeft:12, paddingRight:12 }}>
+        <div style={{ paddingTop: 108, paddingBottom: 80, paddingLeft:12, paddingRight:12 }}>
 
           {/* Dashboard cards */}
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10, marginBottom:16 }}>
@@ -801,43 +799,28 @@ function CRMApp({ user, onLogout }) {
             <div style={{ textAlign:'center', padding:'3rem', color:'#ccc', fontSize:14 }}>{(search||filterGenre||filterMonth)?"Aucun résultat":"Aucun client"}</div>
           )}
           {pageClients.map((c, idx) => (
-            <div key={c.id} className="client-card card-mobile" style={{ animationDelay:`${idx*0.04}s` }}>
-              <div style={{ padding:'14px 16px' }}>
-                {/* Header row */}
-                <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:8 }}>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:7, flexWrap:'wrap', marginBottom:3 }}>
-                      <span style={badge(c.genre)}>{c.genre}</span>
-                      <span style={{ fontWeight:700, fontSize:16, color:'#111' }}>
-                        {c.genre==="Entreprise" ? (c.entreprise||c.nom||"—") : `${c.nom||""} ${c.prenom||""}`.trim()||"—"}
-                      </span>
-                    </div>
-                    {c.genre==="Entreprise" && (c.nom||c.prenom) && (
-                      <div style={{ fontSize:12, color:'#999' }}>{c.nom} {c.prenom}</div>
+            <div key={c.id} className="client-card card-mobile" style={{ background:'#fff', borderRadius:12, border:'1.5px solid #f0f0f0', padding:'10px 12px', marginBottom:8, boxShadow:'0 1px 6px rgba(0,0,0,0.05)', animationDelay:`${idx*0.04}s` }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:3 }}>
+                    <span style={badge(c.genre)}>{c.genre}</span>
+                    <span style={{ fontWeight:700, fontSize:14, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                      {c.genre==="Entreprise" ? (c.entreprise||c.nom||"—") : `${c.nom||""} ${c.prenom||""}`.trim()||"—"}
+                    </span>
+                  </div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                    {c.tel && (
+                      <a href={`tel:${c.tel}`} style={{ display:'inline-flex', alignItems:'center', gap:4, background:G, color:'#111', borderRadius:6, padding:'3px 8px', fontSize:12, fontWeight:700, textDecoration:'none' }}>📞 {c.tel}</a>
                     )}
+                    {c.mail && <span style={{ fontSize:11, color:'#3b82f6', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:140 }}>{c.mail}</span>}
                   </div>
-                  <div style={{ display:'flex', gap:2, flexShrink:0, marginLeft:8 }}>
-                    <button type="button" onPointerDown={()=>setModalEdit(c)} className="btn-mobile" style={{ background:'#f0f4ff', border:'none', borderRadius:9, width:36, height:36, fontSize:17, cursor:'pointer', touchAction:'manipulation', display:'flex', alignItems:'center', justifyContent:'center' }}>✏️</button>
-                    <button type="button" onPointerDown={()=>setModalDelete(c)} className="btn-mobile" style={{ background:'#fff0f0', border:'none', borderRadius:9, width:36, height:36, fontSize:17, cursor:'pointer', touchAction:'manipulation', display:'flex', alignItems:'center', justifyContent:'center' }}>🗑</button>
-                  </div>
+                  {c.commentaire && <p style={{ fontSize:11, color:'#999', margin:'3px 0 0', fontStyle:'italic', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>"{c.commentaire}"</p>}
                 </div>
-                {/* Info rows */}
-                {c.tel && (
-                  <a href={`tel:${c.tel}`} style={{ display:'flex', alignItems:'center', gap:6, textDecoration:'none', color:'#111', fontSize:14, fontWeight:600, marginBottom:4 }}>
-                    <span style={{ fontSize:15 }}>📞</span>
-                    <span>{c.tel}</span>
-                  </a>
-                )}
-                {c.mail && <div style={{ fontSize:12, color:'#3b82f6', marginBottom:4, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.mail}</div>}
-                <div style={{ fontSize:11, color:'#ccc', marginTop:2 }}>{formatDate(c.created_at)}</div>
-                {c.commentaire && <div style={{ fontSize:12, color:'#888', marginTop:6, fontStyle:'italic', borderTop:'1px solid #f5f5f5', paddingTop:6 }}>"{c.commentaire}"</div>}
+                <div style={{ display:'flex', gap:4, flexShrink:0 }}>
+                  <button type="button" onPointerDown={()=>setModalEdit(c)} className="btn-mobile" style={{ background:'#f0f6ff', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, cursor:'pointer', touchAction:'manipulation' }}>✏️</button>
+                  <button type="button" onPointerDown={()=>setModalDelete(c)} className="btn-mobile" style={{ background:'#fff0f0', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, cursor:'pointer', touchAction:'manipulation' }}>🗑</button>
+                </div>
               </div>
-              {/* Appeler button */}
-              {c.tel && (
-                <a href={`tel:${c.tel}`} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, height:44, background:`${G}22`, color:'#111', fontWeight:700, fontSize:14, textDecoration:'none', borderTop:'1px solid #f0f0f0' }}>
-                  <span>📞</span> Appeler
-                </a>
-              )}
             </div>
           ))}
 
