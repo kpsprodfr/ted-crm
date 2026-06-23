@@ -171,7 +171,7 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
   function validate() {
     const e = {};
     if (form.genre === "Entreprise") {
-      if (!form.entreprise.trim()) e.entreprise = "Le nom de l'entreprise est obligatoire.";
+      if (!form.entreprise || !form.entreprise.trim()) e.entreprise = "Le nom de l'entreprise est obligatoire.";
     } else {
       if (!form.nom.trim()) e.nom = "Le nom est obligatoire.";
       if (!form.prenom.trim()) e.prenom = "Le prénom est obligatoire.";
@@ -350,7 +350,7 @@ function CRMApp({ user, onLogout }) {
 
   // ─── CRUD ─────────────────────────────────────────────────────────────────
   async function addClient(c) {
-    const { data, error } = await supabase.from("clients").insert([{ genre:c.genre, nom:c.nom, prenom:c.prenom, tel:c.tel, mail:c.mail, commentaire:c.commentaire, created_at:c.created_at }]).select().single();
+    const { data, error } = await supabase.from("clients").insert([{ genre:c.genre, nom:c.nom, prenom:c.prenom, tel:c.tel, mail:c.mail, commentaire:c.commentaire, created_at:c.created_at, entreprise:c.entreprise||"" }]).select().single();
     if (error) { showToast("Erreur lors de l'ajout", "error"); return; }
     setClients(prev => [data, ...prev]);
     setModalAdd(false);
@@ -359,7 +359,7 @@ function CRMApp({ user, onLogout }) {
   }
 
   async function editClient(c) {
-    const { error } = await supabase.from("clients").update({ genre:c.genre, nom:c.nom, prenom:c.prenom, tel:c.tel, mail:c.mail, commentaire:c.commentaire }).eq("id", c.id);
+    const { error } = await supabase.from("clients").update({ genre:c.genre, nom:c.nom, prenom:c.prenom, tel:c.tel, mail:c.mail, commentaire:c.commentaire, entreprise:c.entreprise||"" }).eq("id", c.id);
     if (error) { showToast("Erreur lors de la modification", "error"); return; }
     setClients(prev => prev.map(x => x.id === c.id ? {...x, ...c} : x));
     setModalEdit(null);
@@ -594,7 +594,7 @@ function CRMApp({ user, onLogout }) {
                     return (
                       <tr key={c.id} onMouseEnter={()=>setHoverRow(c.id)} onMouseLeave={()=>setHoverRow(null)}>
                         <td style={td}><span style={badge(c.genre)}>{c.genre||"—"}</span></td>
-                        <td style={{...td,fontWeight:600}}>{c.genre==="Entreprise" ? <span style={{color:'#065f46'}}>{c.entreprise||c.nom||"—"}</span> : c.nom||"—"}</td>
+                        <td style={{...td,fontWeight:600}}>{c.genre==="Entreprise" ? <span style={{color:'#065f46',fontWeight:700}}>{c.entreprise||"—"}</span> : c.nom||"—"}</td>
                         <td style={td}>{c.genre==="Entreprise" ? <span style={{fontSize:11,color:'#999'}}>{c.nom} {c.prenom}</span> : c.prenom||"—"}</td>
                         <td style={{...td,fontFamily:"'Courier New',monospace"}}>{c.tel||"—"}</td>
                         <td style={{...td,fontSize:12,color:"#3b82f6",maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.mail||"—"}</td>
