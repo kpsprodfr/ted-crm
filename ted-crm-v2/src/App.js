@@ -75,7 +75,7 @@ const badge = (g) => ({ display:"inline-block", fontSize:11, fontWeight:600, bor
 const btnPrimary = { background:G, color:"#111", border:"none", borderRadius:8, padding:"0 18px", height:40, fontWeight:700, fontSize:14, cursor:"pointer", whiteSpace:"nowrap" };
 const btnSecondary = { background:"#fff", color:"#333", border:"1.5px solid #ddd", borderRadius:7, padding:"0 12px", height:36, fontWeight:500, fontSize:13, cursor:"pointer", whiteSpace:"nowrap" };
 const btnDanger = { background:"#dc2626", color:"#fff", border:"none", borderRadius:8, padding:"0 18px", height:38, fontWeight:700, fontSize:14, cursor:"pointer" };
-const inp = (err) => ({ width:"100%", height:38, border:`1.5px solid ${err?"#dc2626":"#ddd"}`, borderRadius:7, padding:"0 10px", fontSize:13, outline:"none", boxSizing:"border-box" });
+const inp = (err) => ({ width:"100%", height:44, border:`1.5px solid ${err?"#dc2626":"#ddd"}`, borderRadius:7, padding:"0 12px", fontSize:'16px', outline:"none", boxSizing:"border-box" });
 const lbl = { display:"block", fontSize:12, fontWeight:600, color:"#444", marginBottom:5 };
 const fg = { marginBottom:14 };
 
@@ -88,15 +88,16 @@ function Toast({ msg, type, onClose }) {
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
 function Modal({ title, onClose, children, footer, maxW=520 }) {
+  const isMobile = window.innerWidth < 768;
   return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:"1rem" }} onClick={onClose}>
-      <div style={{ background:"#fff", borderRadius:12, width:"100%", maxWidth:maxW, overflow:"hidden", maxHeight:"90vh", display:"flex", flexDirection:"column" }} onClick={e=>e.stopPropagation()}>
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1000, display:"flex", alignItems: isMobile ? "flex-end" : "center", justifyContent:"center", padding: isMobile ? 0 : "1rem" }} onClick={onClose}>
+      <div style={{ background:"#fff", borderRadius: isMobile ? '16px 16px 0 0' : 12, width:"100%", maxWidth: isMobile ? '100%' : maxW, position: isMobile ? 'fixed' : 'relative', bottom: isMobile ? 0 : 'auto', left: isMobile ? 0 : 'auto', right: isMobile ? 0 : 'auto', overflow:"hidden", maxHeight:"90vh", display:"flex", flexDirection:"column" }} onClick={e=>e.stopPropagation()}>
         <div style={{ background:"#111", color:"#fff", padding:"14px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
           <span style={{ fontWeight:700, fontSize:15 }}>{title}</span>
           <button onClick={onClose} style={{ background:"none", border:"none", color:"#fff", fontSize:20, cursor:"pointer" }}>✕</button>
         </div>
         <div style={{ padding:"18px", overflowY:"auto", flex:1 }}>{children}</div>
-        {footer && <div style={{ padding:"0 18px 18px", display:"flex", gap:8, justifyContent:"flex-end", flexShrink:0 }}>{footer}</div>}
+        {footer && <div style={{ padding: isMobile ? "12px 16px 24px" : "0 18px 18px", display:"flex", gap:8, justifyContent:"flex-end", flexShrink:0, background:'#fff' }}>{footer}</div>}
       </div>
     </div>
   );
@@ -161,6 +162,7 @@ function LoginPage({ onLogin }) {
 // ─── Client Form ──────────────────────────────────────────────────────────────
 function ClientForm({ initial, onSave, onCancel, existingClients }) {
   const isEdit = !!initial?.id;
+  const isMobile = window.innerWidth < 768;
   const [form, setForm] = useState({ genre:initial?.genre||"Non renseigné", nom:initial?.nom||"", prenom:initial?.prenom||"", tel:initial?.tel||"", mail:initial?.mail||"", commentaire:initial?.commentaire||"", entreprise:initial?.entreprise||"" });
   const [errors, setErrors] = useState({});
   const [dupWarn, setDupWarn] = useState(null);
@@ -207,12 +209,12 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
     <>
       {dupWarn && <ConfirmModal title="Doublon potentiel" msg={`Un client similaire existe déjà. ${dupWarn} Voulez-vous tout de même continuer ?`} onOk={()=>{setDupWarn(null);doSave()}} onCancel={()=>setDupWarn(null)} okLabel="Ajouter quand même" />}
       <Modal title={isEdit?"Modifier le client":"Ajouter un client"} onClose={onCancel} footer={[
-        <button key="c" onClick={onCancel} style={btnSecondary}>Annuler</button>,
-        <button key="s" onClick={handleSubmit} style={btnPrimary}>{isEdit?"Enregistrer les modifications":"Enregistrer"}</button>
+        <button key="c" onClick={onCancel} style={isMobile ? {...btnSecondary, height:48, fontSize:15, flex:1} : btnSecondary}>Annuler</button>,
+        <button key="s" onClick={handleSubmit} style={isMobile ? {...btnPrimary, height:48, fontSize:15, flex:1} : btnPrimary}>{isEdit?"Enregistrer les modifications":"Enregistrer"}</button>
       ]}>
         <div style={fg}>
           <label style={lbl}>Genre</label>
-          <select style={{ ...inp(false), height:38 }} value={form.genre} onChange={e=>set("genre",e.target.value)}>
+          <select style={{ ...inp(false), height:44, fontSize:'16px' }} value={form.genre} onChange={e=>set("genre",e.target.value)}>
             {GENRES.map(g=><option key={g}>{g}</option>)}
           </select>
         </div>
@@ -222,7 +224,7 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
             <input style={inp(false)} value={form.entreprise} onChange={e=>set("entreprise",e.target.value)} placeholder="Nom de l'entreprise" />
           </div>
         )}
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+        <div style={isMobile ? {display:'flex', flexDirection:'column', gap:0} : {display:"grid", gridTemplateColumns:"1fr 1fr", gap:12}}>
           <div style={fg}>
             <label style={lbl}>Nom {form.genre !== "Entreprise" && <span style={{color:"#dc2626"}}>*</span>}{form.genre === "Entreprise" && <span style={{color:"#999", fontSize:11}}> (facultatif)</span>}</label>
             <input style={inp(errors.nom)} value={form.nom} onChange={e=>set("nom",e.target.value)} placeholder="Dupont" />
@@ -234,7 +236,7 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
             {errors.prenom && <p style={{ fontSize:11, color:"#dc2626", marginTop:4 }}>{errors.prenom}</p>}
           </div>
         </div>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+        <div style={isMobile ? {display:'flex', flexDirection:'column', gap:0} : {display:"grid", gridTemplateColumns:"1fr 1fr", gap:12}}>
           <div style={fg}>
             <label style={lbl}>Téléphone <span style={{color:"#dc2626"}}>*</span></label>
             <input style={inp(errors.tel)} value={form.tel} onChange={e=>handleTel(e.target.value)} inputMode="numeric" placeholder="0612345678" maxLength={10} />
@@ -248,7 +250,7 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
         </div>
         <div style={fg}>
           <label style={lbl}>Commentaire</label>
-          <textarea style={{ width:"100%", border:"1.5px solid #ddd", borderRadius:7, padding:"8px 10px", fontSize:13, outline:"none", boxSizing:"border-box", resize:"vertical", minHeight:65 }} value={form.commentaire} onChange={e=>set("commentaire",e.target.value)} placeholder="Notes sur ce client…" />
+          <textarea style={{ width:"100%", border:"1.5px solid #ddd", borderRadius:7, padding:"8px 10px", fontSize:'16px', outline:"none", boxSizing:"border-box", resize:"vertical", minHeight:65 }} value={form.commentaire} onChange={e=>set("commentaire",e.target.value)} placeholder="Notes sur ce client…" />
         </div>
         {isEdit && <p style={{ fontSize:12, color:"#999", margin:0 }}>Date d'ajout : {formatDate(initial.created_at)} — non modifiable</p>}
       </Modal>
