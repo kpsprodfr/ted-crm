@@ -451,6 +451,7 @@ function CRMApp({ user, onLogout }) {
   const [hoverRow, setHoverRow] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
   const [activeTab, setActiveTab] = useState("tous");
+  const [showSearch, setShowSearch] = useState(false);
   const deleteGuard = useRef(false);
   const isMobile = useIsMobile();
 
@@ -595,95 +596,243 @@ function CRMApp({ user, onLogout }) {
   return (
     <div style={{ fontFamily:"'Inter','Segoe UI',Arial,sans-serif", minHeight:"100vh", background:"#f8f8f8", color:"#111" }}>
       <style>{`
-        @keyframes popIn { from { opacity:0; transform:scale(0.5); } to { opacity:1; transform:scale(1); } }
-        @keyframes scaleIn { from { transform:scale(0); } to { transform:scale(1); } }
-        @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes popIn { 0%{opacity:0;transform:scale(0.5)} 70%{transform:scale(1.05)} 100%{opacity:1;transform:scale(1)} }
+        @keyframes scaleIn { from{transform:scale(0)} to{transform:scale(1)} }
+        @keyframes slideUpFade { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes slideDownFade { from{opacity:0;transform:translateY(-12px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+        @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+        .card-mobile { animation: slideUpFade 0.22s cubic-bezier(0.34,1.2,0.64,1) both; }
+        .btn-mobile:active { transform: scale(0.96); opacity: 0.85; }
+        .tab-pill { transition: background 0.15s, color 0.15s, transform 0.1s; }
+        .tab-pill:active { transform: scale(0.95); }
+        .client-card { background:#fff; border-radius:16px; border:1.5px solid #efefef; margin-bottom:12px; overflow:hidden; box-shadow:0 1px 6px rgba(0,0,0,0.05); }
       `}</style>
-      {/* Header */}
-      <header style={{ background:"#111", color:"#fff", padding: isMobile ? "0 12px" : "0 20px", display:"flex", alignItems:"center", justifyContent:"space-between", height: isMobile ? 50 : 56, borderBottom:`3px solid ${G}` }}>
-        <h1 style={{ fontSize: isMobile ? 13 : 16, fontWeight:700, letterSpacing: isMobile ? 1 : 2, color:"#fff", margin:0 }}>
-          <img src={require('./logo.png')} alt="TED" style={{height: isMobile ? 26 : 32, marginRight:8, verticalAlign:'middle', filter:'brightness(0) invert(1)'}} />
-          <span style={{color:G}}>TED</span>{isMobile ? " CRM" : " — FICHIER CLIENTS"}
-        </h1>
-        <div style={{ display:"flex", gap: isMobile ? 4 : 8, alignItems:"center" }}>
-          {!isMobile && <span style={{ fontSize:12, color:"#888", marginRight:4 }}>{user.email}</span>}
-          {!isMobile && <button onClick={saveBackup} style={{ ...btnSecondary, background:"transparent", color:"#ccc", border:"1px solid #444", height:32, fontSize:12 }}>💾 Sauvegarder</button>}
-          {!isMobile && <button onClick={()=>restoreRef.current?.click()} style={{ ...btnSecondary, background:"transparent", color:"#ccc", border:"1px solid #444", height:32, fontSize:12 }}>🔄 Restaurer</button>}
-          <input ref={restoreRef} type="file" accept=".json" style={{display:"none"}} onChange={handleRestoreFile} />
-          <button onClick={onLogout} style={{ ...btnSecondary, background:"transparent", color:"#ccc", border:"1px solid #444", height:32, fontSize:12 }}>Déconnexion</button>
-        </div>
-      </header>
 
-      <main style={{ maxWidth:1400, margin:"0 auto", padding: isMobile ? "12px 8px" : "20px 16px" }}>
-        {/* Dashboard */}
-        <div style={{ display:"grid", gridTemplateColumns: isMobile ? "1fr 1fr 1fr" : "repeat(auto-fit,minmax(160px,1fr))", gap: isMobile ? 8 : 14, marginBottom: isMobile ? 12 : 20 }}>
-          <div style={{ background:"#fff", borderRadius:10, border:"1.5px solid #e5e5e5", padding: isMobile ? "10px 8px" : "14px 18px", textAlign:"center" }}>
-            <div style={{ fontSize: isMobile ? 9 : 11, fontWeight:700, letterSpacing:1, color:"#888", textTransform:"uppercase", marginBottom:4 }}>Total</div>
-            <div style={{ fontSize: isMobile ? 26 : 36, fontWeight:700, color:"#111" }}>{clients.length}</div>
-            {!isMobile && <div style={{ fontSize:12, color:"#bbb", marginTop:3 }}>dans la base</div>}
+      {/* ═══ MOBILE HEADER (fixed) ═══ */}
+      {isMobile && (
+        <header style={{ position:'fixed', top:0, left:0, right:0, height:56, background:'#111', zIndex:200, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 14px', borderBottom:`3px solid ${G}` }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            <img src={require('./logo.png')} alt="TED" style={{ height:28, filter:'brightness(0) invert(1)', verticalAlign:'middle' }} />
+            <span style={{ color:'#fff', fontWeight:700, fontSize:14, letterSpacing:1 }}><span style={{color:G}}>TED</span> CRM</span>
           </div>
-          <div style={{ background:"#fff", borderRadius:10, border:"1.5px solid #e5e5e5", padding: isMobile ? "10px 8px" : "14px 18px", textAlign:"center" }}>
-            <div style={{ fontSize: isMobile ? 9 : 11, fontWeight:700, letterSpacing:1, color:"#888", textTransform:"uppercase", marginBottom:4 }}>Aujourd'hui</div>
-            <div style={{ fontSize: isMobile ? 13 : 22, fontWeight:700, color:"#111", paddingTop: isMobile ? 4 : 7 }}>{new Date().toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"numeric"})}</div>
+          <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+            <button type="button" onPointerDown={()=>setShowSearch(s=>!s)} className="btn-mobile" style={{ background:showSearch?G:'rgba(255,255,255,0.1)', border:'none', borderRadius:10, width:38, height:38, fontSize:18, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', touchAction:'manipulation' }}>🔍</button>
+            <button type="button" onPointerDown={onLogout} className="btn-mobile" style={{ background:'rgba(255,255,255,0.08)', border:'1px solid #333', borderRadius:10, height:38, padding:'0 12px', fontSize:12, color:'#ccc', cursor:'pointer', fontWeight:500, touchAction:'manipulation' }}>✕</button>
           </div>
-          <div style={{ background:"#fff", borderRadius:10, border:"1.5px solid #e5e5e5", padding: isMobile ? "10px 8px" : "14px 18px", textAlign:"center" }}>
-            <div style={{ fontSize: isMobile ? 9 : 11, fontWeight:700, letterSpacing:1, color:"#888", textTransform:"uppercase", marginBottom:4 }}>{isMobile ? "Ce mois" : `Nouveaux — ${getCurrentMonthName().toUpperCase()}`}</div>
-            <div style={{ fontSize: isMobile ? 26 : 36, fontWeight:700, color:G }}>{newMonth}</div>
-            {!isMobile && <div style={{ fontSize:12, color:"#bbb", marginTop:3 }}>ce mois-ci</div>}
+        </header>
+      )}
+
+      {/* ═══ MOBILE SEARCH BAR (slides down) ═══ */}
+      {isMobile && showSearch && (
+        <div style={{ position:'fixed', top:59, left:0, right:0, zIndex:190, background:'#fff', padding:'10px 14px', borderBottom:'1px solid #eee', boxShadow:'0 4px 20px rgba(0,0,0,0.1)', animation:'slideDownFade 0.18s ease' }}>
+          <div style={{ position:'relative' }}>
+            <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#bbb', fontSize:16, pointerEvents:'none' }}>🔍</span>
+            <input
+              autoFocus
+              style={{ width:'100%', height:44, border:'1.5px solid #e5e5e5', borderRadius:12, padding:'0 40px 0 42px', fontSize:16, background:'#f8f8f8', outline:'none', boxSizing:'border-box' }}
+              value={search}
+              onChange={e=>{setSearch(e.target.value);setPage(1)}}
+              placeholder="Nom, téléphone, mail…"
+            />
+            {search && <button type="button" onPointerDown={()=>{setSearch("");setPage(1)}} style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'#aaa', fontSize:18, padding:4, touchAction:'manipulation' }}>✕</button>}
           </div>
         </div>
+      )}
 
-        {/* Tabs */}
-        <div style={{ display:"flex", gap:0, marginBottom:16, background:"#f0f0f0", borderRadius:10, padding:3, overflowX:"auto", width: isMobile ? "100%" : "fit-content" }}>
-          {[
-            { id:"tous", label:"👥 Tous", count: clients.length },
-            { id:"particuliers", label:"🙍 Particuliers", count: clients.filter(c=>c.genre!=="Entreprise").length },
-            { id:"entreprises", label:"🏢 Entreprises", count: clients.filter(c=>c.genre==="Entreprise").length }
-          ].map(tab => (
-            <button key={tab.id} onClick={()=>{setActiveTab(tab.id);setPage(1)}} style={{
-              background: activeTab===tab.id ? "#111" : "transparent",
-              color: activeTab===tab.id ? "#fff" : "#666",
-              border: "none", borderRadius: 8,
-              padding: "8px 16px", fontSize: 13,
-              fontWeight: activeTab===tab.id ? 700 : 400,
-              cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.15s"
-            }}>
-              {tab.label} <span style={{
-                background: activeTab===tab.id ? "#E8C547" : "#ddd",
-                color: activeTab===tab.id ? "#111" : "#888",
-                borderRadius: 99, padding: "1px 7px", fontSize: 11, fontWeight: 700, marginLeft: 4
-              }}>{tab.count}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Search + Add */}
-        <div style={{ display:"flex", flexWrap:"wrap", gap:10, alignItems:"center", marginBottom:12 }}>
-          <div style={{ position:"relative", flex:1, minWidth: isMobile ? "100%" : 220 }}>
-            <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:"#bbb", fontSize:15, pointerEvents:"none" }}>🔍</span>
-            <input style={{ width:"100%", height:40, border:"1.5px solid #ddd", borderRadius:8, padding:"0 36px 0 40px", fontSize:13, background:"#fff", outline:"none", boxSizing:"border-box" }} value={search} onChange={e=>{setSearch(e.target.value);setPage(1)}} placeholder={isMobile ? "Rechercher…" : "Rechercher par nom, prénom, téléphone, mail, date, mois, genre ou commentaire…"} />
-            {search && <button onClick={()=>{setSearch("");setPage(1)}} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:"#aaa", fontSize:16, padding:2 }}>✕</button>}
+      {/* ═══ DESKTOP HEADER ═══ */}
+      {!isMobile && (
+        <header style={{ background:"#111", color:"#fff", padding:"0 20px", display:"flex", alignItems:"center", justifyContent:"space-between", height:56, borderBottom:`3px solid ${G}` }}>
+          <h1 style={{ fontSize:16, fontWeight:700, letterSpacing:2, color:"#fff", margin:0 }}>
+            <img src={require('./logo.png')} alt="TED" style={{height:32, marginRight:8, verticalAlign:'middle', filter:'brightness(0) invert(1)'}} />
+            <span style={{color:G}}>TED</span> — FICHIER CLIENTS
+          </h1>
+          <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+            <span style={{ fontSize:12, color:"#888", marginRight:4 }}>{user.email}</span>
+            <button onClick={saveBackup} style={{ ...btnSecondary, background:"transparent", color:"#ccc", border:"1px solid #444", height:32, fontSize:12 }}>💾 Sauvegarder</button>
+            <button onClick={()=>restoreRef.current?.click()} style={{ ...btnSecondary, background:"transparent", color:"#ccc", border:"1px solid #444", height:32, fontSize:12 }}>🔄 Restaurer</button>
+            <input ref={restoreRef} type="file" accept=".json" style={{display:"none"}} onChange={handleRestoreFile} />
+            <button onClick={onLogout} style={{ ...btnSecondary, background:"transparent", color:"#ccc", border:"1px solid #444", height:32, fontSize:12 }}>Déconnexion</button>
           </div>
-          {!isMobile && <button onClick={()=>setModalAdd(true)} style={btnPrimary}>+ Ajouter un client</button>}
-        </div>
+        </header>
+      )}
+      {isMobile && <input ref={restoreRef} type="file" accept=".json" style={{display:"none"}} onChange={handleRestoreFile} />}
 
-        {/* Filters */}
-        {isMobile ? (
-          <div style={{ marginBottom:12 }}>
-            <div style={{ display:"flex", gap:8, marginBottom: showFilters ? 8 : 0 }}>
-              <button onClick={()=>setShowFilters(f=>!f)} style={{ ...btnSecondary, fontSize:12, flex:1 }}>
-                {showFilters ? "▲ Masquer filtres" : "▼ Filtres"}{(filterGenre||filterMonth) ? " •" : ""}
+      {/* ═══ MOBILE CONTENT ═══ */}
+      {isMobile && (
+        <div style={{ paddingTop: showSearch ? 116 : 68, paddingBottom: 80, paddingLeft:12, paddingRight:12 }}>
+
+          {/* Dashboard cards */}
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10, marginBottom:16 }}>
+            <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #efefef', padding:'12px 8px', textAlign:'center', boxShadow:'0 1px 4px rgba(0,0,0,0.06)' }}>
+              <div style={{ fontSize:20, marginBottom:4 }}>👥</div>
+              <div style={{ fontSize:28, fontWeight:800, color:'#111', lineHeight:1 }}>{clients.length}</div>
+              <div style={{ fontSize:9, fontWeight:700, color:'#aaa', letterSpacing:0.5, textTransform:'uppercase', marginTop:4 }}>Total</div>
+            </div>
+            <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #efefef', padding:'12px 8px', textAlign:'center', boxShadow:'0 1px 4px rgba(0,0,0,0.06)' }}>
+              <div style={{ fontSize:20, marginBottom:4 }}>✨</div>
+              <div style={{ fontSize:28, fontWeight:800, color:G, lineHeight:1 }}>{newMonth}</div>
+              <div style={{ fontSize:9, fontWeight:700, color:'#aaa', letterSpacing:0.5, textTransform:'uppercase', marginTop:4 }}>Ce mois</div>
+            </div>
+            <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #efefef', padding:'12px 8px', textAlign:'center', boxShadow:'0 1px 4px rgba(0,0,0,0.06)' }}>
+              <div style={{ fontSize:20, marginBottom:4 }}>📅</div>
+              <div style={{ fontSize:11, fontWeight:700, color:'#111', lineHeight:1.3, marginTop:2 }}>{new Date().toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"2-digit"})}</div>
+              <div style={{ fontSize:9, fontWeight:700, color:'#aaa', letterSpacing:0.5, textTransform:'uppercase', marginTop:4 }}>Aujourd'hui</div>
+            </div>
+          </div>
+
+          {/* Tabs pills */}
+          <div style={{ display:'flex', gap:8, marginBottom:14, overflowX:'auto', paddingBottom:2 }}>
+            {[
+              { id:"tous", label:"Tous", icon:"👥", count: clients.length },
+              { id:"particuliers", label:"Particuliers", icon:"🙍", count: clients.filter(c=>c.genre!=="Entreprise").length },
+              { id:"entreprises", label:"Entreprises", icon:"🏢", count: clients.filter(c=>c.genre==="Entreprise").length }
+            ].map(tab => (
+              <button key={tab.id} type="button" onPointerDown={()=>{setActiveTab(tab.id);setPage(1)}} className="tab-pill btn-mobile" style={{
+                background: activeTab===tab.id ? '#111' : '#fff',
+                color: activeTab===tab.id ? '#fff' : '#666',
+                border: activeTab===tab.id ? '2px solid #111' : '1.5px solid #e0e0e0',
+                borderRadius:99,
+                padding:'8px 14px',
+                fontSize:13,
+                fontWeight: activeTab===tab.id ? 700 : 500,
+                cursor:'pointer',
+                whiteSpace:'nowrap',
+                touchAction:'manipulation',
+                display:'flex',
+                alignItems:'center',
+                gap:5
+              }}>
+                <span>{tab.icon}</span>
+                <span>{tab.label}</span>
+                <span style={{ background: activeTab===tab.id ? G : '#eee', color: activeTab===tab.id ? '#111' : '#888', borderRadius:99, padding:'1px 7px', fontSize:10, fontWeight:700, marginLeft:2 }}>{tab.count}</span>
               </button>
-              {(filterGenre||filterMonth||search) && <button onClick={()=>{setFilterGenre("");setFilterMonth("");setSearch("");setPage(1)}} style={{ ...btnSecondary, fontSize:12 }}>✕</button>}
+            ))}
+          </div>
+
+          {/* Filters toggle */}
+          <div style={{ marginBottom:12 }}>
+            <div style={{ display:'flex', gap:8, marginBottom: showFilters ? 8 : 0 }}>
+              <button type="button" onPointerDown={()=>setShowFilters(f=>!f)} className="btn-mobile" style={{ flex:1, height:38, border:'1.5px solid #e0e0e0', borderRadius:10, background:'#fff', fontSize:13, color:'#555', fontWeight:500, cursor:'pointer', touchAction:'manipulation' }}>
+                {showFilters ? '▲ Masquer' : '▼ Filtres'}{(filterGenre||filterMonth) ? ' •' : ''}
+              </button>
+              {(filterGenre||filterMonth||search) && <button type="button" onPointerDown={()=>{setFilterGenre("");setFilterMonth("");setSearch("");setPage(1)}} className="btn-mobile" style={{ height:38, width:38, border:'1.5px solid #fca5a5', borderRadius:10, background:'#fff5f5', fontSize:16, cursor:'pointer', touchAction:'manipulation' }}>✕</button>}
             </div>
             {showFilters && (
-              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                <select style={{...sel, width:"100%"}} value={filterGenre} onChange={e=>{setFilterGenre(e.target.value);setPage(1)}}><option value="">Tous les genres</option>{GENRES.map(g=><option key={g}>{g}</option>)}</select>
-                <select style={{...sel, width:"100%"}} value={filterMonth} onChange={e=>{setFilterMonth(e.target.value);setPage(1)}}><option value="">Tous les mois</option>{MONTHS_FR.map((m,i)=><option key={i+1} value={i+1}>{m}</option>)}</select>
+              <div style={{ display:'flex', flexDirection:'column', gap:8, animation:'slideDownFade 0.15s ease' }}>
+                <select style={{...sel, width:'100%', height:44, fontSize:15, borderRadius:10}} value={filterGenre} onChange={e=>{setFilterGenre(e.target.value);setPage(1)}}><option value="">Tous les genres</option>{GENRES.map(g=><option key={g}>{g}</option>)}</select>
+                <select style={{...sel, width:'100%', height:44, fontSize:15, borderRadius:10}} value={filterMonth} onChange={e=>{setFilterMonth(e.target.value);setPage(1)}}><option value="">Tous les mois</option>{MONTHS_FR.map((m,i)=><option key={i+1} value={i+1}>{m}</option>)}</select>
               </div>
             )}
           </div>
-        ) : (
+
+          {/* Client cards */}
+          {pageClients.length === 0 && (
+            <div style={{ textAlign:'center', padding:'3rem', color:'#ccc', fontSize:14 }}>{(search||filterGenre||filterMonth)?"Aucun résultat":"Aucun client"}</div>
+          )}
+          {pageClients.map((c, idx) => (
+            <div key={c.id} className="client-card card-mobile" style={{ animationDelay:`${idx*0.04}s` }}>
+              <div style={{ padding:'14px 16px' }}>
+                {/* Header row */}
+                <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:8 }}>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:7, flexWrap:'wrap', marginBottom:3 }}>
+                      <span style={badge(c.genre)}>{c.genre}</span>
+                      <span style={{ fontWeight:700, fontSize:16, color:'#111' }}>
+                        {c.genre==="Entreprise" ? (c.entreprise||c.nom||"—") : `${c.nom||""} ${c.prenom||""}`.trim()||"—"}
+                      </span>
+                    </div>
+                    {c.genre==="Entreprise" && (c.nom||c.prenom) && (
+                      <div style={{ fontSize:12, color:'#999' }}>{c.nom} {c.prenom}</div>
+                    )}
+                  </div>
+                  <div style={{ display:'flex', gap:2, flexShrink:0, marginLeft:8 }}>
+                    <button type="button" onPointerDown={()=>setModalEdit(c)} className="btn-mobile" style={{ background:'#f0f4ff', border:'none', borderRadius:9, width:36, height:36, fontSize:17, cursor:'pointer', touchAction:'manipulation', display:'flex', alignItems:'center', justifyContent:'center' }}>✏️</button>
+                    <button type="button" onPointerDown={()=>setModalDelete(c)} className="btn-mobile" style={{ background:'#fff0f0', border:'none', borderRadius:9, width:36, height:36, fontSize:17, cursor:'pointer', touchAction:'manipulation', display:'flex', alignItems:'center', justifyContent:'center' }}>🗑</button>
+                  </div>
+                </div>
+                {/* Info rows */}
+                {c.tel && (
+                  <a href={`tel:${c.tel}`} style={{ display:'flex', alignItems:'center', gap:6, textDecoration:'none', color:'#111', fontSize:14, fontWeight:600, marginBottom:4 }}>
+                    <span style={{ fontSize:15 }}>📞</span>
+                    <span>{c.tel}</span>
+                  </a>
+                )}
+                {c.mail && <div style={{ fontSize:12, color:'#3b82f6', marginBottom:4, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.mail}</div>}
+                <div style={{ fontSize:11, color:'#ccc', marginTop:2 }}>{formatDate(c.created_at)}</div>
+                {c.commentaire && <div style={{ fontSize:12, color:'#888', marginTop:6, fontStyle:'italic', borderTop:'1px solid #f5f5f5', paddingTop:6 }}>"{c.commentaire}"</div>}
+              </div>
+              {/* Appeler button */}
+              {c.tel && (
+                <a href={`tel:${c.tel}`} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, height:44, background:`${G}22`, color:'#111', fontWeight:700, fontSize:14, textDecoration:'none', borderTop:'1px solid #f0f0f0' }}>
+                  <span>📞</span> Appeler
+                </a>
+              )}
+            </div>
+          ))}
+
+          {/* Pagination mobile */}
+          {totalPages > 1 && (
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:16, padding:'12px 0 4px' }}>
+              <button type="button" disabled={safePage<=1} onPointerDown={()=>setPage(safePage-1)} className="btn-mobile" style={{ height:44, width:44, border:'1.5px solid #e0e0e0', borderRadius:12, background:'#fff', cursor:safePage<=1?'not-allowed':'pointer', fontSize:20, color:safePage<=1?'#ccc':'#333', touchAction:'manipulation' }}>‹</button>
+              <span style={{ fontSize:13, color:'#888', fontWeight:600 }}>{safePage} / {totalPages}</span>
+              <button type="button" disabled={safePage>=totalPages} onPointerDown={()=>setPage(safePage+1)} className="btn-mobile" style={{ height:44, width:44, border:'1.5px solid #e0e0e0', borderRadius:12, background:'#fff', cursor:safePage>=totalPages?'not-allowed':'pointer', fontSize:20, color:safePage>=totalPages?'#ccc':'#333', touchAction:'manipulation' }}>›</button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ═══ DESKTOP MAIN ═══ */}
+      {!isMobile && (
+        <main style={{ maxWidth:1400, margin:"0 auto", padding:"20px 16px" }}>
+          {/* Dashboard */}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))", gap:14, marginBottom:20 }}>
+            <div style={{ background:"#fff", borderRadius:10, border:"1.5px solid #e5e5e5", padding:"14px 18px", textAlign:"center" }}>
+              <div style={{ fontSize:11, fontWeight:700, letterSpacing:1, color:"#888", textTransform:"uppercase", marginBottom:4 }}>Total</div>
+              <div style={{ fontSize:36, fontWeight:700, color:"#111" }}>{clients.length}</div>
+              <div style={{ fontSize:12, color:"#bbb", marginTop:3 }}>dans la base</div>
+            </div>
+            <div style={{ background:"#fff", borderRadius:10, border:"1.5px solid #e5e5e5", padding:"14px 18px", textAlign:"center" }}>
+              <div style={{ fontSize:11, fontWeight:700, letterSpacing:1, color:"#888", textTransform:"uppercase", marginBottom:4 }}>Aujourd'hui</div>
+              <div style={{ fontSize:22, fontWeight:700, color:"#111", paddingTop:7 }}>{new Date().toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"numeric"})}</div>
+            </div>
+            <div style={{ background:"#fff", borderRadius:10, border:"1.5px solid #e5e5e5", padding:"14px 18px", textAlign:"center" }}>
+              <div style={{ fontSize:11, fontWeight:700, letterSpacing:1, color:"#888", textTransform:"uppercase", marginBottom:4 }}>{`Nouveaux — ${getCurrentMonthName().toUpperCase()}`}</div>
+              <div style={{ fontSize:36, fontWeight:700, color:G }}>{newMonth}</div>
+              <div style={{ fontSize:12, color:"#bbb", marginTop:3 }}>ce mois-ci</div>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div style={{ display:"flex", gap:0, marginBottom:16, background:"#f0f0f0", borderRadius:10, padding:3, width:"fit-content" }}>
+            {[
+              { id:"tous", label:"👥 Tous", count: clients.length },
+              { id:"particuliers", label:"🙍 Particuliers", count: clients.filter(c=>c.genre!=="Entreprise").length },
+              { id:"entreprises", label:"🏢 Entreprises", count: clients.filter(c=>c.genre==="Entreprise").length }
+            ].map(tab => (
+              <button key={tab.id} onClick={()=>{setActiveTab(tab.id);setPage(1)}} style={{
+                background: activeTab===tab.id ? "#111" : "transparent",
+                color: activeTab===tab.id ? "#fff" : "#666",
+                border:"none", borderRadius:8, padding:"8px 16px", fontSize:13,
+                fontWeight: activeTab===tab.id ? 700 : 400,
+                cursor:"pointer", whiteSpace:"nowrap", transition:"all 0.15s"
+              }}>
+                {tab.label} <span style={{ background: activeTab===tab.id ? G : "#ddd", color: activeTab===tab.id ? "#111" : "#888", borderRadius:99, padding:"1px 7px", fontSize:11, fontWeight:700, marginLeft:4 }}>{tab.count}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Search + Add */}
+          <div style={{ display:"flex", flexWrap:"wrap", gap:10, alignItems:"center", marginBottom:12 }}>
+            <div style={{ position:"relative", flex:1, minWidth:220 }}>
+              <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:"#bbb", fontSize:15, pointerEvents:"none" }}>🔍</span>
+              <input style={{ width:"100%", height:40, border:"1.5px solid #ddd", borderRadius:8, padding:"0 36px 0 40px", fontSize:13, background:"#fff", outline:"none", boxSizing:"border-box" }} value={search} onChange={e=>{setSearch(e.target.value);setPage(1)}} placeholder="Rechercher par nom, prénom, téléphone, mail, date, mois, genre ou commentaire…" />
+              {search && <button onClick={()=>{setSearch("");setPage(1)}} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:"#aaa", fontSize:16, padding:2 }}>✕</button>}
+            </div>
+            <button onClick={()=>setModalAdd(true)} style={btnPrimary}>+ Ajouter un client</button>
+          </div>
+
+          {/* Filters desktop */}
           <div style={{ display:"flex", flexWrap:"wrap", gap:8, alignItems:"center", marginBottom:14 }}>
             <select style={sel} value={filterGenre} onChange={e=>{setFilterGenre(e.target.value);setPage(1)}}><option value="">Tous les genres</option>{GENRES.map(g=><option key={g}>{g}</option>)}</select>
             <select style={sel} value={filterMonth} onChange={e=>{setFilterMonth(e.target.value);setPage(1)}}><option value="">Tous les mois</option>{MONTHS_FR.map((m,i)=><option key={i+1} value={i+1}>{m}</option>)}</select>
@@ -695,44 +844,8 @@ function CRMApp({ user, onLogout }) {
               <button onClick={()=>setModalImport(true)} style={btnSecondary}>⬆ Importer</button>
             </div>
           </div>
-        )}
 
-        {/* Cards (mobile) or Table (desktop) */}
-        {isMobile ? (
-          <div style={{paddingBottom:80}}>
-            {pageClients.length === 0 && (
-              <div style={{ textAlign:"center", padding:"3rem", color:"#bbb", fontSize:14 }}>{(search||filterGenre||filterMonth)?"Aucun client trouvé":"Aucun client dans la base"}</div>
-            )}
-            {pageClients.map((c) => (
-              <div key={c.id} style={{background:'#fff', borderRadius:12, border:'1.5px solid #eee', padding:'12px 14px', marginBottom:10}}>
-                <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6}}>
-                  <div style={{display:'flex', alignItems:'center', gap:8, flexWrap:'wrap'}}>
-                    <span style={badge(c.genre)}>{c.genre}</span>
-                    <span style={{fontWeight:700, fontSize:16}}>{c.genre==="Entreprise" ? (c.entreprise||c.nom) : `${c.nom} ${c.prenom}`}</span>
-                    {c.genre==="Entreprise" && (c.nom||c.prenom) && <span style={{fontSize:12,color:'#999',marginLeft:4}}>{c.nom} {c.prenom}</span>}
-                  </div>
-                  <div>
-                    <button onClick={()=>setModalEdit(c)} style={{background:'none',border:'none',fontSize:20,cursor:'pointer',padding:'2px 6px'}}>✏️</button>
-                    <button onClick={()=>setModalDelete(c)} style={{background:'none',border:'none',fontSize:20,cursor:'pointer',padding:'2px 6px'}}>🗑</button>
-                  </div>
-                </div>
-                {c.entreprise && <div style={{fontSize:13,color:'#6d28d9',fontWeight:600,marginBottom:4}}>{c.entreprise}</div>}
-                {c.tel && <div style={{fontSize:13,color:'#555'}}>📞 {c.tel}</div>}
-                {c.mail && <div style={{fontSize:12,color:'#3b82f6',marginTop:2}}>{c.mail}</div>}
-                <div style={{fontSize:11,color:'#bbb',marginTop:4}}>{formatDate(c.created_at)}</div>
-                {c.commentaire && <div style={{fontSize:12,color:'#888',marginTop:4,fontStyle:'italic'}}>"{c.commentaire}"</div>}
-              </div>
-            ))}
-            {/* Pagination mobile */}
-            {totalPages > 1 && (
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:16, padding:"12px 0" }}>
-                <button disabled={safePage<=1} onClick={()=>setPage(safePage-1)} style={{ height:40, width:40, border:"1.5px solid #ddd", borderRadius:8, background:"#fff", cursor:safePage<=1?"not-allowed":"pointer", fontSize:18, color:safePage<=1?"#ccc":"#333" }}>‹</button>
-                <span style={{ fontSize:13, color:"#555" }}>Page {safePage} / {totalPages}</span>
-                <button disabled={safePage>=totalPages} onClick={()=>setPage(safePage+1)} style={{ height:40, width:40, border:"1.5px solid #ddd", borderRadius:8, background:"#fff", cursor:safePage>=totalPages?"not-allowed":"pointer", fontSize:18, color:safePage>=totalPages?"#ccc":"#333" }}>›</button>
-              </div>
-            )}
-          </div>
-        ) : (
+          {/* Table desktop */}
           <div style={{ background:"#fff", borderRadius:10, border:"1.5px solid #e5e5e5", overflow:"hidden" }}>
             <div style={{ overflowX:"auto" }}>
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
@@ -803,14 +916,16 @@ function CRMApp({ user, onLogout }) {
               </div>
             </div>
           </div>
-        )}
-      </main>
+        </main>
+      )}
 
       {/* Bouton fixe mobile */}
       {isMobile && !modalAdd && !modalEdit && !modalDelete && (
         <button
-          onClick={()=>setModalAdd(true)}
-          style={{position:'fixed', bottom:0, left:0, right:0, height:60, background:G, color:'#111', border:'none', fontSize:16, fontWeight:700, cursor:'pointer', zIndex:500, boxShadow:'0 -4px 20px rgba(0,0,0,0.15)'}}
+          type="button"
+          onPointerDown={()=>setModalAdd(true)}
+          className="btn-mobile"
+          style={{ position:'fixed', bottom:0, left:0, right:0, height:64, paddingBottom:'env(safe-area-inset-bottom)', background:G, color:'#111', border:'none', fontSize:16, fontWeight:800, cursor:'pointer', zIndex:500, boxShadow:'0 -4px 24px rgba(0,0,0,0.18)', letterSpacing:0.5, touchAction:'manipulation' }}
         >
           + Ajouter un client
         </button>
