@@ -414,8 +414,15 @@ function CRMApp({ user, onLogout }) {
 
   // ─── CRUD ─────────────────────────────────────────────────────────────────
   async function addClient(c) {
-    const { data, error } = await supabase.from("clients").insert([{ genre:c.genre, nom:c.nom, prenom:c.prenom, tel:c.tel, mail:c.mail, commentaire:c.commentaire, created_at:c.created_at, entreprise:c.entreprise||"" }]).select().single();
-    if (error) { showToast("Erreur lors de l'ajout", "error"); return; }
+    const payload = { genre:c.genre, nom:c.nom, prenom:c.prenom, tel:c.tel, mail:c.mail, commentaire:c.commentaire, created_at:c.created_at, entreprise:c.entreprise||"" };
+    console.log("[addClient] payload envoyé à Supabase :", payload);
+    const { data, error } = await supabase.from("clients").insert([payload]).select().single();
+    if (error) {
+      console.error("[addClient] Erreur Supabase :", JSON.stringify(error, null, 2));
+      console.error("[addClient] message:", error.message, "| code:", error.code, "| details:", error.details, "| hint:", error.hint);
+      showToast(`Erreur ajout : ${error.message}`, "error");
+      return;
+    }
     setClients(prev => [data, ...prev]);
     setModalAdd(false);
     showToast("Client ajouté avec succès ✓");
@@ -423,8 +430,15 @@ function CRMApp({ user, onLogout }) {
   }
 
   async function editClient(c) {
-    const { error } = await supabase.from("clients").update({ genre:c.genre, nom:c.nom, prenom:c.prenom, tel:c.tel, mail:c.mail, commentaire:c.commentaire, entreprise:c.entreprise||"" }).eq("id", c.id);
-    if (error) { showToast("Erreur lors de la modification", "error"); return; }
+    const payload = { genre:c.genre, nom:c.nom, prenom:c.prenom, tel:c.tel, mail:c.mail, commentaire:c.commentaire, entreprise:c.entreprise||"" };
+    console.log("[editClient] payload envoyé à Supabase :", payload);
+    const { error } = await supabase.from("clients").update(payload).eq("id", c.id);
+    if (error) {
+      console.error("[editClient] Erreur Supabase :", JSON.stringify(error, null, 2));
+      console.error("[editClient] message:", error.message, "| code:", error.code, "| details:", error.details, "| hint:", error.hint);
+      showToast(`Erreur modification : ${error.message}`, "error");
+      return;
+    }
     setClients(prev => prev.map(x => x.id === c.id ? {...x, ...c} : x));
     setModalEdit(null);
     showToast("Client modifié avec succès ✓");
