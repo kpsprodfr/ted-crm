@@ -81,9 +81,18 @@ const fg = { marginBottom:14 };
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 function Toast({ msg, type, onClose }) {
-  useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, [onClose]);
-  const bc = type==="success"?"#22c55e":type==="error"?"#dc2626":"#f59e0b";
-  return <div style={{ position:"fixed", bottom:24, right:24, zIndex:9999, background:"#111", color:"#fff", borderRadius:8, padding:"12px 18px", fontSize:13, fontWeight:500, borderLeft:`4px solid ${bc}`, boxShadow:"0 4px 20px rgba(0,0,0,0.25)", maxWidth:340 }}>{msg}</div>;
+  useEffect(() => { const t = setTimeout(onClose, 2500); return () => clearTimeout(t); }, [onClose]);
+  const isSuccess = type === "success";
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", pointerEvents:"none" }}>
+      <div style={{ background: isSuccess ? "#111" : "#dc2626", borderRadius:20, padding:"28px 40px", display:"flex", flexDirection:"column", alignItems:"center", gap:14, boxShadow:"0 20px 60px rgba(0,0,0,0.3)", animation:"popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)", minWidth:200, maxWidth:280, textAlign:"center" }}>
+        <div style={{ width:64, height:64, borderRadius:"50%", background: isSuccess ? "#E8C547" : "#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:32, animation:"scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both" }}>
+          {isSuccess ? "✓" : "✕"}
+        </div>
+        <p style={{ color:"#fff", fontWeight:700, fontSize:16, margin:0, lineHeight:1.3 }}>{msg}</p>
+      </div>
+    </div>
+  );
 }
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
@@ -273,13 +282,16 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
           <button key="s" type="button" onPointerDown={dupClient ? undefined : handleSubmit} disabled={!!dupClient} style={{
             background: dupClient ? "#ddd" : (success ? "#22c55e" : "#E8C547"),
             color: dupClient ? "#999" : (success ? "#fff" : "#111"),
-            border: "none", borderRadius: 8,
+            border: "none", borderRadius: 12,
             height: 52, fontWeight: 700, fontSize: 16,
             cursor: dupClient ? "not-allowed" : "pointer", flex: 2, touchAction: "manipulation",
-            transition: "all 0.3s ease",
-            transform: success ? "scale(1.03)" : "scale(1)",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 8
-          }}>{dupClient ? "⚠ Client existant" : success ? "✓ Enregistré !" : isEdit ? "Enregistrer les modifications" : "Enregistrer"}</button>
+            transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            transform: success ? "scale(1.05)" : "scale(1)",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            boxShadow: success ? "0 4px 20px rgba(34,197,94,0.4)" : "none"
+          }}>
+            {success ? (<><span style={{ display:"inline-block", animation:"scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)" }}>✓</span>Enregistré !</>) : dupClient ? "⚠ Client existant" : isEdit ? "Modifier" : "Enregistrer"}
+          </button>
         ]}
       >
         <div style={fieldGroup}>
@@ -572,6 +584,11 @@ function CRMApp({ user, onLogout }) {
 
   return (
     <div style={{ fontFamily:"'Inter','Segoe UI',Arial,sans-serif", minHeight:"100vh", background:"#f8f8f8", color:"#111" }}>
+      <style>{`
+        @keyframes popIn { from { opacity:0; transform:scale(0.5); } to { opacity:1; transform:scale(1); } }
+        @keyframes scaleIn { from { transform:scale(0); } to { transform:scale(1); } }
+        @keyframes slideUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+      `}</style>
       {/* Header */}
       <header style={{ background:"#111", color:"#fff", padding: isMobile ? "0 12px" : "0 20px", display:"flex", alignItems:"center", justifyContent:"space-between", height: isMobile ? 50 : 56, borderBottom:`3px solid ${G}` }}>
         <h1 style={{ fontSize: isMobile ? 13 : 16, fontWeight:700, letterSpacing: isMobile ? 1 : 2, color:"#fff", margin:0 }}>
