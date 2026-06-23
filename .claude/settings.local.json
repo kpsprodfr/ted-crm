@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx react-scripts *)",
+      "Bash(/usr/local/bin/npx react-scripts *)",
+      "Bash(grep -n \"fontWeight:700, fontSize:16\\\\|c\\\\.nom} {c\\\\.prenom\" /Users/karlsounier/Desktop/Ted_crm/ted-crm-v2/src/App.js)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)"
+    ]
+  }
+}

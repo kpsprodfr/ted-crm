@@ -170,8 +170,13 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
 
   function validate() {
     const e = {};
-    if (!form.nom.trim()) e.nom = "Le nom est obligatoire.";
-    if (!form.prenom.trim()) e.prenom = "Le prénom est obligatoire.";
+    if (form.genre === "Entreprise") {
+      if (!form.entreprise.trim()) e.entreprise = "Le nom de l'entreprise est obligatoire.";
+    } else {
+      if (!form.nom.trim()) e.nom = "Le nom est obligatoire.";
+      if (!form.prenom.trim()) e.prenom = "Le prénom est obligatoire.";
+    }
+    if (!form.tel.trim()) e.tel = "Le téléphone est obligatoire.";
     if (form.tel && !/^\d{10}$/.test(form.tel)) e.tel = "Le numéro doit contenir uniquement 10 chiffres.";
     if (form.mail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.mail)) e.mail = "Adresse mail invalide.";
     return e;
@@ -219,19 +224,19 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
         )}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
           <div style={fg}>
-            <label style={lbl}>Nom <span style={{color:"#dc2626"}}>*</span></label>
+            <label style={lbl}>Nom {form.genre !== "Entreprise" && <span style={{color:"#dc2626"}}>*</span>}{form.genre === "Entreprise" && <span style={{color:"#999", fontSize:11}}> (facultatif)</span>}</label>
             <input style={inp(errors.nom)} value={form.nom} onChange={e=>set("nom",e.target.value)} placeholder="Dupont" />
             {errors.nom && <p style={{ fontSize:11, color:"#dc2626", marginTop:4 }}>{errors.nom}</p>}
           </div>
           <div style={fg}>
-            <label style={lbl}>Prénom <span style={{color:"#dc2626"}}>*</span></label>
+            <label style={lbl}>Prénom {form.genre !== "Entreprise" && <span style={{color:"#dc2626"}}>*</span>}{form.genre === "Entreprise" && <span style={{color:"#999", fontSize:11}}> (facultatif)</span>}</label>
             <input style={inp(errors.prenom)} value={form.prenom} onChange={e=>set("prenom",e.target.value)} placeholder="Jean" />
             {errors.prenom && <p style={{ fontSize:11, color:"#dc2626", marginTop:4 }}>{errors.prenom}</p>}
           </div>
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
           <div style={fg}>
-            <label style={lbl}>Téléphone</label>
+            <label style={lbl}>Téléphone <span style={{color:"#dc2626"}}>*</span></label>
             <input style={inp(errors.tel)} value={form.tel} onChange={e=>handleTel(e.target.value)} inputMode="numeric" placeholder="0612345678" maxLength={10} />
             {errors.tel && <p style={{ fontSize:11, color:"#dc2626", marginTop:4 }}>{errors.tel}</p>}
           </div>
@@ -538,7 +543,8 @@ function CRMApp({ user, onLogout }) {
                 <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6}}>
                   <div style={{display:'flex', alignItems:'center', gap:8, flexWrap:'wrap'}}>
                     <span style={badge(c.genre)}>{c.genre}</span>
-                    <span style={{fontWeight:700, fontSize:16}}>{c.nom} {c.prenom}</span>
+                    <span style={{fontWeight:700, fontSize:16}}>{c.genre==="Entreprise" ? (c.entreprise||c.nom) : `${c.nom} ${c.prenom}`}</span>
+                    {c.genre==="Entreprise" && (c.nom||c.prenom) && <span style={{fontSize:12,color:'#999',marginLeft:4}}>{c.nom} {c.prenom}</span>}
                   </div>
                   <div>
                     <button onClick={()=>setModalEdit(c)} style={{background:'none',border:'none',fontSize:20,cursor:'pointer',padding:'2px 6px'}}>✏️</button>
@@ -588,8 +594,8 @@ function CRMApp({ user, onLogout }) {
                     return (
                       <tr key={c.id} onMouseEnter={()=>setHoverRow(c.id)} onMouseLeave={()=>setHoverRow(null)}>
                         <td style={td}><span style={badge(c.genre)}>{c.genre||"—"}</span></td>
-                        <td style={{...td,fontWeight:600}}>{c.genre==="Entreprise" && c.entreprise ? c.entreprise : c.nom||"—"}</td>
-                        <td style={td}>{c.prenom||"—"}</td>
+                        <td style={{...td,fontWeight:600}}>{c.genre==="Entreprise" ? <span style={{color:'#065f46'}}>{c.entreprise||c.nom||"—"}</span> : c.nom||"—"}</td>
+                        <td style={td}>{c.genre==="Entreprise" ? <span style={{fontSize:11,color:'#999'}}>{c.nom} {c.prenom}</span> : c.prenom||"—"}</td>
                         <td style={{...td,fontFamily:"'Courier New',monospace"}}>{c.tel||"—"}</td>
                         <td style={{...td,fontSize:12,color:"#3b82f6",maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.mail||"—"}</td>
                         <td style={{...td,whiteSpace:"nowrap"}}>{formatDate(c.created_at)}</td>
