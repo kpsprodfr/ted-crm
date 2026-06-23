@@ -180,6 +180,7 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
   });
   const [errors, setErrors] = useState({});
   const [dupWarn, setDupWarn] = useState(null);
+  const [success, setSuccess] = useState(false);
 
   function set(k, v) { setForm(f => ({ ...f, [k]: v })); setErrors(e => ({ ...e, [k]: "" })); }
   function handleTel(v) { set("tel", v.replace(/\D/g, "").slice(0, 10)); }
@@ -227,7 +228,8 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
     if (Object.keys(e).length > 0) { setErrors(e); return; }
     const dup = checkDup();
     if (dup) { setDupWarn(dup); return; }
-    doSave();
+    setSuccess(true);
+    setTimeout(() => { doSave(); }, 800);
   }
 
   const inputStyle = (err) => ({
@@ -258,10 +260,15 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
             cursor: "pointer", flex: 1, touchAction: "manipulation"
           }}>Annuler</button>,
           <button key="s" type="button" onPointerDown={handleSubmit} style={{
-            background: "#E8C547", color: "#111", border: "none", borderRadius: 8,
-            padding: "0 16px", height: 48, fontWeight: 700, fontSize: 15,
-            cursor: "pointer", flex: 2, touchAction: "manipulation"
-          }}>{isEdit ? "Enregistrer les modifications" : "Enregistrer"}</button>
+            background: success ? "#22c55e" : "#E8C547",
+            color: success ? "#fff" : "#111",
+            border: "none", borderRadius: 8,
+            height: 52, fontWeight: 700, fontSize: 16,
+            cursor: "pointer", flex: 2, touchAction: "manipulation",
+            transition: "all 0.3s ease",
+            transform: success ? "scale(1.03)" : "scale(1)",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8
+          }}>{success ? "✓ Enregistré !" : (isEdit ? "Enregistrer les modifications" : "Enregistrer")}</button>
         ]}
       >
         <div style={fieldGroup}>
