@@ -1185,17 +1185,32 @@ function CRMApp({ user, onLogout }) {
   const [commMessage, setCommMessage] = useState('');
   const [commSending, setCommSending] = useState(false);
   const [showConfirmComm, setShowConfirmComm] = useState(false);
+  const [emailsHistorique, setEmailsHistorique] = useState([]);
+  const [emailsExpanded, setEmailsExpanded] = useState({});
   const commTextareaRef = useRef(null);
   const deleteGuard = useRef(false);
   const isMobile = useIsMobile();
 
   const showToast = useCallback((msg, type="success") => setToast({msg,type}), []);
 
+  function toggleEmailExpanded(id) {
+    setEmailsExpanded(prev => ({...prev, [id]: !prev[id]}));
+  }
+
+  async function loadEmailsHistorique() {
+    const { data } = await supabase.from('emails_envoyes').select('*').order('created_at', {ascending:false}).limit(50);
+    setEmailsHistorique(data || []);
+  }
+
   // ─── Load from Supabase ───────────────────────────────────────────────────
   useEffect(() => {
     loadClients();
     loadResaCount();
   }, []);
+
+  useEffect(() => {
+    if (activeView === 'communications') loadEmailsHistorique();
+  }, [activeView]);
 
   async function loadResaCount() {
     const { count } = await supabase.from('reservations').select('id', { count:'exact', head:true }).eq('statut','attente');
@@ -1404,10 +1419,21 @@ function CRMApp({ user, onLogout }) {
           console.error('[Comm] Erreur réseau pour', client.mail, e);
         }
       }
+      await supabase.from('emails_envoyes').insert([{
+        objet: commObjet,
+        message: commMessage,
+        nb_destinataires: commSelected.length,
+        destinataires: commSelected.map(id => {
+          const c = clients.find(x => x.id === id);
+          return { id, nom: c?.nom, prenom: c?.prenom, mail: c?.mail };
+        }),
+        envoye_par: user.email,
+        statut: 'envoye'
+      }]);
       setCommSending(false);
       showToast(`📧 ${sent} email(s) envoyé(s) ✓`);
       setCommObjet(''); setCommMessage(''); setCommSelected([]);
-      setActiveView('crm');
+      loadEmailsHistorique();
     };
 
     const handleSendAll = () => setShowConfirmComm(true);
@@ -1527,6 +1553,69 @@ function CRMApp({ user, onLogout }) {
             </div>
           </div>
         </div>
+        {/* ─── Historique des envois ─── */}
+        <div style={{maxWidth:1300, margin:'0 auto', padding:'0 20px 32px'}}>
+          <div style={{background:'#fff', borderRadius:12, boxShadow:'0 1px 4px rgba(0,0,0,0.08)', overflow:'hidden'}}>
+            <div style={{padding:'14px 20px', borderBottom:'1px solid #f0f0f0', display:'flex', alignItems:'center', gap:10}}>
+              <span style={{fontWeight:700, fontSize:15, color:'#111'}}>📋 Historique des envois</span>
+              <span style={{background:'#f0f0f0', color:'#666', borderRadius:99, padding:'2px 9px', fontSize:12, fontWeight:700}}>{emailsHistorique.length}</span>
+            </div>
+
+            {emailsHistorique.length === 0 ? (
+              <div style={{padding:'32px 20px', textAlign:'center', color:'#bbb', fontSize:14}}>Aucun email envoyé pour l'instant</div>
+            ) : (
+              emailsHistorique.map(entry => {
+                const isOpen = !!emailsExpanded[entry.id];
+                const dt = new Date(entry.created_at);
+                const dateStr = dt.toLocaleDateString('fr-FR', {day:'numeric', month:'short', year:'numeric'});
+                const heureStr = dt.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+                return (
+                  <div key={entry.id} style={{borderBottom:'1px solid #f5f5f5'}}>
+                    {/* En-tête accordéon */}
+                    <div onClick={()=>toggleEmailExpanded(entry.id)} style={{display:'flex', alignItems:'center', gap:12, padding:'12px 20px', cursor:'pointer', background:isOpen?'#fafafa':'#fff', transition:'background 0.1s'}}>
+                      <span style={{fontSize:18}}>📧</span>
+                      <span style={{fontWeight:700, fontSize:14, color:'#111', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{entry.objet}</span>
+                      <span style={{background:'#f0f0f0', color:'#666', borderRadius:99, padding:'2px 8px', fontSize:11, fontWeight:600, flexShrink:0}}>{entry.nb_destinataires} dest.</span>
+                      <span style={{fontSize:12, color:'#aaa', flexShrink:0}}>{dateStr} à {heureStr}</span>
+                      <span style={{fontSize:18, color:'#bbb', transform:isOpen?'rotate(90deg)':'none', transition:'transform 0.2s', flexShrink:0}}>›</span>
+                    </div>
+
+                    {/* Contenu déplié */}
+                    {isOpen && (
+                      <div style={{padding:'0 20px 16px 20px', background:'#fafafa', borderTop:'1px solid #f0f0f0'}}>
+                        {/* Message */}
+                        <div style={{background:'#fff', border:'1px solid #eee', borderRadius:8, padding:'12px 14px', margin:'12px 0', fontSize:13, color:'#888', fontStyle:'italic', lineHeight:1.6, whiteSpace:'pre-wrap'}}>
+                          {entry.message}
+                        </div>
+                        {/* Destinataires */}
+                        <div style={{display:'flex', flexDirection:'column', gap:6, marginBottom:10}}>
+                          {(entry.destinataires||[]).map((d, i) => {
+                            const initial = ((d.prenom||'')[0]||(d.nom||'')[0]||'?').toUpperCase();
+                            return (
+                              <div key={i} style={{display:'flex', alignItems:'center', gap:8}}>
+                                <div style={{width:28, height:28, borderRadius:'50%', background:'#E8C547', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:800, flexShrink:0}}>{initial}</div>
+                                <span style={{fontSize:13, fontWeight:600, color:'#333'}}>{d.prenom} {d.nom}</span>
+                                <span style={{fontSize:12, color:'#3b82f6', marginLeft:4}}>{d.mail}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {/* Footer */}
+                        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:8}}>
+                          <span style={{fontSize:11, color:'#bbb'}}>Envoyé par {entry.envoye_par}</span>
+                          <button onClick={()=>{ setCommObjet(entry.objet); setCommMessage(entry.message||''); }} style={{background:'#f5f5f5', border:'1px solid #ddd', borderRadius:7, padding:'6px 14px', fontSize:12, fontWeight:600, cursor:'pointer', color:'#555'}}>
+                            🔁 Renvoyer
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
         {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
 
         {showConfirmComm && (
