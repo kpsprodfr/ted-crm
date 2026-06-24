@@ -1298,10 +1298,13 @@ function CRMApp({ user, onLogout }) {
   }
 
   async function envoyerNotifLocale(titre, corps) {
-    if (!('serviceWorker' in navigator)) return;
-    if (Notification.permission !== 'granted') return;
+    console.log('envoyerNotifLocale appelée:', titre, corps);
+    if (!('serviceWorker' in navigator)) { console.warn('SW non disponible'); return; }
+    if (Notification.permission !== 'granted') { console.warn('Permission refusée:', Notification.permission); return; }
     try {
+      console.log('En attente SW ready...');
       const reg = await navigator.serviceWorker.ready;
+      console.log('SW ready:', reg.scope);
       await reg.showNotification(titre, {
         body: corps,
         icon: '/favicon.png',
@@ -1311,6 +1314,7 @@ function CRMApp({ user, onLogout }) {
         vibrate: [200, 100, 200],
         data: { url: 'https://ted-crm.pages.dev' }
       });
+      console.log('Notif envoyée !');
     } catch(e) { console.error('Notif erreur:', e); }
   }
   const deleteGuard = useRef(false);
@@ -1354,6 +1358,9 @@ function CRMApp({ user, onLogout }) {
     const channel = supabase
       .channel('nouvelles-reservations')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reservations', filter: 'statut=eq.attente' }, async (payload) => {
+        console.log('PAYLOAD REÇU:', payload);
+        console.log('Permission notifications:', Notification.permission);
+        console.log('Service Worker disponible:', 'serviceWorker' in navigator);
         const { data: client } = await supabase.from('clients').select('nom, prenom, tel').eq('id', payload.new.client_id).single();
         loadResaCount();
         try {
@@ -1375,7 +1382,9 @@ function CRMApp({ user, onLogout }) {
         setTimeout(() => setNotifResa(null), 6000);
         await envoyerNotifLocale(`📅 Nouvelle réservation !`, `${nom} · ${date} · ${payload.new.heure || ''} · ${payload.new.nb_personnes} pers.`);
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Statut Realtime:', status);
+      });
     return () => { supabase.removeChannel(channel); };
   }, []);
 
