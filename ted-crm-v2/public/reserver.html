@@ -10,11 +10,9 @@
     :root{--g:#E8C547;--r:14px}
 
     /* Header */
-    .header{background:#111;padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--g)}
-    .logo-wrap{display:flex;align-items:center;gap:10px}
-    .logo-text{color:#fff;font-weight:800;font-size:18px;letter-spacing:2px}
-    .logo-text span{color:var(--g)}
-    .header-sub{color:#aaa;font-size:12px}
+    .header{background:#111;padding:20px 20px 18px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-bottom:3px solid var(--g);text-align:center}
+    .header-logo{height:42px;filter:brightness(0) invert(1);margin-bottom:8px}
+    .header-title{color:#fff;font-weight:800;font-size:18px;letter-spacing:1px}
 
     /* Progress */
     .progress-bar{background:#fff;border-bottom:1.5px solid #eee;padding:14px 20px}
@@ -57,11 +55,12 @@
     .choice-btn.heure{flex:initial;padding:12px 16px;font-size:13px;min-width:70px}
 
     /* Counter */
-    .counter{display:flex;align-items:center;gap:16px;background:#fff;border:1.5px solid #eee;border-radius:12px;padding:10px 20px;width:fit-content}
-    .counter-btn{width:40px;height:40px;border-radius:8px;border:1.5px solid #ddd;background:#fff;font-size:22px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#111;line-height:1}
+    .counter{display:flex;align-items:center;gap:0;background:#fff;border:1.5px solid #eee;border-radius:12px;overflow:hidden;width:100%}
+    .counter-btn{width:60px;height:60px;flex-shrink:0;border:none;border-radius:0;background:#f8f8f8;font-size:28px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#111;line-height:1;transition:background 0.15s}
     .counter-btn:hover{background:#f0f0f0}
-    .counter-btn:disabled{color:#ccc;cursor:not-allowed}
-    .counter-val{font-size:28px;font-weight:800;min-width:40px;text-align:center}
+    .counter-btn:disabled{color:#ccc;cursor:not-allowed;background:#fafafa}
+    .counter-input{flex:1;height:60px;border:none;border-left:1.5px solid #eee;border-right:1.5px solid #eee;font-size:28px;font-weight:800;text-align:center;outline:none;font-family:inherit;color:#111;background:#fff;-moz-appearance:textfield}
+    .counter-input::-webkit-outer-spin-button,.counter-input::-webkit-inner-spin-button{-webkit-appearance:none}
 
     /* Form fields */
     .field{margin-bottom:16px}
@@ -120,10 +119,9 @@
 <body>
 
 <div class="header">
-  <div class="logo-wrap">
-    <div class="logo-text">TED <span>CRM</span></div>
-  </div>
-  <div class="header-sub">Formulaire de réservation</div>
+  <img src="../logo.png" alt="TED" class="header-logo" onerror="this.style.display='none';document.getElementById('logo-fallback').style.display='block'" />
+  <div id="logo-fallback" style="display:none;color:#E8C547;font-weight:900;font-size:26px;letter-spacing:3px;margin-bottom:6px">TED</div>
+  <div class="header-title">Réservation TED</div>
 </div>
 
 <div class="progress-bar">
@@ -176,6 +174,7 @@ const state = {
   nom: '',
   tel: '',
   email: '',
+  societe: '',
   occasion: '',
   commentaire: '',
   rgpd: false,
@@ -299,8 +298,8 @@ function renderStep2() {
     <div class="section-label">Nombre de personnes</div>
     <div class="counter">
       <button class="counter-btn" onclick="changeNb(-1)" ${state.nbPersonnes<=1?'disabled':''}>−</button>
-      <div class="counter-val">${state.nbPersonnes}</div>
-      <button class="counter-btn" onclick="changeNb(1)" ${state.nbPersonnes>=20?'disabled':''}>+</button>
+      <input class="counter-input" type="number" min="1" max="50" value="${state.nbPersonnes}" oninput="setNb(this.value)" onblur="clampNb(this)" />
+      <button class="counter-btn" onclick="changeNb(1)" ${state.nbPersonnes>=50?'disabled':''}>+</button>
     </div>
 
     <div class="section-label" style="margin-top:22px">Service</div>
@@ -322,7 +321,9 @@ function renderStep2() {
   `;
 }
 
-function changeNb(d) { state.nbPersonnes = Math.max(1,Math.min(20,state.nbPersonnes+d)); renderStep2(); }
+function changeNb(d) { state.nbPersonnes = Math.max(1,Math.min(50,state.nbPersonnes+d)); renderStep2(); }
+function setNb(v) { const n = parseInt(v); if (!isNaN(n) && n >= 1) state.nbPersonnes = Math.min(50, n); }
+function clampNb(el) { state.nbPersonnes = Math.max(1, Math.min(50, parseInt(el.value)||1)); renderStep2(); }
 function selectService(s) { state.service = s; state.heure = null; renderStep2(); }
 function selectHeure(h) { state.heure = h; renderStep2(); }
 
@@ -359,6 +360,11 @@ function renderStep3() {
       <label class="label">Email <span>*</span></label>
       <input class="input ${e.email?'error':''}" id="f-email" value="${state.email}" oninput="state.email=this.value" placeholder="jean@exemple.fr" type="email" inputmode="email" />
       ${e.email?`<div class="error-msg">${e.email}</div>`:''}
+    </div>
+
+    <div class="field">
+      <label class="label">Société <span style="color:#aaa;font-size:12px;font-weight:400">(facultatif)</span></label>
+      <input class="input" type="text" value="${state.societe}" oninput="state.societe=this.value" placeholder="Nom de votre entreprise" />
     </div>
 
     <div class="field">
@@ -412,6 +418,7 @@ function renderStep4() {
     ['Nom', state.nom],
     ['Téléphone', state.tel],
     ['Email', state.email],
+    state.societe ? ['Société', state.societe] : null,
     state.occasion ? ['Occasion', state.occasion] : null,
     state.commentaire ? ['Commentaire', state.commentaire] : null
   ].filter(Boolean);
@@ -466,9 +473,10 @@ async function submitForm() {
       } else {
         // Create new client
         const newC = await sbFetch('clients', 'POST', {
-          genre: 'Non renseigné',
+          genre: state.societe ? 'Entreprise' : 'Non renseigné',
           nom: nomC,
           prenom: prenomC,
+          entreprise: state.societe || '',
           tel: telN,
           tel_normalise: telN,
           mail: emailN,
