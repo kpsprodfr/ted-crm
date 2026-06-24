@@ -564,7 +564,7 @@ function ReservationsPage({ onBack, showToast, user }) {
     setLoading(true);
     const { data, error } = await supabase
       .from('reservations')
-      .select('*, clients(nom, prenom, tel, mail, entreprise)')
+      .select('*, clients(nom, prenom, tel, mail, genre, entreprise)')
       .order('created_at', { ascending: false });
     if (error) showToast('Erreur chargement réservations', 'error');
     else setResaList(data || []);
@@ -654,8 +654,12 @@ function ReservationsPage({ onBack, showToast, user }) {
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:8, marginBottom:10 }}>
                 <div>
                   <span style={{ fontWeight:700, fontSize:15 }}>{nom || '—'}</span>
-                  {c.tel && <a href={`tel:${c.tel}`} style={{ display:'block', fontSize:13, color:'#3b82f6', textDecoration:'none', marginTop:2 }}>📞 {c.tel}</a>}
-                  {c.mail && <span style={{ fontSize:12, color:'#888', marginTop:1, display:'block' }}>{c.mail}</span>}
+                  {c.mail && <span style={{ fontSize:12, color:'#888', marginTop:2, display:'block' }}>{c.mail}</span>}
+                  {c.tel && (
+                    <a href={`tel:${c.tel}`} style={{ display:'inline-flex', alignItems:'center', gap:6, background:G, color:'#111', borderRadius:8, padding:'6px 14px', fontSize:13, fontWeight:700, textDecoration:'none', marginTop:8 }}>
+                      📞 Appeler · {c.tel}
+                    </a>
+                  )}
                 </div>
                 <div style={{ textAlign:'right', flexShrink:0 }}>
                   <div style={{ fontSize:13, fontWeight:700 }}>{fmtResaDate(r.date)}</div>
@@ -667,7 +671,7 @@ function ReservationsPage({ onBack, showToast, user }) {
               {r.commentaire_client && <p style={{ fontSize:12, color:'#aaa', fontStyle:'italic', marginBottom:8, borderLeft:`3px solid #eee`, paddingLeft:8 }}>"{r.commentaire_client}"</p>}
               <div style={{ fontSize:11, color:'#bbb', marginBottom:10 }}>Reçue le {new Date(r.created_at).toLocaleDateString('fr-FR')} à {new Date(r.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
               <div style={{ display:'flex', gap:8 }}>
-                <button onClick={()=>accepter(r)} style={{ flex:1, background:G, color:'#111', border:'none', borderRadius:8, height:40, fontWeight:700, fontSize:14, cursor:'pointer' }}>✓ Accepter</button>
+                <button onClick={()=>accepter(r)} style={{ flex:1, background:'#16a34a', color:'#fff', border:'none', borderRadius:8, height:40, fontWeight:700, fontSize:14, cursor:'pointer' }}>✓ Accepter</button>
                 <button onClick={()=>setRefusResa(r)} style={{ flex:1, background:'#fef2f2', color:'#dc2626', border:'1.5px solid #dc2626', borderRadius:8, height:40, fontWeight:700, fontSize:14, cursor:'pointer' }}>✕ Refuser</button>
               </div>
             </div>
