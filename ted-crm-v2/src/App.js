@@ -244,11 +244,15 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
     return e;
   }
 
-  function checkDup() {
-    const others = existingClients.filter(c => !isEdit || c.id !== initial.id);
-    if (form.tel && others.some(c => c.tel === form.tel)) return `Le téléphone ${form.tel} est déjà utilisé par un autre client.`;
-    if (form.mail && form.mail.trim() && others.some(c => c.mail && c.mail.toLowerCase() === form.mail.toLowerCase())) return `L'adresse ${form.mail} est déjà utilisée.`;
-    return null;
+  function checkDupTel() {
+    const others = existingClients.filter(c => !isEdit || c.id !== initial?.id);
+    return others.find(c => c.tel && form.tel && c.tel === form.tel) || null;
+  }
+
+  function checkDupMail() {
+    const others = existingClients.filter(c => !isEdit || c.id !== initial?.id);
+    if (!form.mail.trim()) return null;
+    return others.find(c => c.mail && c.mail.toLowerCase() === form.mail.trim().toLowerCase()) || null;
   }
 
   function doSave() {
@@ -271,8 +275,16 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
   function handleSubmit() {
     const e = validate();
     if (Object.keys(e).length > 0) { setErrors(e); return; }
-    const dup = checkDup();
-    if (dup) { setDupWarn(dup); return; }
+    // Tel : doublon bloquant
+    const dupTel = checkDupTel();
+    if (dupTel) {
+      const nom = dupTel.genre === 'Entreprise' ? dupTel.entreprise : `${dupTel.prenom} ${dupTel.nom}`;
+      setErrors(ex => ({...ex, tel: `Ce numéro est déjà utilisé par ${nom}`}));
+      return;
+    }
+    // Mail : doublon avertissement (contournable)
+    const dupMail = checkDupMail();
+    if (dupMail) { setDupWarn(`L'adresse ${form.mail} est déjà utilisée par ${dupMail.prenom} ${dupMail.nom}.`); return; }
     setSuccess(true);
     setTimeout(() => { doSave(); }, 800);
   }
