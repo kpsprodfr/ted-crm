@@ -81,22 +81,17 @@ const fg = { marginBottom:14 };
 
 // ─── Brevo Email ─────────────────────────────────────────────────────────────
 async function sendBrevoEmail(toEmail, toName, subject, htmlContent) {
-  const apiKey = process.env.REACT_APP_BREVO_API_KEY;
-  if (!apiKey) return { success: false, error: 'Clé API manquante' };
+  if (!toEmail) return;
   try {
-    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    const res = await fetch('/send-email', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'api-key': apiKey },
-      body: JSON.stringify({
-        sender: { name: 'Le TED', email: 'reservations@leted.fr' },
-        to: [{ email: toEmail, name: toName }],
-        subject,
-        htmlContent
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to: toEmail, toName, subject, html: htmlContent })
     });
-    return { success: response.ok };
+    const data = await res.json();
+    return { success: data.success };
   } catch(e) {
-    return { success: false, error: e.message };
+    return { success: false };
   }
 }
 
