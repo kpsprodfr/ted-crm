@@ -1290,11 +1290,24 @@ function CRMApp({ user, onLogout }) {
   const [notifResa, setNotifResa] = useState(null);
 
   async function demanderPermissionNotif() {
-    if (!('Notification' in window)) return false;
-    if (Notification.permission === 'granted') return true;
-    if (Notification.permission === 'denied') return false;
+    if (!('Notification' in window)) {
+      showToast('Notifications non supportées sur cet appareil', 'error');
+      return;
+    }
+    if (Notification.permission === 'granted') {
+      showToast('🔔 Notifications déjà activées !');
+      return;
+    }
     const perm = await Notification.requestPermission();
-    return perm === 'granted';
+    if (perm === 'granted') {
+      showToast('🔔 Notifications activées !');
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        await reg.showNotification('TED CRM 🎉', { body: 'Les notifications sont activées !', icon: '/favicon.png', badge: '/favicon.png' });
+      } catch(e) {}
+    } else {
+      showToast('⚠️ Notifications refusées', 'error');
+    }
   }
 
   async function envoyerNotifLocale(titre, corps) {
@@ -1349,10 +1362,6 @@ function CRMApp({ user, onLogout }) {
   useEffect(() => {
     if (activeView === 'communications') { loadEmailsHistorique(); loadSmsHistorique(); }
   }, [activeView]);
-
-  useEffect(() => {
-    setTimeout(() => demanderPermissionNotif(), 2000);
-  }, []);
 
   useEffect(() => {
     const channel = supabase
@@ -2316,7 +2325,12 @@ function CRMApp({ user, onLogout }) {
               <img src={require('./logo.png')} alt="TED" style={{ height:26, filter:'brightness(0) invert(1)' }} onError={e=>e.target.style.display='none'} />
               <span style={{ color:'#fff', fontWeight:800, fontSize:15 }}>TED <span style={{color:G}}>CRM</span></span>
             </div>
-            <button onClick={()=>{ if(window.confirm('Voulez-vous vraiment vous déconnecter ?')) onLogout(); }} style={{ background:'rgba(255,255,255,0.1)', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, cursor:'pointer', color:'#fff' }}>⎋</button>
+            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+              {'Notification' in window && Notification.permission !== 'granted' && (
+                <button onClick={demanderPermissionNotif} style={{ background:'#E8C547', color:'#111', border:'none', borderRadius:8, width:36, height:36, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, cursor:'pointer' }}>🔔</button>
+              )}
+              <button onClick={()=>{ if(window.confirm('Voulez-vous vraiment vous déconnecter ?')) onLogout(); }} style={{ background:'rgba(255,255,255,0.1)', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, cursor:'pointer', color:'#fff' }}>⎋</button>
+            </div>
           </div>
           {/* Onglets + Recherche — uniquement sur l'onglet Clients */}
           {mobileTab === 'clients' && (
@@ -2355,9 +2369,6 @@ function CRMApp({ user, onLogout }) {
           </div>
           <div style={{display:"flex", gap:6, alignItems:"center", flexShrink:0}}>
             <span style={{fontSize:11, color:"#666", marginRight:4, maxWidth:120, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{user.email}</span>
-            {'Notification' in window && Notification.permission !== 'granted' && (
-              <button onClick={demanderPermissionNotif} style={{background:'transparent', color:'#E8C547', border:'1px solid #E8C547', borderRadius:7, padding:'0 10px', height:32, fontSize:12, cursor:'pointer', whiteSpace:'nowrap'}}>🔔 Activer les notifications</button>
-            )}
             <button onClick={()=>setModalCorbeille(true)} style={{background:"transparent", color:G, border:`1px solid ${G}`, borderRadius:7, padding:"0 10px", height:32, fontSize:12, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap"}}>🗑 Corbeille</button>
             <button onClick={()=>setShowResaPage(true)} style={{ position:'relative', background:'transparent', color:'#ccc', border:'1px solid #444', borderRadius:7, padding:'0 10px', height:32, fontSize:12, cursor:'pointer', whiteSpace:'nowrap' }}>
               📅 Réservations
