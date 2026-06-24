@@ -496,60 +496,210 @@ function useIsMobile() {
   return isMobile;
 }
 
-// ─── Lien Réservation Modal ───────────────────────────────────────────────────
+// ─── Réservations Page ────────────────────────────────────────────────────────
 const FORM_URL = "https://leted-crm.netlify.app/reserver.html";
 
-function LienResaModal({ onClose, showToast }) {
-  const qr = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(FORM_URL)}`;
-  function copyLink() {
-    navigator.clipboard.writeText(FORM_URL).then(() => showToast("Lien copié ! ✓")).catch(() => {
-      const el = document.createElement('textarea');
-      el.value = FORM_URL;
-      document.body.appendChild(el);
-      el.select();
-      document.execCommand('copy');
-      document.body.removeChild(el);
-      showToast("Lien copié ! ✓");
-    });
+const MOTIFS_REFUS = ["Complet","Fermé","Horaire indispo","Groupe trop grand","Autre"];
+
+const statutBadge = (s) => {
+  const map = {
+    attente:   { bg:'#fffbeb', color:'#92400e', label:'En attente' },
+    rappeler:  { bg:'#fff7ed', color:'#9a3412', label:'À rappeler' },
+    confirmee: { bg:'#f0fdf4', color:'#166534', label:'Confirmée' },
+    refusee:   { bg:'#fef2f2', color:'#991b1b', label:'Refusée' },
+    annulee:   { bg:'#f3f4f6', color:'#374151', label:'Annulée' },
+    venue:     { bg:'#dcfce7', color:'#14532d', label:'Venue' },
+    absente:   { bg:'#fef2f2', color:'#7f1d1d', label:'Absente' },
+  };
+  const s2 = map[s] || { bg:'#f3f4f6', color:'#374151', label: s };
+  return <span style={{ display:'inline-block', fontSize:11, fontWeight:700, borderRadius:99, padding:'3px 9px', background:s2.bg, color:s2.color }}>{s2.label}</span>;
+};
+
+function fmtResaDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + 'T00:00:00');
+  const jours = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+  const mois = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  return `${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]}`;
+}
+
+function RefusModal({ onConfirm, onCancel }) {
+  const [motif, setMotif] = useState(MOTIFS_REFUS[0]);
+  const [autre, setAutre] = useState('');
+  function confirm() {
+    const raison = motif === 'Autre' ? (autre.trim() || 'Autre') : motif;
+    onConfirm(raison);
   }
   return (
-    <div onPointerDown={e=>{ if(e.target===e.currentTarget) onClose(); }} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }}>
-      <div onPointerDown={e=>e.stopPropagation()} style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:440, overflow:'hidden', boxShadow:'0 20px 60px rgba(0,0,0,0.25)' }}>
-        <div style={{ background:'#111', color:'#fff', padding:'14px 18px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-          <span style={{ fontWeight:700, fontSize:15 }}>🔗 Formulaire de réservation</span>
-          <button onClick={onClose} style={{ background:'none', border:'none', color:'#fff', fontSize:20, cursor:'pointer' }}>✕</button>
-        </div>
-        <div style={{ padding:'20px 20px 24px' }}>
-          <p style={{ fontSize:13, color:'#666', marginBottom:14 }}>Partagez ce lien avec vos clients pour qu'ils puissent faire une demande de réservation en ligne.</p>
+    <Modal title="Refuser la réservation" onClose={onCancel} maxW={400}
+      footer={[
+        <button key="c" type="button" onClick={onCancel} style={{...btnSecondary}}>Annuler</button>,
+        <button key="o" type="button" onClick={confirm} style={{...btnDanger}}>Refuser</button>
+      ]}>
+      <p style={{ fontSize:13, color:'#555', marginBottom:14 }}>Sélectionnez le motif du refus :</p>
+      {MOTIFS_REFUS.map(m => (
+        <label key={m} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', borderRadius:8, marginBottom:6, cursor:'pointer', background: motif===m ? '#fef2f2' : '#f8f8f8', border:`1.5px solid ${motif===m?'#dc2626':'#eee'}` }}>
+          <input type="radio" name="motif" value={m} checked={motif===m} onChange={()=>setMotif(m)} style={{ accentColor:'#dc2626' }} />
+          <span style={{ fontSize:14, fontWeight: motif===m?700:400, color: motif===m?'#dc2626':'#333' }}>{m}</span>
+        </label>
+      ))}
+      {motif === 'Autre' && (
+        <input value={autre} onChange={e=>setAutre(e.target.value)} placeholder="Précisez le motif…"
+          style={{ width:'100%', height:42, border:'1.5px solid #ddd', borderRadius:8, padding:'0 12px', fontSize:14, outline:'none', marginTop:4 }} />
+      )}
+    </Modal>
+  );
+}
 
-          {/* URL box */}
-          <div style={{ background:'#f8f8f8', border:'1.5px solid #eee', borderRadius:10, padding:'10px 14px', fontSize:13, color:'#555', fontFamily:'monospace', wordBreak:'break-all', marginBottom:14, lineHeight:1.5 }}>
-            {FORM_URL}
-          </div>
+function ReservationsPage({ onBack, showToast, user }) {
+  const [resaList, setResaList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refusResa, setRefusResa] = useState(null);
+  const isMobile = useIsMobile();
+  const qr = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(FORM_URL)}`;
 
-          {/* Buttons */}
-          <div style={{ display:'flex', gap:10, marginBottom:20 }}>
-            <button onClick={copyLink} style={{ flex:1, background:'#111', color:'#fff', border:'none', borderRadius:10, height:44, fontWeight:700, fontSize:14, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-              📋 Copier le lien
-            </button>
-            <button onClick={()=>window.open(FORM_URL,'_blank')} style={{ flex:1, background:G, color:'#111', border:'none', borderRadius:10, height:44, fontWeight:700, fontSize:14, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-              📱 Ouvrir
-            </button>
-          </div>
+  useEffect(() => { loadResa(); }, []);
 
-          {/* QR Code */}
-          <div style={{ textAlign:'center' }}>
-            <p style={{ fontSize:12, color:'#999', marginBottom:10, fontWeight:600, textTransform:'uppercase', letterSpacing:0.5 }}>Scanner depuis un téléphone</p>
-            <div style={{ display:'inline-block', background:'#fff', border:'2px solid #eee', borderRadius:12, padding:10 }}>
-              <img src={qr} alt="QR Code" width={150} height={150} style={{ display:'block', borderRadius:6 }} onError={e=>{ e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
-              <div style={{ display:'none', width:150, height:150, background:'#f5f5f5', borderRadius:6, alignItems:'center', justifyContent:'center', fontSize:12, color:'#bbb', flexDirection:'column', gap:6 }}>
-                <span style={{ fontSize:32 }}>📷</span>
-                <span>QR indisponible</span>
+  async function loadResa() {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('reservations')
+      .select('*, clients(nom, prenom, tel, mail, entreprise)')
+      .order('created_at', { ascending: false });
+    if (error) showToast('Erreur chargement réservations', 'error');
+    else setResaList(data || []);
+    setLoading(false);
+  }
+
+  async function accepter(r) {
+    if (!window.confirm(`Confirmer la réservation de ${r.clients?.prenom || ''} ${r.clients?.nom || ''} ?`)) return;
+    const { error } = await supabase.from('reservations').update({
+      statut: 'confirmee', traited_at: new Date().toISOString(), traited_by: user?.email
+    }).eq('id', r.id);
+    if (error) showToast('Erreur', 'error');
+    else { showToast('Réservation confirmée ✓'); loadResa(); }
+  }
+
+  async function refuser(r, raison) {
+    const { error } = await supabase.from('reservations').update({
+      statut: 'refusee', raison_refus: raison, traited_at: new Date().toISOString(), traited_by: user?.email
+    }).eq('id', r.id);
+    setRefusResa(null);
+    if (error) showToast('Erreur', 'error');
+    else { showToast('Réservation refusée'); loadResa(); }
+  }
+
+  function copyLink() {
+    navigator.clipboard.writeText(FORM_URL).then(() => showToast('Lien copié ! ✓')).catch(() => {
+      const el = document.createElement('textarea');
+      el.value = FORM_URL; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
+      showToast('Lien copié ! ✓');
+    });
+  }
+
+  const attente = resaList.filter(r => r.statut === 'attente');
+  const historique = resaList.filter(r => r.statut !== 'attente');
+
+  const cardStyle = { background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:16, marginBottom:10, boxShadow:'0 2px 8px rgba(0,0,0,0.04)' };
+
+  return (
+    <div style={{ fontFamily:"'Inter','Segoe UI',Arial,sans-serif", minHeight:'100vh', background:'#f8f8f8' }}>
+      {/* Header */}
+      <header style={{ background:'#111', color:'#fff', padding:'0 20px', height:56, display:'flex', alignItems:'center', gap:14, borderBottom:`3px solid ${G}`, flexShrink:0 }}>
+        <button onClick={onBack} style={{ background:'rgba(255,255,255,0.1)', border:'none', borderRadius:8, height:34, padding:'0 14px', color:'#fff', fontWeight:600, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>← Retour</button>
+        <span style={{ fontWeight:700, fontSize:15, flex:1 }}>📅 Réservations</span>
+        {attente.length > 0 && <span style={{ background:'#dc2626', color:'#fff', borderRadius:99, padding:'2px 8px', fontSize:12, fontWeight:700 }}>{attente.length}</span>}
+      </header>
+
+      <main style={{ maxWidth:800, margin:'0 auto', padding: isMobile ? '16px 12px 40px' : '24px 20px 40px' }}>
+
+        {/* ── Bloc partage lien ── */}
+        <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #eee', padding:18, marginBottom:24, boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
+          <p style={{ fontSize:12, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:0.5, marginBottom:12 }}>🔗 Formulaire de réservation en ligne</p>
+          <div style={{ display:'flex', gap:12, alignItems:'flex-start', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ background:'#f8f8f8', border:'1.5px solid #eee', borderRadius:8, padding:'8px 12px', fontSize:12, color:'#555', fontFamily:'monospace', wordBreak:'break-all', marginBottom:10, lineHeight:1.5 }}>{FORM_URL}</div>
+              <div style={{ display:'flex', gap:8 }}>
+                <button onClick={copyLink} style={{ flex:1, background:'#111', color:'#fff', border:'none', borderRadius:8, height:38, fontWeight:700, fontSize:13, cursor:'pointer' }}>📋 Copier</button>
+                <button onClick={()=>window.open(FORM_URL,'_blank')} style={{ flex:1, background:G, color:'#111', border:'none', borderRadius:8, height:38, fontWeight:700, fontSize:13, cursor:'pointer' }}>🔗 Ouvrir</button>
               </div>
+            </div>
+            <div style={{ flexShrink:0, textAlign:'center' }}>
+              <img src={qr} alt="QR" width={90} height={90} style={{ display:'block', borderRadius:8, border:'1.5px solid #eee' }} />
+              <p style={{ fontSize:10, color:'#bbb', marginTop:4 }}>Scanner</p>
             </div>
           </div>
         </div>
-      </div>
+
+        {/* ── Demandes en attente ── */}
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
+          <h2 style={{ fontSize:17, fontWeight:800, margin:0 }}>Demandes en attente</h2>
+          {attente.length > 0 && <span style={{ background:'#dc2626', color:'#fff', borderRadius:99, padding:'2px 9px', fontSize:12, fontWeight:700 }}>{attente.length}</span>}
+        </div>
+
+        {loading && <p style={{ color:'#bbb', fontSize:14, padding:'20px 0' }}>Chargement…</p>}
+
+        {!loading && attente.length === 0 && (
+          <div style={{ textAlign:'center', padding:'32px 0', color:'#bbb' }}>
+            <div style={{ fontSize:40, marginBottom:10 }}>📭</div>
+            <p style={{ fontSize:15 }}>Aucune nouvelle demande</p>
+          </div>
+        )}
+
+        {attente.map(r => {
+          const c = r.clients || {};
+          const nom = c.entreprise ? c.entreprise : `${c.prenom || ''} ${c.nom || ''}`.trim();
+          return (
+            <div key={r.id} style={cardStyle}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:8, marginBottom:10 }}>
+                <div>
+                  <span style={{ fontWeight:700, fontSize:15 }}>{nom || '—'}</span>
+                  {c.tel && <a href={`tel:${c.tel}`} style={{ display:'block', fontSize:13, color:'#3b82f6', textDecoration:'none', marginTop:2 }}>📞 {c.tel}</a>}
+                  {c.mail && <span style={{ fontSize:12, color:'#888', marginTop:1, display:'block' }}>{c.mail}</span>}
+                </div>
+                <div style={{ textAlign:'right', flexShrink:0 }}>
+                  <div style={{ fontSize:13, fontWeight:700 }}>{fmtResaDate(r.date)}</div>
+                  <div style={{ fontSize:12, color:'#888' }}>{r.service === 'midi' ? '🌞 Midi' : '🌙 Soir'}{r.heure ? ` · ${r.heure}` : ''}</div>
+                  <div style={{ fontSize:12, color:'#555', marginTop:2 }}>👥 {r.nb_personnes} pers.</div>
+                </div>
+              </div>
+              {r.occasion && <p style={{ fontSize:12, color:'#6b7280', marginBottom:6 }}>🎉 {r.occasion}</p>}
+              {r.commentaire_client && <p style={{ fontSize:12, color:'#aaa', fontStyle:'italic', marginBottom:8, borderLeft:`3px solid #eee`, paddingLeft:8 }}>"{r.commentaire_client}"</p>}
+              <div style={{ fontSize:11, color:'#bbb', marginBottom:10 }}>Reçue le {new Date(r.created_at).toLocaleDateString('fr-FR')} à {new Date(r.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
+              <div style={{ display:'flex', gap:8 }}>
+                <button onClick={()=>accepter(r)} style={{ flex:1, background:G, color:'#111', border:'none', borderRadius:8, height:40, fontWeight:700, fontSize:14, cursor:'pointer' }}>✓ Accepter</button>
+                <button onClick={()=>setRefusResa(r)} style={{ flex:1, background:'#fef2f2', color:'#dc2626', border:'1.5px solid #dc2626', borderRadius:8, height:40, fontWeight:700, fontSize:14, cursor:'pointer' }}>✕ Refuser</button>
+              </div>
+            </div>
+          );
+        })}
+
+        {/* ── Historique ── */}
+        {historique.length > 0 && (
+          <>
+            <h2 style={{ fontSize:17, fontWeight:800, margin:'28px 0 14px' }}>Historique</h2>
+            {historique.map(r => {
+              const c = r.clients || {};
+              const nom = c.entreprise ? c.entreprise : `${c.prenom || ''} ${c.nom || ''}`.trim();
+              return (
+                <div key={r.id} style={{ ...cardStyle, display:'flex', alignItems:'center', gap:12, padding:'12px 14px' }}>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <span style={{ fontWeight:600, fontSize:14 }}>{nom || '—'}</span>
+                    <span style={{ fontSize:12, color:'#888', marginLeft:8 }}>{fmtResaDate(r.date)} · {r.nb_personnes} pers.</span>
+                    {r.raison_refus && <span style={{ fontSize:11, color:'#dc2626', marginLeft:6 }}>— {r.raison_refus}</span>}
+                  </div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+                    {statutBadge(r.statut)}
+                    {c.tel && <a href={`tel:${c.tel}`} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, textDecoration:'none' }}>📞</a>}
+                  </div>
+                </div>
+              );
+            })}
+          </>
+        )}
+      </main>
+
+      {refusResa && <RefusModal onConfirm={raison=>refuser(refusResa, raison)} onCancel={()=>setRefusResa(null)} />}
     </div>
   );
 }
@@ -578,7 +728,8 @@ function CRMApp({ user, onLogout }) {
   const [showSearch, setShowSearch] = useState(false);
   const [modalCorbeille, setModalCorbeille] = useState(false);
   const [mobileAction, setMobileAction] = useState(null);
-  const [modalLien, setModalLien] = useState(false);
+  const [showResaPage, setShowResaPage] = useState(false);
+  const [resaAttenteCount, setResaAttenteCount] = useState(0);
   const deleteGuard = useRef(false);
   const isMobile = useIsMobile();
 
@@ -587,7 +738,13 @@ function CRMApp({ user, onLogout }) {
   // ─── Load from Supabase ───────────────────────────────────────────────────
   useEffect(() => {
     loadClients();
+    loadResaCount();
   }, []);
+
+  async function loadResaCount() {
+    const { count } = await supabase.from('reservations').select('id', { count:'exact', head:true }).eq('statut','attente');
+    setResaAttenteCount(count || 0);
+  }
 
   async function loadClients() {
     setLoading(true);
@@ -719,6 +876,7 @@ function CRMApp({ user, onLogout }) {
   }
 
   if (loading) return <div style={{ textAlign:"center", paddingTop:80, fontSize:16, color:"#888" }}>Chargement des clients…</div>;
+  if (showResaPage) return <ReservationsPage onBack={()=>{ setShowResaPage(false); loadResaCount(); }} showToast={showToast} user={user} />;
 
   return (
     <div style={{ fontFamily:"'Inter','Segoe UI',Arial,sans-serif", minHeight:"100vh", background:"#f8f8f8", color:"#111" }}>
@@ -745,7 +903,10 @@ function CRMApp({ user, onLogout }) {
               <img src={require('./logo.png')} alt="TED" style={{ height:26, filter:'brightness(0) invert(1)' }} onError={e=>e.target.style.display='none'} />
               <span style={{ color:'#fff', fontWeight:800, fontSize:15 }}>TED <span style={{color:G}}>CRM</span></span>
             </div>
-            <button onClick={()=>setModalLien(true)} style={{ background:'rgba(255,255,255,0.1)', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, cursor:'pointer', color:'#fff' }} title="Lien formulaire réservation">🔗</button>
+            <button onClick={()=>setShowResaPage(true)} style={{ position:'relative', background:'rgba(255,255,255,0.1)', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, cursor:'pointer', color:'#fff' }} title="Réservations">
+              📅
+              {resaAttenteCount > 0 && <span style={{ position:'absolute', top:-4, right:-4, background:'#dc2626', color:'#fff', borderRadius:99, fontSize:9, fontWeight:700, padding:'1px 4px', lineHeight:1.4 }}>{resaAttenteCount}</span>}
+            </button>
             <button onClick={()=>{ if(window.confirm('Voulez-vous vraiment vous déconnecter ?')) onLogout(); }} style={{ background:'rgba(255,255,255,0.1)', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, cursor:'pointer', color:'#fff' }}>⎋</button>
           </div>
           {/* Onglets */}
@@ -786,7 +947,10 @@ function CRMApp({ user, onLogout }) {
             <button onClick={()=>restoreRef.current?.click()} title="Restaurer" style={{background:"transparent", color:"#ccc", border:"1px solid #444", borderRadius:7, width:32, height:32, cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center"}}>🔄</button>
             <input ref={restoreRef} type="file" accept=".json" style={{display:"none"}} onChange={handleRestoreFile} />
             <button onClick={()=>setModalCorbeille(true)} style={{background:"transparent", color:G, border:`1px solid ${G}`, borderRadius:7, padding:"0 10px", height:32, fontSize:12, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap"}}>🗑 Corbeille</button>
-            <button onClick={()=>setModalLien(true)} style={{background:"transparent", color:"#ccc", border:"1px solid #444", borderRadius:7, padding:"0 10px", height:32, fontSize:12, cursor:"pointer", whiteSpace:"nowrap"}}>🔗 Réservation</button>
+            <button onClick={()=>setShowResaPage(true)} style={{ position:'relative', background:'transparent', color:'#ccc', border:'1px solid #444', borderRadius:7, padding:'0 10px', height:32, fontSize:12, cursor:'pointer', whiteSpace:'nowrap' }}>
+              📅 Réservations
+              {resaAttenteCount > 0 && <span style={{ marginLeft:6, background:'#dc2626', color:'#fff', borderRadius:99, fontSize:10, fontWeight:700, padding:'1px 6px' }}>{resaAttenteCount}</span>}
+            </button>
             <button onClick={onLogout} style={{background:"transparent", color:"#ccc", border:"1px solid #444", borderRadius:7, padding:"0 10px", height:32, fontSize:12, cursor:"pointer"}}>⎋ Quitter</button>
           </div>
         </header>
@@ -1002,8 +1166,6 @@ function CRMApp({ user, onLogout }) {
         );
       })()}
 
-      {/* Modal lien réservation */}
-      {modalLien && <LienResaModal onClose={()=>setModalLien(false)} showToast={showToast} />}
 
       {/* Modals */}
       {modalAdd && <ClientForm existingClients={clients} onSave={addClient} onCancel={()=>setModalAdd(false)} />}
