@@ -572,12 +572,39 @@ function AccepterModal({ resa, onConfirm, onCancel }) {
   );
 }
 
-function DetailResaModal({ resa, onClose }) {
+const STATUTS_OPTIONS = [
+  { val:'attente',   label:'En attente' },
+  { val:'rappeler',  label:'À rappeler' },
+  { val:'confirmee', label:'Confirmée' },
+  { val:'refusee',   label:'Refusée' },
+  { val:'annulee',   label:'Annulée' },
+  { val:'venue',     label:'Venue' },
+  { val:'absente',   label:'Absente' },
+];
+
+function DetailResaModal({ resa, onClose, onSaved }) {
   const c = resa.clients || {};
   const nom = c.entreprise ? c.entreprise : `${c.prenom || ''} ${c.nom || ''}`.trim();
+  const [statut, setStatut] = useState(resa.statut);
+  const [saving, setSaving] = useState(false);
+
+  async function saveStatut() {
+    setSaving(true);
+    const { error } = await supabase.from('reservations').update({ statut, updated_at: new Date().toISOString() }).eq('id', resa.id);
+    setSaving(false);
+    if (error) { alert('Erreur lors de la mise à jour'); return; }
+    onSaved();
+    onClose();
+  }
+
   return (
     <Modal title="Détail de la réservation" onClose={onClose} maxW={460}
-      footer={[<button key="f" type="button" onClick={onClose} style={{...btnSecondary}}>Fermer</button>]}>
+      footer={[
+        <button key="f" type="button" onClick={onClose} style={{...btnSecondary}}>Fermer</button>,
+        <button key="s" type="button" onClick={saveStatut} disabled={saving || statut === resa.statut} style={{ background: statut !== resa.statut ? '#111' : '#ddd', color: statut !== resa.statut ? '#fff' : '#999', border:'none', borderRadius:8, padding:'0 18px', height:38, fontWeight:700, fontSize:14, cursor: statut !== resa.statut ? 'pointer' : 'not-allowed' }}>
+          {saving ? 'Enregistrement…' : 'Enregistrer'}
+        </button>
+      ]}>
       <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
         <div style={{ fontSize:18, fontWeight:800 }}>{nom || '—'}</div>
         {c.prenom && c.nom && c.entreprise && <div style={{ fontSize:13, color:'#888' }}>{c.prenom} {c.nom}</div>}
@@ -596,10 +623,14 @@ function DetailResaModal({ resa, onClose }) {
           </div>
         ))}
         {resa.commentaire_client && <p style={{ fontSize:13, color:'#aaa', fontStyle:'italic', borderLeft:'3px solid #eee', paddingLeft:10, margin:'4px 0' }}>"{resa.commentaire_client}"</p>}
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:4 }}>
-          <span style={{ fontSize:13, color:'#888' }}>Statut</span>{statutBadge(resa.statut)}
-        </div>
         {resa.raison_refus && <div style={{ background:'#fef2f2', borderRadius:8, padding:'8px 12px', fontSize:13, color:'#dc2626' }}>Motif refus : {resa.raison_refus}</div>}
+        <div style={{ height:1, background:'#f0f0f0', margin:'4px 0' }} />
+        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+          <span style={{ fontSize:13, color:'#555', fontWeight:600, flexShrink:0 }}>Statut</span>
+          <select value={statut} onChange={e=>setStatut(e.target.value)} style={{ flex:1, height:40, border:'1.5px solid #ddd', borderRadius:8, padding:'0 10px', fontSize:14, background:'#fff', outline:'none', cursor:'pointer' }}>
+            {STATUTS_OPTIONS.map(o => <option key={o.val} value={o.val}>{o.label}</option>)}
+          </select>
+        </div>
       </div>
     </Modal>
   );
@@ -766,7 +797,7 @@ function ReservationsPage({ onBack, showToast, user }) {
 
       {acceptResa && <AccepterModal resa={acceptResa} onConfirm={()=>accepter(acceptResa)} onCancel={()=>setAcceptResa(null)} />}
       {refusResa && <RefusModal onConfirm={raison=>refuser(refusResa, raison)} onCancel={()=>setRefusResa(null)} />}
-      {detailResa && <DetailResaModal resa={detailResa} onClose={()=>setDetailResa(null)} />}
+      {detailResa && <DetailResaModal resa={detailResa} onClose={()=>setDetailResa(null)} onSaved={()=>{ loadResa(); setDetailResa(null); }} />}
     </div>
   );
 }
@@ -797,6 +828,8 @@ function CRMApp({ user, onLogout }) {
   const [mobileAction, setMobileAction] = useState(null);
   const [showResaPage, setShowResaPage] = useState(false);
   const [resaAttenteCount, setResaAttenteCount] = useState(0);
+  const [showPlusSheet, setShowPlusSheet] = useState(false);
+  const [mobileTab, setMobileTab] = useState('clients'); // 'clients' | 'reservations'
   const deleteGuard = useRef(false);
   const isMobile = useIsMobile();
 
@@ -1026,7 +1059,7 @@ function CRMApp({ user, onLogout }) {
 
       {/* ═══ MOBILE CARDS ═══ */}
       {isMobile && (
-        <div style={{ paddingTop:146, paddingBottom:80, paddingLeft:12, paddingRight:12 }}>
+        <div style={{ paddingTop:146, paddingBottom:90, paddingLeft:12, paddingRight:12 }}>
           {pageClients.length === 0 && (
             <div style={{ textAlign:'center', padding:'4rem 2rem' }}>
               <div style={{ fontSize:48, marginBottom:12 }}>🔍</div>
@@ -1209,11 +1242,51 @@ function CRMApp({ user, onLogout }) {
         </main>
       )}
 
-      {/* Bouton fixe mobile */}
-      {isMobile && !modalAdd && !modalEdit && !modalDelete && (
-        <button onClick={()=>setModalAdd(true)} style={{ position:'fixed', bottom:0, left:0, right:0, height:64, background:G, color:'#111', border:'none', fontSize:17, fontWeight:800, cursor:'pointer', zIndex:500, boxShadow:'0 -4px 20px rgba(0,0,0,0.12)', display:'flex', alignItems:'center', justifyContent:'center', gap:10, paddingBottom:'env(safe-area-inset-bottom)' }}>
-          <span style={{ fontSize:24 }}>+</span> Ajouter un client
-        </button>
+      {/* Barre nav fixe mobile */}
+      {isMobile && (
+        <>
+          <div style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:500, background:'#fff', borderTop:'1.5px solid #eee', display:'flex', alignItems:'center', paddingBottom:'env(safe-area-inset-bottom)', boxShadow:'0 -2px 16px rgba(0,0,0,0.08)' }}>
+            {/* Gauche — Réservations */}
+            <button onClick={()=>{ setMobileTab('reservations'); setShowResaPage(true); }} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:3, padding:'10px 0', background:'none', border:'none', cursor:'pointer', position:'relative' }}>
+              <span style={{ fontSize:20 }}>📅</span>
+              <span style={{ fontSize:10, fontWeight:600, color: mobileTab==='reservations' ? '#111' : '#bbb' }}>Réservations</span>
+              {resaAttenteCount > 0 && <span style={{ position:'absolute', top:6, right:'calc(50% - 14px)', background:'#dc2626', color:'#fff', borderRadius:99, fontSize:9, fontWeight:700, padding:'1px 4px', lineHeight:1.4 }}>{resaAttenteCount}</span>}
+            </button>
+            {/* Centre — + */}
+            <div style={{ flex:1, display:'flex', justifyContent:'center', alignItems:'center', position:'relative' }}>
+              <button onClick={()=>setShowPlusSheet(true)} style={{ width:54, height:54, borderRadius:'50%', background:G, border:'none', cursor:'pointer', fontSize:28, fontWeight:700, color:'#111', boxShadow:'0 4px 16px rgba(232,197,71,0.5)', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:10 }}>+</button>
+            </div>
+            {/* Droite — Clients */}
+            <button onClick={()=>{ setMobileTab('clients'); setShowResaPage(false); }} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:3, padding:'10px 0', background:'none', border:'none', cursor:'pointer' }}>
+              <span style={{ fontSize:20 }}>👥</span>
+              <span style={{ fontSize:10, fontWeight:600, color: mobileTab==='clients' ? '#111' : '#bbb' }}>Clients</span>
+            </button>
+          </div>
+
+          {/* Bottom sheet + */}
+          {showPlusSheet && (
+            <>
+              <div onPointerDown={()=>setShowPlusSheet(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.4)', zIndex:600 }} />
+              <div style={{ position:'fixed', bottom:0, left:0, right:0, background:'#fff', borderRadius:'20px 20px 0 0', zIndex:601, padding:'20px 16px', paddingBottom:'calc(20px + env(safe-area-inset-bottom))' }}>
+                <div style={{ width:40, height:4, background:'#e5e5e5', borderRadius:99, margin:'0 auto 20px' }} />
+                <button onClick={()=>{ setShowPlusSheet(false); setModalAdd(true); }} style={{ width:'100%', display:'flex', alignItems:'center', gap:14, background:'#f8f8f8', border:'1.5px solid #eee', borderRadius:12, padding:'16px 18px', cursor:'pointer', marginBottom:10 }}>
+                  <span style={{ fontSize:24 }}>👤</span>
+                  <div style={{ textAlign:'left' }}>
+                    <div style={{ fontWeight:700, fontSize:15 }}>Ajouter un client</div>
+                    <div style={{ fontSize:12, color:'#888', marginTop:2 }}>Créer une nouvelle fiche client</div>
+                  </div>
+                </button>
+                <button onClick={()=>{ setShowPlusSheet(false); setShowResaPage(true); }} style={{ width:'100%', display:'flex', alignItems:'center', gap:14, background:'#f8f8f8', border:'1.5px solid #eee', borderRadius:12, padding:'16px 18px', cursor:'pointer' }}>
+                  <span style={{ fontSize:24 }}>📅</span>
+                  <div style={{ textAlign:'left' }}>
+                    <div style={{ fontWeight:700, fontSize:15 }}>Ajouter une réservation</div>
+                    <div style={{ fontSize:12, color:'#888', marginTop:2 }}>Voir les demandes et l'agenda</div>
+                  </div>
+                </button>
+              </div>
+            </>
+          )}
+        </>
       )}
 
       {/* Menu ••• fixe positionné au bouton */}
