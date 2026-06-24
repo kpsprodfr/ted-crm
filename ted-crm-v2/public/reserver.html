@@ -337,8 +337,8 @@ function renderStep3() {
   const el = document.getElementById('step-3');
   const e = step3Errors;
   const isEntreprise = state.genre === 'Entreprise';
-  const prenomLabel = isEntreprise ? 'Prénom <span style="color:#aaa;font-size:12px;font-weight:400">(facultatif)</span>' : 'Prénom <span style="color:#dc2626">*</span>';
-  const nomLabel    = isEntreprise ? 'Nom <span style="color:#aaa;font-size:12px;font-weight:400">(facultatif)</span>'    : 'Nom <span style="color:#dc2626">*</span>';
+  const prenomLabel = 'Prénom <span style="color:#dc2626">*</span>';
+  const nomLabel    = 'Nom <span style="color:#dc2626">*</span>';
 
   const genreBtn = (val, icon) => {
     const sel = state.genre === val;
@@ -420,10 +420,8 @@ function validateStep3() {
   const e = {};
   if (!state.genre) e.genre = 'Veuillez sélectionner une option';
   if (state.genre === 'Entreprise' && !state.societe.trim()) e.societe = "Nom de l'entreprise obligatoire";
-  if (state.genre !== 'Entreprise') {
-    if (!state.prenom.trim()) e.prenom = 'Prénom obligatoire';
-    if (!state.nom.trim()) e.nom = 'Nom obligatoire';
-  }
+  if (!state.prenom.trim()) e.prenom = 'Prénom obligatoire';
+  if (!state.nom.trim()) e.nom = 'Nom obligatoire';
   const tel = normalizeTel(state.tel);
   if (!tel || tel.length !== 10 || !(/^(06|07|01|02|03|04|05|08|09)/.test(tel))) e.tel = 'Numéro invalide (ex : 06 12 34 56 78)';
   if (!state.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email)) e.email = 'Email invalide';
