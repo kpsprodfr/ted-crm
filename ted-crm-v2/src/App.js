@@ -1177,6 +1177,13 @@ function CRMApp({ user, onLogout }) {
   const [showPlusSheet, setShowPlusSheet] = useState(false);
   const [mobileTab, setMobileTab] = useState(window.innerWidth < 768 ? 'reservations' : 'clients'); // 'clients' | 'reservations'
   const [showAddResa, setShowAddResa] = useState(false);
+  const [activeView, setActiveView] = useState('crm'); // 'crm' | 'communications'
+  const [commFilter, setCommFilter] = useState('tous');
+  const [commSearch, setCommSearch] = useState('');
+  const [commSelected, setCommSelected] = useState([]);
+  const [commObjet, setCommObjet] = useState('');
+  const [commMessage, setCommMessage] = useState('');
+  const [commSending, setCommSending] = useState(false);
   const deleteGuard = useRef(false);
   const isMobile = useIsMobile();
 
@@ -1325,6 +1332,158 @@ function CRMApp({ user, onLogout }) {
   if (loading) return <div style={{ textAlign:"center", paddingTop:80, fontSize:16, color:"#888" }}>Chargement des clients…</div>;
   if (showResaPage && !isMobile) return <ReservationsPage onBack={()=>{ setShowResaPage(false); loadResaCount(); }} showToast={showToast} user={user} />;
 
+  if (activeView === 'communications' && !isMobile) {
+    const commClients = clients.filter(c => {
+      const matchFilter = commFilter === 'tous' ? true
+        : commFilter === 'hommes' ? c.genre === 'Homme'
+        : commFilter === 'femmes' ? c.genre === 'Femme'
+        : c.genre === 'Entreprise';
+      const q = commSearch.toLowerCase();
+      const matchSearch = !q || normalizeStr(c.nom).includes(normalizeStr(q)) || normalizeStr(c.prenom).includes(normalizeStr(q)) || (c.mail||'').toLowerCase().includes(q);
+      return matchFilter && matchSearch;
+    });
+    const withEmail = commClients.filter(c => c.mail);
+    const allSelected = withEmail.length > 0 && withEmail.every(c => commSelected.includes(c.id));
+
+    const toggleAll = () => {
+      if (allSelected) setCommSelected(s => s.filter(id => !withEmail.find(c => c.id === id)));
+      else setCommSelected(s => [...new Set([...s, ...withEmail.map(c => c.id)])]);
+    };
+    const toggleOne = (id) => setCommSelected(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
+
+    const selectedClients = clients.filter(c => commSelected.includes(c.id) && c.mail);
+    const canSend = selectedClients.length > 0 && commObjet.trim() && commMessage.trim() && !commSending;
+
+    const buildHtml = (client) => `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#f8f8f8;padding:20px">
+  <div style="background:#111111;padding:24px;text-align:center;border-radius:12px 12px 0 0;border-bottom:4px solid #E8C547">
+    <img src="https://ted-crm.pages.dev/favicon.png" alt="Le TED" style="height:50px;margin-bottom:8px" />
+    <h1 style="color:#E8C547;margin:0;font-size:24px;letter-spacing:2px">LE TED</h1>
+    <p style="color:#888;margin:4px 0 0;font-size:12px">RESTAURANT &amp; CLUB — CHASSIEU</p>
+  </div>
+  <div style="background:#fff;padding:28px 24px;border-radius:0 0 12px 12px">
+    ${commMessage.replace(/\n/g,'<br>').replace(/{prenom}/g, client.prenom||'').replace(/{nom}/g, client.nom||'').replace(/{tel}/g, client.tel||'')}
+    <div style="border-top:1px solid #eee;padding-top:20px;text-align:center;margin-top:24px">
+      <p style="color:#111;font-weight:700;font-size:14px;margin:0 0 6px">Le TED — Restaurant &amp; Club</p>
+      <p style="color:#888;font-size:12px;margin:0 0 4px">📍 28 Av. des Frères Montgolfier, 69680 Chassieu</p>
+      <p style="color:#888;font-size:12px;margin:0 0 4px">📞 04 78 90 67 80</p>
+      <p style="margin:6px 0 0;text-align:center"><a href="https://leted.fr" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:#111;font-size:14px;font-weight:700"><img src="https://ted-crm.pages.dev/favicon.png" style="height:16px" /> leted.fr</a></p>
+    </div>
+  </div>
+</div>`;
+
+    const insertVar = (v) => setCommMessage(m => m + v);
+
+    const handleSendAll = async () => {
+      if (!window.confirm(`Vous allez envoyer ${selectedClients.length} email(s). Confirmer ?`)) return;
+      setCommSending(true);
+      let sent = 0;
+      for (const client of selectedClients) {
+        const res = await sendBrevoEmail(client.mail, `${client.prenom||''} ${client.nom||''}`.trim(), commObjet, buildHtml(client));
+        if (res?.success) sent++;
+      }
+      setCommSending(false);
+      showToast(`📧 ${sent} email(s) envoyé(s) ✓`);
+      setCommObjet(''); setCommMessage(''); setCommSelected([]);
+      setActiveView('crm');
+    };
+
+    const previewHtml = commMessage ? buildHtml({ prenom: 'Prénom', nom: 'Nom', tel: '06 XX XX XX XX' }) : '';
+
+    return (
+      <div style={{minHeight:'100vh', background:'#f8f8f8', fontFamily:"'Inter','Segoe UI',Arial,sans-serif"}}>
+        <div style={{background:'#111', padding:'0 24px', height:56, display:'flex', alignItems:'center', gap:16, borderBottom:'3px solid #E8C547'}}>
+          <button onClick={()=>setActiveView('crm')} style={{background:'none', border:'none', color:'#fff', fontSize:14, cursor:'pointer'}}>← Retour</button>
+          <h2 style={{color:'#fff', fontSize:16, fontWeight:700, margin:0}}>📣 Communications</h2>
+        </div>
+
+        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:24, padding:24, maxWidth:1200, margin:'0 auto'}}>
+
+          {/* Colonne gauche — Destinataires */}
+          <div style={{background:'#fff', borderRadius:14, border:'1.5px solid #eee', padding:20, display:'flex', flexDirection:'column', gap:12}}>
+            <div style={{fontWeight:700, fontSize:15, color:'#111'}}>Destinataires</div>
+
+            {/* Filtres */}
+            <div style={{display:'flex', gap:6, flexWrap:'wrap'}}>
+              {[['tous','Tous'],['hommes','Hommes'],['femmes','Femmes'],['entreprises','Entreprises']].map(([val,label]) => (
+                <button key={val} onClick={()=>setCommFilter(val)} style={{background:commFilter===val?'#111':'#f0f0f0', color:commFilter===val?'#fff':'#555', border:'none', borderRadius:99, padding:'5px 12px', fontSize:12, fontWeight:600, cursor:'pointer'}}>{label}</button>
+              ))}
+            </div>
+
+            {/* Recherche */}
+            <input value={commSearch} onChange={e=>setCommSearch(e.target.value)} placeholder="Rechercher nom / email…" style={{border:'1.5px solid #eee', borderRadius:8, padding:'8px 12px', fontSize:13, outline:'none', width:'100%'}} />
+
+            {/* Tout sélectionner */}
+            <button onClick={toggleAll} style={{background:'#f5f5f5', border:'1.5px solid #ddd', borderRadius:8, padding:'7px 12px', fontSize:12, fontWeight:700, cursor:'pointer', textAlign:'left'}}>
+              {allSelected ? '☑ Désélectionner tout' : '☐ Tout sélectionner'} <span style={{color:'#888', fontWeight:400}}>({withEmail.length} avec email)</span>
+            </button>
+
+            {/* Liste */}
+            <div style={{maxHeight:380, overflowY:'auto', display:'flex', flexDirection:'column', gap:6}}>
+              {commClients.map(c => {
+                const hasEmail = !!c.mail;
+                const checked = commSelected.includes(c.id);
+                const initials = ((c.prenom||'')[0]||(c.nom||'')[0]||'?').toUpperCase();
+                return (
+                  <label key={c.id} style={{display:'flex', alignItems:'center', gap:10, padding:'8px 10px', borderRadius:10, background:checked?'#f9f6e8':'#fff', border:`1.5px solid ${checked?'#E8C547':'#f0f0f0'}`, cursor:hasEmail?'pointer':'default', opacity:hasEmail?1:0.4}}>
+                    <input type="checkbox" checked={checked} disabled={!hasEmail} onChange={()=>toggleOne(c.id)} style={{width:16, height:16, accentColor:'#E8C547'}} />
+                    <div style={{width:32, height:32, borderRadius:'50%', background:'#111', color:G, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:13, flexShrink:0}}>{initials}</div>
+                    <div style={{flex:1, minWidth:0}}>
+                      <div style={{fontWeight:600, fontSize:13, color:'#111'}}>{c.prenom} {c.nom}</div>
+                      <div style={{fontSize:11, color:hasEmail?'#3b82f6':'#bbb', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.mail||'Pas d\'email'}</div>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+
+            <div style={{fontSize:12, color:'#888', borderTop:'1px solid #eee', paddingTop:10}}>
+              <strong style={{color:'#111'}}>{commSelected.length}</strong> destinataire(s) sélectionné(s)
+            </div>
+          </div>
+
+          {/* Colonne droite — Composer */}
+          <div style={{display:'flex', flexDirection:'column', gap:16}}>
+            <div style={{background:'#fff', borderRadius:14, border:'1.5px solid #eee', padding:20, display:'flex', flexDirection:'column', gap:12}}>
+              <div style={{fontWeight:700, fontSize:15, color:'#111'}}>Composer le message</div>
+
+              <div>
+                <label style={{fontSize:12, fontWeight:600, color:'#555', display:'block', marginBottom:4}}>Objet</label>
+                <input value={commObjet} onChange={e=>setCommObjet(e.target.value)} placeholder="Objet de l'email…" style={{width:'100%', border:'1.5px solid #ddd', borderRadius:8, padding:'9px 12px', fontSize:14, outline:'none', boxSizing:'border-box'}} />
+              </div>
+
+              <div>
+                <label style={{fontSize:12, fontWeight:600, color:'#555', display:'block', marginBottom:4}}>Message</label>
+                <textarea value={commMessage} onChange={e=>setCommMessage(e.target.value)} placeholder="Bonjour {prenom},\n\nVotre message ici…" rows={7} style={{width:'100%', border:'1.5px solid #ddd', borderRadius:8, padding:'9px 12px', fontSize:14, outline:'none', resize:'vertical', minHeight:200, boxSizing:'border-box', fontFamily:'inherit'}} />
+              </div>
+
+              <div>
+                <div style={{fontSize:12, fontWeight:600, color:'#555', marginBottom:6}}>Variables disponibles :</div>
+                <div style={{display:'flex', gap:6', flexWrap:'wrap'}}>
+                  {['{prenom}','{nom}','{tel}'].map(v => (
+                    <button key={v} onClick={()=>insertVar(v)} style={{background:'#f0f0f0', border:'1px solid #ddd', borderRadius:6, padding:'3px 10px', fontSize:12, fontWeight:600, cursor:'pointer', color:'#444'}}>{v}</button>
+                  ))}
+                </div>
+              </div>
+
+              <button onClick={handleSendAll} disabled={!canSend} style={{background:canSend?G:'#ddd', color:canSend?'#111':'#999', border:'none', borderRadius:10, padding:'13px 20px', fontSize:15, fontWeight:800, cursor:canSend?'pointer':'not-allowed', marginTop:4}}>
+                {commSending ? 'Envoi en cours…' : `📤 Envoyer à ${selectedClients.length} destinataire(s)`}
+              </button>
+            </div>
+
+            {/* Aperçu */}
+            {previewHtml && (
+              <div style={{background:'#fff', borderRadius:14, border:'1.5px solid #eee', padding:20}}>
+                <div style={{fontSize:12, fontWeight:600, color:'#555', marginBottom:10}}>Aperçu (exemple)</div>
+                <div style={{border:'1px solid #eee', borderRadius:8, overflow:'hidden'}} dangerouslySetInnerHTML={{__html: previewHtml}} />
+              </div>
+            )}
+          </div>
+        </div>
+        {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
+      </div>
+    );
+  }
+
   return (
     <div style={{ fontFamily:"'Inter','Segoe UI',Arial,sans-serif", minHeight:"100vh", background:"#f8f8f8", color:"#111" }}>
       <style>{`
@@ -1397,6 +1556,7 @@ function CRMApp({ user, onLogout }) {
               📅 Réservations
               {resaAttenteCount > 0 && <span style={{ marginLeft:6, background:'#dc2626', color:'#fff', borderRadius:99, fontSize:10, fontWeight:700, padding:'1px 6px' }}>{resaAttenteCount}</span>}
             </button>
+            <button onClick={()=>setActiveView('communications')} style={{background:'transparent', color:'#ccc', border:'1px solid #444', borderRadius:7, padding:'0 12px', height:32, fontSize:12, cursor:'pointer', whiteSpace:'nowrap'}}>📣 Communications</button>
             <button onClick={onLogout} style={{background:"transparent", color:"#ccc", border:"1px solid #444", borderRadius:7, padding:"0 10px", height:32, fontSize:12, cursor:"pointer"}}>⎋ Quitter</button>
           </div>
         </header>
