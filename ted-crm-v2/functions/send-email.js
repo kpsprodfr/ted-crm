@@ -9,7 +9,7 @@ export async function onRequestPost(context) {
       'api-key': apiKey
     },
     body: JSON.stringify({
-      sender: { name: 'Le TED', email: 'reservations@leted.fr' },
+      sender: { name: 'Le TED', email: 'com.astegal@gmail.com' },
       to: [{ email: to, name: toName }],
       subject,
       htmlContent: html
