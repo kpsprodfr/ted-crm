@@ -227,61 +227,46 @@ function renderProgress() {
   labels.innerHTML = labelsH;
 }
 
-// ─── Step 1 — Calendrier ──────────────────────────────────────────────────────
+// ─── Step 1 — Date 3 selects ──────────────────────────────────────────────────
 function renderStep1() {
   const el = document.getElementById('step-1');
-  const today = todayStr();
-  const year = state.calYear, month = state.calMonth;
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month+1, 0).getDate();
-  const startDow = (firstDay.getDay() + 6) % 7; // 0=Lun
+  const today = new Date();
+  const selJour = state.selJour || String(today.getDate());
+  const selMois = state.selMois || String(today.getMonth() + 1);
+  const selAnnee = state.selAnnee || String(today.getFullYear());
 
-  // Nav buttons: disable prev if current month is current month or past
-  const nowD = new Date(); const nowY = nowD.getFullYear(); const nowM = nowD.getMonth();
-  const canPrev = (year > nowY) || (year === nowY && month > nowM);
+  const selStyle = 'height:52px;border:1.5px solid #ddd;border-radius:10px;padding:0 10px;font-size:17px;background:#fff;outline:none;cursor:pointer;font-family:inherit;color:#111;';
 
-  let dayHeaders = JOURS.map(j => `<div class="cal-day-header">${j}</div>`).join('');
-  let cells = '';
-  for (let i = 0; i < startDow; i++) cells += '<div class="cal-day empty"></div>';
-  for (let d = 1; d <= lastDay; d++) {
-    const iso = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-    const isPast = iso < today;
-    const isToday = iso === today;
-    const isSel = iso === state.date;
-    let cls = 'cal-day';
-    if (isPast) cls += ' past';
-    else if (isSel) cls += ' available selected';
-    else cls += ' available';
-    if (isToday && !isPast) cls += ' today';
-    const click = isPast ? '' : `onclick="selectDate('${iso}')"`;
-    cells += `<div class="${cls}" ${click}>${d}</div>`;
-  }
+  let joursOpts = '';
+  for (let d = 1; d <= 31; d++) joursOpts += `<option value="${d}" ${String(d)===selJour?'selected':''}>${d}</option>`;
+
+  let moisOpts = MOIS.map((m,i) => `<option value="${i+1}" ${String(i+1)===selMois?'selected':''}>${m}</option>`).join('');
+
+  let anneesOpts = [2026,2027].map(y => `<option value="${y}" ${String(y)===selAnnee?'selected':''}>${y}</option>`).join('');
 
   el.innerHTML = `
     <div class="step-title">📅 Choisissez une date</div>
-    <div class="step-subtitle">Sélectionnez le jour souhaité pour votre réservation</div>
-    <div class="cal-nav">
-      <button class="cal-btn" onclick="prevMonth()" ${!canPrev?'disabled style="opacity:0.3;cursor:not-allowed"':''}>‹</button>
-      <div class="cal-month">${MOIS[month]} ${year}</div>
-      <button class="cal-btn" onclick="nextMonth()">›</button>
+    <div class="step-subtitle">Sélectionnez le jour de votre réservation</div>
+    <div style="display:flex;gap:10px;margin-bottom:28px;">
+      <select style="${selStyle}flex:0 0 70px;" onchange="updateDate('jour',this.value)">${joursOpts}</select>
+      <select style="${selStyle}flex:1;" onchange="updateDate('mois',this.value)">${moisOpts}</select>
+      <select style="${selStyle}flex:0 0 90px;" onchange="updateDate('annee',this.value)">${anneesOpts}</select>
     </div>
-    <div class="cal-grid">${dayHeaders}${cells}</div>
+    ${state.date ? `<div style="background:#fffbeb;border:1.5px solid var(--g);border-radius:10px;padding:12px 16px;font-size:14px;font-weight:600;color:#111;margin-bottom:20px;">📅 ${fmtDate(state.date)}</div>` : ''}
     <div class="nav-row">
-      <button class="btn-next" id="next-1" onclick="goStep(2)" ${!state.date?'disabled':''}>Suivant →</button>
+      <button class="btn-next" onclick="goStep(2)" ${!state.date?'disabled':''}>Suivant →</button>
     </div>
   `;
 }
 
-function selectDate(iso) {
-  state.date = iso;
-  renderStep1();
-}
-function prevMonth() {
-  if (state.calMonth === 0) { state.calMonth = 11; state.calYear--; } else state.calMonth--;
-  renderStep1();
-}
-function nextMonth() {
-  if (state.calMonth === 11) { state.calMonth = 0; state.calYear++; } else state.calMonth++;
+function updateDate(field, val) {
+  if (field === 'jour') state.selJour = val;
+  if (field === 'mois') state.selMois = val;
+  if (field === 'annee') state.selAnnee = val;
+  const j = state.selJour || String(new Date().getDate());
+  const m = state.selMois || String(new Date().getMonth() + 1);
+  const a = state.selAnnee || String(new Date().getFullYear());
+  state.date = `${a}-${String(m).padStart(2,'0')}-${String(j).padStart(2,'0')}`;
   renderStep1();
 }
 

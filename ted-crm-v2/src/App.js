@@ -503,52 +503,61 @@ const OCCASIONS = ["Anniversaire","Saint-Valentin","Repas d'affaires","Mariage",
 const HEURES_MIDI = ["12:00","12:15","12:30","12:45","13:00","13:15","13:30","13:45","14:00"];
 const HEURES_SOIR = ["19:00","19:15","19:30","19:45","20:00","20:15","20:30","20:45","21:00","21:15","21:30"];
 
-function AddResaModal({ clients, onClose, onSaved, showToast, user }) {
-  const [clientSearch, setClientSearch] = useState('');
-  const [selectedClient, setSelectedClient] = useState(null);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [date, setDate] = useState('');
+function AddResaModal({ onClose, onSaved, showToast, user }) {
+  const today = new Date();
+  const [prenom, setPrenom] = useState('');
+  const [nom, setNom] = useState('');
+  const [tel, setTel] = useState('');
+  const [email, setEmail] = useState('');
+  const [jour, setJour] = useState(String(today.getDate()));
+  const [mois, setMois] = useState(String(today.getMonth() + 1));
+  const [annee, setAnnee] = useState(String(today.getFullYear()));
   const [service, setService] = useState('soir');
   const [heure, setHeure] = useState('');
   const [nbPersonnes, setNbPersonnes] = useState(2);
   const [occasion, setOccasion] = useState('');
-  const [statut, setStatut] = useState('attente');
   const [saving, setSaving] = useState(false);
-
-  const searchRef = useRef();
-
-  const clientsFiltered = useMemo(() => {
-    if (!clientSearch.trim()) return [];
-    const q = normalizeStr(clientSearch);
-    return clients.filter(c => {
-      const blob = [normalizeStr(c.nom), normalizeStr(c.prenom), c.tel||'', normalizeStr(c.mail), normalizeStr(c.entreprise)].join(' ');
-      return blob.includes(q);
-    }).slice(0, 8);
-  }, [clientSearch, clients]);
 
   const heures = service === 'midi' ? HEURES_MIDI : HEURES_SOIR;
 
-  function selectClient(c) {
-    setSelectedClient(c);
-    setClientSearch(c.entreprise ? c.entreprise : `${c.prenom || ''} ${c.nom || ''}`.trim());
-    setShowDropdown(false);
-  }
+  const selStyle = { height:44, border:'1.5px solid #ddd', borderRadius:7, padding:'0 8px', fontSize:15, background:'#fff', outline:'none', cursor:'pointer' };
 
   async function handleSave() {
-    if (!selectedClient) { showToast('Sélectionnez un client', 'error'); return; }
-    if (!date) { showToast('Choisissez une date', 'error'); return; }
+    if (!prenom.trim()) { showToast('Prénom requis', 'error'); return; }
+    if (!nom.trim()) { showToast('Nom requis', 'error'); return; }
+    if (!tel.trim()) { showToast('Téléphone requis', 'error'); return; }
+    const dateStr = `${annee}-${String(mois).padStart(2,'0')}-${String(jour).padStart(2,'0')}`;
     setSaving(true);
+    // Chercher client existant par tel normalisé, sinon créer
+    const telNorm = tel.replace(/[\s.\-()]/g,'').replace(/^0/,'+33');
+    let clientId = null;
+    const { data: existing } = await supabase.from('clients').select('id').eq('tel_normalise', telNorm).maybeSingle();
+    if (existing) {
+      clientId = existing.id;
+    } else {
+      const { data: newClient, error: errClient } = await supabase.from('clients').insert({
+        prenom: capitalize(prenom.trim()),
+        nom: capitalize(nom.trim()),
+        tel: tel.trim(),
+        mail: email.trim() || null,
+        genre: 'Non renseigné',
+        tel_normalise: telNorm,
+        source: 'manuel',
+      }).select('id').single();
+      if (errClient) { setSaving(false); showToast('Erreur création client', 'error'); return; }
+      clientId = newClient.id;
+    }
     const { error } = await supabase.from('reservations').insert({
-      client_id: selectedClient.id,
-      date,
+      client_id: clientId,
+      date: dateStr,
       service,
       heure: heure || null,
       nb_personnes: nbPersonnes,
       occasion: occasion || null,
-      statut,
+      statut: 'confirmee',
       source: 'manuel',
-      traited_by: statut === 'confirmee' ? user?.email : null,
-      traited_at: statut === 'confirmee' ? new Date().toISOString() : null,
+      traited_by: user?.email,
+      traited_at: new Date().toISOString(),
     });
     setSaving(false);
     if (error) { showToast('Erreur lors de la création', 'error'); return; }
@@ -569,36 +578,41 @@ function AddResaModal({ clients, onClose, onSaved, showToast, user }) {
       <button key="save" onClick={handleSave} disabled={saving} style={{ ...btnPrimary, opacity: saving ? 0.6 : 1 }}>{saving ? 'Enregistrement…' : 'Enregistrer'}</button>
     ]}>
       <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-        {/* Client search */}
-        <div style={{ position:'relative' }}>
-          <label style={lbl}>Client *</label>
-          <input
-            ref={searchRef}
-            value={clientSearch}
-            onChange={e => { setClientSearch(e.target.value); setSelectedClient(null); setShowDropdown(true); }}
-            onFocus={() => setShowDropdown(true)}
-            placeholder="Rechercher un client…"
-            style={inp(false)}
-            autoComplete="off"
-          />
-          {showDropdown && clientsFiltered.length > 0 && (
-            <div style={{ position:'absolute', top:'100%', left:0, right:0, background:'#fff', border:'1.5px solid #eee', borderRadius:10, zIndex:50, boxShadow:'0 8px 24px rgba(0,0,0,0.1)', maxHeight:220, overflowY:'auto' }}>
-              {clientsFiltered.map(c => (
-                <div key={c.id} onPointerDown={()=>selectClient(c)} style={{ padding:'10px 14px', cursor:'pointer', borderBottom:'1px solid #f5f5f5', fontSize:14 }}
-                  onMouseEnter={e=>e.currentTarget.style.background='#fffbeb'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
-                  <span style={{ fontWeight:700 }}>{c.entreprise ? c.entreprise : `${c.prenom||''} ${c.nom||''}`.trim()}</span>
-                  {c.tel && <span style={{ color:'#888', marginLeft:8, fontSize:12 }}>{c.tel}</span>}
-                </div>
-              ))}
-            </div>
-          )}
-          {selectedClient && <div style={{ fontSize:12, color:'#16a34a', marginTop:4 }}>✓ {selectedClient.entreprise ? selectedClient.entreprise : `${selectedClient.prenom||''} ${selectedClient.nom||''}`.trim()}</div>}
+
+        {/* Infos client */}
+        <div style={{ display:'flex', gap:8 }}>
+          <div style={{ flex:1 }}>
+            <label style={lbl}>Prénom *</label>
+            <input value={prenom} onChange={e=>setPrenom(e.target.value)} placeholder="Prénom" style={inp(false)} />
+          </div>
+          <div style={{ flex:1 }}>
+            <label style={lbl}>Nom *</label>
+            <input value={nom} onChange={e=>setNom(e.target.value)} placeholder="Nom" style={inp(false)} />
+          </div>
+        </div>
+        <div>
+          <label style={lbl}>Téléphone *</label>
+          <input value={tel} onChange={e=>setTel(e.target.value)} placeholder="06 12 34 56 78" type="tel" style={inp(false)} />
+        </div>
+        <div>
+          <label style={lbl}>Email</label>
+          <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="optionnel" type="email" style={inp(false)} />
         </div>
 
-        {/* Date */}
+        {/* Date — 3 selects */}
         <div>
           <label style={lbl}>Date *</label>
-          <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={inp(false)} />
+          <div style={{ display:'flex', gap:8 }}>
+            <select value={jour} onChange={e=>setJour(e.target.value)} style={{ ...selStyle, flex:'0 0 70px' }}>
+              {Array.from({length:31},(_,i)=><option key={i+1} value={i+1}>{i+1}</option>)}
+            </select>
+            <select value={mois} onChange={e=>setMois(e.target.value)} style={{ ...selStyle, flex:1 }}>
+              {MONTHS_FR.map((m,i)=><option key={i+1} value={i+1}>{m}</option>)}
+            </select>
+            <select value={annee} onChange={e=>setAnnee(e.target.value)} style={{ ...selStyle, flex:'0 0 80px' }}>
+              {[2026,2027].map(y=><option key={y} value={y}>{y}</option>)}
+            </select>
+          </div>
         </div>
 
         {/* Service */}
@@ -639,15 +653,6 @@ function AddResaModal({ clients, onClose, onSaved, showToast, user }) {
           </select>
         </div>
 
-        {/* Statut initial */}
-        <div>
-          <label style={lbl}>Statut initial</label>
-          <div style={{ display:'flex', gap:8 }}>
-            {[{val:'attente',label:'En attente'},{val:'confirmee',label:'Confirmée'}].map(o => (
-              <button key={o.val} onClick={()=>setStatut(o.val)} style={{ flex:1, height:42, border:`1.5px solid ${statut===o.val?'#111':'#eee'}`, borderRadius:8, background:statut===o.val?'#111':'#f8f8f8', color:statut===o.val?'#fff':'#666', fontWeight:700, fontSize:13, cursor:'pointer' }}>{o.label}</button>
-            ))}
-          </div>
-        </div>
       </div>
     </Modal>
   );
@@ -1448,21 +1453,21 @@ function CRMApp({ user, onLogout }) {
           {/* Bottom sheet + */}
           {showPlusSheet && (
             <>
-              <div onPointerDown={()=>setShowPlusSheet(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.4)', zIndex:600 }} />
-              <div style={{ position:'fixed', bottom:0, left:0, right:0, background:'#fff', borderRadius:'20px 20px 0 0', zIndex:601, padding:'20px 16px', paddingBottom:'calc(20px + env(safe-area-inset-bottom))' }}>
-                <div style={{ width:40, height:4, background:'#e5e5e5', borderRadius:99, margin:'0 auto 20px' }} />
-                <button onClick={()=>{ setShowPlusSheet(false); setModalAdd(true); }} style={{ width:'100%', display:'flex', alignItems:'center', gap:14, background:'#f8f8f8', border:'1.5px solid #eee', borderRadius:12, padding:'16px 18px', cursor:'pointer', marginBottom:10 }}>
-                  <span style={{ fontSize:24 }}>👤</span>
+              <div onPointerDown={()=>setShowPlusSheet(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1999 }} />
+              <div style={{ position:'fixed', bottom:0, left:0, right:0, background:'#fff', borderRadius:'20px 20px 0 0', zIndex:2000, paddingTop:20, paddingBottom:'calc(16px + env(safe-area-inset-bottom))' }}>
+                <div style={{ width:40, height:4, background:'#e5e5e5', borderRadius:99, margin:'0 auto 16px' }} />
+                <button onClick={()=>{ setShowPlusSheet(false); setModalAdd(true); }} style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', border:'none', background:'none', width:'100%', cursor:'pointer', borderBottom:'1px solid #f0f0f0' }}>
+                  <div style={{ width:44, height:44, background:'#f0fdf4', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>👤</div>
                   <div style={{ textAlign:'left' }}>
-                    <div style={{ fontWeight:700, fontSize:15 }}>Ajouter un client</div>
-                    <div style={{ fontSize:12, color:'#888', marginTop:2 }}>Créer une nouvelle fiche client</div>
+                    <div style={{ fontWeight:700, fontSize:14, color:'#111' }}>Ajouter un client</div>
+                    <div style={{ fontSize:12, color:'#888' }}>Créer une nouvelle fiche client</div>
                   </div>
                 </button>
-                <button onClick={()=>{ setShowPlusSheet(false); setShowAddResa(true); }} style={{ width:'100%', display:'flex', alignItems:'center', gap:14, background:'#f8f8f8', border:'1.5px solid #eee', borderRadius:12, padding:'16px 18px', cursor:'pointer' }}>
-                  <span style={{ fontSize:24 }}>📅</span>
+                <button onClick={()=>{ setShowPlusSheet(false); setShowAddResa(true); }} style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', border:'none', background:'none', width:'100%', cursor:'pointer' }}>
+                  <div style={{ width:44, height:44, background:'#fffbea', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>📅</div>
                   <div style={{ textAlign:'left' }}>
-                    <div style={{ fontWeight:700, fontSize:15 }}>Ajouter une réservation</div>
-                    <div style={{ fontSize:12, color:'#888', marginTop:2 }}>Créer une réservation manuellement</div>
+                    <div style={{ fontWeight:700, fontSize:14, color:'#111' }}>Ajouter une réservation</div>
+                    <div style={{ fontSize:12, color:'#888' }}>Saisie manuelle par téléphone</div>
                   </div>
                 </button>
               </div>
@@ -1490,7 +1495,7 @@ function CRMApp({ user, onLogout }) {
 
 
       {/* Modals */}
-      {showAddResa && <AddResaModal clients={clients} onClose={()=>setShowAddResa(false)} onSaved={()=>{ loadResaCount(); }} showToast={showToast} user={user} />}
+      {showAddResa && <AddResaModal onClose={()=>setShowAddResa(false)} onSaved={()=>{ loadResaCount(); }} showToast={showToast} user={user} />}
       {modalAdd && <ClientForm existingClients={clients} onSave={addClient} onCancel={()=>setModalAdd(false)} />}
       {modalEdit && <ClientForm initial={modalEdit} existingClients={clients} onSave={editClient} onCancel={()=>setModalEdit(null)} />}
       {modalDelete && <ConfirmModal title="Supprimer ce client ?" msg={`Êtes-vous sûr de vouloir supprimer définitivement ${modalDelete.prenom} ${modalDelete.nom} ? Cette action est irréversible.`} onOk={()=>deleteClient(modalDelete.id)} onCancel={()=>setModalDelete(null)} okLabel="Supprimer définitivement" danger />}
