@@ -285,8 +285,8 @@ function nextMonth() {
 }
 
 // ─── Step 2 — Détails ─────────────────────────────────────────────────────────
-const HEURES_MIDI = ['12h00','12h30','13h00'];
-const HEURES_SOIR = ['19h00','19h30','20h00','20h30','21h00'];
+const HEURES_MIDI = ['12h00','12h15','12h30','12h45','13h00','13h15','13h30'];
+const HEURES_SOIR = ['19h00','19h15','19h30','19h45','20h00','20h15','20h30','20h45','21h00','21h15','21h30'];
 
 function renderStep2() {
   const el = document.getElementById('step-2');
@@ -310,8 +310,8 @@ function renderStep2() {
 
     ${heures.length ? `
     <div class="section-label" style="margin-top:22px">Créneau horaire</div>
-    <div class="btn-group">
-      ${heures.map(h=>`<button class="choice-btn heure ${state.heure===h?'selected':''}" onclick="selectHeure('${h}')">${h}</button>`).join('')}
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      ${heures.map(h=>`<button onclick="selectHeure('${h}')" style="padding:10px 14px;border-radius:8px;border:1.5px solid ${state.heure===h?'#E8C547':'#ddd'};background:${state.heure===h?'#E8C547':'#fff'};font-size:14px;cursor:pointer;font-weight:${state.heure===h?'700':'400'};color:#111;transition:all 0.15s;">${h}</button>`).join('')}
     </div>` : ''}
 
     <div class="nav-row">
