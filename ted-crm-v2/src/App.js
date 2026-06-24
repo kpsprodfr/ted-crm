@@ -1585,6 +1585,18 @@ function CRMApp({ user, onLogout }) {
                     setTimeout(()=>{ ta.focus(); ta.setSelectionRange(start + v.length, start + v.length); }, 0);
                   }} style={{background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:6, padding:'4px 10px', fontSize:12, fontWeight:600, cursor:'pointer', color:'#111'}}>{v}</button>
                 ))}
+                {/* Bouton lien résa email */}
+                <button onClick={()=>{
+                  const ta = commTextareaRef.current;
+                  if (!ta) return;
+                  const start = ta.selectionStart;
+                  const lien = 'https://ted-crm.pages.dev/reserver.html';
+                  const newVal = commMessage.substring(0, start) + lien + commMessage.substring(start);
+                  setCommMessage(newVal);
+                  setTimeout(()=>{ ta.focus(); ta.setSelectionRange(start + lien.length, start + lien.length); }, 0);
+                }} style={{background:'#f0f8ff', border:'1.5px solid #3b82f6', borderRadius:6, padding:'4px 10px', fontSize:12, fontWeight:600, color:'#3b82f6', cursor:'pointer', marginRight:6, marginBottom:6}}>
+                  🔗 Lien résa
+                </button>
                 {/* Bouton emoji */}
                 <div style={{position:'relative', marginLeft:4}}>
                   <button onClick={()=>setShowEmojiPicker(p=>!p)} style={{background:'#f5f5f5', border:'1px solid #eee', borderRadius:6, padding:'4px 10px', fontSize:16, cursor:'pointer', lineHeight:1}}>😊</button>
@@ -1860,18 +1872,30 @@ function CRMApp({ user, onLogout }) {
                   </div>
                   <div style={{display:'flex', gap:6, flexWrap:'wrap', alignItems:'center', marginBottom:16}}>
                     <span style={{fontSize:11, color:'#bbb', alignSelf:'center'}}>Insérer :</span>
-                    {['{prenom}','{nom}'].map(v => (
+                    {['{prenom}','{nom}','{tel}','{entreprise}'].map(v => (
                       <button key={v} onClick={()=>{
                         const ta = smsTextareaRef.current;
                         if (!ta) return;
                         const start = ta.selectionStart;
-                        const newVal = (smsMessage.substring(0, start) + v + smsMessage.substring(start)).slice(0, 160);
+                        const newVal = (smsMessage.substring(0, start) + v + smsMessage.substring(start)).slice(0, smsLimit);
                         setSmsMessage(newVal);
                         setTimeout(()=>{ ta.focus(); ta.setSelectionRange(start + v.length, start + v.length); }, 0);
-                      }} style={{background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:6, padding:'4px 10px', fontSize:12, fontWeight:600, color:'#111', cursor:'pointer'}}>
+                      }} style={{background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:6, padding:'4px 10px', fontSize:12, fontWeight:600, color:'#111', cursor:'pointer', marginRight:6, marginBottom:6}}>
                         {v}
                       </button>
                     ))}
+                    {/* Bouton lien résa SMS */}
+                    <button onClick={()=>{
+                      const ta = smsTextareaRef.current;
+                      if (!ta) return;
+                      const start = ta.selectionStart;
+                      const lien = 'https://ted-crm.pages.dev/reserver.html';
+                      const newVal = (smsMessage.substring(0, start) + lien + smsMessage.substring(start)).slice(0, smsLimit);
+                      setSmsMessage(newVal);
+                      setTimeout(()=>{ ta.focus(); ta.setSelectionRange(start + lien.length, start + lien.length); }, 0);
+                    }} style={{background:'#f0f8ff', border:'1.5px solid #3b82f6', borderRadius:6, padding:'4px 10px', fontSize:12, fontWeight:600, color:'#3b82f6', cursor:'pointer', marginRight:6, marginBottom:6}}>
+                      🔗 Lien résa
+                    </button>
                     {/* Bouton emoji */}
                     <div style={{position:'relative', marginLeft:4}}>
                       <button onClick={()=>setShowSmsEmojiPicker(p=>!p)} style={{background:'#f5f5f5', border:'1px solid #eee', borderRadius:6, padding:'4px 10px', fontSize:16, cursor:'pointer', lineHeight:1}}>😊</button>
