@@ -7,7 +7,7 @@ export async function onRequestPost(context) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'api-key': apiKey },
     body: JSON.stringify({
-      sender: 'LeTED',
+      sender: 'Le TED',
       recipient: numeroNettoye,
       content: message,
       type: 'transactional'
