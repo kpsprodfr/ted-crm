@@ -1390,6 +1390,7 @@ function CRMApp({ user, onLogout }) {
         setNotifResa({ nom, message: `${date} · ${payload.new.heure || ''} · ${payload.new.nb_personnes} pers.`, id: payload.new.id });
         setTimeout(() => setNotifResa(null), 6000);
         await envoyerNotifLocale(`📅 Nouvelle réservation !`, `${nom} · ${date} · ${payload.new.heure || ''} · ${payload.new.nb_personnes} pers.`);
+        setResaAttenteCount(prev => { const n = prev + 1; updateBadge(n); return n; });
       })
       .subscribe((status) => {
         console.log('Statut Realtime:', status);
@@ -1397,9 +1398,20 @@ function CRMApp({ user, onLogout }) {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
+  async function updateBadge(count) {
+    if ('setAppBadge' in navigator) {
+      try {
+        if (count > 0) await navigator.setAppBadge(count);
+        else await navigator.clearAppBadge();
+      } catch(e) {}
+    }
+  }
+
   async function loadResaCount() {
     const { count } = await supabase.from('reservations').select('id', { count:'exact', head:true }).eq('statut','attente');
-    setResaAttenteCount(count || 0);
+    const n = count || 0;
+    setResaAttenteCount(n);
+    updateBadge(n);
   }
 
   async function loadClients() {
@@ -2387,7 +2399,7 @@ function CRMApp({ user, onLogout }) {
             inline
             showToast={showToast}
             user={user}
-            onResaCountChange={setResaAttenteCount}
+            onResaCountChange={(n) => { setResaAttenteCount(n); updateBadge(n); }}
           />
         </div>
       )}
