@@ -539,6 +539,7 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
   const [nbPersonnes, setNbPersonnes] = useState(2);
   const [occasion, setOccasion] = useState('');
   const [saving, setSaving] = useState(false);
+  const [heureError, setHeureError] = useState(false);
 
   const heures = service === 'midi' ? HEURES_MIDI : HEURES_SOIR;
 
@@ -572,6 +573,7 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
     if (!prenom.trim()) { showToast('Prénom requis', 'error'); return; }
     if (!nom.trim()) { showToast('Nom requis', 'error'); return; }
     if (genre === 'Entreprise' && !entreprise.trim()) { showToast('Nom d\'entreprise requis', 'error'); return; }
+    if (!heure) { setHeureError(true); return; }
     setSaving(true);
     const telNorm = tel.replace(/[\s.\-()]/g,'').replace(/^0/,'+33');
     let clientId = clientFound?.id || null;
@@ -621,7 +623,7 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
   return (
     <Modal title="Ajouter une réservation" onClose={onClose} footer={[
       <button key="cancel" onClick={onClose} style={btnSecondary}>Annuler</button>,
-      <button key="save" onClick={handleSave} disabled={saving} style={{ ...btnPrimary, opacity: saving ? 0.6 : 1 }}>{saving ? 'Enregistrement…' : 'Enregistrer'}</button>
+      <button key="save" onClick={handleSave} disabled={saving || !heure} style={{ ...btnPrimary, opacity: (saving || !heure) ? 0.5 : 1 }}>{saving ? 'Enregistrement…' : 'Enregistrer'}</button>
     ]}>
       <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
 
@@ -693,19 +695,20 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
         <div>
           <label style={lbl}>Service *</label>
           <div style={{ display:'flex', gap:8 }}>
-            <button style={btnSvc('midi')} onClick={()=>{ setService('midi'); setHeure(''); }}>🌞 Midi</button>
-            <button style={btnSvc('soir')} onClick={()=>{ setService('soir'); setHeure(''); }}>🌙 Soir</button>
+            <button style={btnSvc('midi')} onClick={()=>{ setService('midi'); setHeure(''); setHeureError(false); }}>🌞 Midi</button>
+            <button style={btnSvc('soir')} onClick={()=>{ setService('soir'); setHeure(''); setHeureError(false); }}>🌙 Soir</button>
           </div>
         </div>
 
         {/* 7. Heure */}
         <div>
-          <label style={lbl}>Heure</label>
+          <label style={lbl}>Heure *</label>
           <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
             {heures.map(h => (
-              <button key={h} onClick={()=>setHeure(heure===h?'':h)} style={{ padding:'6px 12px', borderRadius:8, border:`1.5px solid ${heure===h?'#111':'#eee'}`, background:heure===h?'#111':'#f8f8f8', color:heure===h?'#fff':'#555', fontWeight:600, fontSize:13, cursor:'pointer' }}>{h}</button>
+              <button key={h} onClick={()=>{ setHeure(heure===h?'':h); setHeureError(false); }} style={{ padding:'6px 12px', borderRadius:8, border:`1.5px solid ${heure===h?'#111':heureError?'#dc2626':'#eee'}`, background:heure===h?'#111':'#f8f8f8', color:heure===h?'#fff':'#555', fontWeight:600, fontSize:13, cursor:'pointer' }}>{h}</button>
             ))}
           </div>
+          {heureError && <p style={{ fontSize:12, color:'#dc2626', marginTop:6, margin:'6px 0 0' }}>* Sélectionnez un créneau horaire</p>}
         </div>
 
         {/* 8. Nb personnes */}
@@ -1527,8 +1530,8 @@ function CRMApp({ user, onLogout }) {
           {/* Bottom sheet + */}
           {showPlusSheet && (
             <>
-              <div onPointerDown={()=>setShowPlusSheet(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1999 }} />
-              <div style={{ position:'fixed', bottom:0, left:0, right:0, background:'#fff', borderRadius:'20px 20px 0 0', zIndex:2000, paddingTop:20, paddingBottom:'calc(16px + env(safe-area-inset-bottom))' }}>
+              <div onPointerDown={()=>setShowPlusSheet(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:2999 }} />
+              <div style={{ position:'fixed', bottom:0, left:0, right:0, background:'#fff', borderRadius:'20px 20px 0 0', zIndex:3000, paddingTop:20, paddingBottom:'calc(16px + env(safe-area-inset-bottom))' }}>
                 <div style={{ width:40, height:4, background:'#e5e5e5', borderRadius:99, margin:'0 auto 16px' }} />
                 <button onClick={()=>{ setShowPlusSheet(false); setModalAdd(true); }} style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', border:'none', background:'none', width:'100%', cursor:'pointer', borderBottom:'1px solid #f0f0f0' }}>
                   <div style={{ width:44, height:44, background:'#f0fdf4', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>👤</div>
