@@ -79,6 +79,27 @@ const inp = (err) => ({ width:"100%", height:44, border:`1.5px solid ${err?"#dc2
 const lbl = { display:"block", fontSize:12, fontWeight:600, color:"#444", marginBottom:5 };
 const fg = { marginBottom:14 };
 
+// ─── Brevo Email ─────────────────────────────────────────────────────────────
+async function sendBrevoEmail(toEmail, toName, subject, htmlContent) {
+  const apiKey = process.env.REACT_APP_BREVO_API_KEY;
+  if (!apiKey) return { success: false, error: 'Clé API manquante' };
+  try {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'api-key': apiKey },
+      body: JSON.stringify({
+        sender: { name: 'Le TED', email: 'reservations@leted.fr' },
+        to: [{ email: toEmail, name: toName }],
+        subject,
+        htmlContent
+      })
+    });
+    return { success: response.ok };
+  } catch(e) {
+    return { success: false, error: e.message };
+  }
+}
+
 // ─── Toast ────────────────────────────────────────────────────────────────────
 function Toast({ msg, type, onClose }) {
   useEffect(() => { const t = setTimeout(onClose, 1500); return () => clearTimeout(t); }, [onClose]);
@@ -903,8 +924,18 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
       statut: 'confirmee', traited_at: new Date().toISOString(), traited_by: user?.email
     }).eq('id', r.id);
     setAcceptResa(null);
-    if (error) showToast('Erreur', 'error');
-    else { showToast('Réservation confirmée ✓'); loadResa(); }
+    if (error) { showToast('Erreur', 'error'); return; }
+    showToast('Réservation confirmée ✓');
+    loadResa();
+    if (r.clients?.mail) {
+      const res = await sendBrevoEmail(
+        r.clients.mail,
+        `${r.clients.prenom || ''} ${r.clients.nom || ''}`.trim(),
+        'Confirmation de votre réservation au TED',
+        `<h2>Bonjour ${r.clients.prenom},</h2><p>Votre réservation au TED est <strong>confirmée</strong> pour le <strong>${r.date}</strong> à <strong>${r.heure}</strong> pour <strong>${r.nb_personnes} personne(s)</strong>.</p><p>Nous avons hâte de vous accueillir !</p><br><p><strong>Le TED</strong><br>28 Av. des Frères Montgolfier, 69680 Chassieu<br>04 78 90 67 80</p>`
+      );
+      showToast(res.success ? '📧 Email envoyé' : '⚠️ Email non envoyé');
+    }
   }
 
   async function refuser(r, raison) {
@@ -912,8 +943,18 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
       statut: 'refusee', raison_refus: raison, traited_at: new Date().toISOString(), traited_by: user?.email
     }).eq('id', r.id);
     setRefusResa(null);
-    if (error) showToast('Erreur', 'error');
-    else { showToast('Réservation refusée'); loadResa(); }
+    if (error) { showToast('Erreur', 'error'); return; }
+    showToast('Réservation refusée');
+    loadResa();
+    if (r.clients?.mail) {
+      const res = await sendBrevoEmail(
+        r.clients.mail,
+        `${r.clients.prenom || ''} ${r.clients.nom || ''}`.trim(),
+        'Votre demande de réservation au TED',
+        `<h2>Bonjour ${r.clients.prenom},</h2><p>Nous avons bien reçu votre demande de réservation pour le <strong>${r.date}</strong>.</p><p>Malheureusement, nous ne pouvons pas la confirmer.<br>Motif : <strong>${raison}</strong>.</p><p>N'hésitez pas à nous contacter pour trouver une autre disponibilité.</p><br><p><strong>Le TED</strong><br>04 78 90 67 80</p>`
+      );
+      showToast(res.success ? '📧 Email envoyé' : '⚠️ Email non envoyé');
+    }
   }
 
   function copyLink() {
