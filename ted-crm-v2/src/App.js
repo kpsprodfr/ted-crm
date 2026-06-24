@@ -618,6 +618,16 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
       }).select('id').single();
       if (errClient) { setSaving(false); showToast('Erreur création client', 'error'); return; }
       clientId = newClient.id;
+    } else {
+      // Client existant — met à jour les champs modifiés
+      const updates = {};
+      if (nom.trim() && capitalize(nom.trim()) !== clientFound.nom) updates.nom = capitalize(nom.trim());
+      if (prenom.trim() && capitalize(prenom.trim()) !== clientFound.prenom) updates.prenom = capitalize(prenom.trim());
+      if (email.trim() && email.trim().toLowerCase() !== clientFound.mail) updates.mail = email.trim().toLowerCase();
+      if (genre && genre !== clientFound.genre) updates.genre = genre;
+      if (Object.keys(updates).length > 0) {
+        await supabase.from('clients').update(updates).eq('id', clientFound.id);
+      }
     }
     const { error } = await supabase.from('reservations').insert({
       client_id: clientId,
