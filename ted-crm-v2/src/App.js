@@ -2239,8 +2239,8 @@ function CRMApp({ user, onLogout }) {
 
   return (
     <div style={{ fontFamily:"'Inter','Segoe UI',Arial,sans-serif", minHeight:"100vh", background:"#f8f8f8", color:"#111" }}>
-      {notifResa && (
-        <div style={{ position:'fixed', top:16, left:'50%', transform:'translateX(-50%)', background:'#111', color:'#fff', borderRadius:14, padding:'14px 20px', zIndex:9999, boxShadow:'0 8px 32px rgba(0,0,0,0.3)', display:'flex', alignItems:'center', gap:12, maxWidth:'90vw', animation:'slideDownFade 0.3s ease', cursor:'pointer', minWidth:280 }}
+      {notifResa && (() => { const isMob = window.innerWidth < 768; return (
+        <div style={{ position:'fixed', top:16, right:isMob?'auto':16, left:isMob?'50%':'auto', transform:isMob?'translateX(-50%)':'none', background:'#111', color:'#fff', borderRadius:14, padding:'14px 20px', zIndex:9999, boxShadow:'0 8px 32px rgba(0,0,0,0.3)', display:'flex', alignItems:'center', gap:12, maxWidth:isMob?'90vw':360, minWidth:280, animation:'slideDownFade 0.3s ease', cursor:'pointer' }}
           onClick={() => { setActiveView('reservations'); setNotifResa(null); }}>
           <div style={{ width:44, height:44, borderRadius:10, background:'#E8C547', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>📅</div>
           <div style={{ flex:1 }}>
@@ -2250,7 +2250,7 @@ function CRMApp({ user, onLogout }) {
           </div>
           <button onClick={(e) => { e.stopPropagation(); setNotifResa(null); }} style={{ background:'rgba(255,255,255,0.1)', border:'none', borderRadius:6, color:'#fff', fontSize:16, cursor:'pointer', padding:'4px 8px', flexShrink:0 }}>✕</button>
         </div>
-      )}
+      ); })()}
       <style>{`
         @keyframes popIn { 0%{opacity:0;transform:scale(0.5)} 70%{transform:scale(1.05)} 100%{opacity:1;transform:scale(1)} }
         @keyframes scaleIn { from{transform:scale(0)} to{transform:scale(1)} }
