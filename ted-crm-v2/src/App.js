@@ -1188,6 +1188,8 @@ function CRMApp({ user, onLogout }) {
   const [commMessage, setCommMessage] = useState('');
   const [commSending, setCommSending] = useState(false);
   const [showConfirmComm, setShowConfirmComm] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [doublons, setDoublons] = useState([]);
   const [emailsHistorique, setEmailsHistorique] = useState([]);
   const [emailsExpanded, setEmailsExpanded] = useState({});
   const commTextareaRef = useRef(null);
@@ -1439,7 +1441,12 @@ function CRMApp({ user, onLogout }) {
       loadEmailsHistorique();
     };
 
-    const handleSendAll = () => setShowConfirmComm(true);
+    const handleSendAll = async () => {
+      const { data: dejaSent } = await supabase.from('emails_envoyes').select('destinataires').eq('objet', commObjet);
+      const dejaSentIds = new Set((dejaSent||[]).flatMap(e => (e.destinataires||[]).map(d => d.id)));
+      setDoublons(commSelected.filter(id => dejaSentIds.has(id)));
+      setShowConfirmComm(true);
+    };
 
     return (
       <div style={{minHeight:'100vh', background:'#f5f5f5', fontFamily:"'Inter','Segoe UI',Arial,sans-serif"}}>
@@ -1520,8 +1527,8 @@ function CRMApp({ user, onLogout }) {
                 placeholder="Écrivez votre message ici..."
                 style={{width:'100%', border:'none', outline:'none', resize:'none', minHeight:220, fontSize:14, lineHeight:1.7, color:'#222', fontFamily:'inherit', background:'transparent'}}
               />
-              {/* Variables */}
-              <div style={{display:'flex', gap:6, flexWrap:'wrap', marginTop:8, paddingTop:8, borderTop:'1px solid #f5f5f5'}}>
+              {/* Variables + Emoji picker */}
+              <div style={{display:'flex', gap:6, flexWrap:'wrap', alignItems:'center', marginTop:8, paddingTop:8, borderTop:'1px solid #f5f5f5'}}>
                 <span style={{fontSize:11, color:'#bbb', alignSelf:'center'}}>Insérer :</span>
                 {['{prenom}','{nom}','{tel}','{entreprise}'].map(v => (
                   <button key={v} onClick={()=>{
@@ -1534,6 +1541,45 @@ function CRMApp({ user, onLogout }) {
                     setTimeout(()=>{ ta.focus(); ta.setSelectionRange(start + v.length, start + v.length); }, 0);
                   }} style={{background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:6, padding:'4px 10px', fontSize:12, fontWeight:600, cursor:'pointer', color:'#111'}}>{v}</button>
                 ))}
+                {/* Bouton emoji */}
+                <div style={{position:'relative', marginLeft:4}}>
+                  <button onClick={()=>setShowEmojiPicker(p=>!p)} style={{background:'#f5f5f5', border:'1px solid #eee', borderRadius:6, padding:'4px 10px', fontSize:16, cursor:'pointer', lineHeight:1}}>😊</button>
+                  {showEmojiPicker && (
+                    <>
+                      <div onClick={()=>setShowEmojiPicker(false)} style={{position:'fixed', inset:0, zIndex:100}} />
+                      <div style={{position:'absolute', bottom:'calc(100% + 8px)', left:0, background:'#fff', border:'1.5px solid #eee', borderRadius:12, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', padding:12, zIndex:101, width:280}}>
+                        {[
+                          {label:'Fêtes', emojis:['🎉','🎊','🥳','🎂','🎁','🎈','🥂','🍾']},
+                          {label:'Restaurant', emojis:['🍽️','🥩','🍷','🍸','🥗','🍕','👨‍🍳','⭐']},
+                          {label:'Communication', emojis:['👋','❤️','🔥','✨','💫','👀','📣','💌']},
+                          {label:'Temps', emojis:['📅','🕐','⏰','🌙','🌟','☀️','🌴']},
+                          {label:'Divers', emojis:['✅','⚠️','💡','🎯','🚀','💎','🏆','👑']},
+                        ].map(group => (
+                          <div key={group.label} style={{marginBottom:8}}>
+                            <div style={{fontSize:10, color:'#bbb', fontWeight:700, textTransform:'uppercase', letterSpacing:0.5, marginBottom:4}}>{group.label}</div>
+                            <div style={{display:'grid', gridTemplateColumns:'repeat(8,1fr)', gap:2}}>
+                              {group.emojis.map(emoji => (
+                                <button key={emoji} onClick={()=>{
+                                  const ta = commTextareaRef.current;
+                                  if (!ta) return;
+                                  const start = ta.selectionStart;
+                                  const end = ta.selectionEnd;
+                                  const newVal = commMessage.substring(0, start) + emoji + commMessage.substring(end);
+                                  setCommMessage(newVal);
+                                  setShowEmojiPicker(false);
+                                  setTimeout(()=>{ ta.focus(); ta.setSelectionRange(start + emoji.length, start + emoji.length); }, 0);
+                                }} style={{background:'none', border:'none', borderRadius:4, fontSize:18, cursor:'pointer', padding:'2px', lineHeight:1, textAlign:'center'}}
+                                  onMouseEnter={e=>e.currentTarget.style.background='#fffbea'}
+                                  onMouseLeave={e=>e.currentTarget.style.background='none'}
+                                >{emoji}</button>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
               {/* Footer non modifiable */}
               <div style={{color:'#aaa', fontSize:12, marginTop:16, paddingTop:12, borderTop:'1px solid #eee'}}>
@@ -1558,64 +1604,55 @@ function CRMApp({ user, onLogout }) {
         </div>
         {/* ─── Historique des envois ─── */}
         <div style={{maxWidth:1300, margin:'0 auto', padding:'0 20px 32px'}}>
-          <div style={{background:'#fff', borderRadius:12, boxShadow:'0 1px 4px rgba(0,0,0,0.08)', overflow:'hidden'}}>
-            <div style={{padding:'14px 20px', borderBottom:'1px solid #f0f0f0', display:'flex', alignItems:'center', gap:10}}>
-              <span style={{fontWeight:700, fontSize:15, color:'#111'}}>📋 Historique des envois</span>
-              <span style={{background:'#f0f0f0', color:'#666', borderRadius:99, padding:'2px 9px', fontSize:12, fontWeight:700}}>{emailsHistorique.length}</span>
-            </div>
+          <div style={{marginTop:32}}>
+            <h3 style={{fontSize:16, fontWeight:800, color:'#111', margin:'0 0 16px', display:'flex', alignItems:'center', gap:8}}>
+              📋 Historique des envois
+              <span style={{background:'#f0f0f0', borderRadius:99, padding:'2px 10px', fontSize:12, fontWeight:600, color:'#666'}}>{emailsHistorique.length}</span>
+            </h3>
 
-            {emailsHistorique.length === 0 ? (
-              <div style={{padding:'32px 20px', textAlign:'center', color:'#bbb', fontSize:14}}>Aucun email envoyé pour l'instant</div>
-            ) : (
-              emailsHistorique.map(entry => {
-                const isOpen = !!emailsExpanded[entry.id];
-                const dt = new Date(entry.created_at);
-                const dateStr = dt.toLocaleDateString('fr-FR', {day:'numeric', month:'short', year:'numeric'});
-                const heureStr = dt.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
-                return (
-                  <div key={entry.id} style={{borderBottom:'1px solid #f5f5f5'}}>
-                    {/* En-tête accordéon */}
-                    <div onClick={()=>toggleEmailExpanded(entry.id)} style={{display:'flex', alignItems:'center', gap:12, padding:'12px 20px', cursor:'pointer', background:isOpen?'#fafafa':'#fff', transition:'background 0.1s'}}>
-                      <span style={{fontSize:18}}>📧</span>
-                      <span style={{fontWeight:700, fontSize:14, color:'#111', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{entry.objet}</span>
-                      <span style={{background:'#f0f0f0', color:'#666', borderRadius:99, padding:'2px 8px', fontSize:11, fontWeight:600, flexShrink:0}}>{entry.nb_destinataires} dest.</span>
-                      <span style={{fontSize:12, color:'#aaa', flexShrink:0}}>{dateStr} à {heureStr}</span>
-                      <span style={{fontSize:18, color:'#bbb', transform:isOpen?'rotate(90deg)':'none', transition:'transform 0.2s', flexShrink:0}}>›</span>
-                    </div>
-
-                    {/* Contenu déplié */}
-                    {isOpen && (
-                      <div style={{padding:'0 20px 16px 20px', background:'#fafafa', borderTop:'1px solid #f0f0f0'}}>
-                        {/* Message */}
-                        <div style={{background:'#fff', border:'1px solid #eee', borderRadius:8, padding:'12px 14px', margin:'12px 0', fontSize:13, color:'#888', fontStyle:'italic', lineHeight:1.6, whiteSpace:'pre-wrap'}}>
-                          {entry.message}
-                        </div>
-                        {/* Destinataires */}
-                        <div style={{display:'flex', flexDirection:'column', gap:6, marginBottom:10}}>
-                          {(entry.destinataires||[]).map((d, i) => {
-                            const initial = ((d.prenom||'')[0]||(d.nom||'')[0]||'?').toUpperCase();
-                            return (
-                              <div key={i} style={{display:'flex', alignItems:'center', gap:8}}>
-                                <div style={{width:28, height:28, borderRadius:'50%', background:'#E8C547', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:800, flexShrink:0}}>{initial}</div>
-                                <span style={{fontSize:13, fontWeight:600, color:'#333'}}>{d.prenom} {d.nom}</span>
-                                <span style={{fontSize:12, color:'#3b82f6', marginLeft:4}}>{d.mail}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                        {/* Footer */}
-                        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:8}}>
-                          <span style={{fontSize:11, color:'#bbb'}}>Envoyé par {entry.envoye_par}</span>
-                          <button onClick={()=>{ setCommObjet(entry.objet); setCommMessage(entry.message||''); }} style={{background:'#f5f5f5', border:'1px solid #ddd', borderRadius:7, padding:'6px 14px', fontSize:12, fontWeight:600, cursor:'pointer', color:'#555'}}>
-                            🔁 Renvoyer
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })
+            {emailsHistorique.length === 0 && (
+              <div style={{textAlign:'center', padding:'3rem', color:'#bbb'}}>
+                <div style={{fontSize:40, marginBottom:8}}>📭</div>
+                <p style={{fontSize:14}}>Aucun email envoyé pour l'instant</p>
+              </div>
             )}
+
+            {emailsHistorique.map(email => (
+              <div key={email.id} style={{background:'#fff', borderRadius:12, border:'1.5px solid #f0f0f0', marginBottom:10, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.04)'}}>
+                <div onClick={()=>toggleEmailExpanded(email.id)} style={{padding:'14px 16px', cursor:'pointer', display:'flex', alignItems:'center', gap:12, background:emailsExpanded[email.id]?'#fffbea':'#fff'}}>
+                  <div style={{width:40, height:40, borderRadius:10, background:'#111', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0}}>📧</div>
+                  <div style={{flex:1, minWidth:0}}>
+                    <p style={{margin:0, fontWeight:700, fontSize:14, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{email.objet}</p>
+                    <p style={{margin:'3px 0 0', fontSize:12, color:'#999'}}>
+                      {new Date(email.created_at).toLocaleDateString('fr-FR', {day:'2-digit', month:'long', year:'numeric'})} à {new Date(email.created_at).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})}
+                    </p>
+                  </div>
+                  <div style={{display:'flex', alignItems:'center', gap:8, flexShrink:0}}>
+                    <span style={{background:'#f0f0f0', borderRadius:99, padding:'3px 10px', fontSize:12, fontWeight:600, color:'#555'}}>{email.nb_destinataires} envoi(s)</span>
+                    <span style={{fontSize:16, color:'#bbb', transform:emailsExpanded[email.id]?'rotate(90deg)':'rotate(0)', transition:'transform 0.2s'}}>›</span>
+                  </div>
+                </div>
+
+                {emailsExpanded[email.id] && (
+                  <div style={{padding:'0 16px 16px', borderTop:'1px solid #f5f5f5'}}>
+                    <p style={{fontSize:13, color:'#666', fontStyle:'italic', background:'#f9f9f9', borderRadius:8, padding:'10px 12px', margin:'12px 0', lineHeight:1.6, whiteSpace:'pre-wrap'}}>{email.message}</p>
+                    <p style={{fontSize:12, fontWeight:700, color:'#888', margin:'0 0 8px', textTransform:'uppercase', letterSpacing:0.5}}>Destinataires</p>
+                    <div style={{display:'flex', flexWrap:'wrap', gap:6}}>
+                      {(email.destinataires||[]).map((d, i) => (
+                        <div key={i} style={{display:'flex', alignItems:'center', gap:6, background:'#f5f5f5', borderRadius:8, padding:'5px 10px', fontSize:12}}>
+                          <div style={{width:24, height:24, borderRadius:'50%', background:'#E8C547', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:700, color:'#111'}}>
+                            {(d.prenom||d.nom||'?')[0]?.toUpperCase()}
+                          </div>
+                          <span style={{fontWeight:600, color:'#333'}}>{d.prenom} {d.nom}</span>
+                          <span style={{color:'#999'}}>{d.mail}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <p style={{fontSize:11, color:'#bbb', margin:'10px 0 0', textAlign:'right'}}>Envoyé par {email.envoye_par}</p>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -1623,7 +1660,7 @@ function CRMApp({ user, onLogout }) {
 
         {showConfirmComm && (
           <div style={{position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:4000, display:'flex', alignItems:'center', justifyContent:'center'}}>
-            <div style={{background:'#fff', borderRadius:16, padding:'28px 32px', maxWidth:400, width:'90%', boxShadow:'0 20px 60px rgba(0,0,0,0.2)'}}>
+            <div style={{background:'#fff', borderRadius:16, padding:'28px 32px', maxWidth:420, width:'90%', boxShadow:'0 20px 60px rgba(0,0,0,0.2)'}}>
               <div style={{textAlign:'center', marginBottom:20}}>
                 <div style={{fontSize:48, marginBottom:12}}>📤</div>
                 <h3 style={{margin:'0 0 8px', fontSize:18, fontWeight:800, color:'#111'}}>Confirmer l'envoi</h3>
@@ -1635,23 +1672,40 @@ function CRMApp({ user, onLogout }) {
                     const c = clients.find(x => x.id === id);
                     return c ? (
                       <div key={id} style={{display:'flex', alignItems:'center', gap:8, padding:'6px 0', borderBottom:'1px solid #f0f0f0'}}>
-                        <div style={{width:28, height:28, borderRadius:'50%', background:'#E8C547', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700}}>
+                        <div style={{width:28, height:28, borderRadius:'50%', background: doublons.includes(id)?'#fca5a5':'#E8C547', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700}}>
                           {(c.prenom||c.nom||'?')[0].toUpperCase()}
                         </div>
                         <span style={{fontSize:13, color:'#333'}}>{c.prenom} {c.nom}</span>
-                        <span style={{fontSize:11, color:'#999', marginLeft:'auto'}}>{c.mail}</span>
+                        {doublons.includes(id) && <span style={{fontSize:10, color:'#dc2626', fontWeight:700, marginLeft:'auto'}}>déjà reçu</span>}
+                        {!doublons.includes(id) && <span style={{fontSize:11, color:'#999', marginLeft:'auto'}}>{c.mail}</span>}
                       </div>
                     ) : null;
                   })}
                 </div>
               </div>
-              <div style={{display:'flex', gap:10}}>
-                <button onClick={()=>setShowConfirmComm(false)} style={{flex:1, height:44, border:'1.5px solid #ddd', borderRadius:10, background:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', color:'#666'}}>
-                  Annuler
-                </button>
-                <button onClick={()=>{setShowConfirmComm(false); doSendComm();}} style={{flex:2, height:44, border:'none', borderRadius:10, background:'#E8C547', fontSize:14, fontWeight:800, cursor:'pointer', color:'#111'}}>
-                  📤 Envoyer maintenant
-                </button>
+              {doublons.length > 0 && (
+                <div style={{background:'#fef2f2', border:'1px solid #fca5a5', borderRadius:8, padding:'10px 14px', marginBottom:16, fontSize:13, color:'#dc2626'}}>
+                  ⚠️ <strong>{doublons.length} destinataire(s)</strong> ont déjà reçu un email avec cet objet.
+                </div>
+              )}
+              <div style={{display:'flex', flexDirection:'column', gap:8}}>
+                {doublons.length > 0 && (
+                  <button onClick={()=>{
+                    setCommSelected(s => s.filter(id => !doublons.includes(id)));
+                    setShowConfirmComm(false);
+                    setTimeout(()=>{ setShowConfirmComm(true); setDoublons([]); }, 50);
+                  }} style={{height:44, border:'1.5px solid #ddd', borderRadius:10, background:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', color:'#555'}}>
+                    Envoyer uniquement aux nouveaux ({commSelected.length - doublons.length})
+                  </button>
+                )}
+                <div style={{display:'flex', gap:8}}>
+                  <button onClick={()=>{ setShowConfirmComm(false); setDoublons([]); }} style={{flex:1, height:44, border:'1.5px solid #ddd', borderRadius:10, background:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', color:'#666'}}>
+                    Annuler
+                  </button>
+                  <button onClick={()=>{ setShowConfirmComm(false); setDoublons([]); doSendComm(); }} style={{flex:2, height:44, border:'none', borderRadius:10, background:'#E8C547', fontSize:14, fontWeight:800, cursor:'pointer', color:'#111'}}>
+                    {doublons.length > 0 ? '📤 Envoyer à tous quand même' : '📤 Envoyer maintenant'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
