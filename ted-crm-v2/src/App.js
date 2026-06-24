@@ -924,10 +924,17 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
     loadResa();
     if (!r.clients?.mail) { showToast("⚠️ Email non envoyé (pas d'adresse)"); return; }
     const dateFormatee = new Date(r.date).toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
-    const heureBase = r.heure || '19:00';
-    const calStart = r.date.replace(/-/g,'') + 'T' + heureBase.replace(':','') + '00';
-    const calEnd = r.date.replace(/-/g,'') + 'T' + (parseInt(heureBase.split(':')[0])+2) + heureBase.split(':')[1] + '00';
-    const calUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=R%C3%A9servation+Le+TED&dates=${calStart}/${calEnd}&details=R%C3%A9servation+confirm%C3%A9e+au+TED+pour+${r.nb_personnes}+personne(s)&location=28+Av.+des+Fr%C3%A8res+Montgolfier+69680+Chassieu`;
+    const dateStr = r.date.replace(/-/g,'');
+    const heureStr = (r.heure||'19:00').replace(':','');
+    const calStart = dateStr + 'T' + heureStr + '00';
+    const calEnd = dateStr + 'T' + (parseInt((r.heure||'19:00').split(':')[0])+2) + (r.heure||'19:00').split(':')[1] + '00';
+    const titre = encodeURIComponent('Réservation Le TED');
+    const lieu = encodeURIComponent('28 Av. des Frères Montgolfier, 69680 Chassieu');
+    const details = encodeURIComponent(`Réservation confirmée au TED pour ${r.nb_personnes} personne(s) — ${r.service === 'midi' ? 'Déjeuner' : 'Dîner'}`);
+    const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titre}&dates=${calStart}/${calEnd}&details=${details}&location=${lieu}`;
+    const icsContent = encodeURIComponent(`BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nDTSTART:${calStart}\nDTEND:${calEnd}\nSUMMARY:Réservation Le TED\nLOCATION:28 Av. des Frères Montgolfier, 69680 Chassieu\nDESCRIPTION:${details}\nEND:VEVENT\nEND:VCALENDAR`);
+    const icsUrl = `data:text/calendar;charset=utf8,${icsContent}`;
+    const outlookUrl = `https://outlook.live.com/calendar/0/deeplink/compose?subject=${titre}&startdt=${r.date}T${r.heure||'19:00'}:00&enddt=${r.date}T${(parseInt((r.heure||'19:00').split(':')[0])+2).toString().padStart(2,'0')}:${(r.heure||'19:00').split(':')[1]}:00&location=${lieu}&body=${details}`;
     const htmlConfirmation = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#f8f8f8;padding:20px">
   <div style="background:#111111;padding:28px 24px;text-align:center;border-radius:12px 12px 0 0;border-bottom:4px solid #E8C547">
     <img src="https://ted-crm.pages.dev/favicon.png" alt="Le TED" style="height:60px;margin-bottom:12px" />
@@ -945,7 +952,12 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
       ${r.occasion ? `<p style="margin:8px 0 0;font-size:15px">🎉 <strong>Occasion :</strong> ${r.occasion}</p>` : ''}
     </div>
     <div style="text-align:center;margin-bottom:24px">
-      <a href="${calUrl}" target="_blank" style="display:inline-block;background:#E8C547;color:#111;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:800;font-size:15px;letter-spacing:0.5px">📆 Ajouter à mon agenda</a>
+      <p style="font-size:13px;color:#888;margin:0 0 12px;font-weight:600;text-transform:uppercase;letter-spacing:1px">Ajouter à mon agenda</p>
+      <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap">
+        <a href="${googleUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1.5px solid #ddd;color:#444;text-decoration:none;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600"><img src="https://www.google.com/favicon.ico" style="width:16px;height:16px" /> Google</a>
+        <a href="${icsUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1.5px solid #ddd;color:#444;text-decoration:none;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600">🍎 Apple</a>
+        <a href="${outlookUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1.5px solid #ddd;color:#444;text-decoration:none;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600"><img src="https://outlook.live.com/favicon.ico" style="width:16px;height:16px" /> Outlook</a>
+      </div>
     </div>
     <div style="background:#fff8e1;border:1.5px solid #E8C547;border-radius:8px;padding:16px;margin-bottom:24px">
       <p style="margin:0;font-size:14px;color:#555;line-height:1.6">⚠️ <strong>En cas d'annulation ou de modification</strong>, merci de nous prévenir au plus tôt au <strong>04 78 90 67 80</strong> ou par email afin que nous puissions libérer la table pour d'autres clients. Merci de votre compréhension.</p>
