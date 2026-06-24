@@ -1062,20 +1062,24 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
       <main style={{ maxWidth:800, margin:'0 auto', padding: isMobile ? '16px 12px 100px' : '24px 20px 40px' }}>
 
         {/* ── Bloc partage lien ── */}
-        <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #eee', padding:18, marginBottom:24, boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
-          <p style={{ fontSize:12, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:0.5, marginBottom:12 }}>🔗 Formulaire de réservation en ligne</p>
-          <div style={{ display:'flex', gap:12, alignItems:'flex-start', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
-            <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ background:'#f8f8f8', border:'1.5px solid #eee', borderRadius:8, padding:'8px 12px', fontSize:12, color:'#555', fontFamily:'monospace', wordBreak:'break-all', marginBottom:10, lineHeight:1.5 }}>{FORM_URL}</div>
-              <div style={{ display:'flex', gap:8 }}>
-                <button onClick={copyLink} style={{ flex:1, background:'#111', color:'#fff', border:'none', borderRadius:8, height:38, fontWeight:700, fontSize:13, cursor:'pointer' }}>📋 Copier</button>
-                <button onClick={()=>window.open(FORM_URL,'_blank')} style={{ flex:1, background:G, color:'#111', border:'none', borderRadius:8, height:38, fontWeight:700, fontSize:13, cursor:'pointer' }}>🔗 Ouvrir</button>
-              </div>
-            </div>
-            <div style={{ flexShrink:0, textAlign:'center' }}>
-              <img src={qr} alt="QR" width={90} height={90} style={{ display:'block', borderRadius:8, border:'1.5px solid #eee' }} />
-              <p style={{ fontSize:10, color:'#bbb', marginTop:4 }}>Scanner</p>
-            </div>
+        <div style={{background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:'16px', marginBottom:16, boxShadow:'0 2px 8px rgba(0,0,0,0.05)'}}>
+          <p style={{fontSize:11, fontWeight:700, color:'#999', letterSpacing:1, textTransform:'uppercase', margin:'0 0 10px'}}>🔗 Formulaire de réservation en ligne</p>
+          <div style={{background:'#f8f8f8', borderRadius:8, padding:'10px 12px', marginBottom:12, fontSize:12, color:'#555', wordBreak:'break-all', fontFamily:'monospace'}}>
+            https://ted-crm.pages.dev/reserver.html
+          </div>
+          <div style={{display:'flex', gap:8}}>
+            <button onClick={()=>{ navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver.html'); showToast('Lien copié !'); }}
+              style={{flex:1, height:42, background:'#111', color:'#fff', border:'none', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer'}}>
+              📋 Copier
+            </button>
+            <button onClick={()=>window.open('https://ted-crm.pages.dev/reserver.html','_blank')}
+              style={{flex:1, height:42, background:'#E8C547', color:'#111', border:'none', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer'}}>
+              🔗 Ouvrir
+            </button>
+            <button onClick={()=>{ if(navigator.share){ navigator.share({title:'Réservation Le TED', text:'Réservez votre table au TED', url:'https://ted-crm.pages.dev/reserver.html'}); } else { navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver.html'); showToast('Lien copié !'); }}}
+              style={{flex:1, height:42, background:'#f0f0f0', color:'#111', border:'none', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer'}}>
+              📤 Partager
+            </button>
           </div>
         </div>
 
@@ -1815,7 +1819,7 @@ function CRMApp({ user, onLogout }) {
 
       {/* ═══ MOBILE CARDS ═══ */}
       {isMobile && mobileTab === 'clients' && (
-        <div style={{ paddingTop:146, paddingBottom:'calc(65px + env(safe-area-inset-bottom))', paddingLeft:12, paddingRight:12 }}>
+        <div style={{ paddingTop:146, paddingBottom:90, paddingLeft:12, paddingRight:12 }}>
           {pageClients.length === 0 && (
             <div style={{ textAlign:'center', padding:'4rem 2rem' }}>
               <div style={{ fontSize:48, marginBottom:12 }}>🔍</div>
@@ -2001,7 +2005,7 @@ function CRMApp({ user, onLogout }) {
       {/* Barre nav fixe mobile */}
       {isMobile && (
         <>
-          <div style={{ position:'fixed', bottom:0, left:0, right:0, background:'#fff', borderRadius:'20px 20px 0 0', boxShadow:'0 -4px 20px rgba(0,0,0,0.10)', display:'flex', alignItems:'center', justifyContent:'space-around', zIndex:1000, height:65, paddingBottom:0 }}>
+          <div style={{ position:'fixed', bottom:0, left:0, right:0, background:'#fff', borderRadius:'20px 20px 0 0', boxShadow:'0 -4px 20px rgba(0,0,0,0.10)', display:'flex', alignItems:'center', justifyContent:'space-around', zIndex:1000, paddingTop:12, paddingBottom:12, minHeight:60 }}>
 
             {/* Gauche — Clients */}
             <button onClick={()=>setMobileTab('clients')} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:4, border:'none', background:'none', cursor:'pointer', color: mobileTab==='clients' ? '#111' : '#bbb', fontWeight: mobileTab==='clients' ? 700 : 500, fontSize:11 }}>
@@ -2029,8 +2033,6 @@ function CRMApp({ user, onLogout }) {
               Réservations
             </button>
           </div>
-          <div style={{ position:'fixed', bottom:0, left:0, right:0, height:'env(safe-area-inset-bottom)', background:'#fff', zIndex:999 }} />
-
           {/* Bottom sheet + */}
           {showPlusSheet && (
             <>
