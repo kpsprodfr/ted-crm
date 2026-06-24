@@ -551,10 +551,67 @@ function RefusModal({ onConfirm, onCancel }) {
   );
 }
 
+function AccepterModal({ resa, onConfirm, onCancel }) {
+  const c = resa.clients || {};
+  const nom = c.entreprise ? c.entreprise : `${c.prenom || ''} ${c.nom || ''}`.trim();
+  return (
+    <Modal title="✓ Confirmer la réservation" onClose={onCancel} maxW={420}
+      footer={[
+        <button key="c" type="button" onClick={onCancel} style={{...btnSecondary}}>Annuler</button>,
+        <button key="o" type="button" onClick={onConfirm} style={{ background:'#16a34a', color:'#fff', border:'none', borderRadius:8, padding:'0 20px', height:40, fontWeight:700, fontSize:14, cursor:'pointer' }}>✓ Confirmer</button>
+      ]}>
+      <div style={{ textAlign:'center', padding:'8px 0 16px' }}>
+        <div style={{ fontSize:22, fontWeight:800, marginBottom:12 }}>{nom || '—'}</div>
+        <div style={{ display:'flex', flexWrap:'wrap', justifyContent:'center', gap:8 }}>
+          <span style={{ background:'#f8f8f8', border:'1.5px solid #eee', borderRadius:8, padding:'6px 14px', fontSize:13, fontWeight:600 }}>{fmtResaDate(resa.date)}</span>
+          <span style={{ background:'#f8f8f8', border:'1.5px solid #eee', borderRadius:8, padding:'6px 14px', fontSize:13, fontWeight:600 }}>{resa.service === 'midi' ? '🌞 Midi' : '🌙 Soir'}{resa.heure ? ` · ${resa.heure}` : ''}</span>
+          <span style={{ background:'#f8f8f8', border:'1.5px solid #eee', borderRadius:8, padding:'6px 14px', fontSize:13, fontWeight:600 }}>👥 {resa.nb_personnes} pers.</span>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function DetailResaModal({ resa, onClose }) {
+  const c = resa.clients || {};
+  const nom = c.entreprise ? c.entreprise : `${c.prenom || ''} ${c.nom || ''}`.trim();
+  return (
+    <Modal title="Détail de la réservation" onClose={onClose} maxW={460}
+      footer={[<button key="f" type="button" onClick={onClose} style={{...btnSecondary}}>Fermer</button>]}>
+      <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+        <div style={{ fontSize:18, fontWeight:800 }}>{nom || '—'}</div>
+        {c.prenom && c.nom && c.entreprise && <div style={{ fontSize:13, color:'#888' }}>{c.prenom} {c.nom}</div>}
+        {c.tel && <a href={`tel:${c.tel}`} style={{ display:'inline-flex', alignItems:'center', gap:8, background:G, color:'#111', borderRadius:9, padding:'8px 18px', fontSize:14, fontWeight:700, textDecoration:'none', width:'fit-content' }}>📞 Appeler · {c.tel}</a>}
+        {c.mail && <div style={{ fontSize:13, color:'#3b82f6' }}>{c.mail}</div>}
+        <div style={{ height:1, background:'#f0f0f0', margin:'4px 0' }} />
+        {[
+          ['Date', fmtResaDate(resa.date)],
+          ['Service', resa.service === 'midi' ? '🌞 Midi' : '🌙 Soir'],
+          resa.heure ? ['Heure', resa.heure] : null,
+          ['Personnes', `${resa.nb_personnes} personne${resa.nb_personnes > 1 ? 's' : ''}`],
+          resa.occasion ? ['Occasion', resa.occasion] : null,
+        ].filter(Boolean).map(([l,v]) => (
+          <div key={l} style={{ display:'flex', justifyContent:'space-between', fontSize:14, padding:'4px 0', borderBottom:'1px solid #f8f8f8' }}>
+            <span style={{ color:'#888' }}>{l}</span><span style={{ fontWeight:600 }}>{v}</span>
+          </div>
+        ))}
+        {resa.commentaire_client && <p style={{ fontSize:13, color:'#aaa', fontStyle:'italic', borderLeft:'3px solid #eee', paddingLeft:10, margin:'4px 0' }}>"{resa.commentaire_client}"</p>}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:4 }}>
+          <span style={{ fontSize:13, color:'#888' }}>Statut</span>{statutBadge(resa.statut)}
+        </div>
+        {resa.raison_refus && <div style={{ background:'#fef2f2', borderRadius:8, padding:'8px 12px', fontSize:13, color:'#dc2626' }}>Motif refus : {resa.raison_refus}</div>}
+      </div>
+    </Modal>
+  );
+}
+
 function ReservationsPage({ onBack, showToast, user }) {
   const [resaList, setResaList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refusResa, setRefusResa] = useState(null);
+  const [acceptResa, setAcceptResa] = useState(null);
+  const [detailResa, setDetailResa] = useState(null);
+  const [histOpen, setHistOpen] = useState(false);
   const isMobile = useIsMobile();
   const qr = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(FORM_URL)}`;
 
@@ -572,10 +629,10 @@ function ReservationsPage({ onBack, showToast, user }) {
   }
 
   async function accepter(r) {
-    if (!window.confirm(`Confirmer la réservation de ${r.clients?.prenom || ''} ${r.clients?.nom || ''} ?`)) return;
     const { error } = await supabase.from('reservations').update({
       statut: 'confirmee', traited_at: new Date().toISOString(), traited_by: user?.email
     }).eq('id', r.id);
+    setAcceptResa(null);
     if (error) showToast('Erreur', 'error');
     else { showToast('Réservation confirmée ✓'); loadResa(); }
   }
@@ -671,39 +728,45 @@ function ReservationsPage({ onBack, showToast, user }) {
               {r.commentaire_client && <p style={{ fontSize:12, color:'#aaa', fontStyle:'italic', marginBottom:8, borderLeft:`3px solid #eee`, paddingLeft:8 }}>"{r.commentaire_client}"</p>}
               <div style={{ fontSize:11, color:'#bbb', marginBottom:10 }}>Reçue le {new Date(r.created_at).toLocaleDateString('fr-FR')} à {new Date(r.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
               <div style={{ display:'flex', gap:8 }}>
-                <button onClick={()=>accepter(r)} style={{ flex:1, background:'#16a34a', color:'#fff', border:'none', borderRadius:8, height:40, fontWeight:700, fontSize:14, cursor:'pointer' }}>✓ Accepter</button>
+                <button onClick={()=>setAcceptResa(r)} style={{ flex:1, background:'#16a34a', color:'#fff', border:'none', borderRadius:8, height:40, fontWeight:700, fontSize:14, cursor:'pointer' }}>✓ Accepter</button>
                 <button onClick={()=>setRefusResa(r)} style={{ flex:1, background:'#fef2f2', color:'#dc2626', border:'1.5px solid #dc2626', borderRadius:8, height:40, fontWeight:700, fontSize:14, cursor:'pointer' }}>✕ Refuser</button>
               </div>
             </div>
           );
         })}
 
-        {/* ── Historique ── */}
+        {/* ── Historique accordéon ── */}
         {historique.length > 0 && (
-          <>
-            <h2 style={{ fontSize:17, fontWeight:800, margin:'28px 0 14px' }}>Historique</h2>
-            {historique.map(r => {
-              const c = r.clients || {};
-              const nom = c.entreprise ? c.entreprise : `${c.prenom || ''} ${c.nom || ''}`.trim();
-              return (
-                <div key={r.id} style={{ ...cardStyle, display:'flex', alignItems:'center', gap:12, padding:'12px 14px' }}>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <span style={{ fontWeight:600, fontSize:14 }}>{nom || '—'}</span>
-                    <span style={{ fontSize:12, color:'#888', marginLeft:8 }}>{fmtResaDate(r.date)} · {r.nb_personnes} pers.</span>
-                    {r.raison_refus && <span style={{ fontSize:11, color:'#dc2626', marginLeft:6 }}>— {r.raison_refus}</span>}
-                  </div>
-                  <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
-                    {statutBadge(r.statut)}
-                    {c.tel && <a href={`tel:${c.tel}`} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, textDecoration:'none' }}>📞</a>}
-                  </div>
-                </div>
-              );
-            })}
-          </>
+          <div style={{ marginTop:28 }}>
+            <button onClick={()=>setHistOpen(o=>!o)} style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', background:'#fff', border:'1.5px solid #eee', borderRadius:12, padding:'14px 18px', cursor:'pointer', fontWeight:800, fontSize:16 }}>
+              <span>Historique <span style={{ color:'#bbb', fontWeight:400, fontSize:14 }}>({historique.length})</span></span>
+              <span style={{ fontSize:20, color:'#888', transform: histOpen ? 'rotate(90deg)' : 'none', transition:'transform 0.2s' }}>›</span>
+            </button>
+            {histOpen && (
+              <div style={{ marginTop:8 }}>
+                {historique.map(r => {
+                  const c = r.clients || {};
+                  const nom = c.entreprise ? c.entreprise : `${c.prenom || ''} ${c.nom || ''}`.trim();
+                  return (
+                    <div key={r.id} onClick={()=>setDetailResa(r)} style={{ ...cardStyle, display:'flex', alignItems:'center', gap:12, padding:'12px 14px', cursor:'pointer' }}
+                      onMouseEnter={e=>e.currentTarget.style.background='#fffbeb'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <span style={{ fontWeight:600, fontSize:14 }}>{nom || '—'}</span>
+                        <span style={{ fontSize:12, color:'#888', marginLeft:8 }}>{fmtResaDate(r.date)} · {r.nb_personnes} pers.</span>
+                      </div>
+                      <div style={{ flexShrink:0 }}>{statutBadge(r.statut)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         )}
       </main>
 
+      {acceptResa && <AccepterModal resa={acceptResa} onConfirm={()=>accepter(acceptResa)} onCancel={()=>setAcceptResa(null)} />}
       {refusResa && <RefusModal onConfirm={raison=>refuser(refusResa, raison)} onCancel={()=>setRefusResa(null)} />}
+      {detailResa && <DetailResaModal resa={detailResa} onClose={()=>setDetailResa(null)} />}
     </div>
   );
 }
