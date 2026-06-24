@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ajouter à mon agenda</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+    body { background: #111; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+    .card { background: #fff; border-radius: 16px; padding: 28px 24px; max-width: 360px; width: 100%; }
+    h2 { font-size: 18px; font-weight: 800; color: #111; margin-bottom: 6px; text-align: center; }
+    p { font-size: 13px; color: #888; text-align: center; margin-bottom: 24px; }
+    .btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; border-radius: 10px; border: 1.5px solid #eee; background: #fff; text-decoration: none; color: #111; font-size: 15px; font-weight: 600; margin-bottom: 10px; cursor: pointer; }
+    .btn:hover { background: #f9f9f9; }
+    .btn span { font-size: 22px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>📅 Ajouter à mon agenda</h2>
+    <p id="details"></p>
+    <a id="google-btn" class="btn" target="_blank">
+      <span>📅</span> Google Agenda
+    </a>
+    <a id="apple-btn" class="btn" download="reservation-ted.ics">
+      <span>🍎</span> Apple Calendrier
+    </a>
+    <a id="outlook-btn" class="btn" target="_blank">
+      <span>📧</span> Outlook
+    </a>
+  </div>
+  <script>
+    const p = new URLSearchParams(window.location.search);
+    const date = p.get('date') || '';
+    const heure = p.get('heure') || '19:00';
+    const nb = p.get('nb') || '1';
+    const service = p.get('service') || 'soir';
+    const prenom = p.get('prenom') || '';
+
+    document.getElementById('details').textContent =
+      `${new Date(date).toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'})} à ${heure} — ${nb} personne(s)`;
+
+    const dateStr = date.replace(/-/g,'');
+    const heureStr = heure.replace(':','');
+    const heureFin = String(parseInt(heure.split(':')[0]) + 2).padStart(2,'0') + heure.split(':')[1];
+    const calStart = dateStr + 'T' + heureStr + '00';
+    const calEnd = dateStr + 'T' + heureFin + '00';
+    const titre = encodeURIComponent('Réservation Le TED');
+    const lieu = encodeURIComponent('28 Av. des Frères Montgolfier, 69680 Chassieu');
+    const desc = encodeURIComponent(`Réservation au TED pour ${nb} personne(s)`);
+
+    document.getElementById('google-btn').href =
+      `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titre}&dates=${calStart}/${calEnd}&location=${lieu}&details=${desc}`;
+
+    const ics = `BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nDTSTART:${calStart}\r\nDTEND:${calEnd}\r\nSUMMARY:Réservation Le TED\r\nLOCATION:28 Av. des Frères Montgolfier, 69680 Chassieu\r\nEND:VEVENT\r\nEND:VCALENDAR`;
+    document.getElementById('apple-btn').href =
+      'data:text/calendar;charset=utf8,' + encodeURIComponent(ics);
+
+    document.getElementById('outlook-btn').href =
+      `https://outlook.live.com/calendar/0/deeplink/compose?subject=${titre}&startdt=${date}T${heure}:00&enddt=${date}T${heureFin}:00&location=${lieu}`;
+  </script>
+</body>
+</html>
