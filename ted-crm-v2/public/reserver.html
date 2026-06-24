@@ -489,68 +489,60 @@ async function submitForm() {
     const prenomC = state.prenom.trim().charAt(0).toUpperCase() + state.prenom.trim().slice(1).toLowerCase();
     const nomC = state.nom.trim().toUpperCase();
 
-    const nouveauClient = {
+    const payloadNouveauClient = {
       genre: state.genre || (state.societe ? 'Entreprise' : 'Non renseigné'),
-      nom: nomC,
-      prenom: prenomC,
+      nom: nomC, prenom: prenomC,
       entreprise: state.societe || '',
-      tel: telNettoye,
-      tel_normalise: telNormalise,
-      mail: mailSaisi,
-      email_normalise: mailSaisi,
+      tel: telNettoye, tel_normalise: telNormalise,
+      mail: mailSaisi, email_normalise: mailSaisi,
       source: 'Formulaire de réservation',
-      nb_reservations: 1,
-      nb_venues: 0,
-      nb_absences: 0,
-      nb_annulations: 0
+      nb_reservations: 1, nb_venues: 0, nb_absences: 0, nb_annulations: 0
     };
 
-    // 1. Cherche par tel (tel ou tel_normalise)
-    let clientParTel = null;
-    let found = await sbFetch(`clients?or=(tel.eq.${encodeURIComponent(telNettoye)},tel_normalise.eq.${encodeURIComponent(telNormalise)})&select=*&limit=1`);
-    if (Array.isArray(found) && found.length > 0) clientParTel = found[0];
-
-    // 2. Cherche par mail si pas trouvé par tel
-    let clientParMail = null;
-    if (!clientParTel && mailSaisi) {
-      found = await sbFetch(`clients?mail=eq.${encodeURIComponent(mailSaisi)}&select=*&limit=1`);
-      if (Array.isArray(found) && found.length > 0) clientParMail = found[0];
+    async function creerClient() {
+      const res = await sbFetch('clients', 'POST', payloadNouveauClient);
+      return Array.isArray(res) && res.length > 0 ? res[0].id : null;
     }
+
+    // Cherche par tel ET par mail en parallèle
+    const [foundTel, foundMail] = await Promise.all([
+      sbFetch(`clients?or=(tel.eq.${encodeURIComponent(telNettoye)},tel_normalise.eq.${encodeURIComponent(telNormalise)})&select=*&limit=1`),
+      mailSaisi ? sbFetch(`clients?mail=eq.${encodeURIComponent(mailSaisi)}&select=*&limit=1`) : Promise.resolve([])
+    ]);
+    const clientParTel = Array.isArray(foundTel) && foundTel.length > 0 ? foundTel[0] : null;
+    const clientParMail = Array.isArray(foundMail) && foundMail.length > 0 ? foundMail[0] : null;
 
     let clientId = null;
 
+    // CAS 1 — Tel trouvé
     if (clientParTel) {
       const nomMatch = (clientParTel.nom || '').toLowerCase().trim() === nomSaisi;
       const prenomMatch = (clientParTel.prenom || '').toLowerCase().trim() === prenomSaisi;
       if (nomMatch && prenomMatch) {
-        // Même personne → met à jour le mail si différent
         if (mailSaisi && mailSaisi !== (clientParTel.mail || '').toLowerCase()) {
           await sbFetch(`clients?id=eq.${clientParTel.id}`, 'PATCH', { mail: mailSaisi, email_normalise: mailSaisi });
         }
         clientId = clientParTel.id;
       } else {
-        // Tel identique mais nom/prénom différents → nouveau client
-        const newC = await sbFetch('clients', 'POST', nouveauClient);
-        if (Array.isArray(newC) && newC.length > 0) clientId = newC[0].id;
+        clientId = await creerClient();
       }
-    } else if (clientParMail) {
+    }
+    // CAS 2 — Mail trouvé
+    else if (clientParMail) {
       const nomMatch = (clientParMail.nom || '').toLowerCase().trim() === nomSaisi;
       const prenomMatch = (clientParMail.prenom || '').toLowerCase().trim() === prenomSaisi;
       if (nomMatch && prenomMatch) {
-        // Même personne → met à jour le tel si différent
         if (telNettoye && telNettoye !== clientParMail.tel) {
           await sbFetch(`clients?id=eq.${clientParMail.id}`, 'PATCH', { tel: telNettoye, tel_normalise: telNormalise });
         }
         clientId = clientParMail.id;
       } else {
-        // Mail identique mais nom/prénom différents → nouveau client
-        const newC = await sbFetch('clients', 'POST', nouveauClient);
-        if (Array.isArray(newC) && newC.length > 0) clientId = newC[0].id;
+        clientId = await creerClient();
       }
-    } else {
-      // Aucun client trouvé → nouveau client
-      const newC = await sbFetch('clients', 'POST', nouveauClient);
-      if (Array.isArray(newC) && newC.length > 0) clientId = newC[0].id;
+    }
+    // CAS 3 — Nouveau client
+    else {
+      clientId = await creerClient();
     }
 
     // Crée la réservation avec client_id
