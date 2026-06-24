@@ -1416,21 +1416,32 @@ function CRMApp({ user, onLogout }) {
       {/* Barre nav fixe mobile */}
       {isMobile && (
         <>
-          <div style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:500, background:'#fff', borderTop:'1.5px solid #eee', display:'flex', alignItems:'center', paddingBottom:'env(safe-area-inset-bottom)', boxShadow:'0 -2px 16px rgba(0,0,0,0.08)' }}>
-            {/* Gauche — Réservations */}
-            <button onClick={()=>setMobileTab('reservations')} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:3, padding:'10px 0', background:'none', border:'none', cursor:'pointer', position:'relative' }}>
-              <span style={{ fontSize:20 }}>📅</span>
-              <span style={{ fontSize:10, fontWeight:600, color: mobileTab==='reservations' ? '#111' : '#bbb' }}>Réservations</span>
-              {resaAttenteCount > 0 && <span style={{ position:'absolute', top:6, right:'calc(50% - 14px)', background:'#dc2626', color:'#fff', borderRadius:99, fontSize:9, fontWeight:700, padding:'1px 4px', lineHeight:1.4 }}>{resaAttenteCount}</span>}
+          <div style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:1000, background:'#fff', borderRadius:'20px 20px 0 0', boxShadow:'0 -4px 20px rgba(0,0,0,0.10)', display:'flex', alignItems:'center', justifyContent:'space-around', height:70, paddingBottom:'env(safe-area-inset-bottom)', paddingLeft:16, paddingRight:16 }}>
+
+            {/* Gauche — Clients */}
+            <button onClick={()=>setMobileTab('clients')} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:4, border:'none', background:'none', cursor:'pointer', color: mobileTab==='clients' ? '#111' : '#bbb', fontWeight: mobileTab==='clients' ? 700 : 500, fontSize:11 }}>
+              <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+                <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="currentColor"/>
+              </svg>
+              Clients
             </button>
-            {/* Centre — + */}
-            <div style={{ flex:1, display:'flex', justifyContent:'center', alignItems:'center', position:'relative' }}>
-              <button onClick={()=>setShowPlusSheet(true)} style={{ width:54, height:54, borderRadius:'50%', background:G, border:'none', cursor:'pointer', fontSize:28, fontWeight:700, color:'#111', boxShadow:'0 4px 16px rgba(232,197,71,0.5)', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:10 }}>+</button>
+
+            {/* Centre — + surélevé */}
+            <div style={{ position:'relative', marginTop:-28, flex:'0 0 auto' }}>
+              <button onClick={()=>setShowPlusSheet(true)} style={{ width:60, height:60, borderRadius:'50%', background:G, border:'4px solid #fff', boxShadow:'0 4px 16px rgba(232,197,71,0.5)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', fontSize:32, fontWeight:300, color:'#111', lineHeight:1 }}>+</button>
             </div>
-            {/* Droite — Clients */}
-            <button onClick={()=>setMobileTab('clients')} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:3, padding:'10px 0', background:'none', border:'none', cursor:'pointer' }}>
-              <span style={{ fontSize:20 }}>👥</span>
-              <span style={{ fontSize:10, fontWeight:600, color: mobileTab==='clients' ? '#111' : '#bbb' }}>Clients</span>
+
+            {/* Droite — Réservations */}
+            <button onClick={()=>setMobileTab('reservations')} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:4, border:'none', background:'none', cursor:'pointer', color: mobileTab==='reservations' ? '#111' : '#bbb', fontWeight: mobileTab==='reservations' ? 700 : 500, fontSize:11, position:'relative' }}>
+              <div style={{ position:'relative' }}>
+                <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+                  <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" fill="currentColor"/>
+                </svg>
+                {resaAttenteCount > 0 && (
+                  <div style={{ position:'absolute', top:-8, right:-10, background:'#dc2626', color:'#fff', borderRadius:99, minWidth:22, height:22, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:800, border:'2px solid #fff', padding:'0 5px', boxSizing:'border-box' }}>{resaAttenteCount}</div>
+                )}
+              </div>
+              Réservations
             </button>
           </div>
 
