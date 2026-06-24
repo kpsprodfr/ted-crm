@@ -603,32 +603,87 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
     if (genre === 'Entreprise' && !entreprise.trim()) { showToast('Nom d\'entreprise requis', 'error'); return; }
     if (!heure) { setHeureError(true); return; }
     setSaving(true);
+
+    const telSaisi = tel.replace(/\s/g, '');
+    const nomSaisi = nom.toLowerCase().trim();
+    const prenomSaisi = prenom.toLowerCase().trim();
+    const mailSaisi = email.toLowerCase().trim();
     const telNorm = tel.replace(/[\s.\-()]/g,'').replace(/^0/,'+33');
-    let clientId = clientFound?.id || null;
-    if (!clientId) {
+
+    const { data: clientParTel } = await supabase
+      .from('clients').select('*')
+      .or(`tel.eq.${telSaisi},tel_normalise.eq.${telNorm}`)
+      .maybeSingle();
+
+    const { data: clientParMail } = (!clientParTel && mailSaisi)
+      ? await supabase.from('clients').select('*').eq('mail', mailSaisi).maybeSingle()
+      : { data: null };
+
+    let clientId = null;
+
+    if (clientParTel) {
+      const nomMatch = clientParTel.nom?.toLowerCase().trim() === nomSaisi;
+      const prenomMatch = clientParTel.prenom?.toLowerCase().trim() === prenomSaisi;
+      if (nomMatch && prenomMatch) {
+        // Tel + Nom + Prénom correspondent → met à jour si champs modifiés
+        const updates = {};
+        if (mailSaisi && mailSaisi !== clientParTel.mail) updates.mail = mailSaisi;
+        if (genre && genre !== clientParTel.genre) updates.genre = genre;
+        if (capitalize(nom.trim()) !== clientParTel.nom) updates.nom = capitalize(nom.trim());
+        if (capitalize(prenom.trim()) !== clientParTel.prenom) updates.prenom = capitalize(prenom.trim());
+        if (Object.keys(updates).length > 0) {
+          await supabase.from('clients').update(updates).eq('id', clientParTel.id);
+        }
+        clientId = clientParTel.id;
+      } else {
+        // Tel identique mais nom/prénom différents → nouveau client
+        const { data: newClient, error: errClient } = await supabase.from('clients').insert({
+          prenom: capitalize(prenom.trim()), nom: capitalize(nom.trim()),
+          tel: tel.trim(), tel_normalise: telNorm,
+          mail: mailSaisi || null, genre,
+          entreprise: genre === 'Entreprise' ? entreprise.trim() : null,
+          source: 'manuel',
+        }).select('id').single();
+        if (errClient) { setSaving(false); showToast('Erreur création client', 'error'); return; }
+        clientId = newClient.id;
+      }
+    } else if (clientParMail) {
+      const nomMatch = clientParMail.nom?.toLowerCase().trim() === nomSaisi;
+      const prenomMatch = clientParMail.prenom?.toLowerCase().trim() === prenomSaisi;
+      if (nomMatch && prenomMatch) {
+        // Mail + Nom + Prénom correspondent → met à jour le téléphone si différent
+        const updates = {};
+        if (telSaisi && telSaisi !== clientParMail.tel) { updates.tel = telSaisi; updates.tel_normalise = telNorm; }
+        if (genre && genre !== clientParMail.genre) updates.genre = genre;
+        if (Object.keys(updates).length > 0) {
+          await supabase.from('clients').update(updates).eq('id', clientParMail.id);
+        }
+        clientId = clientParMail.id;
+      } else {
+        // Mail identique mais nom/prénom différents → nouveau client
+        const { data: newClient, error: errClient } = await supabase.from('clients').insert({
+          prenom: capitalize(prenom.trim()), nom: capitalize(nom.trim()),
+          tel: tel.trim(), tel_normalise: telNorm,
+          mail: mailSaisi || null, genre,
+          entreprise: genre === 'Entreprise' ? entreprise.trim() : null,
+          source: 'manuel',
+        }).select('id').single();
+        if (errClient) { setSaving(false); showToast('Erreur création client', 'error'); return; }
+        clientId = newClient.id;
+      }
+    } else {
+      // Aucun client trouvé → nouveau client
       const { data: newClient, error: errClient } = await supabase.from('clients').insert({
-        prenom: capitalize(prenom.trim()),
-        nom: capitalize(nom.trim()),
-        tel: tel.trim(),
-        mail: email.trim() || null,
-        genre,
+        prenom: capitalize(prenom.trim()), nom: capitalize(nom.trim()),
+        tel: tel.trim(), tel_normalise: telNorm,
+        mail: mailSaisi || null, genre,
         entreprise: genre === 'Entreprise' ? entreprise.trim() : null,
-        tel_normalise: telNorm,
         source: 'manuel',
       }).select('id').single();
       if (errClient) { setSaving(false); showToast('Erreur création client', 'error'); return; }
       clientId = newClient.id;
-    } else {
-      // Client existant — met à jour les champs modifiés
-      const updates = {};
-      if (nom.trim() && capitalize(nom.trim()) !== clientFound.nom) updates.nom = capitalize(nom.trim());
-      if (prenom.trim() && capitalize(prenom.trim()) !== clientFound.prenom) updates.prenom = capitalize(prenom.trim());
-      if (email.trim() && email.trim().toLowerCase() !== clientFound.mail) updates.mail = email.trim().toLowerCase();
-      if (genre && genre !== clientFound.genre) updates.genre = genre;
-      if (Object.keys(updates).length > 0) {
-        await supabase.from('clients').update(updates).eq('id', clientFound.id);
-      }
     }
+
     const { error } = await supabase.from('reservations').insert({
       client_id: clientId,
       date: dateIso,
