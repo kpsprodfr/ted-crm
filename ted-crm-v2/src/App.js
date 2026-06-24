@@ -1783,7 +1783,7 @@ function CRMApp({ user, onLogout }) {
                 {/* Colonne droite — Composer SMS */}
                 <div style={{background:'#fff', borderRadius:12, border:'1.5px solid #f0f0f0', padding:24, boxShadow:'0 2px 8px rgba(0,0,0,0.06)'}}>
                   <div style={{background:'#f8f8f8', borderRadius:8, padding:'8px 12px', marginBottom:16, fontSize:13, color:'#888'}}>
-                    De : <strong style={{color:'#111'}}>LeTED</strong>
+                    De : <strong style={{color:'#111'}}>Le TED</strong>
                   </div>
                   <textarea
                     ref={smsTextareaRef}
