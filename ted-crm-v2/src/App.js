@@ -1184,6 +1184,8 @@ function CRMApp({ user, onLogout }) {
   const [commObjet, setCommObjet] = useState('');
   const [commMessage, setCommMessage] = useState('');
   const [commSending, setCommSending] = useState(false);
+  const [showConfirmComm, setShowConfirmComm] = useState(false);
+  const commTextareaRef = useRef(null);
   const deleteGuard = useRef(false);
   const isMobile = useIsMobile();
 
@@ -1376,10 +1378,7 @@ function CRMApp({ user, onLogout }) {
 </div>`;
     };
 
-    const insertVar = (v) => setCommMessage(m => m + v);
-
-    const handleSendAll = async () => {
-      if (!window.confirm(`Vous allez envoyer ${selectedClients.length} email(s). Confirmer ?`)) return;
+    const doSendComm = async () => {
       setCommSending(true);
       let sent = 0;
       for (const client of selectedClients) {
@@ -1391,6 +1390,8 @@ function CRMApp({ user, onLogout }) {
       setCommObjet(''); setCommMessage(''); setCommSelected([]);
       setActiveView('crm');
     };
+
+    const handleSendAll = () => setShowConfirmComm(true);
 
     return (
       <div style={{minHeight:'100vh', background:'#f5f5f5', fontFamily:"'Inter','Segoe UI',Arial,sans-serif"}}>
@@ -1465,6 +1466,7 @@ function CRMApp({ user, onLogout }) {
             {/* Zone message */}
             <div style={{padding:'16px 20px', borderBottom:'1px solid #f0f0f0', display:'flex', flexDirection:'column', gap:0}}>
               <textarea
+                ref={commTextareaRef}
                 value={commMessage}
                 onChange={e=>setCommMessage(e.target.value)}
                 placeholder="Écrivez votre message ici..."
@@ -1473,8 +1475,16 @@ function CRMApp({ user, onLogout }) {
               {/* Variables */}
               <div style={{display:'flex', gap:6, flexWrap:'wrap', marginTop:8, paddingTop:8, borderTop:'1px solid #f5f5f5'}}>
                 <span style={{fontSize:11, color:'#bbb', alignSelf:'center'}}>Insérer :</span>
-                {['{prenom}','{nom}','{tel}'].map(v => (
-                  <button key={v} onClick={()=>insertVar(v)} style={{background:'#f5f5f5', border:'1px solid #e5e5e5', borderRadius:5, padding:'2px 8px', fontSize:11, fontWeight:600, cursor:'pointer', color:'#555'}}>{v}</button>
+                {['{prenom}','{nom}','{tel}','{entreprise}'].map(v => (
+                  <button key={v} onClick={()=>{
+                    const ta = commTextareaRef.current;
+                    if (!ta) return;
+                    const start = ta.selectionStart;
+                    const end = ta.selectionEnd;
+                    const newVal = commMessage.substring(0, start) + v + commMessage.substring(end);
+                    setCommMessage(newVal);
+                    setTimeout(()=>{ ta.focus(); ta.setSelectionRange(start + v.length, start + v.length); }, 0);
+                  }} style={{background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:6, padding:'4px 10px', fontSize:12, fontWeight:600, cursor:'pointer', color:'#111'}}>{v}</button>
                 ))}
               </div>
               {/* Footer non modifiable */}
@@ -1499,6 +1509,42 @@ function CRMApp({ user, onLogout }) {
           </div>
         </div>
         {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
+
+        {showConfirmComm && (
+          <div style={{position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:4000, display:'flex', alignItems:'center', justifyContent:'center'}}>
+            <div style={{background:'#fff', borderRadius:16, padding:'28px 32px', maxWidth:400, width:'90%', boxShadow:'0 20px 60px rgba(0,0,0,0.2)'}}>
+              <div style={{textAlign:'center', marginBottom:20}}>
+                <div style={{fontSize:48, marginBottom:12}}>📤</div>
+                <h3 style={{margin:'0 0 8px', fontSize:18, fontWeight:800, color:'#111'}}>Confirmer l'envoi</h3>
+                <p style={{margin:0, color:'#666', fontSize:14}}>
+                  Vous allez envoyer <strong style={{color:'#111'}}>{commSelected.length} email(s)</strong> à :
+                </p>
+                <div style={{margin:'12px 0', maxHeight:120, overflowY:'auto'}}>
+                  {commSelected.map(id => {
+                    const c = clients.find(x => x.id === id);
+                    return c ? (
+                      <div key={id} style={{display:'flex', alignItems:'center', gap:8, padding:'6px 0', borderBottom:'1px solid #f0f0f0'}}>
+                        <div style={{width:28, height:28, borderRadius:'50%', background:'#E8C547', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700}}>
+                          {(c.prenom||c.nom||'?')[0].toUpperCase()}
+                        </div>
+                        <span style={{fontSize:13, color:'#333'}}>{c.prenom} {c.nom}</span>
+                        <span style={{fontSize:11, color:'#999', marginLeft:'auto'}}>{c.mail}</span>
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+              <div style={{display:'flex', gap:10}}>
+                <button onClick={()=>setShowConfirmComm(false)} style={{flex:1, height:44, border:'1.5px solid #ddd', borderRadius:10, background:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', color:'#666'}}>
+                  Annuler
+                </button>
+                <button onClick={()=>{setShowConfirmComm(false); doSendComm();}} style={{flex:2, height:44, border:'none', borderRadius:10, background:'#E8C547', fontSize:14, fontWeight:800, cursor:'pointer', color:'#111'}}>
+                  📤 Envoyer maintenant
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
