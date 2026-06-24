@@ -102,11 +102,11 @@ function Toast({ msg, type, onClose }) {
 }
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
-function Modal({ title, onClose, children, footer, maxW=520 }) {
+function Modal({ title, onClose, children, footer, maxW=520, zIndex=1000 }) {
   const isMobile = window.innerWidth < 768;
   return (
     <div
-      style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1000, display:"flex", alignItems: isMobile ? "flex-end" : "center", justifyContent:"center", padding: isMobile ? 0 : "1rem" }}
+      style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex, display:"flex", alignItems: isMobile ? "flex-end" : "center", justifyContent:"center", padding: isMobile ? 0 : "1rem" }}
       onPointerDown={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
@@ -788,7 +788,7 @@ function AccepterModal({ resa, onConfirm, onCancel }) {
   const c = resa.clients || {};
   const nom = c.entreprise ? c.entreprise : `${c.prenom || ''} ${c.nom || ''}`.trim();
   return (
-    <Modal title="✓ Confirmer la réservation" onClose={onCancel} maxW={420}
+    <Modal title="✓ Confirmer la réservation" onClose={onCancel} maxW={420} zIndex={3000}
       footer={[
         <button key="c" type="button" onClick={onCancel} style={{...btnSecondary}}>Annuler</button>,
         <button key="o" type="button" onClick={onConfirm} style={{ background:'#16a34a', color:'#fff', border:'none', borderRadius:8, padding:'0 20px', height:40, fontWeight:700, fontSize:14, cursor:'pointer' }}>✓ Confirmer</button>
