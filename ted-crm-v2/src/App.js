@@ -935,7 +935,10 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
     if (error) { showToast('Erreur', 'error'); return; }
     showToast('Réservation confirmée ✓');
     loadResa();
-    if (!r.clients?.mail) { showToast("⚠️ Email non envoyé (pas d'adresse)"); return; }
+    // Recharge les infos fraîches du client (mail/nom peuvent avoir changé)
+    const { data: clientFrais } = await supabase.from('clients').select('*').eq('id', r.client_id).single();
+    const clientPourEmail = clientFrais || r.clients;
+    if (!clientPourEmail?.mail) { showToast("⚠️ Email non envoyé (pas d'adresse)"); return; }
     const dateFormatee = new Date(r.date).toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
     const dateStr = r.date.replace(/-/g,'');
     const heureArr = (r.heure||'19:00').split(':');
@@ -947,7 +950,7 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
     const titre = encodeURIComponent('Réservation Le TED');
     const lieu = encodeURIComponent('28 Av. des Frères Montgolfier, 69680 Chassieu');
     const details = encodeURIComponent(`Réservation confirmée au TED pour ${r.nb_personnes} personne(s) — ${r.service === 'midi' ? 'Déjeuner' : 'Dîner'}`);
-    const agendaUrl = `https://ted-crm.pages.dev/agenda.html?date=${r.date}&heure=${encodeURIComponent(r.heure||'19:00')}&nb=${r.nb_personnes}&service=${r.service}&prenom=${encodeURIComponent(r.clients?.prenom||'')}`;
+    const agendaUrl = `https://ted-crm.pages.dev/agenda.html?date=${r.date}&heure=${encodeURIComponent(r.heure||'19:00')}&nb=${r.nb_personnes}&service=${r.service}&prenom=${encodeURIComponent(clientPourEmail?.prenom||'')}`;
     const htmlConfirmation = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#f8f8f8;padding:20px">
   <div style="background:#111111;padding:28px 24px;text-align:center;border-radius:12px 12px 0 0;border-bottom:4px solid #E8C547">
     <img src="https://ted-crm.pages.dev/favicon.png" alt="Le TED" style="height:60px;margin-bottom:12px" />
@@ -955,7 +958,7 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
     <p style="color:#888;margin:4px 0 0;font-size:13px;letter-spacing:1px">RESTAURANT &amp; CLUB — CHASSIEU</p>
   </div>
   <div style="background:#fff;padding:28px 24px;border-radius:0 0 12px 12px;box-shadow:0 4px 20px rgba(0,0,0,0.08)">
-    <h2 style="color:#111;margin:0 0 8px;font-size:22px">Bonjour ${r.clients.prenom} 👋</h2>
+    <h2 style="color:#111;margin:0 0 8px;font-size:22px">Bonjour ${clientPourEmail.prenom} 👋</h2>
     <p style="color:#444;font-size:16px;margin:0 0 24px">Votre réservation est <strong style="color:#16a34a">confirmée</strong> ✅</p>
     <div style="background:#f9f9f9;border-left:4px solid #E8C547;padding:20px;border-radius:0 8px 8px 0;margin-bottom:24px">
       <p style="margin:0 0 10px;font-size:15px">📅 <strong>Date :</strong> ${dateFormatee}</p>
@@ -980,8 +983,8 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
   </div>
 </div>`;
     const resEmail = await sendBrevoEmail(
-      r.clients.mail,
-      `${r.clients.prenom || ''} ${r.clients.nom || ''}`.trim(),
+      clientPourEmail.mail,
+      `${clientPourEmail.prenom || ''} ${clientPourEmail.nom || ''}`.trim(),
       `✅ Réservation confirmée au TED — ${dateFormatee}`,
       htmlConfirmation
     );
@@ -1289,8 +1292,8 @@ function CRMApp({ user, onLogout }) {
     const { error } = await supabase.from("clients").update({ genre:c.genre, nom:c.nom, prenom:c.prenom, tel:c.tel, mail:c.mail, commentaire:c.commentaire, entreprise:c.entreprise||"" }).eq("id", c.id);
     if (error) {
       showToast("Erreur lors de la modification", "error");
-      loadClients();
     }
+    loadClients(); // toujours recharger pour garantir la sync (BUG 3 : nouveau mail pour emails en attente)
   }
 
   async function deleteClient(id) {
@@ -1387,7 +1390,7 @@ function CRMApp({ user, onLogout }) {
   }
 
   if (loading) return <div style={{ textAlign:"center", paddingTop:80, fontSize:16, color:"#888" }}>Chargement des clients…</div>;
-  if (showResaPage && !isMobile) return <ReservationsPage onBack={()=>{ setShowResaPage(false); loadResaCount(); }} showToast={showToast} user={user} />;
+  if (showResaPage && !isMobile) return <ReservationsPage onBack={()=>{ setShowResaPage(false); loadResaCount(); loadClients(); }} showToast={showToast} user={user} />;
 
   if (activeView === 'communications' && !isMobile) {
     const commClients = clients.filter(c => {
@@ -2442,7 +2445,7 @@ function CRMApp({ user, onLogout }) {
 
 
       {/* Modals */}
-      {showAddResa && <AddResaModal onClose={()=>setShowAddResa(false)} onSaved={()=>{ loadResaCount(); }} showToast={showToast} user={user} />}
+      {showAddResa && <AddResaModal onClose={()=>setShowAddResa(false)} onSaved={()=>{ loadResaCount(); loadClients(); }} showToast={showToast} user={user} />}
       {modalAdd && <ClientForm existingClients={clients} onSave={addClient} onCancel={()=>setModalAdd(false)} />}
       {modalEdit && <ClientForm initial={modalEdit} existingClients={clients} onSave={editClient} onCancel={()=>setModalEdit(null)} />}
       {modalDelete && <ConfirmModal title="Supprimer ce client ?" msg={`Êtes-vous sûr de vouloir supprimer définitivement ${modalDelete.prenom} ${modalDelete.nom} ? Cette action est irréversible.`} onOk={()=>deleteClient(modalDelete.id)} onCancel={()=>setModalDelete(null)} okLabel="Supprimer définitivement" danger />}
