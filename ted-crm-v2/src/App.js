@@ -564,7 +564,7 @@ function ReservationsPage({ onBack, showToast, user }) {
     setLoading(true);
     const { data, error } = await supabase
       .from('reservations')
-      .select('*, clients(nom, prenom, tel, mail, genre, entreprise)')
+      .select('*, clients(id, nom, prenom, tel, mail, genre, entreprise)')
       .order('created_at', { ascending: false });
     if (error) showToast('Erreur chargement réservations', 'error');
     else setResaList(data || []);
