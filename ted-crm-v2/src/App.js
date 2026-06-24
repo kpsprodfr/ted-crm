@@ -1357,7 +1357,7 @@ function CRMApp({ user, onLogout }) {
     const avatarColor = (c) => avatarColors[(c.prenom||c.nom||'?').charCodeAt(0) % avatarColors.length];
 
     const buildHtml = (client) => {
-      const msg = commMessage.replace(/\n/g,'<br>').replace(/{prenom}/g, client.prenom||'').replace(/{nom}/g, client.nom||'').replace(/{tel}/g, client.tel||'');
+      const msg = commMessage.replace(/\n/g,'<br>').replace(/{prenom}/g, client.prenom||'').replace(/{nom}/g, client.nom||'').replace(/{tel}/g, client.tel||'').replace(/{entreprise}/g, client.entreprise||'');
       return `<div style="font-family:Arial,sans-serif;max-width:580px;margin:0 auto;padding:32px 24px;background:#fff">
   <p style="font-size:15px;line-height:1.7;color:#222">${msg}</p>
   <div style="margin-top:32px;padding-top:16px;border-top:1px solid #eee">
@@ -1382,8 +1382,27 @@ function CRMApp({ user, onLogout }) {
       setCommSending(true);
       let sent = 0;
       for (const client of selectedClients) {
-        const res = await sendBrevoEmail(client.mail, `${client.prenom||''} ${client.nom||''}`.trim(), commObjet, buildHtml(client));
-        if (res?.success) sent++;
+        console.log('[Comm] Envoi à:', client.mail);
+        try {
+          const res = await fetch('/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: client.mail,
+              toName: `${client.prenom||''} ${client.nom||''}`.trim(),
+              subject: commObjet,
+              html: buildHtml(client)
+            })
+          });
+          const text = await res.text();
+          console.log('[Comm] Réponse:', res.status, text);
+          let data = {};
+          try { data = JSON.parse(text); } catch(_) {}
+          if (data.success) sent++;
+          else console.warn('[Comm] Échec envoi pour', client.mail, data);
+        } catch(e) {
+          console.error('[Comm] Erreur réseau pour', client.mail, e);
+        }
       }
       setCommSending(false);
       showToast(`📧 ${sent} email(s) envoyé(s) ✓`);
