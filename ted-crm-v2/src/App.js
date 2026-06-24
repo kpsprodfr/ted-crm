@@ -926,9 +926,12 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
     if (!r.clients?.mail) { showToast("⚠️ Email non envoyé (pas d'adresse)"); return; }
     const dateFormatee = new Date(r.date).toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
     const dateStr = r.date.replace(/-/g,'');
-    const heureStr = (r.heure||'19:00').replace(':','');
-    const calStart = dateStr + 'T' + heureStr + '00';
-    const calEnd = dateStr + 'T' + (parseInt((r.heure||'19:00').split(':')[0])+2) + (r.heure||'19:00').split(':')[1] + '00';
+    const heureArr = (r.heure||'19:00').split(':');
+    const hStart = heureArr[0];
+    const mStart = heureArr[1];
+    const hEnd = String(parseInt(hStart) + 2).padStart(2,'0');
+    const calStart = `${dateStr}T${hStart}${mStart}00`;
+    const calEnd = `${dateStr}T${hEnd}${mStart}00`;
     const titre = encodeURIComponent('Réservation Le TED');
     const lieu = encodeURIComponent('28 Av. des Frères Montgolfier, 69680 Chassieu');
     const details = encodeURIComponent(`Réservation confirmée au TED pour ${r.nb_personnes} personne(s) — ${r.service === 'midi' ? 'Déjeuner' : 'Dîner'}`);

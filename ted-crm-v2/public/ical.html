@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Calendrier TED</title></head>
+<body>
+<script>
+  const p = new URLSearchParams(window.location.search);
+  const date = p.get('date') || '';
+  const heure = p.get('heure') || '19:00';
+  const nb = p.get('nb') || '1';
+
+  const dateStr = date.replace(/-/g,'');
+  const [h, m] = heure.split(':');
+  const heureFin = String(parseInt(h) + 2).padStart(2,'0') + m;
+
+  const ics = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Le TED//FR',
+    'BEGIN:VEVENT',
+    'DTSTART:' + dateStr + 'T' + h + m + '00',
+    'DTEND:' + dateStr + 'T' + heureFin + '00',
+    'SUMMARY:Réservation Le TED',
+    'LOCATION:28 Av. des Frères Montgolfier\\, 69680 Chassieu',
+    'DESCRIPTION:Réservation pour ' + nb + ' personne(s)',
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].join('\r\n');
+
+  const blob = new Blob([ics], {type: 'text/calendar;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'reservation-ted.ics';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => window.close(), 1000);
+</script>
+<p style="font-family:Arial;text-align:center;padding:40px;color:#666">
+  Téléchargement en cours...
+</p>
+</body>
+</html>
