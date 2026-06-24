@@ -576,22 +576,46 @@ async function submitForm() {
 
 function showSuccess() {
   for (let i = 1; i <= 4; i++) document.getElementById('step-' + i).style.display = 'none';
-  document.getElementById('step-success').style.display = 'block';
-  document.getElementById('step-success').innerHTML = `
-    <div class="success-wrap">
-      <div class="success-icon">✓</div>
-      <div class="success-title">Demande envoyée !</div>
-      <div class="success-sub">
-        Merci <strong>${state.prenom}</strong>, votre demande pour le <strong>${fmtDate(state.date)}</strong>
-        (${state.service === 'midi' ? 'Midi' : 'Soir'} · ${state.heure} · ${state.nbPersonnes} pers.) a bien été reçue.
+  const wrap = document.getElementById('step-success');
+  wrap.style.display = 'block';
+  wrap.innerHTML = `
+    <div style="text-align:center;padding:32px 20px;max-width:480px;margin:0 auto;">
+      <div style="width:80px;height:80px;border-radius:50%;background:#f0fdf4;border:3px solid #22c55e;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:36px;">✓</div>
+      <h2 style="font-size:22px;font-weight:800;color:#111;margin:0 0 8px;">Demande envoyée !</h2>
+      <p style="color:#666;font-size:15px;margin:0 0 24px;">Merci <strong id="confirm-prenom"></strong>, votre demande a bien été reçue.</p>
+      <div style="background:#fff;border-radius:14px;border:1.5px solid #f0f0f0;padding:20px;margin-bottom:20px;text-align:left;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+        <p style="font-size:11px;font-weight:700;color:#999;letter-spacing:1px;text-transform:uppercase;margin:0 0 14px;">Récapitulatif</p>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:20px;">📅</span><div><p style="margin:0;font-size:11px;color:#999;">Date</p><p style="margin:0;font-weight:700;color:#111;" id="confirm-date"></p></div></div>
+          <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:20px;">🕐</span><div><p style="margin:0;font-size:11px;color:#999;">Heure</p><p style="margin:0;font-weight:700;color:#111;" id="confirm-heure"></p></div></div>
+          <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:20px;">👥</span><div><p style="margin:0;font-size:11px;color:#999;">Personnes</p><p style="margin:0;font-weight:700;color:#111;" id="confirm-nb"></p></div></div>
+          <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:20px;" id="confirm-service-icon">🌙</span><div><p style="margin:0;font-size:11px;color:#999;">Service</p><p style="margin:0;font-weight:700;color:#111;" id="confirm-service"></p></div></div>
+        </div>
       </div>
-      <div class="success-note">
-        ⚠️ <strong>Votre réservation n'est pas encore confirmée.</strong><br>
-        L'équipe du TED vous contactera par téléphone ou email pour confirmer votre demande.
-        Merci de votre confiance !
+      <div style="background:#fffbea;border:1.5px solid #E8C547;border-radius:12px;padding:16px;margin-bottom:20px;text-align:left;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><span style="font-size:18px;">📧</span><p style="margin:0;font-weight:700;color:#111;font-size:14px;">Email de confirmation en route !</p></div>
+        <p style="margin:0;font-size:13px;color:#666;line-height:1.5;">Un email de confirmation vous sera envoyé dès que l'équipe du TED validera votre demande.</p>
+      </div>
+      <div style="background:#fff8f0;border:1.5px solid #f97316;border-radius:12px;padding:16px;text-align:left;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span style="font-size:18px;">⚠️</span><p style="margin:0;font-weight:700;color:#c2410c;font-size:14px;">Pas encore confirmée</p></div>
+        <p style="margin:0;font-size:13px;color:#9a3412;line-height:1.5;">Votre réservation est en attente de validation. L'équipe du TED vous contactera par téléphone ou email pour confirmer votre demande.</p>
+      </div>
+      <div style="margin-top:24px;padding-top:16px;border-top:1px solid #eee;text-align:center;">
+        <img src="/favicon.png" style="height:32px;margin-bottom:8px;" onerror="this.style.display='none'" />
+        <p style="font-weight:800;color:#111;font-size:14px;margin:0 0 4px;">Le TED — Restaurant & Club</p>
+        <p style="color:#888;font-size:12px;margin:0 0 2px;">📍 28 Av. des Frères Montgolfier, 69680 Chassieu</p>
+        <p style="color:#888;font-size:12px;margin:0;">📞 04 78 90 67 80</p>
       </div>
     </div>
   `;
+
+  document.getElementById('confirm-prenom').textContent = state.prenom || '';
+  const [y,m,d] = state.date.split('-').map(Number);
+  document.getElementById('confirm-date').textContent = new Date(y, m-1, d).toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+  document.getElementById('confirm-heure').textContent = state.heure || '';
+  document.getElementById('confirm-nb').textContent = state.nbPersonnes + ' personne' + (state.nbPersonnes > 1 ? 's' : '');
+  document.getElementById('confirm-service').textContent = state.service === 'midi' ? 'Déjeuner' : 'Dîner';
+  document.getElementById('confirm-service-icon').textContent = state.service === 'midi' ? '☀️' : '🌙';
 }
 
 // ─── Navigation ───────────────────────────────────────────────────────────────
