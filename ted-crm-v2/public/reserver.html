@@ -6,7 +6,8 @@
   <title>Réserver au TED</title>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    *{-webkit-tap-highlight-color:transparent}
+    html,body{overflow-x:hidden;max-width:100vw;position:relative}
+    *{-webkit-tap-highlight-color:transparent;max-width:100%}
     button{touch-action:manipulation}
     body{font-family:'Inter','Segoe UI',Arial,sans-serif;background:#f8f8f8;color:#111;min-height:100vh}
     :root{--g:#E8C547;--r:14px}
@@ -203,6 +204,7 @@ function normalizeTel(v) {
   if (d.startsWith('+33')) d = '0' + d.slice(3);
   if (d.startsWith('0033')) d = '0' + d.slice(4);
   d = d.replace(/\D/g, '');
+  if (/^[67]/.test(d)) d = '0' + d;
   return d;
 }
 
