@@ -895,6 +895,7 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
   const [acceptResa, setAcceptResa] = useState(null);
   const [detailResa, setDetailResa] = useState(null);
   const [histOpen, setHistOpen] = useState(false);
+  const [showAddResa, setShowAddResa] = useState(false);
   const isMobile = useIsMobile();
   const qr = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(FORM_URL)}`;
 
@@ -1047,6 +1048,7 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
           <button onClick={onBack} style={{ background:'rgba(255,255,255,0.1)', border:'none', borderRadius:8, height:34, padding:'0 14px', color:'#fff', fontWeight:600, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>← Retour</button>
           <span style={{ fontWeight:700, fontSize:15, flex:1 }}>📅 Réservations</span>
           {attente.length > 0 && <span style={{ background:'#dc2626', color:'#fff', borderRadius:99, padding:'2px 8px', fontSize:12, fontWeight:700 }}>{attente.length}</span>}
+          <button onClick={()=>setShowAddResa(true)} style={{ background:G, border:'none', borderRadius:8, height:34, padding:'0 16px', color:'#111', fontWeight:700, fontSize:13, cursor:'pointer' }}>+ Ajouter une réservation</button>
         </header>
       )}
 
@@ -1149,6 +1151,7 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
       {acceptResa && <AccepterModal resa={acceptResa} onConfirm={()=>accepter(acceptResa)} onCancel={()=>setAcceptResa(null)} />}
       {refusResa && <RefusModal onConfirm={raison=>refuser(refusResa, raison)} onCancel={()=>setRefusResa(null)} />}
       {detailResa && <DetailResaModal resa={detailResa} onClose={()=>setDetailResa(null)} onSaved={()=>{ loadResa(); setDetailResa(null); }} />}
+      {showAddResa && <AddResaModal onClose={()=>setShowAddResa(false)} onSaved={()=>{ loadResa(); setShowAddResa(false); }} showToast={showToast} user={user} />}
     </div>
   );
 }
@@ -1180,7 +1183,7 @@ function CRMApp({ user, onLogout }) {
   const [showResaPage, setShowResaPage] = useState(false);
   const [resaAttenteCount, setResaAttenteCount] = useState(0);
   const [showPlusSheet, setShowPlusSheet] = useState(false);
-  const [mobileTab, setMobileTab] = useState('clients'); // 'clients' | 'reservations'
+  const [mobileTab, setMobileTab] = useState(window.innerWidth < 768 ? 'reservations' : 'clients'); // 'clients' | 'reservations'
   const [showAddResa, setShowAddResa] = useState(false);
   const deleteGuard = useRef(false);
   const isMobile = useIsMobile();
