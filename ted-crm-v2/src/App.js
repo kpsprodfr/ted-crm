@@ -922,28 +922,48 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
     if (error) { showToast('Erreur', 'error'); return; }
     showToast('Réservation confirmée ✓');
     loadResa();
-    if (!r.clients?.mail) { showToast('⚠️ Email non envoyé (pas d\'adresse)'); return; }
+    if (!r.clients?.mail) { showToast("⚠️ Email non envoyé (pas d'adresse)"); return; }
+    const dateFormatee = new Date(r.date).toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+    const heureBase = r.heure || '19:00';
+    const calStart = r.date.replace(/-/g,'') + 'T' + heureBase.replace(':','') + '00';
+    const calEnd = r.date.replace(/-/g,'') + 'T' + (parseInt(heureBase.split(':')[0])+2) + heureBase.split(':')[1] + '00';
+    const calUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=R%C3%A9servation+Le+TED&dates=${calStart}/${calEnd}&details=R%C3%A9servation+confirm%C3%A9e+au+TED+pour+${r.nb_personnes}+personne(s)&location=28+Av.+des+Fr%C3%A8res+Montgolfier+69680+Chassieu`;
+    const htmlConfirmation = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#f8f8f8;padding:20px">
+  <div style="background:#111111;padding:28px 24px;text-align:center;border-radius:12px 12px 0 0;border-bottom:4px solid #E8C547">
+    <img src="https://leted.fr/wp-content/uploads/2023/01/logo-Le-TED.png" alt="Le TED" style="height:60px;margin-bottom:8px" onerror="this.style.display='none'" />
+    <h1 style="color:#E8C547;margin:0;font-size:28px;letter-spacing:2px;font-weight:800">LE TED</h1>
+    <p style="color:#888;margin:4px 0 0;font-size:13px;letter-spacing:1px">RESTAURANT &amp; CLUB — CHASSIEU</p>
+  </div>
+  <div style="background:#fff;padding:28px 24px;border-radius:0 0 12px 12px;box-shadow:0 4px 20px rgba(0,0,0,0.08)">
+    <h2 style="color:#111;margin:0 0 8px;font-size:22px">Bonjour ${r.clients.prenom} 👋</h2>
+    <p style="color:#444;font-size:16px;margin:0 0 24px">Votre réservation est <strong style="color:#16a34a">confirmée</strong> ✅</p>
+    <div style="background:#f9f9f9;border-left:4px solid #E8C547;padding:20px;border-radius:0 8px 8px 0;margin-bottom:24px">
+      <p style="margin:0 0 10px;font-size:15px">📅 <strong>Date :</strong> ${dateFormatee}</p>
+      <p style="margin:0 0 10px;font-size:15px">🕐 <strong>Heure :</strong> ${r.heure || 'À confirmer'}</p>
+      <p style="margin:0 0 10px;font-size:15px">👥 <strong>Nombre de personnes :</strong> ${r.nb_personnes}</p>
+      <p style="margin:0;font-size:15px">🍽 <strong>Service :</strong> ${r.service === 'midi' ? 'Déjeuner' : 'Dîner'}</p>
+      ${r.occasion ? `<p style="margin:8px 0 0;font-size:15px">🎉 <strong>Occasion :</strong> ${r.occasion}</p>` : ''}
+    </div>
+    <div style="text-align:center;margin-bottom:24px">
+      <a href="${calUrl}" target="_blank" style="display:inline-block;background:#E8C547;color:#111;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:800;font-size:15px;letter-spacing:0.5px">📆 Ajouter à mon agenda</a>
+    </div>
+    <div style="background:#fff8e1;border:1.5px solid #E8C547;border-radius:8px;padding:16px;margin-bottom:24px">
+      <p style="margin:0;font-size:14px;color:#555;line-height:1.6">⚠️ <strong>En cas d'annulation ou de modification</strong>, merci de nous prévenir au plus tôt au <strong>04 78 90 67 80</strong> ou par email afin que nous puissions libérer la table pour d'autres clients. Merci de votre compréhension.</p>
+    </div>
+    <div style="border-top:1px solid #eee;padding-top:20px;text-align:center">
+      <p style="color:#111;font-weight:700;font-size:15px;margin:0 0 6px">Le TED — Restaurant &amp; Club</p>
+      <p style="color:#888;font-size:13px;margin:0 0 4px">📍 28 Av. des Frères Montgolfier, 69680 Chassieu</p>
+      <p style="color:#888;font-size:13px;margin:0 0 4px">📞 04 78 90 67 80</p>
+      <p style="color:#888;font-size:13px;margin:0">🌐 leted.fr</p>
+    </div>
+    <p style="text-align:center;color:#bbb;font-size:12px;margin-top:20px">Nous avons hâte de vous accueillir ! 🎉</p>
+  </div>
+</div>`;
     const resEmail = await sendBrevoEmail(
       r.clients.mail,
       `${r.clients.prenom || ''} ${r.clients.nom || ''}`.trim(),
-      '✅ Votre réservation au TED est confirmée !',
-      `<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px">
-        <div style="background:#111;padding:20px;text-align:center;border-bottom:3px solid #E8C547">
-          <h1 style="color:#E8C547;margin:0;font-size:24px">LE TED</h1>
-        </div>
-        <div style="padding:24px;background:#fff">
-          <h2 style="color:#111">Bonjour ${r.clients.prenom},</h2>
-          <p>Votre réservation est <strong style="color:#16a34a">confirmée</strong> 🎉</p>
-          <div style="background:#f9f9f9;border-left:4px solid #E8C547;padding:16px;margin:20px 0;border-radius:4px">
-            <p style="margin:4px 0">📅 <strong>Date :</strong> ${r.date}</p>
-            <p style="margin:4px 0">🕐 <strong>Heure :</strong> ${r.heure}</p>
-            <p style="margin:4px 0">👥 <strong>Personnes :</strong> ${r.nb_personnes}</p>
-            <p style="margin:4px 0">🍽 <strong>Service :</strong> ${r.service}</p>
-          </div>
-          <p>Nous avons hâte de vous accueillir !</p>
-          <p style="color:#888;font-size:13px">28 Av. des Frères Montgolfier, 69680 Chassieu — 04 78 90 67 80</p>
-        </div>
-      </div>`
+      `✅ Réservation confirmée au TED — ${dateFormatee}`,
+      htmlConfirmation
     );
     showToast(resEmail?.success ? '📧 Email envoyé' : '⚠️ Email non envoyé');
   }
@@ -956,24 +976,40 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
     if (error) { showToast('Erreur', 'error'); return; }
     showToast('Réservation refusée');
     loadResa();
-    if (!r.clients?.mail) { showToast('⚠️ Email non envoyé (pas d\'adresse)'); return; }
+    if (!r.clients?.mail) { showToast("⚠️ Email non envoyé (pas d'adresse)"); return; }
+    const dateFormateeRefus = new Date(r.date).toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+    const htmlRefus = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#f8f8f8;padding:20px">
+  <div style="background:#111111;padding:28px 24px;text-align:center;border-radius:12px 12px 0 0;border-bottom:4px solid #E8C547">
+    <img src="https://leted.fr/wp-content/uploads/2023/01/logo-Le-TED.png" alt="Le TED" style="height:60px;margin-bottom:8px" onerror="this.style.display='none'" />
+    <h1 style="color:#E8C547;margin:0;font-size:28px;letter-spacing:2px;font-weight:800">LE TED</h1>
+    <p style="color:#888;margin:4px 0 0;font-size:13px;letter-spacing:1px">RESTAURANT &amp; CLUB — CHASSIEU</p>
+  </div>
+  <div style="background:#fff;padding:28px 24px;border-radius:0 0 12px 12px;box-shadow:0 4px 20px rgba(0,0,0,0.08)">
+    <h2 style="color:#111;margin:0 0 8px;font-size:22px">Bonjour ${r.clients.prenom},</h2>
+    <p style="color:#444;font-size:16px;margin:0 0 24px">Merci pour votre demande de réservation au TED.</p>
+    <div style="background:#f9f9f9;border-left:4px solid #ccc;padding:20px;border-radius:0 8px 8px 0;margin-bottom:24px">
+      <p style="margin:0 0 8px;font-size:15px">📅 <strong>Date demandée :</strong> ${dateFormateeRefus}</p>
+      <p style="margin:0 0 8px;font-size:15px">👥 <strong>Nombre de personnes :</strong> ${r.nb_personnes}</p>
+      <p style="margin:0;font-size:15px">🍽 <strong>Service :</strong> ${r.service === 'midi' ? 'Déjeuner' : 'Dîner'}</p>
+    </div>
+    <div style="background:#fff2f2;border:1.5px solid #dc2626;border-radius:8px;padding:16px;margin-bottom:24px">
+      <p style="margin:0;font-size:14px;color:#dc2626;font-weight:700">Motif : ${raison}</p>
+    </div>
+    <p style="color:#444;font-size:15px;line-height:1.6">Nous sommes désolés de ne pas pouvoir donner suite à votre demande. N'hésitez pas à nous contacter directement au <strong>04 78 90 67 80</strong> pour trouver une autre disponibilité ou pour toute question.</p>
+    <div style="border-top:1px solid #eee;padding-top:20px;text-align:center;margin-top:24px">
+      <p style="color:#111;font-weight:700;font-size:15px;margin:0 0 6px">Le TED — Restaurant &amp; Club</p>
+      <p style="color:#888;font-size:13px;margin:0 0 4px">📍 28 Av. des Frères Montgolfier, 69680 Chassieu</p>
+      <p style="color:#888;font-size:13px;margin:0 0 4px">📞 04 78 90 67 80</p>
+      <p style="color:#888;font-size:13px;margin:0">🌐 leted.fr</p>
+    </div>
+    <p style="text-align:center;color:#bbb;font-size:12px;margin-top:20px">À bientôt au TED 🙏</p>
+  </div>
+</div>`;
     const resEmail = await sendBrevoEmail(
       r.clients.mail,
       `${r.clients.prenom || ''} ${r.clients.nom || ''}`.trim(),
-      'Votre demande de réservation au TED',
-      `<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px">
-        <div style="background:#111;padding:20px;text-align:center;border-bottom:3px solid #E8C547">
-          <h1 style="color:#E8C547;margin:0;font-size:24px">LE TED</h1>
-        </div>
-        <div style="padding:24px;background:#fff">
-          <h2 style="color:#111">Bonjour ${r.clients.prenom},</h2>
-          <p>Nous avons bien reçu votre demande de réservation pour le <strong>${r.date}</strong>.</p>
-          <p>Malheureusement, nous ne pouvons pas la confirmer.<br>
-          <strong>Motif :</strong> ${raison}</p>
-          <p>N'hésitez pas à nous recontacter pour une autre date.</p>
-          <p style="color:#888;font-size:13px">28 Av. des Frères Montgolfier, 69680 Chassieu — 04 78 90 67 80</p>
-        </div>
-      </div>`
+      `Votre demande de réservation au TED — ${dateFormateeRefus}`,
+      htmlRefus
     );
     showToast(resEmail?.success ? '📧 Email envoyé' : '⚠️ Email non envoyé');
   }
