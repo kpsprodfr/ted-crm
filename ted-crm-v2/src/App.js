@@ -497,7 +497,7 @@ function useIsMobile() {
 }
 
 // ─── Lien Réservation Modal ───────────────────────────────────────────────────
-const FORM_URL = "https://ted-crm-app.netlify.app/reserver.html";
+const FORM_URL = "https://leted-crm.netlify.app/reserver.html";
 
 function LienResaModal({ onClose, showToast }) {
   const qr = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(FORM_URL)}`;
