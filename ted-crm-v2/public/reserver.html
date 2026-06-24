@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Réserver au TED</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter','Segoe UI',Arial,sans-serif;background:#f8f8f8;color:#111;min-height:100vh}
+    :root{--g:#E8C547;--r:14px}
+
+    /* Header */
+    .header{background:#111;padding:0 20px;height:56px;display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid var(--g)}
+    .logo-wrap{display:flex;align-items:center;gap:10px}
+    .logo-text{color:#fff;font-weight:800;font-size:18px;letter-spacing:2px}
+    .logo-text span{color:var(--g)}
+    .header-sub{color:#aaa;font-size:12px}
+
+    /* Progress */
+    .progress-bar{background:#fff;border-bottom:1.5px solid #eee;padding:14px 20px}
+    .progress-steps{display:flex;align-items:center;gap:0;max-width:500px;margin:0 auto}
+    .step-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;transition:all 0.2s}
+    .step-dot.done{background:#111;color:var(--g)}
+    .step-dot.active{background:var(--g);color:#111;box-shadow:0 0 0 3px rgba(232,197,71,0.3)}
+    .step-dot.todo{background:#f0f0f0;color:#bbb}
+    .step-line{flex:1;height:2px;background:#eee}
+    .step-line.done{background:#111}
+    .step-labels{display:flex;justify-content:space-between;margin-top:6px;max-width:500px;margin-left:auto;margin-right:auto}
+    .step-label{font-size:10px;color:#bbb;text-align:center;width:28px;flex-shrink:0}
+    .step-label.active{color:#111;font-weight:700}
+
+    /* Container */
+    .container{max-width:540px;margin:0 auto;padding:24px 16px 80px}
+    .step-title{font-size:20px;font-weight:800;margin-bottom:6px}
+    .step-subtitle{font-size:13px;color:#888;margin-bottom:24px}
+
+    /* Calendar */
+    .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .cal-month{font-size:16px;font-weight:700}
+    .cal-btn{background:none;border:1.5px solid #ddd;border-radius:8px;width:36px;height:36px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:#555}
+    .cal-btn:hover{background:#f0f0f0}
+    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+    .cal-day-header{text-align:center;font-size:11px;font-weight:600;color:#bbb;padding:4px 0}
+    .cal-day{aspect-ratio:1;border-radius:8px;border:1.5px solid transparent;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.15s;position:relative}
+    .cal-day.empty{background:none;cursor:default}
+    .cal-day.past{background:#f8f8f8;color:#ccc;cursor:not-allowed;font-weight:400}
+    .cal-day.today{border-color:#111}
+    .cal-day.available:hover{background:#fffbeb;border-color:var(--g)}
+    .cal-day.selected{background:var(--g) !important;color:#111 !important;border-color:var(--g) !important;box-shadow:0 2px 8px rgba(232,197,71,0.4)}
+    .cal-day.available{background:#fff;color:#111;border-color:#eee}
+
+    /* Buttons group */
+    .btn-group{display:flex;gap:10px;flex-wrap:wrap}
+    .choice-btn{flex:1;min-width:100px;padding:14px 10px;border:2px solid #eee;border-radius:12px;background:#fff;font-size:15px;font-weight:600;cursor:pointer;text-align:center;transition:all 0.15s;color:#555}
+    .choice-btn:hover{border-color:#ddd;background:#f8f8f8}
+    .choice-btn.selected{border-color:var(--g);background:var(--g);color:#111}
+    .choice-btn.heure{flex:initial;padding:12px 16px;font-size:13px;min-width:70px}
+
+    /* Counter */
+    .counter{display:flex;align-items:center;gap:16px;background:#fff;border:1.5px solid #eee;border-radius:12px;padding:10px 20px;width:fit-content}
+    .counter-btn{width:40px;height:40px;border-radius:8px;border:1.5px solid #ddd;background:#fff;font-size:22px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#111;line-height:1}
+    .counter-btn:hover{background:#f0f0f0}
+    .counter-btn:disabled{color:#ccc;cursor:not-allowed}
+    .counter-val{font-size:28px;font-weight:800;min-width:40px;text-align:center}
+
+    /* Form fields */
+    .field{margin-bottom:16px}
+    .label{display:block;font-size:12px;font-weight:700;color:#444;margin-bottom:6px}
+    .label span{color:#dc2626}
+    .input{width:100%;height:48px;border:1.5px solid #ddd;border-radius:10px;padding:0 14px;font-size:16px;outline:none;font-family:inherit;transition:border-color 0.15s}
+    .input:focus{border-color:var(--g)}
+    .input.error{border-color:#dc2626}
+    textarea.input{height:90px;padding:12px 14px;resize:vertical}
+    .error-msg{font-size:12px;color:#dc2626;margin-top:4px}
+    select.input{background:#fff;cursor:pointer}
+
+    /* RGPD */
+    .rgpd-wrap{display:flex;align-items:flex-start;gap:10px;background:#f8f8f8;border:1.5px solid #eee;border-radius:10px;padding:14px}
+    .rgpd-wrap input{width:20px;height:20px;flex-shrink:0;cursor:pointer;accent-color:#111;margin-top:1px}
+    .rgpd-wrap label{font-size:13px;color:#555;line-height:1.5;cursor:pointer}
+
+    /* Récap */
+    .recap-card{background:#fff;border:1.5px solid #eee;border-radius:14px;padding:20px;margin-bottom:20px}
+    .recap-title{font-size:13px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px}
+    .recap-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f5f5f5;font-size:14px}
+    .recap-row:last-child{border-bottom:none}
+    .recap-label{color:#888}
+    .recap-val{font-weight:600;color:#111;text-align:right;max-width:60%}
+
+    /* Buttons navigation */
+    .btn-back{background:#fff;border:1.5px solid #ddd;border-radius:10px;padding:0 20px;height:48px;font-size:15px;font-weight:600;cursor:pointer;color:#555;display:flex;align-items:center;gap:8px}
+    .btn-back:hover{background:#f8f8f8}
+    .btn-next{background:var(--g);border:none;border-radius:10px;padding:0 24px;height:52px;font-size:16px;font-weight:800;cursor:pointer;color:#111;display:flex;align-items:center;gap:8px;flex:1;justify-content:center;box-shadow:0 4px 16px rgba(232,197,71,0.35);transition:all 0.15s}
+    .btn-next:hover{filter:brightness(1.05);transform:translateY(-1px)}
+    .btn-next:disabled{background:#ddd;color:#999;box-shadow:none;cursor:not-allowed;transform:none}
+    .nav-row{display:flex;gap:12px;align-items:center;margin-top:24px}
+
+    /* Success */
+    .success-wrap{text-align:center;padding:40px 20px}
+    .success-icon{width:80px;height:80px;border-radius:50%;background:#f0fdf4;border:4px solid #22c55e;display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 20px;animation:popIn 0.4s cubic-bezier(0.34,1.56,0.64,1)}
+    .success-title{font-size:22px;font-weight:800;margin-bottom:8px}
+    .success-sub{font-size:15px;color:#666;line-height:1.6;max-width:380px;margin:0 auto 24px}
+    .success-note{background:#fffbeb;border:1.5px solid var(--g);border-radius:12px;padding:14px 18px;font-size:13px;color:#92400e;line-height:1.6;max-width:380px;margin:0 auto}
+
+    @keyframes popIn{0%{opacity:0;transform:scale(0.4)}70%{transform:scale(1.08)}100%{opacity:1;transform:scale(1)}}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+    .step-panel{animation:fadeIn 0.2s ease}
+
+    .section-label{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:20px}
+    .section-label:first-child{margin-top:0}
+
+    @media(max-width:480px){
+      .header{padding:0 14px}
+      .container{padding:16px 12px 80px}
+      .step-title{font-size:18px}
+      .cal-day{font-size:13px}
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo-wrap">
+    <div class="logo-text">TED <span>CRM</span></div>
+  </div>
+  <div class="header-sub">Formulaire de réservation</div>
+</div>
+
+<div class="progress-bar">
+  <div class="progress-steps" id="progress-dots"></div>
+  <div class="step-labels" id="progress-labels"></div>
+</div>
+
+<div class="container">
+  <div id="step-1" class="step-panel"></div>
+  <div id="step-2" class="step-panel" style="display:none"></div>
+  <div id="step-3" class="step-panel" style="display:none"></div>
+  <div id="step-4" class="step-panel" style="display:none"></div>
+  <div id="step-success" style="display:none"></div>
+</div>
+
+<script>
+// ─── Supabase ──────────────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://mwpfaytccypvdrgapptk.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_4-uVtQtXd0jLGkNAFsx4yw_ni17DzN_';
+
+async function sbFetch(path, method = 'GET', body = null) {
+  const opts = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON,
+      'Authorization': 'Bearer ' + SUPABASE_ANON,
+      'Prefer': method === 'POST' ? 'return=representation' : ''
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, opts);
+  const text = await res.text();
+  let data = null;
+  try { data = JSON.parse(text); } catch(e) { data = text; }
+  if (!res.ok) throw new Error((data && data.message) || ('HTTP ' + res.status));
+  return data;
+}
+
+// ─── State ────────────────────────────────────────────────────────────────────
+const state = {
+  step: 1,
+  date: null,         // 'YYYY-MM-DD'
+  calYear: new Date().getFullYear(),
+  calMonth: new Date().getMonth(),
+  nbPersonnes: 2,
+  service: null,      // 'midi' | 'soir'
+  heure: null,
+  prenom: '',
+  nom: '',
+  tel: '',
+  email: '',
+  occasion: '',
+  commentaire: '',
+  rgpd: false,
+  submitting: false
+};
+
+// ─── Utils ────────────────────────────────────────────────────────────────────
+const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const JOURS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+const JOURS_LONG = ['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'];
+const OCCASIONS = ['','Repas','Anniversaire','Entreprise','Séminaire','Afterwork','Autre'];
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  const [y,m,d] = iso.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  const jIdx = (dt.getDay() + 6) % 7; // 0=Lun
+  return JOURS_LONG[jIdx] + ' ' + d + ' ' + MOIS[m-1] + ' ' + y;
+}
+
+function normalizeTel(v) {
+  let d = (v || '').replace(/[\s\.\-\(\)]/g, '');
+  if (d.startsWith('+33')) d = '0' + d.slice(3);
+  if (d.startsWith('0033')) d = '0' + d.slice(4);
+  d = d.replace(/\D/g, '');
+  return d;
+}
+
+function todayStr() {
+  const n = new Date();
+  return n.getFullYear() + '-' + String(n.getMonth()+1).padStart(2,'0') + '-' + String(n.getDate()).padStart(2,'0');
+}
+
+// ─── Progress bar ─────────────────────────────────────────────────────────────
+const STEP_LABELS = ['Date','Détails','Coordonnées','Confirmation'];
+
+function renderProgress() {
+  const dots = document.getElementById('progress-dots');
+  const labels = document.getElementById('progress-labels');
+  let dotsH = '', labelsH = '';
+  for (let i = 1; i <= 4; i++) {
+    let cls = i < state.step ? 'done' : i === state.step ? 'active' : 'todo';
+    let icon = i < state.step ? '✓' : i;
+    dotsH += `<div class="step-dot ${cls}">${icon}</div>`;
+    if (i < 4) dotsH += `<div class="step-line ${i < state.step ? 'done' : ''}"></div>`;
+    labelsH += `<span class="step-label ${i === state.step ? 'active' : ''}" style="flex:${i<4?'1':'0'}">${STEP_LABELS[i-1]}</span>`;
+  }
+  dots.innerHTML = dotsH;
+  labels.innerHTML = labelsH;
+}
+
+// ─── Step 1 — Calendrier ──────────────────────────────────────────────────────
+function renderStep1() {
+  const el = document.getElementById('step-1');
+  const today = todayStr();
+  const year = state.calYear, month = state.calMonth;
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month+1, 0).getDate();
+  const startDow = (firstDay.getDay() + 6) % 7; // 0=Lun
+
+  // Nav buttons: disable prev if current month is current month or past
+  const nowD = new Date(); const nowY = nowD.getFullYear(); const nowM = nowD.getMonth();
+  const canPrev = (year > nowY) || (year === nowY && month > nowM);
+
+  let dayHeaders = JOURS.map(j => `<div class="cal-day-header">${j}</div>`).join('');
+  let cells = '';
+  for (let i = 0; i < startDow; i++) cells += '<div class="cal-day empty"></div>';
+  for (let d = 1; d <= lastDay; d++) {
+    const iso = year + '-' + String(month+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    const isPast = iso < today;
+    const isToday = iso === today;
+    const isSel = iso === state.date;
+    let cls = 'cal-day';
+    if (isPast) cls += ' past';
+    else if (isSel) cls += ' available selected';
+    else cls += ' available';
+    if (isToday && !isPast) cls += ' today';
+    const click = isPast ? '' : `onclick="selectDate('${iso}')"`;
+    cells += `<div class="${cls}" ${click}>${d}</div>`;
+  }
+
+  el.innerHTML = `
+    <div class="step-title">📅 Choisissez une date</div>
+    <div class="step-subtitle">Sélectionnez le jour souhaité pour votre réservation</div>
+    <div class="cal-nav">
+      <button class="cal-btn" onclick="prevMonth()" ${!canPrev?'disabled style="opacity:0.3;cursor:not-allowed"':''}>‹</button>
+      <div class="cal-month">${MOIS[month]} ${year}</div>
+      <button class="cal-btn" onclick="nextMonth()">›</button>
+    </div>
+    <div class="cal-grid">${dayHeaders}${cells}</div>
+    <div class="nav-row">
+      <button class="btn-next" id="next-1" onclick="goStep(2)" ${!state.date?'disabled':''}>Suivant →</button>
+    </div>
+  `;
+}
+
+function selectDate(iso) {
+  state.date = iso;
+  renderStep1();
+}
+function prevMonth() {
+  if (state.calMonth === 0) { state.calMonth = 11; state.calYear--; } else state.calMonth--;
+  renderStep1();
+}
+function nextMonth() {
+  if (state.calMonth === 11) { state.calMonth = 0; state.calYear++; } else state.calMonth++;
+  renderStep1();
+}
+
+// ─── Step 2 — Détails ─────────────────────────────────────────────────────────
+const HEURES_MIDI = ['12h00','12h30','13h00'];
+const HEURES_SOIR = ['19h00','19h30','20h00','20h30','21h00'];
+
+function renderStep2() {
+  const el = document.getElementById('step-2');
+  const heures = state.service === 'midi' ? HEURES_MIDI : state.service === 'soir' ? HEURES_SOIR : [];
+  el.innerHTML = `
+    <div class="step-title">🍽 Votre réservation</div>
+    <div class="step-subtitle">${fmtDate(state.date)}</div>
+
+    <div class="section-label">Nombre de personnes</div>
+    <div class="counter">
+      <button class="counter-btn" onclick="changeNb(-1)" ${state.nbPersonnes<=1?'disabled':''}>−</button>
+      <div class="counter-val">${state.nbPersonnes}</div>
+      <button class="counter-btn" onclick="changeNb(1)" ${state.nbPersonnes>=20?'disabled':''}>+</button>
+    </div>
+
+    <div class="section-label" style="margin-top:22px">Service</div>
+    <div class="btn-group">
+      <button class="choice-btn ${state.service==='midi'?'selected':''}" onclick="selectService('midi')">🌞 Midi</button>
+      <button class="choice-btn ${state.service==='soir'?'selected':''}" onclick="selectService('soir')">🌙 Soir</button>
+    </div>
+
+    ${heures.length ? `
+    <div class="section-label" style="margin-top:22px">Créneau horaire</div>
+    <div class="btn-group">
+      ${heures.map(h=>`<button class="choice-btn heure ${state.heure===h?'selected':''}" onclick="selectHeure('${h}')">${h}</button>`).join('')}
+    </div>` : ''}
+
+    <div class="nav-row">
+      <button class="btn-back" onclick="goStep(1)">← Retour</button>
+      <button class="btn-next" onclick="goStep(3)" ${(!state.service||!state.heure)?'disabled':''}>Suivant →</button>
+    </div>
+  `;
+}
+
+function changeNb(d) { state.nbPersonnes = Math.max(1,Math.min(20,state.nbPersonnes+d)); renderStep2(); }
+function selectService(s) { state.service = s; state.heure = null; renderStep2(); }
+function selectHeure(h) { state.heure = h; renderStep2(); }
+
+// ─── Step 3 — Coordonnées ─────────────────────────────────────────────────────
+let step3Errors = {};
+
+function renderStep3() {
+  const el = document.getElementById('step-3');
+  const e = step3Errors;
+  el.innerHTML = `
+    <div class="step-title">👤 Vos coordonnées</div>
+    <div class="step-subtitle">Ces informations nous permettent de vous contacter</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="field">
+        <label class="label">Prénom <span>*</span></label>
+        <input class="input ${e.prenom?'error':''}" id="f-prenom" value="${state.prenom}" oninput="state.prenom=this.value" placeholder="Jean" />
+        ${e.prenom?`<div class="error-msg">${e.prenom}</div>`:''}
+      </div>
+      <div class="field">
+        <label class="label">Nom <span>*</span></label>
+        <input class="input ${e.nom?'error':''}" id="f-nom" value="${state.nom}" oninput="state.nom=this.value" placeholder="Dupont" />
+        ${e.nom?`<div class="error-msg">${e.nom}</div>`:''}
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="label">Téléphone <span>*</span></label>
+      <input class="input ${e.tel?'error':''}" id="f-tel" value="${state.tel}" oninput="state.tel=this.value" placeholder="06 12 34 56 78" type="tel" inputmode="tel" />
+      ${e.tel?`<div class="error-msg">${e.tel}</div>`:''}
+    </div>
+
+    <div class="field">
+      <label class="label">Email <span>*</span></label>
+      <input class="input ${e.email?'error':''}" id="f-email" value="${state.email}" oninput="state.email=this.value" placeholder="jean@exemple.fr" type="email" inputmode="email" />
+      ${e.email?`<div class="error-msg">${e.email}</div>`:''}
+    </div>
+
+    <div class="field">
+      <label class="label">Occasion <span style="color:#999;font-weight:400">(facultatif)</span></label>
+      <select class="input" onchange="state.occasion=this.value">
+        ${OCCASIONS.map(o=>`<option value="${o}" ${state.occasion===o?'selected':''}>${o||'— Aucune occasion particulière'}</option>`).join('')}
+      </select>
+    </div>
+
+    <div class="field">
+      <label class="label">Commentaire <span style="color:#999;font-weight:400">(facultatif)</span></label>
+      <textarea class="input" placeholder="Allergies, demandes particulières…" oninput="state.commentaire=this.value">${state.commentaire}</textarea>
+    </div>
+
+    <div class="rgpd-wrap" style="margin-bottom:8px">
+      <input type="checkbox" id="rgpd" ${state.rgpd?'checked':''} onchange="state.rgpd=this.checked" />
+      <label for="rgpd">J'accepte que mes données soient utilisées par l'établissement pour gérer ma réservation, conformément au RGPD. Ces données ne seront pas transmises à des tiers. <span style="color:#dc2626">*</span></label>
+    </div>
+    ${e.rgpd?`<div class="error-msg" style="margin-bottom:8px">${e.rgpd}</div>`:''}
+
+    <div class="nav-row">
+      <button class="btn-back" onclick="goStep(2)">← Retour</button>
+      <button class="btn-next" onclick="validateStep3()">Vérifier →</button>
+    </div>
+  `;
+}
+
+function validateStep3() {
+  const e = {};
+  if (!state.prenom.trim()) e.prenom = 'Prénom obligatoire';
+  if (!state.nom.trim()) e.nom = 'Nom obligatoire';
+  const tel = normalizeTel(state.tel);
+  if (!tel || tel.length !== 10 || !(/^(06|07|01|02|03|04|05|08|09)/.test(tel))) e.tel = 'Numéro invalide (ex : 06 12 34 56 78)';
+  if (!state.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email)) e.email = 'Email invalide';
+  if (!state.rgpd) e.rgpd = 'Vous devez accepter la politique de confidentialité';
+  step3Errors = e;
+  if (Object.keys(e).length > 0) { renderStep3(); return; }
+  goStep(4);
+}
+
+// ─── Step 4 — Récapitulatif ───────────────────────────────────────────────────
+function renderStep4() {
+  const el = document.getElementById('step-4');
+  const tel = normalizeTel(state.tel);
+  const rows = [
+    ['Date', fmtDate(state.date)],
+    ['Service', state.service === 'midi' ? '🌞 Midi' : '🌙 Soir'],
+    ['Heure', state.heure],
+    ['Personnes', state.nbPersonnes + ' personne' + (state.nbPersonnes > 1 ? 's' : '')],
+    ['Prénom', state.prenom],
+    ['Nom', state.nom],
+    ['Téléphone', state.tel],
+    ['Email', state.email],
+    state.occasion ? ['Occasion', state.occasion] : null,
+    state.commentaire ? ['Commentaire', state.commentaire] : null
+  ].filter(Boolean);
+
+  el.innerHTML = `
+    <div class="step-title">✅ Récapitulatif</div>
+    <div class="step-subtitle">Vérifiez votre demande avant d'envoyer</div>
+
+    <div class="recap-card">
+      <div class="recap-title">Votre demande de réservation</div>
+      ${rows.map(([l,v]) => `<div class="recap-row"><span class="recap-label">${l}</span><span class="recap-val">${v}</span></div>`).join('')}
+    </div>
+
+    <div style="background:#fffbeb;border:1.5px solid #E8C547;border-radius:12px;padding:14px 16px;margin-bottom:20px;font-size:13px;color:#92400e;line-height:1.6">
+      ⚠️ <strong>Cette demande n'est pas encore une confirmation.</strong> L'équipe du TED vous contactera pour valider votre réservation.
+    </div>
+
+    <div class="nav-row">
+      <button class="btn-back" onclick="goStep(3)">← Modifier</button>
+      <button class="btn-next" id="btn-submit" onclick="submitForm()" ${state.submitting?'disabled':''}>
+        ${state.submitting ? '⏳ Envoi en cours…' : '📩 Envoyer ma demande'}
+      </button>
+    </div>
+  `;
+}
+
+// ─── Submit ───────────────────────────────────────────────────────────────────
+async function submitForm() {
+  if (state.submitting) return;
+  state.submitting = true;
+  renderStep4();
+
+  try {
+    const telN = normalizeTel(state.tel);
+    const emailN = state.email.trim().toLowerCase();
+    const prenomC = state.prenom.trim().charAt(0).toUpperCase() + state.prenom.trim().slice(1).toLowerCase();
+    const nomC = state.nom.trim().toUpperCase();
+
+    // Find or create client
+    let clientId = null;
+    try {
+      // Search by tel_normalise
+      let found = await sbFetch(`clients?tel_normalise=eq.${encodeURIComponent(telN)}&is.deleted_at=null&limit=1&select=id`);
+      if (!Array.isArray(found) || found.length === 0) {
+        // Search by email
+        found = await sbFetch(`clients?email_normalise=eq.${encodeURIComponent(emailN)}&is.deleted_at=null&limit=1&select=id`);
+      }
+      if (Array.isArray(found) && found.length > 0) {
+        clientId = found[0].id;
+        // Update nb_reservations
+        await sbFetch(`clients?id=eq.${clientId}`, 'PATCH', { nb_reservations: null }); // will use RPC later
+      } else {
+        // Create new client
+        const newC = await sbFetch('clients', 'POST', {
+          genre: 'Non renseigné',
+          nom: nomC,
+          prenom: prenomC,
+          tel: telN,
+          tel_normalise: telN,
+          mail: emailN,
+          email_normalise: emailN,
+          source: 'Formulaire de réservation',
+          nb_reservations: 1,
+          nb_venues: 0,
+          nb_absences: 0,
+          nb_annulations: 0
+        });
+        if (Array.isArray(newC) && newC.length > 0) clientId = newC[0].id;
+      }
+    } catch(e) { console.warn('client search/create:', e); }
+
+    // Insert reservation
+    await sbFetch('reservations', 'POST', {
+      client_id: clientId,
+      date: state.date,
+      service: state.service,
+      heure: state.heure,
+      nb_personnes: state.nbPersonnes,
+      occasion: state.occasion || null,
+      commentaire_client: state.commentaire || null,
+      statut: 'attente',
+      source: 'formulaire'
+    });
+
+    // Show success
+    showSuccess();
+  } catch(err) {
+    state.submitting = false;
+    renderStep4();
+    alert('Une erreur est survenue : ' + err.message + '\nVeuillez réessayer ou nous contacter directement.');
+  }
+}
+
+function showSuccess() {
+  for (let i = 1; i <= 4; i++) document.getElementById('step-' + i).style.display = 'none';
+  document.getElementById('step-success').style.display = 'block';
+  document.getElementById('step-success').innerHTML = `
+    <div class="success-wrap">
+      <div class="success-icon">✓</div>
+      <div class="success-title">Demande envoyée !</div>
+      <div class="success-sub">
+        Merci <strong>${state.prenom}</strong>, votre demande pour le <strong>${fmtDate(state.date)}</strong>
+        (${state.service === 'midi' ? 'Midi' : 'Soir'} · ${state.heure} · ${state.nbPersonnes} pers.) a bien été reçue.
+      </div>
+      <div class="success-note">
+        ⚠️ <strong>Votre réservation n'est pas encore confirmée.</strong><br>
+        L'équipe du TED vous contactera par téléphone ou email pour confirmer votre demande.
+        Merci de votre confiance !
+      </div>
+    </div>
+  `;
+}
+
+// ─── Navigation ───────────────────────────────────────────────────────────────
+function goStep(n) {
+  for (let i = 1; i <= 4; i++) {
+    document.getElementById('step-' + i).style.display = i === n ? 'block' : 'none';
+  }
+  state.step = n;
+  renderProgress();
+  if (n === 1) renderStep1();
+  if (n === 2) renderStep2();
+  if (n === 3) renderStep3();
+  if (n === 4) renderStep4();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+renderProgress();
+renderStep1();
+</script>
+</body>
+</html>

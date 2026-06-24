@@ -496,6 +496,64 @@ function useIsMobile() {
   return isMobile;
 }
 
+// ─── Lien Réservation Modal ───────────────────────────────────────────────────
+const FORM_URL = "https://ted-crm-app.netlify.app/reserver.html";
+
+function LienResaModal({ onClose, showToast }) {
+  const qr = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(FORM_URL)}`;
+  function copyLink() {
+    navigator.clipboard.writeText(FORM_URL).then(() => showToast("Lien copié ! ✓")).catch(() => {
+      const el = document.createElement('textarea');
+      el.value = FORM_URL;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      showToast("Lien copié ! ✓");
+    });
+  }
+  return (
+    <div onPointerDown={e=>{ if(e.target===e.currentTarget) onClose(); }} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }}>
+      <div onPointerDown={e=>e.stopPropagation()} style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:440, overflow:'hidden', boxShadow:'0 20px 60px rgba(0,0,0,0.25)' }}>
+        <div style={{ background:'#111', color:'#fff', padding:'14px 18px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <span style={{ fontWeight:700, fontSize:15 }}>🔗 Formulaire de réservation</span>
+          <button onClick={onClose} style={{ background:'none', border:'none', color:'#fff', fontSize:20, cursor:'pointer' }}>✕</button>
+        </div>
+        <div style={{ padding:'20px 20px 24px' }}>
+          <p style={{ fontSize:13, color:'#666', marginBottom:14 }}>Partagez ce lien avec vos clients pour qu'ils puissent faire une demande de réservation en ligne.</p>
+
+          {/* URL box */}
+          <div style={{ background:'#f8f8f8', border:'1.5px solid #eee', borderRadius:10, padding:'10px 14px', fontSize:13, color:'#555', fontFamily:'monospace', wordBreak:'break-all', marginBottom:14, lineHeight:1.5 }}>
+            {FORM_URL}
+          </div>
+
+          {/* Buttons */}
+          <div style={{ display:'flex', gap:10, marginBottom:20 }}>
+            <button onClick={copyLink} style={{ flex:1, background:'#111', color:'#fff', border:'none', borderRadius:10, height:44, fontWeight:700, fontSize:14, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+              📋 Copier le lien
+            </button>
+            <button onClick={()=>window.open(FORM_URL,'_blank')} style={{ flex:1, background:G, color:'#111', border:'none', borderRadius:10, height:44, fontWeight:700, fontSize:14, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+              📱 Ouvrir
+            </button>
+          </div>
+
+          {/* QR Code */}
+          <div style={{ textAlign:'center' }}>
+            <p style={{ fontSize:12, color:'#999', marginBottom:10, fontWeight:600, textTransform:'uppercase', letterSpacing:0.5 }}>Scanner depuis un téléphone</p>
+            <div style={{ display:'inline-block', background:'#fff', border:'2px solid #eee', borderRadius:12, padding:10 }}>
+              <img src={qr} alt="QR Code" width={150} height={150} style={{ display:'block', borderRadius:6 }} onError={e=>{ e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
+              <div style={{ display:'none', width:150, height:150, background:'#f5f5f5', borderRadius:6, alignItems:'center', justifyContent:'center', fontSize:12, color:'#bbb', flexDirection:'column', gap:6 }}>
+                <span style={{ fontSize:32 }}>📷</span>
+                <span>QR indisponible</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main CRM App ─────────────────────────────────────────────────────────────
 
 function CRMApp({ user, onLogout }) {
@@ -520,6 +578,7 @@ function CRMApp({ user, onLogout }) {
   const [showSearch, setShowSearch] = useState(false);
   const [modalCorbeille, setModalCorbeille] = useState(false);
   const [mobileAction, setMobileAction] = useState(null);
+  const [modalLien, setModalLien] = useState(false);
   const deleteGuard = useRef(false);
   const isMobile = useIsMobile();
 
@@ -686,6 +745,7 @@ function CRMApp({ user, onLogout }) {
               <img src={require('./logo.png')} alt="TED" style={{ height:26, filter:'brightness(0) invert(1)' }} onError={e=>e.target.style.display='none'} />
               <span style={{ color:'#fff', fontWeight:800, fontSize:15 }}>TED <span style={{color:G}}>CRM</span></span>
             </div>
+            <button onClick={()=>setModalLien(true)} style={{ background:'rgba(255,255,255,0.1)', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, cursor:'pointer', color:'#fff' }} title="Lien formulaire réservation">🔗</button>
             <button onClick={()=>{ if(window.confirm('Voulez-vous vraiment vous déconnecter ?')) onLogout(); }} style={{ background:'rgba(255,255,255,0.1)', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, cursor:'pointer', color:'#fff' }}>⎋</button>
           </div>
           {/* Onglets */}
@@ -726,6 +786,7 @@ function CRMApp({ user, onLogout }) {
             <button onClick={()=>restoreRef.current?.click()} title="Restaurer" style={{background:"transparent", color:"#ccc", border:"1px solid #444", borderRadius:7, width:32, height:32, cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center"}}>🔄</button>
             <input ref={restoreRef} type="file" accept=".json" style={{display:"none"}} onChange={handleRestoreFile} />
             <button onClick={()=>setModalCorbeille(true)} style={{background:"transparent", color:G, border:`1px solid ${G}`, borderRadius:7, padding:"0 10px", height:32, fontSize:12, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap"}}>🗑 Corbeille</button>
+            <button onClick={()=>setModalLien(true)} style={{background:"transparent", color:"#ccc", border:"1px solid #444", borderRadius:7, padding:"0 10px", height:32, fontSize:12, cursor:"pointer", whiteSpace:"nowrap"}}>🔗 Réservation</button>
             <button onClick={onLogout} style={{background:"transparent", color:"#ccc", border:"1px solid #444", borderRadius:7, padding:"0 10px", height:32, fontSize:12, cursor:"pointer"}}>⎋ Quitter</button>
           </div>
         </header>
@@ -940,6 +1001,9 @@ function CRMApp({ user, onLogout }) {
           </>
         );
       })()}
+
+      {/* Modal lien réservation */}
+      {modalLien && <LienResaModal onClose={()=>setModalLien(false)} showToast={showToast} />}
 
       {/* Modals */}
       {modalAdd && <ClientForm existingClients={clients} onSave={addClient} onCancel={()=>setModalAdd(false)} />}
