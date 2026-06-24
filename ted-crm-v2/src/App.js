@@ -1724,6 +1724,9 @@ function CRMApp({ user, onLogout }) {
           const toggleOneSms = (id) => setSmsSelected(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
           const canSendSms = smsSelected.length > 0 && smsMessage.trim();
           const smsAvatarColor = (c) => c.genre === 'Homme' ? '#0891b2' : c.genre === 'Femme' ? '#db2777' : c.genre === 'Entreprise' ? '#059669' : '#9ca3af';
+          const containsEmoji = (str) => /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{FE00}-\u{FE0F}]|[\u{1F000}-\u{1F02F}]/u.test(str);
+          const smsLimit = containsEmoji(smsMessage) ? 70 : 160;
+          const smsCount = Math.ceil(smsMessage.length / smsLimit);
 
           const doSendSms = async () => {
             const { data: dejaSent } = await supabase
@@ -1842,13 +1845,14 @@ function CRMApp({ user, onLogout }) {
                   <textarea
                     ref={smsTextareaRef}
                     value={smsMessage}
-                    onChange={e=>setSmsMessage(e.target.value.slice(0,160))}
+                    onChange={e=>setSmsMessage(e.target.value.slice(0,smsLimit))}
                     placeholder="Votre message SMS (160 caractères max)..."
                     style={{width:'100%', minHeight:140, border:'1.5px solid #eee', borderRadius:8, padding:12, fontSize:14, resize:'none', outline:'none', boxSizing:'border-box', lineHeight:1.6, fontFamily:'inherit'}}
                   />
                   <div style={{display:'flex', justifyContent:'space-between', marginBottom:12}}>
-                    <span style={{fontSize:12, color:smsMessage.length>140?'#dc2626':'#999', fontWeight:smsMessage.length>140?700:400}}>
-                      {smsMessage.length}/160 caractères
+                    <span style={{fontSize:12, color:smsMessage.length > smsLimit * 0.9 ?'#dc2626':'#999', fontWeight:smsMessage.length > smsLimit * 0.9 ?700:400}}>
+                      {smsMessage.length}/{smsLimit} caractères
+                      {containsEmoji(smsMessage) && <span style={{color:'#E8C547', marginLeft:6}}>⚠️ Emojis = limite 70 car.</span>}
                     </span>
                     <span style={{fontSize:12, color:'#999'}}>
                       ~{smsSelected.length} SMS · ~{(smsSelected.length * 0.045).toFixed(2)}€

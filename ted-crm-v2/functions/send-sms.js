@@ -10,7 +10,8 @@ export async function onRequestPost(context) {
       sender: 'Le TED',
       recipient: numeroNettoye,
       content: message,
-      type: 'transactional'
+      type: 'transactional',
+      unicodeEnabled: true
     })
   });
   const data = await res.json();
