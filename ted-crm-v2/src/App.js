@@ -1726,8 +1726,37 @@ function CRMApp({ user, onLogout }) {
           const smsAvatarColor = (c) => c.genre === 'Homme' ? '#0891b2' : c.genre === 'Femme' ? '#db2777' : c.genre === 'Entreprise' ? '#059669' : '#9ca3af';
 
           const doSendSms = async () => {
+            const { data: dejaSent } = await supabase
+              .from('sms_envoyes')
+              .select('destinataires, message')
+              .eq('message', smsMessage);
+
+            const dejaSentIds = new Set(
+              (dejaSent || []).flatMap(s => (s.destinataires || []).map(d => d.id))
+            );
+
+            const doublons = smsSelected.filter(id => dejaSentIds.has(id));
+            const nouveaux = smsSelected.filter(id => !dejaSentIds.has(id));
+
+            if (doublons.length > 0 && nouveaux.length === 0) {
+              showToast('⚠️ Ce message a déjà été envoyé à tous ces destinataires', 'error');
+              setShowConfirmSms(false);
+              return;
+            }
+
+            if (doublons.length > 0) {
+              const noms = doublons.map(id => {
+                const c = clients.find(x => x.id === id);
+                return `${c?.prenom} ${c?.nom}`;
+              }).join(', ');
+              const ok = window.confirm(`⚠️ ${doublons.length} personne(s) ont déjà reçu ce message exactement :\n${noms}\n\nEnvoyer uniquement aux autres ?`);
+              if (!ok) return;
+              setSmsSelected(nouveaux);
+            }
+
+            const idsToSend = doublons.length > 0 ? nouveaux : smsSelected;
             let success = 0;
-            for (const id of smsSelected) {
+            for (const id of idsToSend) {
               const client = clients.find(c => c.id === id);
               if (!client?.tel) continue;
               const msgPersonnalise = smsMessage
@@ -1745,7 +1774,7 @@ function CRMApp({ user, onLogout }) {
             await supabase.from('sms_envoyes').insert([{
               message: smsMessage,
               nb_destinataires: success,
-              destinataires: smsSelected.map(id => {
+              destinataires: idsToSend.map(id => {
                 const c = clients.find(x => x.id === id);
                 return { id, nom: c?.nom, prenom: c?.prenom, tel: c?.tel };
               }),
