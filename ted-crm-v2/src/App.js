@@ -954,7 +954,7 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
       <p style="color:#111;font-weight:700;font-size:15px;margin:0 0 6px">Le TED — Restaurant &amp; Club</p>
       <p style="color:#888;font-size:13px;margin:0 0 4px">📍 28 Av. des Frères Montgolfier, 69680 Chassieu</p>
       <p style="color:#888;font-size:13px;margin:0 0 4px">📞 04 78 90 67 80</p>
-      <p style="margin:0;display:flex;align-items:center;justify-content:center;gap:6px"><img src="https://ted-crm.pages.dev/favicon.png" alt="" style="height:16px;width:16px;vertical-align:middle" /><a href="https://leted.fr" style="color:#888;font-size:13px;text-decoration:none">leted.fr</a></p>
+      <p style="margin:8px 0 0;text-align:center"><a href="https://leted.fr" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;color:#111;font-size:15px;font-weight:700"><img src="https://ted-crm.pages.dev/favicon.png" alt="TED" style="height:24px;width:24px;vertical-align:middle" />leted.fr</a></p>
     </div>
     <p style="text-align:center;color:#bbb;font-size:12px;margin-top:20px">Nous avons hâte de vous accueillir ! 🎉</p>
   </div>
@@ -1000,7 +1000,7 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
       <p style="color:#111;font-weight:700;font-size:15px;margin:0 0 6px">Le TED — Restaurant &amp; Club</p>
       <p style="color:#888;font-size:13px;margin:0 0 4px">📍 28 Av. des Frères Montgolfier, 69680 Chassieu</p>
       <p style="color:#888;font-size:13px;margin:0 0 4px">📞 04 78 90 67 80</p>
-      <p style="margin:0;display:flex;align-items:center;justify-content:center;gap:6px"><img src="https://ted-crm.pages.dev/favicon.png" alt="" style="height:16px;width:16px;vertical-align:middle" /><a href="https://leted.fr" style="color:#888;font-size:13px;text-decoration:none">leted.fr</a></p>
+      <p style="margin:8px 0 0;text-align:center"><a href="https://leted.fr" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;color:#111;font-size:15px;font-weight:700"><img src="https://ted-crm.pages.dev/favicon.png" alt="TED" style="height:24px;width:24px;vertical-align:middle" />leted.fr</a></p>
     </div>
     <p style="text-align:center;color:#bbb;font-size:12px;margin-top:20px">À bientôt au TED 🙏</p>
   </div>
