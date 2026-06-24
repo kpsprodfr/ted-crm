@@ -1209,6 +1209,13 @@ function CRMApp({ user, onLogout }) {
   const [emailsHistorique, setEmailsHistorique] = useState([]);
   const [emailsExpanded, setEmailsExpanded] = useState({});
   const commTextareaRef = useRef(null);
+  const [commMode, setCommMode] = useState('email');
+  const [smsMessage, setSmsMessage] = useState('');
+  const [smsSelected, setSmsSelected] = useState([]);
+  const [showConfirmSms, setShowConfirmSms] = useState(false);
+  const [smsHistorique, setSmsHistorique] = useState([]);
+  const [smsExpanded, setSmsExpanded] = useState({});
+  const smsTextareaRef = useRef(null);
   const deleteGuard = useRef(false);
   const isMobile = useIsMobile();
 
@@ -1218,9 +1225,18 @@ function CRMApp({ user, onLogout }) {
     setEmailsExpanded(prev => ({...prev, [id]: !prev[id]}));
   }
 
+  function toggleSmsExpanded(id) {
+    setSmsExpanded(prev => ({...prev, [id]: !prev[id]}));
+  }
+
   async function loadEmailsHistorique() {
     const { data } = await supabase.from('emails_envoyes').select('*').order('created_at', {ascending:false}).limit(50);
     setEmailsHistorique(data || []);
+  }
+
+  async function loadSmsHistorique() {
+    const { data } = await supabase.from('sms_envoyes').select('*').order('created_at', {ascending:false}).limit(50);
+    setSmsHistorique(data || []);
   }
 
   // ─── Load from Supabase ───────────────────────────────────────────────────
@@ -1230,7 +1246,7 @@ function CRMApp({ user, onLogout }) {
   }, []);
 
   useEffect(() => {
-    if (activeView === 'communications') loadEmailsHistorique();
+    if (activeView === 'communications') { loadEmailsHistorique(); loadSmsHistorique(); }
   }, [activeView]);
 
   async function loadResaCount() {
@@ -1472,6 +1488,15 @@ function CRMApp({ user, onLogout }) {
           <span style={{fontSize:16, fontWeight:700, color:'#111'}}>📣 Communications</span>
         </div>
 
+        {/* Switcher Email / SMS */}
+        <div style={{padding:'16px 20px 0', maxWidth:1300, margin:'0 auto'}}>
+          <div style={{display:'flex', background:'#f0f0f0', borderRadius:12, padding:4, width:'fit-content'}}>
+            <button onClick={()=>setCommMode('email')} style={{background:commMode==='email'?'#111':'transparent', color:commMode==='email'?'#fff':'#666', border:'none', borderRadius:8, padding:'10px 28px', fontSize:14, fontWeight:700, cursor:'pointer', transition:'all 0.2s'}}>📧 Email</button>
+            <button onClick={()=>setCommMode('sms')} style={{background:commMode==='sms'?'#111':'transparent', color:commMode==='sms'?'#fff':'#666', border:'none', borderRadius:8, padding:'10px 28px', fontSize:14, fontWeight:700, cursor:'pointer', transition:'all 0.2s'}}>📱 SMS</button>
+          </div>
+        </div>
+
+        {commMode === 'email' && (<>
         <div style={{display:'grid', gridTemplateColumns:'320px 1fr', gap:20, padding:20, maxWidth:1300, margin:'0 auto', alignItems:'start'}}>
 
           {/* Colonne gauche — Destinataires */}
@@ -1618,7 +1643,7 @@ function CRMApp({ user, onLogout }) {
             </div>
           </div>
         </div>
-        {/* ─── Historique des envois ─── */}
+        {/* ─── Historique des envois email ─── */}
         <div style={{maxWidth:1300, margin:'0 auto', padding:'0 20px 32px'}}>
           <div style={{marginTop:32}}>
             <h3 style={{fontSize:16, fontWeight:800, color:'#111', margin:'0 0 16px', display:'flex', alignItems:'center', gap:8}}>
@@ -1671,6 +1696,223 @@ function CRMApp({ user, onLogout }) {
             ))}
           </div>
         </div>
+        </>)} {/* fin commMode === 'email' */}
+
+        {/* ─── Vue SMS ─── */}
+        {commMode === 'sms' && (() => {
+          const smsClients = clients.filter(c => c.tel);
+          const allSmsSelected = smsClients.length > 0 && smsClients.every(c => smsSelected.includes(c.id));
+          const toggleAllSms = () => {
+            if (allSmsSelected) setSmsSelected([]);
+            else setSmsSelected(smsClients.map(c => c.id));
+          };
+          const toggleOneSms = (id) => setSmsSelected(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
+          const canSendSms = smsSelected.length > 0 && smsMessage.trim();
+          const avatarColors = ['#4f46e5','#0891b2','#059669','#d97706','#dc2626','#7c3aed','#db2777'];
+          const avatarColor = (c) => avatarColors[(c.prenom||c.nom||'?').charCodeAt(0) % avatarColors.length];
+
+          const doSendSms = async () => {
+            let success = 0;
+            for (const id of smsSelected) {
+              const client = clients.find(c => c.id === id);
+              if (!client?.tel) continue;
+              const msgPersonnalise = smsMessage
+                .replace(/{prenom}/g, client.prenom||'')
+                .replace(/{nom}/g, client.nom||'');
+              try {
+                const res = await fetch('/send-sms', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ to: client.tel, message: msgPersonnalise })
+                });
+                if (res.ok) success++;
+              } catch(e) { console.error(e); }
+            }
+            await supabase.from('sms_envoyes').insert([{
+              message: smsMessage,
+              nb_destinataires: success,
+              destinataires: smsSelected.map(id => {
+                const c = clients.find(x => x.id === id);
+                return { id, nom: c?.nom, prenom: c?.prenom, tel: c?.tel };
+              }),
+              envoye_par: user.email
+            }]);
+            showToast(`📱 ${success} SMS envoyé(s) ✓`);
+            setSmsMessage('');
+            setSmsSelected([]);
+            setShowConfirmSms(false);
+            loadSmsHistorique();
+          };
+
+          return (
+            <>
+              <div style={{display:'grid', gridTemplateColumns:'320px 1fr', gap:20, padding:20, maxWidth:1300, margin:'0 auto', alignItems:'start'}}>
+
+                {/* Colonne gauche — Destinataires SMS */}
+                <div style={{background:'#fff', borderRadius:12, boxShadow:'0 1px 4px rgba(0,0,0,0.08)', overflow:'hidden'}}>
+                  <div style={{padding:'14px 16px', borderBottom:'1px solid #f0f0f0', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+                    <span style={{fontSize:13, fontWeight:700, color:'#555', textTransform:'uppercase', letterSpacing:0.5}}>À :</span>
+                    <span style={{fontSize:12, color:'#aaa'}}>{smsSelected.length} sélectionné(s)</span>
+                  </div>
+                  <div style={{padding:'8px 16px', borderBottom:'1px solid #f0f0f0'}}>
+                    <button onClick={toggleAllSms} style={{background:'none', border:'none', fontSize:12, color:'#4f46e5', fontWeight:600, cursor:'pointer', padding:0}}>
+                      {allSmsSelected ? '☑ Désélectionner tout' : '☐ Tout sélectionner'} <span style={{color:'#bbb', fontWeight:400}}>({smsClients.length})</span>
+                    </button>
+                  </div>
+                  <div style={{maxHeight:'calc(100vh - 280px)', overflowY:'auto'}}>
+                    {smsClients.map(c => {
+                      const checked = smsSelected.includes(c.id);
+                      const initial = ((c.prenom||'')[0]||(c.nom||'')[0]||'?').toUpperCase();
+                      return (
+                        <label key={c.id} style={{display:'flex', alignItems:'center', gap:10, padding:'10px 16px', cursor:'pointer', background:checked?'#fefce8':'#fff', borderBottom:'1px solid #f8f8f8', transition:'background 0.1s'}}>
+                          <input type="checkbox" checked={checked} onChange={()=>toggleOneSms(c.id)} style={{width:15, height:15, accentColor:'#E8C547', flexShrink:0}} />
+                          <div style={{width:34, height:34, borderRadius:'50%', background:avatarColor(c), color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:13, flexShrink:0}}>{initial}</div>
+                          <div style={{flex:1, minWidth:0}}>
+                            <div style={{fontWeight:600, fontSize:13, color:'#111', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>{c.prenom} {c.nom}</div>
+                            <div style={{fontSize:11, color:'#6b7280'}}>{c.tel}</div>
+                          </div>
+                        </label>
+                      );
+                    })}
+                    {smsClients.length === 0 && (
+                      <div style={{textAlign:'center', padding:'2rem', color:'#bbb', fontSize:13}}>Aucun client avec un numéro de téléphone</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Colonne droite — Composer SMS */}
+                <div style={{background:'#fff', borderRadius:12, border:'1.5px solid #f0f0f0', padding:24, boxShadow:'0 2px 8px rgba(0,0,0,0.06)'}}>
+                  <div style={{background:'#f8f8f8', borderRadius:8, padding:'8px 12px', marginBottom:16, fontSize:13, color:'#888'}}>
+                    De : <strong style={{color:'#111'}}>LeTED</strong>
+                  </div>
+                  <textarea
+                    ref={smsTextareaRef}
+                    value={smsMessage}
+                    onChange={e=>setSmsMessage(e.target.value.slice(0,160))}
+                    placeholder="Votre message SMS (160 caractères max)..."
+                    style={{width:'100%', minHeight:140, border:'1.5px solid #eee', borderRadius:8, padding:12, fontSize:14, resize:'none', outline:'none', boxSizing:'border-box', lineHeight:1.6, fontFamily:'inherit'}}
+                  />
+                  <div style={{display:'flex', justifyContent:'space-between', marginBottom:12}}>
+                    <span style={{fontSize:12, color:smsMessage.length>140?'#dc2626':'#999', fontWeight:smsMessage.length>140?700:400}}>
+                      {smsMessage.length}/160 caractères
+                    </span>
+                    <span style={{fontSize:12, color:'#999'}}>
+                      ~{smsSelected.length} SMS · ~{(smsSelected.length * 0.045).toFixed(2)}€
+                    </span>
+                  </div>
+                  <div style={{marginBottom:16}}>
+                    {['{prenom}','{nom}'].map(v => (
+                      <button key={v} onClick={()=>{
+                        const ta = smsTextareaRef.current;
+                        if (!ta) return;
+                        const start = ta.selectionStart;
+                        const newVal = (smsMessage.substring(0, start) + v + smsMessage.substring(start)).slice(0, 160);
+                        setSmsMessage(newVal);
+                        setTimeout(()=>{ ta.focus(); ta.setSelectionRange(start + v.length, start + v.length); }, 0);
+                      }} style={{background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:6, padding:'4px 10px', fontSize:12, fontWeight:600, color:'#111', cursor:'pointer', marginRight:6}}>
+                        {v}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    disabled={!canSendSms}
+                    onClick={()=>setShowConfirmSms(true)}
+                    style={{width:'100%', height:48, background:canSendSms?'#E8C547':'#f0f0f0', color:canSendSms?'#111':'#bbb', border:'none', borderRadius:10, fontSize:15, fontWeight:800, cursor:canSendSms?'pointer':'not-allowed'}}>
+                    📱 Envoyer à {smsSelected.length} destinataire(s)
+                  </button>
+                </div>
+              </div>
+
+              {/* ─── Historique SMS ─── */}
+              <div style={{maxWidth:1300, margin:'0 auto', padding:'0 20px 32px'}}>
+                <div style={{marginTop:32}}>
+                  <h3 style={{fontSize:16, fontWeight:800, color:'#111', margin:'0 0 16px', display:'flex', alignItems:'center', gap:8}}>
+                    📋 Historique SMS
+                    <span style={{background:'#f0f0f0', borderRadius:99, padding:'2px 10px', fontSize:12, fontWeight:600, color:'#666'}}>{smsHistorique.length}</span>
+                  </h3>
+
+                  {smsHistorique.length === 0 && (
+                    <div style={{textAlign:'center', padding:'3rem', color:'#bbb'}}>
+                      <div style={{fontSize:40, marginBottom:8}}>📭</div>
+                      <p style={{fontSize:14}}>Aucun SMS envoyé pour l'instant</p>
+                    </div>
+                  )}
+
+                  {smsHistorique.map(sms => (
+                    <div key={sms.id} style={{background:'#fff', borderRadius:12, border:'1.5px solid #f0f0f0', marginBottom:10, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.04)'}}>
+                      <div onClick={()=>toggleSmsExpanded(sms.id)} style={{padding:'14px 16px', cursor:'pointer', display:'flex', alignItems:'center', gap:12, background:smsExpanded[sms.id]?'#fffbea':'#fff'}}>
+                        <div style={{width:40, height:40, borderRadius:10, background:'#111', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0}}>📱</div>
+                        <div style={{flex:1, minWidth:0}}>
+                          <p style={{margin:0, fontWeight:700, fontSize:14, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{sms.message}</p>
+                          <p style={{margin:'3px 0 0', fontSize:12, color:'#999'}}>
+                            {new Date(sms.created_at).toLocaleDateString('fr-FR', {day:'2-digit', month:'long', year:'numeric'})} à {new Date(sms.created_at).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})}
+                          </p>
+                        </div>
+                        <div style={{display:'flex', alignItems:'center', gap:8, flexShrink:0}}>
+                          <span style={{background:'#f0f0f0', borderRadius:99, padding:'3px 10px', fontSize:12, fontWeight:600, color:'#555'}}>{sms.nb_destinataires} envoi(s)</span>
+                          <span style={{fontSize:16, color:'#bbb', transform:smsExpanded[sms.id]?'rotate(90deg)':'rotate(0)', transition:'transform 0.2s'}}>›</span>
+                        </div>
+                      </div>
+
+                      {smsExpanded[sms.id] && (
+                        <div style={{padding:'0 16px 16px', borderTop:'1px solid #f5f5f5'}}>
+                          <p style={{fontSize:13, color:'#666', fontStyle:'italic', background:'#f9f9f9', borderRadius:8, padding:'10px 12px', margin:'12px 0', lineHeight:1.6, whiteSpace:'pre-wrap'}}>{sms.message}</p>
+                          <p style={{fontSize:12, fontWeight:700, color:'#888', margin:'0 0 8px', textTransform:'uppercase', letterSpacing:0.5}}>Destinataires</p>
+                          <div style={{display:'flex', flexWrap:'wrap', gap:6}}>
+                            {(sms.destinataires||[]).map((d, i) => (
+                              <div key={i} style={{display:'flex', alignItems:'center', gap:6, background:'#f5f5f5', borderRadius:8, padding:'5px 10px', fontSize:12}}>
+                                <div style={{width:24, height:24, borderRadius:'50%', background:'#E8C547', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:700, color:'#111'}}>
+                                  {(d.prenom||d.nom||'?')[0]?.toUpperCase()}
+                                </div>
+                                <span style={{fontWeight:600, color:'#333'}}>{d.prenom} {d.nom}</span>
+                                <span style={{color:'#999'}}>{d.tel}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <p style={{fontSize:11, color:'#bbb', margin:'10px 0 0', textAlign:'right'}}>Envoyé par {sms.envoye_par}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Modal confirmation SMS */}
+              {showConfirmSms && (
+                <div style={{position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:4000, display:'flex', alignItems:'center', justifyContent:'center'}}>
+                  <div style={{background:'#fff', borderRadius:16, padding:'28px 32px', maxWidth:400, width:'90%', boxShadow:'0 20px 60px rgba(0,0,0,0.2)'}}>
+                    <div style={{textAlign:'center', marginBottom:20}}>
+                      <div style={{fontSize:48, marginBottom:12}}>📱</div>
+                      <h3 style={{margin:'0 0 8px', fontSize:18, fontWeight:800, color:'#111'}}>Confirmer l'envoi SMS</h3>
+                      <p style={{margin:0, color:'#666', fontSize:14}}>
+                        Vous allez envoyer <strong>{smsSelected.length} SMS</strong> (~{(smsSelected.length * 0.045).toFixed(2)}€)
+                      </p>
+                    </div>
+                    <div style={{background:'#f9f9f9', borderRadius:8, padding:12, marginBottom:16, maxHeight:120, overflowY:'auto'}}>
+                      {smsSelected.map(id => {
+                        const c = clients.find(x => x.id === id);
+                        return c ? (
+                          <div key={id} style={{display:'flex', alignItems:'center', gap:8, padding:'4px 0', fontSize:13}}>
+                            <span style={{fontWeight:600}}>{c.prenom} {c.nom}</span>
+                            <span style={{color:'#999', marginLeft:'auto'}}>{c.tel}</span>
+                          </div>
+                        ) : null;
+                      })}
+                    </div>
+                    <div style={{display:'flex', gap:10}}>
+                      <button onClick={()=>setShowConfirmSms(false)} style={{flex:1, height:44, border:'1.5px solid #ddd', borderRadius:10, background:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', color:'#666'}}>
+                        Annuler
+                      </button>
+                      <button onClick={doSendSms} style={{flex:2, height:44, border:'none', borderRadius:10, background:'#E8C547', fontSize:14, fontWeight:800, cursor:'pointer', color:'#111'}}>
+                        📱 Envoyer maintenant
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          );
+        })()}
 
         {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
 
