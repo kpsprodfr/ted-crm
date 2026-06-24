@@ -503,15 +503,37 @@ const OCCASIONS = ["Anniversaire","Saint-Valentin","Repas d'affaires","Mariage",
 const HEURES_MIDI = ["12:00","12:15","12:30","12:45","13:00","13:15","13:30","13:45","14:00"];
 const HEURES_SOIR = ["19:00","19:15","19:30","19:45","20:00","20:15","20:30","20:45","21:00","21:15","21:30"];
 
-function AddResaModal({ onClose, onSaved, showToast, user }) {
+// Génère les 30 prochains jours comme options de select
+function buildDateOptions() {
+  const opts = [];
+  const joursL = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const moisC = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
   const today = new Date();
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const iso = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    let label;
+    if (i === 0) label = `Aujourd'hui ${d.getDate()} ${moisC[d.getMonth()]}`;
+    else if (i === 1) label = `Demain ${d.getDate()} ${moisC[d.getMonth()]}`;
+    else label = `${joursL[d.getDay()]} ${d.getDate()} ${moisC[d.getMonth()]}`;
+    opts.push({ iso, label });
+  }
+  return opts;
+}
+
+function AddResaModal({ onClose, onSaved, showToast, user }) {
+  const DATE_OPTS = useMemo(() => buildDateOptions(), []);
+
+  const [tel, setTel] = useState('');
+  const [clientFound, setClientFound] = useState(null); // objet client ou null
+  const [lookingUp, setLookingUp] = useState(false);
+  const [genre, setGenre] = useState('');
   const [prenom, setPrenom] = useState('');
   const [nom, setNom] = useState('');
-  const [tel, setTel] = useState('');
+  const [entreprise, setEntreprise] = useState('');
   const [email, setEmail] = useState('');
-  const [jour, setJour] = useState(String(today.getDate()));
-  const [mois, setMois] = useState(String(today.getMonth() + 1));
-  const [annee, setAnnee] = useState(String(today.getFullYear()));
+  const [dateIso, setDateIso] = useState(DATE_OPTS[0].iso);
   const [service, setService] = useState('soir');
   const [heure, setHeure] = useState('');
   const [nbPersonnes, setNbPersonnes] = useState(2);
@@ -520,27 +542,47 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
 
   const heures = service === 'midi' ? HEURES_MIDI : HEURES_SOIR;
 
-  const selStyle = { height:44, border:'1.5px solid #ddd', borderRadius:7, padding:'0 8px', fontSize:15, background:'#fff', outline:'none', cursor:'pointer' };
+  // Recherche automatique dès 10 chiffres
+  async function handleTelChange(val) {
+    setTel(val);
+    setClientFound(null);
+    const digits = val.replace(/\D/g, '');
+    if (digits.length < 10) return;
+    setLookingUp(true);
+    const telNorm = val.replace(/[\s.\-()]/g,'').replace(/^0/,'+33');
+    const { data } = await supabase
+      .from('clients')
+      .select('id,prenom,nom,mail,genre,entreprise,tel_normalise')
+      .or(`tel_normalise.eq.${telNorm},tel.eq.${val.trim()}`)
+      .maybeSingle();
+    setLookingUp(false);
+    if (data) {
+      setClientFound(data);
+      setPrenom(data.prenom || '');
+      setNom(data.nom || '');
+      setEmail(data.mail || '');
+      setGenre(data.genre || '');
+      setEntreprise(data.entreprise || '');
+    }
+  }
 
   async function handleSave() {
+    if (!tel.trim()) { showToast('Téléphone requis', 'error'); return; }
+    if (!genre) { showToast('Genre requis', 'error'); return; }
     if (!prenom.trim()) { showToast('Prénom requis', 'error'); return; }
     if (!nom.trim()) { showToast('Nom requis', 'error'); return; }
-    if (!tel.trim()) { showToast('Téléphone requis', 'error'); return; }
-    const dateStr = `${annee}-${String(mois).padStart(2,'0')}-${String(jour).padStart(2,'0')}`;
+    if (genre === 'Entreprise' && !entreprise.trim()) { showToast('Nom d\'entreprise requis', 'error'); return; }
     setSaving(true);
-    // Chercher client existant par tel normalisé, sinon créer
     const telNorm = tel.replace(/[\s.\-()]/g,'').replace(/^0/,'+33');
-    let clientId = null;
-    const { data: existing } = await supabase.from('clients').select('id').eq('tel_normalise', telNorm).maybeSingle();
-    if (existing) {
-      clientId = existing.id;
-    } else {
+    let clientId = clientFound?.id || null;
+    if (!clientId) {
       const { data: newClient, error: errClient } = await supabase.from('clients').insert({
         prenom: capitalize(prenom.trim()),
         nom: capitalize(nom.trim()),
         tel: tel.trim(),
         mail: email.trim() || null,
-        genre: 'Non renseigné',
+        genre,
+        entreprise: genre === 'Entreprise' ? entreprise.trim() : null,
         tel_normalise: telNorm,
         source: 'manuel',
       }).select('id').single();
@@ -549,15 +591,13 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
     }
     const { error } = await supabase.from('reservations').insert({
       client_id: clientId,
-      date: dateStr,
+      date: dateIso,
       service,
       heure: heure || null,
       nb_personnes: nbPersonnes,
       occasion: occasion || null,
-      statut: 'confirmee',
+      statut: 'attente',
       source: 'manuel',
-      traited_by: user?.email,
-      traited_at: new Date().toISOString(),
     });
     setSaving(false);
     if (error) { showToast('Erreur lors de la création', 'error'); return; }
@@ -572,6 +612,12 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
     color: service === s ? '#fff' : '#666', fontWeight: 700, fontSize: 14, cursor: 'pointer'
   });
 
+  const btnGenre = (g) => ({
+    flex: 1, height: 42, border: `1.5px solid ${genre === g ? '#111' : '#eee'}`,
+    borderRadius: 8, background: genre === g ? '#111' : '#f8f8f8',
+    color: genre === g ? G : '#666', fontWeight: 700, fontSize: 13, cursor: 'pointer'
+  });
+
   return (
     <Modal title="Ajouter une réservation" onClose={onClose} footer={[
       <button key="cancel" onClick={onClose} style={btnSecondary}>Annuler</button>,
@@ -579,43 +625,71 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
     ]}>
       <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
 
-        {/* Infos client */}
+        {/* Bandeau info statut */}
+        <div style={{ background:'#fffbeb', border:'1.5px solid #fbbf24', borderRadius:10, padding:'10px 14px', fontSize:13, color:'#92400e', display:'flex', alignItems:'center', gap:8 }}>
+          <span style={{ fontSize:16 }}>⏳</span>
+          <span>Cette réservation sera créée comme <strong>demande en attente</strong> — vous pourrez l'accepter depuis la page Réservations.</span>
+        </div>
+
+        {/* 1. Téléphone */}
+        <div>
+          <label style={lbl}>Téléphone *</label>
+          <div style={{ position:'relative' }}>
+            <input value={tel} onChange={e=>handleTelChange(e.target.value)} placeholder="06 12 34 56 78" type="tel" style={inp(false)} />
+            {lookingUp && <span style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', fontSize:12, color:'#888' }}>Recherche…</span>}
+          </div>
+          {clientFound && (
+            <div style={{ marginTop:6, background:'#f0fdf4', border:'1.5px solid #22c55e', borderRadius:8, padding:'8px 12px', fontSize:13, color:'#166534', fontWeight:600, display:'flex', alignItems:'center', gap:6 }}>
+              ✓ Client trouvé — {clientFound.prenom} {clientFound.nom}
+            </div>
+          )}
+        </div>
+
+        {/* 2. Genre */}
+        <div>
+          <label style={lbl}>Vous êtes *</label>
+          <div style={{ display:'flex', gap:8 }}>
+            {['Homme','Femme','Entreprise'].map(g => (
+              <button key={g} onClick={()=>setGenre(g)} style={btnGenre(g)}>{g}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Nom d'entreprise si Entreprise */}
+        {genre === 'Entreprise' && (
+          <div>
+            <label style={lbl}>Nom de l'entreprise *</label>
+            <input value={entreprise} onChange={e=>setEntreprise(e.target.value)} placeholder="Nom de l'entreprise" style={inp(false)} />
+          </div>
+        )}
+
+        {/* 3. Prénom + Nom */}
         <div style={{ display:'flex', gap:8 }}>
           <div style={{ flex:1 }}>
             <label style={lbl}>Prénom *</label>
-            <input value={prenom} onChange={e=>setPrenom(e.target.value)} placeholder="Prénom" style={inp(false)} />
+            <input value={prenom} onChange={e=>setPrenom(e.target.value)} placeholder="Jean" style={inp(false)} />
           </div>
           <div style={{ flex:1 }}>
             <label style={lbl}>Nom *</label>
-            <input value={nom} onChange={e=>setNom(e.target.value)} placeholder="Nom" style={inp(false)} />
+            <input value={nom} onChange={e=>setNom(e.target.value)} placeholder="Dupont" style={inp(false)} />
           </div>
         </div>
-        <div>
-          <label style={lbl}>Téléphone *</label>
-          <input value={tel} onChange={e=>setTel(e.target.value)} placeholder="06 12 34 56 78" type="tel" style={inp(false)} />
-        </div>
+
+        {/* 4. Email */}
         <div>
           <label style={lbl}>Email</label>
           <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="optionnel" type="email" style={inp(false)} />
         </div>
 
-        {/* Date — 3 selects */}
+        {/* 5. Date — select 30 jours */}
         <div>
           <label style={lbl}>Date *</label>
-          <div style={{ display:'flex', gap:8 }}>
-            <select value={jour} onChange={e=>setJour(e.target.value)} style={{ ...selStyle, flex:'0 0 70px' }}>
-              {Array.from({length:31},(_,i)=><option key={i+1} value={i+1}>{i+1}</option>)}
-            </select>
-            <select value={mois} onChange={e=>setMois(e.target.value)} style={{ ...selStyle, flex:1 }}>
-              {MONTHS_FR.map((m,i)=><option key={i+1} value={i+1}>{m}</option>)}
-            </select>
-            <select value={annee} onChange={e=>setAnnee(e.target.value)} style={{ ...selStyle, flex:'0 0 80px' }}>
-              {[2026,2027].map(y=><option key={y} value={y}>{y}</option>)}
-            </select>
-          </div>
+          <select value={dateIso} onChange={e=>setDateIso(e.target.value)} style={{ width:'100%', height:44, border:'1.5px solid #ddd', borderRadius:7, padding:'0 12px', fontSize:15, background:'#fff', outline:'none', cursor:'pointer' }}>
+            {DATE_OPTS.map(o => <option key={o.iso} value={o.iso}>{o.label}</option>)}
+          </select>
         </div>
 
-        {/* Service */}
+        {/* 6. Service */}
         <div>
           <label style={lbl}>Service *</label>
           <div style={{ display:'flex', gap:8 }}>
@@ -624,7 +698,7 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
           </div>
         </div>
 
-        {/* Heure */}
+        {/* 7. Heure */}
         <div>
           <label style={lbl}>Heure</label>
           <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
@@ -634,7 +708,7 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
           </div>
         </div>
 
-        {/* Nb personnes */}
+        {/* 8. Nb personnes */}
         <div>
           <label style={lbl}>Nombre de personnes *</label>
           <div style={{ display:'flex', alignItems:'center', gap:12 }}>
@@ -644,7 +718,7 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
           </div>
         </div>
 
-        {/* Occasion */}
+        {/* 9. Occasion */}
         <div>
           <label style={lbl}>Occasion</label>
           <select value={occasion} onChange={e=>setOccasion(e.target.value)} style={{ width:'100%', height:44, border:'1.5px solid #ddd', borderRadius:7, padding:'0 12px', fontSize:15, background:'#fff', outline:'none', cursor:'pointer' }}>
