@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { supabase } from "./supabase";
-import { messaging, getToken, onMessage } from './firebase';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const GENRES = ["Homme", "Femme", "Entreprise", "Non renseigné"];
@@ -1290,23 +1289,28 @@ function CRMApp({ user, onLogout }) {
   const smsTextareaRef = useRef(null);
   const [notifResa, setNotifResa] = useState(null);
 
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    return new Uint8Array([...raw].map(c => c.charCodeAt(0)));
+  }
+
   async function initFCM() {
     try {
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') return;
-      const token = await getToken(messaging, { vapidKey: process.env.REACT_APP_FCM_VAPID_KEY });
-      if (token) {
-        console.log('FCM Token:', token);
-        await supabase.from('fcm_tokens').upsert([{ token, user_id: user?.id, created_at: new Date().toISOString() }]);
-      }
-      onMessage(messaging, payload => {
-        const { title, body } = payload.notification || {};
-        const isMob = window.innerWidth < 768;
-        if (!isMob) {
-          setNotifResa({ nom: body || '', message: title || '', id: Date.now() });
-          setTimeout(() => setNotifResa(null), 6000);
-        }
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      if (Notification.permission !== 'granted') return;
+      const reg = await navigator.serviceWorker.ready;
+      const vapidKey = process.env.REACT_APP_FCM_VAPID_KEY;
+      if (!vapidKey) return;
+      const subscription = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey)
       });
+      // L'endpoint FCM contient le token : https://fcm.googleapis.com/fcm/send/TOKEN
+      const token = subscription.endpoint.split('/').pop();
+      console.log('FCM Token:', token);
+      await supabase.from('fcm_tokens').upsert([{ token, user_id: user?.id, created_at: new Date().toISOString() }]);
     } catch(e) { console.error('FCM erreur:', e); }
   }
 
