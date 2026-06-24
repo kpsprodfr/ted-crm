@@ -118,7 +118,7 @@ function Toast({ msg, type, onClose }) {
 }
 
 // ─── Modal ────────────────────────────────────────────────────────────────────
-function Modal({ title, onClose, children, footer, maxW=520, zIndex=1000 }) {
+function Modal({ title, onClose, children, footer, maxW=520, zIndex=3000 }) {
   const isMobile = window.innerWidth < 768;
   return (
     <div
@@ -783,7 +783,7 @@ function RefusModal({ onConfirm, onCancel }) {
     onConfirm(raison);
   }
   return (
-    <Modal title="Refuser la réservation" onClose={onCancel} maxW={400}
+    <Modal title="Refuser la réservation" onClose={onCancel} maxW={400} zIndex={3000}
       footer={[
         <button key="c" type="button" onClick={onCancel} style={{...btnSecondary}}>Annuler</button>,
         <button key="o" type="button" onClick={confirm} style={{...btnDanger}}>Refuser</button>
@@ -850,7 +850,7 @@ function DetailResaModal({ resa, onClose, onSaved }) {
   }
 
   return (
-    <Modal title="Détail de la réservation" onClose={onClose} maxW={460}
+    <Modal title="Détail de la réservation" onClose={onClose} maxW={460} zIndex={3000}
       footer={[
         <button key="f" type="button" onClick={onClose} style={{...btnSecondary}}>Fermer</button>,
         <button key="s" type="button" onClick={saveStatut} disabled={saving || statut === resa.statut} style={{ background: statut !== resa.statut ? '#111' : '#ddd', color: statut !== resa.statut ? '#fff' : '#999', border:'none', borderRadius:8, padding:'0 18px', height:38, fontWeight:700, fontSize:14, cursor: statut !== resa.statut ? 'pointer' : 'not-allowed' }}>
