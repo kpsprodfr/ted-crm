@@ -1548,9 +1548,6 @@ function CRMApp({ user, onLogout }) {
           </div>
           <div style={{display:"flex", gap:6, alignItems:"center", flexShrink:0}}>
             <span style={{fontSize:11, color:"#666", marginRight:4, maxWidth:120, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{user.email}</span>
-            <button onClick={saveBackup} title="Sauvegarder" style={{background:"transparent", color:"#ccc", border:"1px solid #444", borderRadius:7, width:32, height:32, cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center"}}>💾</button>
-            <button onClick={()=>restoreRef.current?.click()} title="Restaurer" style={{background:"transparent", color:"#ccc", border:"1px solid #444", borderRadius:7, width:32, height:32, cursor:"pointer", fontSize:16, display:"flex", alignItems:"center", justifyContent:"center"}}>🔄</button>
-            <input ref={restoreRef} type="file" accept=".json" style={{display:"none"}} onChange={handleRestoreFile} />
             <button onClick={()=>setModalCorbeille(true)} style={{background:"transparent", color:G, border:`1px solid ${G}`, borderRadius:7, padding:"0 10px", height:32, fontSize:12, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap"}}>🗑 Corbeille</button>
             <button onClick={()=>setShowResaPage(true)} style={{ position:'relative', background:'transparent', color:'#ccc', border:'1px solid #444', borderRadius:7, padding:'0 10px', height:32, fontSize:12, cursor:'pointer', whiteSpace:'nowrap' }}>
               📅 Réservations
@@ -1561,7 +1558,6 @@ function CRMApp({ user, onLogout }) {
           </div>
         </header>
       )}
-      {isMobile && <input ref={restoreRef} type="file" accept=".json" style={{display:"none"}} onChange={handleRestoreFile} />}
 
       {/* ═══ MOBILE — RÉSERVATIONS INLINE ═══ */}
       {isMobile && mobileTab === 'reservations' && (
