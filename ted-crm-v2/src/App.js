@@ -930,7 +930,7 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
     const calUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=R%C3%A9servation+Le+TED&dates=${calStart}/${calEnd}&details=R%C3%A9servation+confirm%C3%A9e+au+TED+pour+${r.nb_personnes}+personne(s)&location=28+Av.+des+Fr%C3%A8res+Montgolfier+69680+Chassieu`;
     const htmlConfirmation = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#f8f8f8;padding:20px">
   <div style="background:#111111;padding:28px 24px;text-align:center;border-radius:12px 12px 0 0;border-bottom:4px solid #E8C547">
-    <img src="https://leted.fr/wp-content/uploads/2023/01/logo-Le-TED.png" alt="Le TED" style="height:60px;margin-bottom:8px" onerror="this.style.display='none'" />
+    <img src="https://ted-crm.pages.dev/favicon.png" alt="Le TED" style="height:60px;margin-bottom:12px" />
     <h1 style="color:#E8C547;margin:0;font-size:28px;letter-spacing:2px;font-weight:800">LE TED</h1>
     <p style="color:#888;margin:4px 0 0;font-size:13px;letter-spacing:1px">RESTAURANT &amp; CLUB — CHASSIEU</p>
   </div>
@@ -954,7 +954,7 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
       <p style="color:#111;font-weight:700;font-size:15px;margin:0 0 6px">Le TED — Restaurant &amp; Club</p>
       <p style="color:#888;font-size:13px;margin:0 0 4px">📍 28 Av. des Frères Montgolfier, 69680 Chassieu</p>
       <p style="color:#888;font-size:13px;margin:0 0 4px">📞 04 78 90 67 80</p>
-      <p style="color:#888;font-size:13px;margin:0">🌐 leted.fr</p>
+      <p style="margin:0;display:flex;align-items:center;justify-content:center;gap:6px"><img src="https://ted-crm.pages.dev/favicon.png" alt="" style="height:16px;width:16px;vertical-align:middle" /><a href="https://leted.fr" style="color:#888;font-size:13px;text-decoration:none">leted.fr</a></p>
     </div>
     <p style="text-align:center;color:#bbb;font-size:12px;margin-top:20px">Nous avons hâte de vous accueillir ! 🎉</p>
   </div>
@@ -980,7 +980,7 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
     const dateFormateeRefus = new Date(r.date).toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
     const htmlRefus = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#f8f8f8;padding:20px">
   <div style="background:#111111;padding:28px 24px;text-align:center;border-radius:12px 12px 0 0;border-bottom:4px solid #E8C547">
-    <img src="https://leted.fr/wp-content/uploads/2023/01/logo-Le-TED.png" alt="Le TED" style="height:60px;margin-bottom:8px" onerror="this.style.display='none'" />
+    <img src="https://ted-crm.pages.dev/favicon.png" alt="Le TED" style="height:60px;margin-bottom:12px" />
     <h1 style="color:#E8C547;margin:0;font-size:28px;letter-spacing:2px;font-weight:800">LE TED</h1>
     <p style="color:#888;margin:4px 0 0;font-size:13px;letter-spacing:1px">RESTAURANT &amp; CLUB — CHASSIEU</p>
   </div>
@@ -1000,7 +1000,7 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
       <p style="color:#111;font-weight:700;font-size:15px;margin:0 0 6px">Le TED — Restaurant &amp; Club</p>
       <p style="color:#888;font-size:13px;margin:0 0 4px">📍 28 Av. des Frères Montgolfier, 69680 Chassieu</p>
       <p style="color:#888;font-size:13px;margin:0 0 4px">📞 04 78 90 67 80</p>
-      <p style="color:#888;font-size:13px;margin:0">🌐 leted.fr</p>
+      <p style="margin:0;display:flex;align-items:center;justify-content:center;gap:6px"><img src="https://ted-crm.pages.dev/favicon.png" alt="" style="height:16px;width:16px;vertical-align:middle" /><a href="https://leted.fr" style="color:#888;font-size:13px;text-decoration:none">leted.fr</a></p>
     </div>
     <p style="text-align:center;color:#bbb;font-size:12px;margin-top:20px">À bientôt au TED 🙏</p>
   </div>
