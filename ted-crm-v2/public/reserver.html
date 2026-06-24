@@ -170,6 +170,7 @@ const state = {
   nbPersonnes: 2,
   service: null,      // 'midi' | 'soir'
   heure: null,
+  genre: '',
   prenom: '',
   nom: '',
   tel: '',
@@ -330,41 +331,64 @@ function selectHeure(h) { state.heure = h; renderStep2(); }
 // ─── Step 3 — Coordonnées ─────────────────────────────────────────────────────
 let step3Errors = {};
 
+function selectGenre(g) { state.genre = g; if (g !== 'Entreprise') state.societe = ''; renderStep3(); }
+
 function renderStep3() {
   const el = document.getElementById('step-3');
   const e = step3Errors;
+  const isEntreprise = state.genre === 'Entreprise';
+  const prenomLabel = isEntreprise ? 'Prénom <span style="color:#aaa;font-size:12px;font-weight:400">(facultatif)</span>' : 'Prénom <span style="color:#dc2626">*</span>';
+  const nomLabel    = isEntreprise ? 'Nom <span style="color:#aaa;font-size:12px;font-weight:400">(facultatif)</span>'    : 'Nom <span style="color:#dc2626">*</span>';
+
+  const genreBtn = (val, icon) => {
+    const sel = state.genre === val;
+    return `<button type="button" onclick="selectGenre('${val}')" style="flex:1;padding:13px 8px;border:2px solid ${sel?'#111':'#eee'};border-radius:12px;background:${sel?'#111':'#fff'};color:${sel?'#E8C547':'#555'};font-size:14px;font-weight:${sel?700:500};cursor:pointer;transition:all 0.15s">${icon}</button>`;
+  };
+
   el.innerHTML = `
     <div class="step-title">👤 Vos coordonnées</div>
     <div class="step-subtitle">Ces informations nous permettent de vous contacter</div>
 
+    <div class="field">
+      <label class="label">Vous êtes <span style="color:#dc2626">*</span></label>
+      <div style="display:flex;gap:10px">
+        ${genreBtn('Homme',  '👨 Homme')}
+        ${genreBtn('Femme',  '👩 Femme')}
+        ${genreBtn('Entreprise', '🏢 Entreprise')}
+      </div>
+      ${e.genre ? `<div class="error-msg">${e.genre}</div>` : ''}
+    </div>
+
+    ${isEntreprise ? `
+    <div class="field">
+      <label class="label">Nom de l'entreprise <span style="color:#dc2626">*</span></label>
+      <input class="input ${e.societe?'error':''}" type="text" value="${state.societe}" oninput="state.societe=this.value" placeholder="Nom de votre entreprise" />
+      ${e.societe ? `<div class="error-msg">${e.societe}</div>` : ''}
+    </div>` : ''}
+
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       <div class="field">
-        <label class="label">Prénom <span>*</span></label>
-        <input class="input ${e.prenom?'error':''}" id="f-prenom" value="${state.prenom}" oninput="state.prenom=this.value" placeholder="Jean" />
-        ${e.prenom?`<div class="error-msg">${e.prenom}</div>`:''}
+        <label class="label">${prenomLabel}</label>
+        <input class="input ${e.prenom?'error':''}" value="${state.prenom}" oninput="state.prenom=this.value" placeholder="Jean" />
+        ${e.prenom ? `<div class="error-msg">${e.prenom}</div>` : ''}
       </div>
       <div class="field">
-        <label class="label">Nom <span>*</span></label>
-        <input class="input ${e.nom?'error':''}" id="f-nom" value="${state.nom}" oninput="state.nom=this.value" placeholder="Dupont" />
-        ${e.nom?`<div class="error-msg">${e.nom}</div>`:''}
+        <label class="label">${nomLabel}</label>
+        <input class="input ${e.nom?'error':''}" value="${state.nom}" oninput="state.nom=this.value" placeholder="Dupont" />
+        ${e.nom ? `<div class="error-msg">${e.nom}</div>` : ''}
       </div>
     </div>
 
     <div class="field">
-      <label class="label">Téléphone <span>*</span></label>
-      <input class="input ${e.tel?'error':''}" id="f-tel" value="${state.tel}" oninput="state.tel=this.value" placeholder="06 12 34 56 78" type="tel" inputmode="tel" />
-      ${e.tel?`<div class="error-msg">${e.tel}</div>`:''}
+      <label class="label">Téléphone <span style="color:#dc2626">*</span></label>
+      <input class="input ${e.tel?'error':''}" value="${state.tel}" oninput="state.tel=this.value" placeholder="06 12 34 56 78" type="tel" inputmode="tel" />
+      ${e.tel ? `<div class="error-msg">${e.tel}</div>` : ''}
     </div>
 
     <div class="field">
-      <label class="label">Email <span>*</span></label>
-      <input class="input ${e.email?'error':''}" id="f-email" value="${state.email}" oninput="state.email=this.value" placeholder="jean@exemple.fr" type="email" inputmode="email" />
-      ${e.email?`<div class="error-msg">${e.email}</div>`:''}
-    </div>
-
-    <div class="field">
-      <label class="label">Société <span style="color:#aaa;font-size:12px;font-weight:400">(facultatif)</span></label>
-      <input class="input" type="text" value="${state.societe}" oninput="state.societe=this.value" placeholder="Nom de votre entreprise" />
+      <label class="label">Email <span style="color:#dc2626">*</span></label>
+      <input class="input ${e.email?'error':''}" value="${state.email}" oninput="state.email=this.value" placeholder="jean@exemple.fr" type="email" inputmode="email" />
+      ${e.email ? `<div class="error-msg">${e.email}</div>` : ''}
     </div>
 
     <div class="field">
@@ -383,7 +407,7 @@ function renderStep3() {
       <input type="checkbox" id="rgpd" ${state.rgpd?'checked':''} onchange="state.rgpd=this.checked" />
       <label for="rgpd">J'accepte que mes données soient utilisées par l'établissement pour gérer ma réservation, conformément au RGPD. Ces données ne seront pas transmises à des tiers. <span style="color:#dc2626">*</span></label>
     </div>
-    ${e.rgpd?`<div class="error-msg" style="margin-bottom:8px">${e.rgpd}</div>`:''}
+    ${e.rgpd ? `<div class="error-msg" style="margin-bottom:8px">${e.rgpd}</div>` : ''}
 
     <div class="nav-row">
       <button class="btn-back" onclick="goStep(2)">← Retour</button>
@@ -394,8 +418,12 @@ function renderStep3() {
 
 function validateStep3() {
   const e = {};
-  if (!state.prenom.trim()) e.prenom = 'Prénom obligatoire';
-  if (!state.nom.trim()) e.nom = 'Nom obligatoire';
+  if (!state.genre) e.genre = 'Veuillez sélectionner une option';
+  if (state.genre === 'Entreprise' && !state.societe.trim()) e.societe = "Nom de l'entreprise obligatoire";
+  if (state.genre !== 'Entreprise') {
+    if (!state.prenom.trim()) e.prenom = 'Prénom obligatoire';
+    if (!state.nom.trim()) e.nom = 'Nom obligatoire';
+  }
   const tel = normalizeTel(state.tel);
   if (!tel || tel.length !== 10 || !(/^(06|07|01|02|03|04|05|08|09)/.test(tel))) e.tel = 'Numéro invalide (ex : 06 12 34 56 78)';
   if (!state.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email)) e.email = 'Email invalide';
@@ -414,11 +442,12 @@ function renderStep4() {
     ['Service', state.service === 'midi' ? '🌞 Midi' : '🌙 Soir'],
     ['Heure', state.heure],
     ['Personnes', state.nbPersonnes + ' personne' + (state.nbPersonnes > 1 ? 's' : '')],
-    ['Prénom', state.prenom],
-    ['Nom', state.nom],
+    state.genre ? ['Vous êtes', state.genre] : null,
+    state.societe ? ['Entreprise', state.societe] : null,
+    state.prenom ? ['Prénom', state.prenom] : null,
+    state.nom ? ['Nom', state.nom] : null,
     ['Téléphone', state.tel],
     ['Email', state.email],
-    state.societe ? ['Société', state.societe] : null,
     state.occasion ? ['Occasion', state.occasion] : null,
     state.commentaire ? ['Commentaire', state.commentaire] : null
   ].filter(Boolean);
@@ -473,7 +502,7 @@ async function submitForm() {
     // 3. Si pas trouvé, crée le client
     if (!clientExist) {
       const newC = await sbFetch('clients', 'POST', {
-        genre: state.societe ? 'Entreprise' : 'Non renseigné',
+        genre: state.genre || (state.societe ? 'Entreprise' : 'Non renseigné'),
         nom: nomC,
         prenom: prenomC,
         entreprise: state.societe || '',
