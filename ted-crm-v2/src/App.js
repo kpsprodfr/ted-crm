@@ -1803,7 +1803,7 @@ function CRMApp({ user, onLogout }) {
 
       {/* ═══ MOBILE CARDS ═══ */}
       {isMobile && mobileTab === 'clients' && (
-        <div style={{ paddingTop:146, paddingBottom:'calc(65px + env(safe-area-inset-bottom, 16px))', paddingLeft:12, paddingRight:12 }}>
+        <div style={{ paddingTop:146, paddingBottom:'calc(65px + env(safe-area-inset-bottom))', paddingLeft:12, paddingRight:12 }}>
           {pageClients.length === 0 && (
             <div style={{ textAlign:'center', padding:'4rem 2rem' }}>
               <div style={{ fontSize:48, marginBottom:12 }}>🔍</div>
@@ -1989,7 +1989,7 @@ function CRMApp({ user, onLogout }) {
       {/* Barre nav fixe mobile */}
       {isMobile && (
         <>
-          <div style={{ position:'fixed', bottom:0, left:0, right:0, background:'#fff', borderRadius:'20px 20px 0 0', boxShadow:'0 -4px 20px rgba(0,0,0,0.10)', display:'flex', alignItems:'center', justifyContent:'space-around', height:65, marginBottom:0, paddingBottom:0, zIndex:1000, paddingLeft:16, paddingRight:16 }}>
+          <div style={{ position:'fixed', bottom:0, left:0, right:0, background:'#fff', borderRadius:'20px 20px 0 0', boxShadow:'0 -4px 20px rgba(0,0,0,0.10)', display:'flex', alignItems:'center', justifyContent:'space-around', zIndex:1000, height:65, paddingBottom:0 }}>
 
             {/* Gauche — Clients */}
             <button onClick={()=>setMobileTab('clients')} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:4, border:'none', background:'none', cursor:'pointer', color: mobileTab==='clients' ? '#111' : '#bbb', fontWeight: mobileTab==='clients' ? 700 : 500, fontSize:11 }}>
@@ -2017,7 +2017,7 @@ function CRMApp({ user, onLogout }) {
               Réservations
             </button>
           </div>
-          <div style={{ position:'fixed', bottom:0, left:0, right:0, height:'env(safe-area-inset-bottom, 0px)', background:'#fff', zIndex:999 }} />
+          <div style={{ position:'fixed', bottom:0, left:0, right:0, height:'env(safe-area-inset-bottom)', background:'#fff', zIndex:999 }} />
 
           {/* Bottom sheet + */}
           {showPlusSheet && (
