@@ -382,7 +382,7 @@ function renderStep3() {
 
     <div class="field">
       <label class="label">Téléphone <span style="color:#dc2626">*</span></label>
-      <input class="input ${e.tel?'error':''}" value="${state.tel}" oninput="const n=normalizeTel(this.value);state.tel=n;this.value=n;" placeholder="06 12 34 56 78" type="tel" inputmode="tel" autocomplete="tel" />
+      <input class="input ${e.tel?'error':''}" value="${state.tel}" oninput="const n=normalizeTel(this.value);state.tel=n;this.value=n;" placeholder="06 12 34 56 78 ou +336…" type="tel" inputmode="tel" autocomplete="tel" />
       ${e.tel ? `<div class="error-msg">${e.tel}</div>` : ''}
     </div>
 
@@ -424,7 +424,7 @@ function validateStep3() {
   if (!state.prenom.trim()) e.prenom = 'Prénom obligatoire';
   if (!state.nom.trim()) e.nom = 'Nom obligatoire';
   const tel = normalizeTel(state.tel);
-  if (!tel || tel.length !== 10 || !(/^(06|07|01|02|03|04|05|08|09)/.test(tel))) e.tel = 'Numéro invalide (ex : 06 12 34 56 78)';
+  if (!tel || !/^0[0-9]{9}$/.test(tel)) e.tel = 'Numéro invalide. Formats acceptés : 0612345678, +33612345678, +336…';
   if (!state.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email)) e.email = 'Email invalide';
   if (!state.rgpd) e.rgpd = 'Vous devez accepter la politique de confidentialité';
   step3Errors = e;
