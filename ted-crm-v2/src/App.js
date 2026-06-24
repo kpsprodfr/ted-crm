@@ -1607,7 +1607,15 @@ function CRMApp({ user, onLogout }) {
                     <input type="checkbox" checked={checked} disabled={!hasEmail} onChange={()=>toggleOne(c.id)} style={{width:15, height:15, accentColor:'#E8C547', flexShrink:0}} />
                     <div style={{width:34, height:34, borderRadius:'50%', background:avatarColor(c), color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:13, flexShrink:0}}>{initial}</div>
                     <div style={{flex:1, minWidth:0}}>
-                      <div style={{fontWeight:600, fontSize:13, color:'#111', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>{c.prenom} {c.nom}</div>
+                      <div style={{display:'flex', alignItems:'center', gap:6, flexWrap:'wrap'}}>
+                        <span style={{fontWeight:600, fontSize:13, color:'#111'}}>
+                          {c.genre === 'Entreprise' && c.entreprise ? c.entreprise : `${c.prenom||''} ${c.nom||''}`.trim()}
+                        </span>
+                        {c.genre === 'Entreprise' && <span style={{fontSize:11, background:'#d1fae5', color:'#065f46', borderRadius:4, padding:'1px 6px', fontWeight:600}}>Entreprise</span>}
+                      </div>
+                      {c.genre === 'Entreprise' && (c.nom || c.prenom) && (
+                        <span style={{fontSize:11, color:'#999'}}>Contact : {c.prenom} {c.nom}</span>
+                      )}
                       <div style={{fontSize:11, color:hasEmail?'#6b7280':'#ccc', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>{c.mail||'Pas d\'email'}</div>
                     </div>
                   </label>
@@ -1919,9 +1927,15 @@ function CRMApp({ user, onLogout }) {
                           <div style={{width:34, height:34, borderRadius:'50%', background:smsAvatarColor(c), color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:13, flexShrink:0}}>{initial}</div>
                           <div style={{flex:1, minWidth:0}}>
                             <div style={{display:'flex', alignItems:'center', gap:6, flexWrap:'wrap'}}>
-                              <span style={{fontWeight:600, fontSize:13, color:'#111', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>{c.prenom} {c.nom}</span>
+                              <span style={{fontWeight:600, fontSize:13, color:'#111', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>
+                                {c.genre === 'Entreprise' && c.entreprise ? c.entreprise : `${c.prenom||''} ${c.nom||''}`.trim()}
+                              </span>
+                              {c.genre === 'Entreprise' && <span style={{fontSize:10, background:'#d1fae5', color:'#065f46', borderRadius:4, padding:'1px 5px', fontWeight:600, flexShrink:0}}>Entreprise</span>}
                               {!mobile && <span style={{fontSize:10, color:'#dc2626', fontWeight:600, background:'#fef2f2', borderRadius:4, padding:'1px 5px', flexShrink:0}}>📞 Fixe</span>}
                             </div>
+                            {c.genre === 'Entreprise' && (c.nom || c.prenom) && (
+                              <div style={{fontSize:11, color:'#999'}}>Contact : {c.prenom} {c.nom}</div>
+                            )}
                             <div style={{fontSize:11, color:'#6b7280'}}>{c.tel}</div>
                           </div>
                         </label>
