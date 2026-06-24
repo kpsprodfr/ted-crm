@@ -1288,6 +1288,31 @@ function CRMApp({ user, onLogout }) {
   const [smsExpanded, setSmsExpanded] = useState({});
   const smsTextareaRef = useRef(null);
   const [notifResa, setNotifResa] = useState(null);
+
+  async function demanderPermissionNotif() {
+    if (!('Notification' in window)) return false;
+    if (Notification.permission === 'granted') return true;
+    if (Notification.permission === 'denied') return false;
+    const perm = await Notification.requestPermission();
+    return perm === 'granted';
+  }
+
+  async function envoyerNotifLocale(titre, corps) {
+    if (!('serviceWorker' in navigator)) return;
+    if (Notification.permission !== 'granted') return;
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification(titre, {
+        body: corps,
+        icon: '/favicon.png',
+        badge: '/favicon.png',
+        tag: 'nouvelle-resa',
+        renotify: true,
+        vibrate: [200, 100, 200],
+        data: { url: 'https://ted-crm.pages.dev' }
+      });
+    } catch(e) { console.error('Notif erreur:', e); }
+  }
   const deleteGuard = useRef(false);
   const isMobile = useIsMobile();
 
@@ -1322,6 +1347,10 @@ function CRMApp({ user, onLogout }) {
   }, [activeView]);
 
   useEffect(() => {
+    setTimeout(() => demanderPermissionNotif(), 2000);
+  }, []);
+
+  useEffect(() => {
     const channel = supabase
       .channel('nouvelles-reservations')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reservations', filter: 'statut=eq.attente' }, async (payload) => {
@@ -1344,6 +1373,7 @@ function CRMApp({ user, onLogout }) {
         const date = new Date(payload.new.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
         setNotifResa({ nom, message: `${date} · ${payload.new.heure || ''} · ${payload.new.nb_personnes} pers.`, id: payload.new.id });
         setTimeout(() => setNotifResa(null), 6000);
+        await envoyerNotifLocale(`📅 Nouvelle réservation !`, `${nom} · ${date} · ${payload.new.heure || ''} · ${payload.new.nb_personnes} pers.`);
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -2316,6 +2346,9 @@ function CRMApp({ user, onLogout }) {
           </div>
           <div style={{display:"flex", gap:6, alignItems:"center", flexShrink:0}}>
             <span style={{fontSize:11, color:"#666", marginRight:4, maxWidth:120, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{user.email}</span>
+            {'Notification' in window && Notification.permission !== 'granted' && (
+              <button onClick={demanderPermissionNotif} style={{background:'transparent', color:'#E8C547', border:'1px solid #E8C547', borderRadius:7, padding:'0 10px', height:32, fontSize:12, cursor:'pointer', whiteSpace:'nowrap'}}>🔔 Activer les notifications</button>
+            )}
             <button onClick={()=>setModalCorbeille(true)} style={{background:"transparent", color:G, border:`1px solid ${G}`, borderRadius:7, padding:"0 10px", height:32, fontSize:12, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap"}}>🗑 Corbeille</button>
             <button onClick={()=>setShowResaPage(true)} style={{ position:'relative', background:'transparent', color:'#ccc', border:'1px solid #444', borderRadius:7, padding:'0 10px', height:32, fontSize:12, cursor:'pointer', whiteSpace:'nowrap' }}>
               📅 Réservations
