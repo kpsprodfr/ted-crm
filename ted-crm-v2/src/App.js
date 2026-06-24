@@ -525,7 +525,7 @@ function useIsMobile() {
 }
 
 // ─── Réservations Page ────────────────────────────────────────────────────────
-const FORM_URL = "https://ted-crm.pages.dev/reserver.html";
+const FORM_URL = "https://ted-crm.pages.dev/reserver";
 
 const OCCASIONS = ["Anniversaire","Saint-Valentin","Repas d'affaires","Mariage","Fiançailles","Autre"];
 const HEURES_MIDI = ["12:00","12:15","12:30","12:45","13:00","13:15","13:30","13:45","14:00"];
@@ -1065,18 +1065,18 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
         <div style={{background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:'16px', marginBottom:16, boxShadow:'0 2px 8px rgba(0,0,0,0.05)'}}>
           <p style={{fontSize:11, fontWeight:700, color:'#999', letterSpacing:1, textTransform:'uppercase', margin:'0 0 10px'}}>🔗 Formulaire de réservation en ligne</p>
           <div style={{background:'#f8f8f8', borderRadius:8, padding:'10px 12px', marginBottom:12, fontSize:12, color:'#555', wordBreak:'break-all', fontFamily:'monospace'}}>
-            https://ted-crm.pages.dev/reserver.html
+            https://ted-crm.pages.dev/reserver
           </div>
           <div style={{display:'flex', gap:8}}>
-            <button onClick={()=>{ navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver.html'); showToast('Lien copié !'); }}
+            <button onClick={()=>{ navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver'); showToast('Lien copié !'); }}
               style={{flex:1, height:42, background:'#111', color:'#fff', border:'none', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer'}}>
               📋 Copier
             </button>
-            <button onClick={()=>window.open('https://ted-crm.pages.dev/reserver.html','_blank')}
+            <button onClick={()=>window.open('https://ted-crm.pages.dev/reserver','_blank')}
               style={{flex:1, height:42, background:'#E8C547', color:'#111', border:'none', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer'}}>
               🔗 Ouvrir
             </button>
-            <button onClick={()=>{ if(navigator.share){ navigator.share({title:'Réservation Le TED', text:'Réservez votre table au TED', url:'https://ted-crm.pages.dev/reserver.html'}); } else { navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver.html'); showToast('Lien copié !'); }}}
+            <button onClick={()=>{ if(navigator.share){ navigator.share({title:'Réservation Le TED', text:'Réservez votre table au TED', url:'https://ted-crm.pages.dev/reserver'}); } else { navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver'); showToast('Lien copié !'); }}}
               style={{flex:1, height:42, background:'#f0f0f0', color:'#111', border:'none', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer'}}>
               📤 Partager
             </button>
@@ -1590,7 +1590,7 @@ function CRMApp({ user, onLogout }) {
                   const ta = commTextareaRef.current;
                   if (!ta) return;
                   const start = ta.selectionStart;
-                  const lien = 'https://ted-crm.pages.dev/reserver.html';
+                  const lien = 'https://ted-crm.pages.dev/reserver';
                   const newVal = commMessage.substring(0, start) + lien + commMessage.substring(start);
                   setCommMessage(newVal);
                   setTimeout(()=>{ ta.focus(); ta.setSelectionRange(start + lien.length, start + lien.length); }, 0);
@@ -1889,7 +1889,7 @@ function CRMApp({ user, onLogout }) {
                       const ta = smsTextareaRef.current;
                       if (!ta) return;
                       const start = ta.selectionStart;
-                      const lien = 'https://ted-crm.pages.dev/reserver.html';
+                      const lien = 'https://ted-crm.pages.dev/reserver';
                       const newVal = (smsMessage.substring(0, start) + lien + smsMessage.substring(start)).slice(0, smsLimit);
                       setSmsMessage(newVal);
                       setTimeout(()=>{ ta.focus(); ta.setSelectionRange(start + lien.length, start + lien.length); }, 0);
