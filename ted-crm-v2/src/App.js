@@ -1287,6 +1287,7 @@ function CRMApp({ user, onLogout }) {
   const [smsHistorique, setSmsHistorique] = useState([]);
   const [smsExpanded, setSmsExpanded] = useState({});
   const smsTextareaRef = useRef(null);
+  const [notifResa, setNotifResa] = useState(null);
   const deleteGuard = useRef(false);
   const isMobile = useIsMobile();
 
@@ -1319,6 +1320,34 @@ function CRMApp({ user, onLogout }) {
   useEffect(() => {
     if (activeView === 'communications') { loadEmailsHistorique(); loadSmsHistorique(); }
   }, [activeView]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('nouvelles-reservations')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reservations', filter: 'statut=eq.attente' }, async (payload) => {
+        const { data: client } = await supabase.from('clients').select('nom, prenom, tel').eq('id', payload.new.client_id).single();
+        loadResaCount();
+        try {
+          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          const oscillator = audioCtx.createOscillator();
+          const gainNode = audioCtx.createGain();
+          oscillator.connect(gainNode);
+          gainNode.connect(audioCtx.destination);
+          oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+          oscillator.frequency.setValueAtTime(660, audioCtx.currentTime + 0.1);
+          gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+          oscillator.start(audioCtx.currentTime);
+          oscillator.stop(audioCtx.currentTime + 0.5);
+        } catch(e) {}
+        const nom = client ? `${client.prenom} ${client.nom}` : 'Nouveau client';
+        const date = new Date(payload.new.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+        setNotifResa({ nom, message: `${date} · ${payload.new.heure || ''} · ${payload.new.nb_personnes} pers.`, id: payload.new.id });
+        setTimeout(() => setNotifResa(null), 6000);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   async function loadResaCount() {
     const { count } = await supabase.from('reservations').select('id', { count:'exact', head:true }).eq('statut','attente');
@@ -2210,6 +2239,18 @@ function CRMApp({ user, onLogout }) {
 
   return (
     <div style={{ fontFamily:"'Inter','Segoe UI',Arial,sans-serif", minHeight:"100vh", background:"#f8f8f8", color:"#111" }}>
+      {notifResa && (
+        <div style={{ position:'fixed', top:16, left:'50%', transform:'translateX(-50%)', background:'#111', color:'#fff', borderRadius:14, padding:'14px 20px', zIndex:9999, boxShadow:'0 8px 32px rgba(0,0,0,0.3)', display:'flex', alignItems:'center', gap:12, maxWidth:'90vw', animation:'slideDownFade 0.3s ease', cursor:'pointer', minWidth:280 }}
+          onClick={() => { setActiveView('reservations'); setNotifResa(null); }}>
+          <div style={{ width:44, height:44, borderRadius:10, background:'#E8C547', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>📅</div>
+          <div style={{ flex:1 }}>
+            <p style={{ margin:'0 0 2px', fontWeight:800, fontSize:14 }}>Nouvelle réservation !</p>
+            <p style={{ margin:'0 0 2px', fontSize:13, color:'#E8C547', fontWeight:600 }}>{notifResa.nom}</p>
+            <p style={{ margin:0, fontSize:12, color:'#aaa' }}>{notifResa.message}</p>
+          </div>
+          <button onClick={(e) => { e.stopPropagation(); setNotifResa(null); }} style={{ background:'rgba(255,255,255,0.1)', border:'none', borderRadius:6, color:'#fff', fontSize:16, cursor:'pointer', padding:'4px 8px', flexShrink:0 }}>✕</button>
+        </div>
+      )}
       <style>{`
         @keyframes popIn { 0%{opacity:0;transform:scale(0.5)} 70%{transform:scale(1.05)} 100%{opacity:1;transform:scale(1)} }
         @keyframes scaleIn { from{transform:scale(0)} to{transform:scale(1)} }
