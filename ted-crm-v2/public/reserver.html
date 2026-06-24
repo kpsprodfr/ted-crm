@@ -6,6 +6,8 @@
   <title>Réserver au TED</title>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    *{-webkit-tap-highlight-color:transparent}
+    button{touch-action:manipulation}
     body{font-family:'Inter','Segoe UI',Arial,sans-serif;background:#f8f8f8;color:#111;min-height:100vh}
     :root{--g:#E8C547;--r:14px}
 
@@ -56,7 +58,7 @@
 
     /* Counter */
     .counter{display:flex;align-items:center;gap:0;background:#fff;border:1.5px solid #eee;border-radius:12px;overflow:hidden;width:100%}
-    .counter-btn{width:60px;height:60px;flex-shrink:0;border:none;border-radius:0;background:#f8f8f8;font-size:28px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#111;line-height:1;transition:background 0.15s}
+    .counter-btn{width:60px;height:60px;flex-shrink:0;border:none;border-radius:0;background:#f8f8f8;font-size:28px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#111;line-height:1;transition:background 0.15s;touch-action:manipulation;-webkit-user-select:none;user-select:none}
     .counter-btn:hover{background:#f0f0f0}
     .counter-btn:disabled{color:#ccc;cursor:not-allowed;background:#fafafa}
     .counter-input{flex:1;height:60px;border:none;border-left:1.5px solid #eee;border-right:1.5px solid #eee;font-size:28px;font-weight:800;text-align:center;outline:none;font-family:inherit;color:#111;background:#fff;-moz-appearance:textfield}
@@ -380,7 +382,7 @@ function renderStep3() {
 
     <div class="field">
       <label class="label">Téléphone <span style="color:#dc2626">*</span></label>
-      <input class="input ${e.tel?'error':''}" value="${state.tel}" oninput="state.tel=this.value" placeholder="06 12 34 56 78" type="tel" inputmode="tel" />
+      <input class="input ${e.tel?'error':''}" value="${state.tel}" oninput="const n=normalizeTel(this.value);state.tel=n;this.value=n;" placeholder="06 12 34 56 78" type="tel" inputmode="tel" autocomplete="tel" />
       ${e.tel ? `<div class="error-msg">${e.tel}</div>` : ''}
     </div>
 
