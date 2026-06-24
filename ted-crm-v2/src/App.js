@@ -2240,15 +2240,18 @@ function CRMApp({ user, onLogout }) {
   return (
     <div style={{ fontFamily:"'Inter','Segoe UI',Arial,sans-serif", minHeight:"100vh", background:"#f8f8f8", color:"#111" }}>
       {notifResa && (() => { const isMob = window.innerWidth < 768; return (
-        <div style={{ position:'fixed', top:16, right:isMob?'auto':16, left:isMob?'50%':'auto', transform:isMob?'translateX(-50%)':'none', background:'#111', color:'#fff', borderRadius:14, padding:'14px 20px', zIndex:9999, boxShadow:'0 8px 32px rgba(0,0,0,0.3)', display:'flex', alignItems:'center', gap:12, maxWidth:isMob?'90vw':360, minWidth:280, animation:'slideDownFade 0.3s ease', cursor:'pointer' }}
+        <div style={{ position:'fixed', top:16, right:isMob?'auto':20, left:isMob?'50%':'auto', transform:isMob?'translateX(-50%)':'none', background:'rgba(17,17,17,0.92)', backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)', color:'#fff', borderRadius:16, padding:'14px 16px', zIndex:9999, boxShadow:'0 8px 32px rgba(0,0,0,0.25)', display:'flex', alignItems:'center', gap:12, maxWidth:isMob?'90vw':340, minWidth:280, animation:'slideDownFade 0.3s cubic-bezier(0.34,1.56,0.64,1)', cursor:'pointer', border:'1px solid rgba(255,255,255,0.08)' }}
           onClick={() => { setActiveView('reservations'); setNotifResa(null); }}>
-          <div style={{ width:44, height:44, borderRadius:10, background:'#E8C547', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>📅</div>
-          <div style={{ flex:1 }}>
-            <p style={{ margin:'0 0 2px', fontWeight:800, fontSize:14 }}>Nouvelle réservation !</p>
-            <p style={{ margin:'0 0 2px', fontSize:13, color:'#E8C547', fontWeight:600 }}>{notifResa.nom}</p>
-            <p style={{ margin:0, fontSize:12, color:'#aaa' }}>{notifResa.message}</p>
+          <div style={{ width:42, height:42, borderRadius:10, background:'#E8C547', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>📅</div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <p style={{ margin:'0 0 2px', fontWeight:800, fontSize:13, color:'#fff' }}>Nouvelle réservation !</p>
+            <p style={{ margin:'0 0 1px', fontSize:13, color:'#E8C547', fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{notifResa.nom}</p>
+            <p style={{ margin:0, fontSize:11, color:'rgba(255,255,255,0.5)' }}>{notifResa.message}</p>
           </div>
-          <button onClick={(e) => { e.stopPropagation(); setNotifResa(null); }} style={{ background:'rgba(255,255,255,0.1)', border:'none', borderRadius:6, color:'#fff', fontSize:16, cursor:'pointer', padding:'4px 8px', flexShrink:0 }}>✕</button>
+          <button onClick={(e) => { e.stopPropagation(); setNotifResa(null); }}
+            style={{ background:'rgba(255,255,255,0.1)', border:'none', borderRadius:8, color:'rgba(255,255,255,0.6)', fontSize:14, cursor:'pointer', padding:'6px 8px', flexShrink:0, lineHeight:1, transition:'background 0.15s' }}
+            onMouseEnter={e => e.target.style.background='rgba(255,255,255,0.2)'}
+            onMouseLeave={e => e.target.style.background='rgba(255,255,255,0.1)'}>✕</button>
         </div>
       ); })()}
       <style>{`
