@@ -499,6 +499,160 @@ function useIsMobile() {
 // ─── Réservations Page ────────────────────────────────────────────────────────
 const FORM_URL = "https://leted-crm.netlify.app/reserver.html";
 
+const OCCASIONS = ["Anniversaire","Saint-Valentin","Repas d'affaires","Mariage","Fiançailles","Autre"];
+const HEURES_MIDI = ["12:00","12:15","12:30","12:45","13:00","13:15","13:30","13:45","14:00"];
+const HEURES_SOIR = ["19:00","19:15","19:30","19:45","20:00","20:15","20:30","20:45","21:00","21:15","21:30"];
+
+function AddResaModal({ clients, onClose, onSaved, showToast, user }) {
+  const [clientSearch, setClientSearch] = useState('');
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [date, setDate] = useState('');
+  const [service, setService] = useState('soir');
+  const [heure, setHeure] = useState('');
+  const [nbPersonnes, setNbPersonnes] = useState(2);
+  const [occasion, setOccasion] = useState('');
+  const [statut, setStatut] = useState('attente');
+  const [saving, setSaving] = useState(false);
+
+  const searchRef = useRef();
+
+  const clientsFiltered = useMemo(() => {
+    if (!clientSearch.trim()) return [];
+    const q = normalizeStr(clientSearch);
+    return clients.filter(c => {
+      const blob = [normalizeStr(c.nom), normalizeStr(c.prenom), c.tel||'', normalizeStr(c.mail), normalizeStr(c.entreprise)].join(' ');
+      return blob.includes(q);
+    }).slice(0, 8);
+  }, [clientSearch, clients]);
+
+  const heures = service === 'midi' ? HEURES_MIDI : HEURES_SOIR;
+
+  function selectClient(c) {
+    setSelectedClient(c);
+    setClientSearch(c.entreprise ? c.entreprise : `${c.prenom || ''} ${c.nom || ''}`.trim());
+    setShowDropdown(false);
+  }
+
+  async function handleSave() {
+    if (!selectedClient) { showToast('Sélectionnez un client', 'error'); return; }
+    if (!date) { showToast('Choisissez une date', 'error'); return; }
+    setSaving(true);
+    const { error } = await supabase.from('reservations').insert({
+      client_id: selectedClient.id,
+      date,
+      service,
+      heure: heure || null,
+      nb_personnes: nbPersonnes,
+      occasion: occasion || null,
+      statut,
+      source: 'manuel',
+      traited_by: statut === 'confirmee' ? user?.email : null,
+      traited_at: statut === 'confirmee' ? new Date().toISOString() : null,
+    });
+    setSaving(false);
+    if (error) { showToast('Erreur lors de la création', 'error'); return; }
+    showToast('Réservation créée ✓');
+    onSaved();
+    onClose();
+  }
+
+  const btnSvc = (s) => ({
+    flex: 1, height: 42, border: `1.5px solid ${service === s ? '#111' : '#eee'}`,
+    borderRadius: 8, background: service === s ? '#111' : '#f8f8f8',
+    color: service === s ? '#fff' : '#666', fontWeight: 700, fontSize: 14, cursor: 'pointer'
+  });
+
+  return (
+    <Modal title="Ajouter une réservation" onClose={onClose} footer={[
+      <button key="cancel" onClick={onClose} style={btnSecondary}>Annuler</button>,
+      <button key="save" onClick={handleSave} disabled={saving} style={{ ...btnPrimary, opacity: saving ? 0.6 : 1 }}>{saving ? 'Enregistrement…' : 'Enregistrer'}</button>
+    ]}>
+      <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+        {/* Client search */}
+        <div style={{ position:'relative' }}>
+          <label style={lbl}>Client *</label>
+          <input
+            ref={searchRef}
+            value={clientSearch}
+            onChange={e => { setClientSearch(e.target.value); setSelectedClient(null); setShowDropdown(true); }}
+            onFocus={() => setShowDropdown(true)}
+            placeholder="Rechercher un client…"
+            style={inp(false)}
+            autoComplete="off"
+          />
+          {showDropdown && clientsFiltered.length > 0 && (
+            <div style={{ position:'absolute', top:'100%', left:0, right:0, background:'#fff', border:'1.5px solid #eee', borderRadius:10, zIndex:50, boxShadow:'0 8px 24px rgba(0,0,0,0.1)', maxHeight:220, overflowY:'auto' }}>
+              {clientsFiltered.map(c => (
+                <div key={c.id} onPointerDown={()=>selectClient(c)} style={{ padding:'10px 14px', cursor:'pointer', borderBottom:'1px solid #f5f5f5', fontSize:14 }}
+                  onMouseEnter={e=>e.currentTarget.style.background='#fffbeb'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
+                  <span style={{ fontWeight:700 }}>{c.entreprise ? c.entreprise : `${c.prenom||''} ${c.nom||''}`.trim()}</span>
+                  {c.tel && <span style={{ color:'#888', marginLeft:8, fontSize:12 }}>{c.tel}</span>}
+                </div>
+              ))}
+            </div>
+          )}
+          {selectedClient && <div style={{ fontSize:12, color:'#16a34a', marginTop:4 }}>✓ {selectedClient.entreprise ? selectedClient.entreprise : `${selectedClient.prenom||''} ${selectedClient.nom||''}`.trim()}</div>}
+        </div>
+
+        {/* Date */}
+        <div>
+          <label style={lbl}>Date *</label>
+          <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={inp(false)} />
+        </div>
+
+        {/* Service */}
+        <div>
+          <label style={lbl}>Service *</label>
+          <div style={{ display:'flex', gap:8 }}>
+            <button style={btnSvc('midi')} onClick={()=>{ setService('midi'); setHeure(''); }}>🌞 Midi</button>
+            <button style={btnSvc('soir')} onClick={()=>{ setService('soir'); setHeure(''); }}>🌙 Soir</button>
+          </div>
+        </div>
+
+        {/* Heure */}
+        <div>
+          <label style={lbl}>Heure</label>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+            {heures.map(h => (
+              <button key={h} onClick={()=>setHeure(heure===h?'':h)} style={{ padding:'6px 12px', borderRadius:8, border:`1.5px solid ${heure===h?'#111':'#eee'}`, background:heure===h?'#111':'#f8f8f8', color:heure===h?'#fff':'#555', fontWeight:600, fontSize:13, cursor:'pointer' }}>{h}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Nb personnes */}
+        <div>
+          <label style={lbl}>Nombre de personnes *</label>
+          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+            <button onClick={()=>setNbPersonnes(n=>Math.max(1,n-1))} style={{ width:40, height:40, borderRadius:8, border:'1.5px solid #eee', background:'#f8f8f8', fontSize:20, cursor:'pointer', fontWeight:700 }}>−</button>
+            <input type="number" value={nbPersonnes} min={1} max={50} onChange={e=>setNbPersonnes(Math.max(1,parseInt(e.target.value)||1))} style={{ width:70, height:40, border:'1.5px solid #ddd', borderRadius:8, textAlign:'center', fontSize:16, fontWeight:700, outline:'none' }} />
+            <button onClick={()=>setNbPersonnes(n=>Math.min(50,n+1))} style={{ width:40, height:40, borderRadius:8, border:'1.5px solid #eee', background:'#f8f8f8', fontSize:20, cursor:'pointer', fontWeight:700 }}>+</button>
+          </div>
+        </div>
+
+        {/* Occasion */}
+        <div>
+          <label style={lbl}>Occasion</label>
+          <select value={occasion} onChange={e=>setOccasion(e.target.value)} style={{ width:'100%', height:44, border:'1.5px solid #ddd', borderRadius:7, padding:'0 12px', fontSize:15, background:'#fff', outline:'none', cursor:'pointer' }}>
+            <option value="">— Aucune —</option>
+            {OCCASIONS.map(o => <option key={o} value={o}>{o}</option>)}
+          </select>
+        </div>
+
+        {/* Statut initial */}
+        <div>
+          <label style={lbl}>Statut initial</label>
+          <div style={{ display:'flex', gap:8 }}>
+            {[{val:'attente',label:'En attente'},{val:'confirmee',label:'Confirmée'}].map(o => (
+              <button key={o.val} onClick={()=>setStatut(o.val)} style={{ flex:1, height:42, border:`1.5px solid ${statut===o.val?'#111':'#eee'}`, borderRadius:8, background:statut===o.val?'#111':'#f8f8f8', color:statut===o.val?'#fff':'#666', fontWeight:700, fontSize:13, cursor:'pointer' }}>{o.label}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
 const MOTIFS_REFUS = ["Complet","Fermé","Horaire indispo","Groupe trop grand","Autre"];
 
 const statutBadge = (s) => {
@@ -636,7 +790,7 @@ function DetailResaModal({ resa, onClose, onSaved }) {
   );
 }
 
-function ReservationsPage({ onBack, showToast, user }) {
+function ReservationsPage({ onBack, showToast, user, inline = false, onResaCountChange }) {
   const [resaList, setResaList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refusResa, setRefusResa] = useState(null);
@@ -655,7 +809,10 @@ function ReservationsPage({ onBack, showToast, user }) {
       .select('*, clients(id, nom, prenom, tel, mail, genre, entreprise)')
       .order('created_at', { ascending: false });
     if (error) showToast('Erreur chargement réservations', 'error');
-    else setResaList(data || []);
+    else {
+      setResaList(data || []);
+      onResaCountChange?.((data||[]).filter(r=>r.statut==='attente').length);
+    }
     setLoading(false);
   }
 
@@ -691,15 +848,17 @@ function ReservationsPage({ onBack, showToast, user }) {
   const cardStyle = { background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:16, marginBottom:10, boxShadow:'0 2px 8px rgba(0,0,0,0.04)' };
 
   return (
-    <div style={{ fontFamily:"'Inter','Segoe UI',Arial,sans-serif", minHeight:'100vh', background:'#f8f8f8' }}>
-      {/* Header */}
-      <header style={{ background:'#111', color:'#fff', padding:'0 20px', height:56, display:'flex', alignItems:'center', gap:14, borderBottom:`3px solid ${G}`, flexShrink:0 }}>
-        <button onClick={onBack} style={{ background:'rgba(255,255,255,0.1)', border:'none', borderRadius:8, height:34, padding:'0 14px', color:'#fff', fontWeight:600, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>← Retour</button>
-        <span style={{ fontWeight:700, fontSize:15, flex:1 }}>📅 Réservations</span>
-        {attente.length > 0 && <span style={{ background:'#dc2626', color:'#fff', borderRadius:99, padding:'2px 8px', fontSize:12, fontWeight:700 }}>{attente.length}</span>}
-      </header>
+    <div style={{ fontFamily:"'Inter','Segoe UI',Arial,sans-serif", background:'#f8f8f8', minHeight: inline ? undefined : '100vh' }}>
+      {/* Header — desktop full-page mode only */}
+      {!inline && (
+        <header style={{ background:'#111', color:'#fff', padding:'0 20px', height:56, display:'flex', alignItems:'center', gap:14, borderBottom:`3px solid ${G}`, flexShrink:0 }}>
+          <button onClick={onBack} style={{ background:'rgba(255,255,255,0.1)', border:'none', borderRadius:8, height:34, padding:'0 14px', color:'#fff', fontWeight:600, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>← Retour</button>
+          <span style={{ fontWeight:700, fontSize:15, flex:1 }}>📅 Réservations</span>
+          {attente.length > 0 && <span style={{ background:'#dc2626', color:'#fff', borderRadius:99, padding:'2px 8px', fontSize:12, fontWeight:700 }}>{attente.length}</span>}
+        </header>
+      )}
 
-      <main style={{ maxWidth:800, margin:'0 auto', padding: isMobile ? '16px 12px 40px' : '24px 20px 40px' }}>
+      <main style={{ maxWidth:800, margin:'0 auto', padding: isMobile ? '16px 12px 100px' : '24px 20px 40px' }}>
 
         {/* ── Bloc partage lien ── */}
         <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #eee', padding:18, marginBottom:24, boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
@@ -830,6 +989,7 @@ function CRMApp({ user, onLogout }) {
   const [resaAttenteCount, setResaAttenteCount] = useState(0);
   const [showPlusSheet, setShowPlusSheet] = useState(false);
   const [mobileTab, setMobileTab] = useState('clients'); // 'clients' | 'reservations'
+  const [showAddResa, setShowAddResa] = useState(false);
   const deleteGuard = useRef(false);
   const isMobile = useIsMobile();
 
@@ -976,7 +1136,7 @@ function CRMApp({ user, onLogout }) {
   }
 
   if (loading) return <div style={{ textAlign:"center", paddingTop:80, fontSize:16, color:"#888" }}>Chargement des clients…</div>;
-  if (showResaPage) return <ReservationsPage onBack={()=>{ setShowResaPage(false); loadResaCount(); }} showToast={showToast} user={user} />;
+  if (showResaPage && !isMobile) return <ReservationsPage onBack={()=>{ setShowResaPage(false); loadResaCount(); }} showToast={showToast} user={user} />;
 
   return (
     <div style={{ fontFamily:"'Inter','Segoe UI',Arial,sans-serif", minHeight:"100vh", background:"#f8f8f8", color:"#111" }}>
@@ -1003,32 +1163,31 @@ function CRMApp({ user, onLogout }) {
               <img src={require('./logo.png')} alt="TED" style={{ height:26, filter:'brightness(0) invert(1)' }} onError={e=>e.target.style.display='none'} />
               <span style={{ color:'#fff', fontWeight:800, fontSize:15 }}>TED <span style={{color:G}}>CRM</span></span>
             </div>
-            <button onClick={()=>setShowResaPage(true)} style={{ position:'relative', background:'rgba(255,255,255,0.1)', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, cursor:'pointer', color:'#fff' }} title="Réservations">
-              📅
-              {resaAttenteCount > 0 && <span style={{ position:'absolute', top:-4, right:-4, background:'#dc2626', color:'#fff', borderRadius:99, fontSize:9, fontWeight:700, padding:'1px 4px', lineHeight:1.4 }}>{resaAttenteCount}</span>}
-            </button>
             <button onClick={()=>{ if(window.confirm('Voulez-vous vraiment vous déconnecter ?')) onLogout(); }} style={{ background:'rgba(255,255,255,0.1)', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, cursor:'pointer', color:'#fff' }}>⎋</button>
           </div>
-          {/* Onglets */}
-          <div style={{ display:'flex', gap:6, padding:'8px 12px 6px', background:'#fff', overflowX:'auto', scrollbarWidth:'none' }}>
-            {[
-              { id:'tous', label:'Tous', count:clients.length },
-              { id:'particuliers', label:'👤 Particuliers', count:clients.filter(c=>c.genre!=='Entreprise').length },
-              { id:'entreprises', label:'🏢 Entreprises', count:clients.filter(c=>c.genre==='Entreprise').length }
-            ].map(tab => (
-              <button key={tab.id} onClick={()=>{setActiveTab(tab.id);setPage(1)}} style={{ background:activeTab===tab.id?'#111':'#f0f0f0', color:activeTab===tab.id?'#fff':'#666', border:'none', borderRadius:99, padding:'6px 14px', fontSize:12, fontWeight:activeTab===tab.id?700:500, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>
-                {tab.label} <span style={{ background:activeTab===tab.id?G:'#ddd', color:activeTab===tab.id?'#111':'#999', borderRadius:99, padding:'1px 6px', fontSize:10, fontWeight:700, marginLeft:2 }}>{tab.count}</span>
-              </button>
-            ))}
-          </div>
-          {/* Recherche */}
-          <div style={{ padding:'0 12px 8px', background:'#fff', borderBottom:'1px solid #eee' }}>
-            <div style={{ position:'relative' }}>
-              <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#bbb', fontSize:14 }}>🔍</span>
-              <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1)}} placeholder="Rechercher..." style={{ width:'100%', height:38, border:'1.5px solid #eee', borderRadius:10, padding:'0 36px 0 36px', fontSize:16, outline:'none', boxSizing:'border-box', background:'#f8f8f8' }} />
-              {search && <button onClick={()=>{setSearch('');setPage(1)}} style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', fontSize:16, cursor:'pointer', color:'#aaa' }}>✕</button>}
-            </div>
-          </div>
+          {/* Onglets + Recherche — uniquement sur l'onglet Clients */}
+          {mobileTab === 'clients' && (
+            <>
+              <div style={{ display:'flex', gap:6, padding:'8px 12px 6px', background:'#fff', overflowX:'auto', scrollbarWidth:'none' }}>
+                {[
+                  { id:'tous', label:'Tous', count:clients.length },
+                  { id:'particuliers', label:'👤 Particuliers', count:clients.filter(c=>c.genre!=='Entreprise').length },
+                  { id:'entreprises', label:'🏢 Entreprises', count:clients.filter(c=>c.genre==='Entreprise').length }
+                ].map(tab => (
+                  <button key={tab.id} onClick={()=>{setActiveTab(tab.id);setPage(1)}} style={{ background:activeTab===tab.id?'#111':'#f0f0f0', color:activeTab===tab.id?'#fff':'#666', border:'none', borderRadius:99, padding:'6px 14px', fontSize:12, fontWeight:activeTab===tab.id?700:500, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>
+                    {tab.label} <span style={{ background:activeTab===tab.id?G:'#ddd', color:activeTab===tab.id?'#111':'#999', borderRadius:99, padding:'1px 6px', fontSize:10, fontWeight:700, marginLeft:2 }}>{tab.count}</span>
+                  </button>
+                ))}
+              </div>
+              <div style={{ padding:'0 12px 8px', background:'#fff', borderBottom:'1px solid #eee' }}>
+                <div style={{ position:'relative' }}>
+                  <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#bbb', fontSize:14 }}>🔍</span>
+                  <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1)}} placeholder="Rechercher..." style={{ width:'100%', height:38, border:'1.5px solid #eee', borderRadius:10, padding:'0 36px 0 36px', fontSize:16, outline:'none', boxSizing:'border-box', background:'#f8f8f8' }} />
+                  {search && <button onClick={()=>{setSearch('');setPage(1)}} style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', fontSize:16, cursor:'pointer', color:'#aaa' }}>✕</button>}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -1057,8 +1216,20 @@ function CRMApp({ user, onLogout }) {
       )}
       {isMobile && <input ref={restoreRef} type="file" accept=".json" style={{display:"none"}} onChange={handleRestoreFile} />}
 
+      {/* ═══ MOBILE — RÉSERVATIONS INLINE ═══ */}
+      {isMobile && mobileTab === 'reservations' && (
+        <div style={{ paddingTop:56 }}>
+          <ReservationsPage
+            inline
+            showToast={showToast}
+            user={user}
+            onResaCountChange={setResaAttenteCount}
+          />
+        </div>
+      )}
+
       {/* ═══ MOBILE CARDS ═══ */}
-      {isMobile && (
+      {isMobile && mobileTab === 'clients' && (
         <div style={{ paddingTop:146, paddingBottom:90, paddingLeft:12, paddingRight:12 }}>
           {pageClients.length === 0 && (
             <div style={{ textAlign:'center', padding:'4rem 2rem' }}>
@@ -1247,7 +1418,7 @@ function CRMApp({ user, onLogout }) {
         <>
           <div style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:500, background:'#fff', borderTop:'1.5px solid #eee', display:'flex', alignItems:'center', paddingBottom:'env(safe-area-inset-bottom)', boxShadow:'0 -2px 16px rgba(0,0,0,0.08)' }}>
             {/* Gauche — Réservations */}
-            <button onClick={()=>{ setMobileTab('reservations'); setShowResaPage(true); }} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:3, padding:'10px 0', background:'none', border:'none', cursor:'pointer', position:'relative' }}>
+            <button onClick={()=>setMobileTab('reservations')} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:3, padding:'10px 0', background:'none', border:'none', cursor:'pointer', position:'relative' }}>
               <span style={{ fontSize:20 }}>📅</span>
               <span style={{ fontSize:10, fontWeight:600, color: mobileTab==='reservations' ? '#111' : '#bbb' }}>Réservations</span>
               {resaAttenteCount > 0 && <span style={{ position:'absolute', top:6, right:'calc(50% - 14px)', background:'#dc2626', color:'#fff', borderRadius:99, fontSize:9, fontWeight:700, padding:'1px 4px', lineHeight:1.4 }}>{resaAttenteCount}</span>}
@@ -1257,7 +1428,7 @@ function CRMApp({ user, onLogout }) {
               <button onClick={()=>setShowPlusSheet(true)} style={{ width:54, height:54, borderRadius:'50%', background:G, border:'none', cursor:'pointer', fontSize:28, fontWeight:700, color:'#111', boxShadow:'0 4px 16px rgba(232,197,71,0.5)', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:10 }}>+</button>
             </div>
             {/* Droite — Clients */}
-            <button onClick={()=>{ setMobileTab('clients'); setShowResaPage(false); }} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:3, padding:'10px 0', background:'none', border:'none', cursor:'pointer' }}>
+            <button onClick={()=>setMobileTab('clients')} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:3, padding:'10px 0', background:'none', border:'none', cursor:'pointer' }}>
               <span style={{ fontSize:20 }}>👥</span>
               <span style={{ fontSize:10, fontWeight:600, color: mobileTab==='clients' ? '#111' : '#bbb' }}>Clients</span>
             </button>
@@ -1276,11 +1447,11 @@ function CRMApp({ user, onLogout }) {
                     <div style={{ fontSize:12, color:'#888', marginTop:2 }}>Créer une nouvelle fiche client</div>
                   </div>
                 </button>
-                <button onClick={()=>{ setShowPlusSheet(false); setShowResaPage(true); }} style={{ width:'100%', display:'flex', alignItems:'center', gap:14, background:'#f8f8f8', border:'1.5px solid #eee', borderRadius:12, padding:'16px 18px', cursor:'pointer' }}>
+                <button onClick={()=>{ setShowPlusSheet(false); setShowAddResa(true); }} style={{ width:'100%', display:'flex', alignItems:'center', gap:14, background:'#f8f8f8', border:'1.5px solid #eee', borderRadius:12, padding:'16px 18px', cursor:'pointer' }}>
                   <span style={{ fontSize:24 }}>📅</span>
                   <div style={{ textAlign:'left' }}>
                     <div style={{ fontWeight:700, fontSize:15 }}>Ajouter une réservation</div>
-                    <div style={{ fontSize:12, color:'#888', marginTop:2 }}>Voir les demandes et l'agenda</div>
+                    <div style={{ fontSize:12, color:'#888', marginTop:2 }}>Créer une réservation manuellement</div>
                   </div>
                 </button>
               </div>
@@ -1308,6 +1479,7 @@ function CRMApp({ user, onLogout }) {
 
 
       {/* Modals */}
+      {showAddResa && <AddResaModal clients={clients} onClose={()=>setShowAddResa(false)} onSaved={()=>{ loadResaCount(); }} showToast={showToast} user={user} />}
       {modalAdd && <ClientForm existingClients={clients} onSave={addClient} onCancel={()=>setModalAdd(false)} />}
       {modalEdit && <ClientForm initial={modalEdit} existingClients={clients} onSave={editClient} onCancel={()=>setModalEdit(null)} />}
       {modalDelete && <ConfirmModal title="Supprimer ce client ?" msg={`Êtes-vous sûr de vouloir supprimer définitivement ${modalDelete.prenom} ${modalDelete.nom} ? Cette action est irréversible.`} onOk={()=>deleteClient(modalDelete.id)} onCancel={()=>setModalDelete(null)} okLabel="Supprimer définitivement" danger />}
