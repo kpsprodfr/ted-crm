@@ -1783,6 +1783,8 @@ function CRMApp({ user, onLogout }) {
 
         {/* ─── Vue SMS ─── */}
         {commMode === 'sms' && (() => {
+          const isNumeroMobile = (tel) => /^(\+336|\+337|06|07)/.test((tel||'').replace(/\s/g,''));
+
           const clientsSms = clients.filter(c => {
             if (!c.tel) return false;
             if (smsFilter === 'hommes') return c.genre === 'Homme';
@@ -1837,7 +1839,17 @@ function CRMApp({ user, onLogout }) {
               setSmsSelected(nouveaux);
             }
 
-            const idsToSend = doublons.length > 0 ? nouveaux : smsSelected;
+            const baseIds = doublons.length > 0 ? nouveaux : smsSelected;
+            const mobiles = baseIds.filter(id => { const c = clients.find(x => x.id === id); return c?.tel && isNumeroMobile(c.tel); });
+            const fixes = baseIds.filter(id => { const c = clients.find(x => x.id === id); return c?.tel && !isNumeroMobile(c.tel); });
+
+            if (mobiles.length === 0) {
+              showToast('⚠️ Aucun numéro mobile valide parmi les destinataires', 'error');
+              setShowConfirmSms(false);
+              return;
+            }
+
+            const idsToSend = mobiles;
             let success = 0;
             for (const id of idsToSend) {
               const client = clients.find(c => c.id === id);
@@ -1863,7 +1875,7 @@ function CRMApp({ user, onLogout }) {
               }),
               envoye_par: user.email
             }]);
-            showToast(`📱 ${success} SMS envoyé(s) ✓`);
+            showToast(`📱 ${success} SMS envoyé(s)${fixes.length > 0 ? ` · ${fixes.length} fixe(s) ignoré(s)` : ''} ✓`);
             setSmsMessage('');
             setSmsSelected([]);
             setShowConfirmSms(false);
@@ -1900,12 +1912,16 @@ function CRMApp({ user, onLogout }) {
                     {clientsSms.map(c => {
                       const checked = smsSelected.includes(c.id);
                       const initial = ((c.prenom||'')[0]||(c.nom||'')[0]||'?').toUpperCase();
+                      const mobile = isNumeroMobile(c.tel);
                       return (
-                        <label key={c.id} style={{display:'flex', alignItems:'center', gap:10, padding:'10px 16px', cursor:'pointer', background:checked?'#fefce8':'#fff', borderBottom:'1px solid #f8f8f8', transition:'background 0.1s'}}>
+                        <label key={c.id} style={{display:'flex', alignItems:'center', gap:10, padding:'10px 16px', cursor:'pointer', background:checked?'#fefce8': mobile?'#fff':'#fafafa', borderBottom:'1px solid #f8f8f8', transition:'background 0.1s', opacity:mobile?1:0.6}}>
                           <input type="checkbox" checked={checked} onChange={()=>toggleOneSms(c.id)} style={{width:15, height:15, accentColor:'#E8C547', flexShrink:0}} />
                           <div style={{width:34, height:34, borderRadius:'50%', background:smsAvatarColor(c), color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:13, flexShrink:0}}>{initial}</div>
                           <div style={{flex:1, minWidth:0}}>
-                            <div style={{fontWeight:600, fontSize:13, color:'#111', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>{c.prenom} {c.nom}</div>
+                            <div style={{display:'flex', alignItems:'center', gap:6, flexWrap:'wrap'}}>
+                              <span style={{fontWeight:600, fontSize:13, color:'#111', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>{c.prenom} {c.nom}</span>
+                              {!mobile && <span style={{fontSize:10, color:'#dc2626', fontWeight:600, background:'#fef2f2', borderRadius:4, padding:'1px 5px', flexShrink:0}}>📞 Fixe</span>}
+                            </div>
                             <div style={{fontSize:11, color:'#6b7280'}}>{c.tel}</div>
                           </div>
                         </label>
@@ -2071,15 +2087,29 @@ function CRMApp({ user, onLogout }) {
               {showConfirmSms && (
                 <div style={{position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:4000, display:'flex', alignItems:'center', justifyContent:'center'}}>
                   <div style={{background:'#fff', borderRadius:16, padding:'28px 32px', maxWidth:400, width:'90%', boxShadow:'0 20px 60px rgba(0,0,0,0.2)'}}>
+                    {(() => {
+                      const mobilesModal = smsSelected.filter(id => { const c = clients.find(x=>x.id===id); return c?.tel && isNumeroMobile(c.tel); });
+                      const fixesModal = smsSelected.filter(id => { const c = clients.find(x=>x.id===id); return c?.tel && !isNumeroMobile(c.tel); });
+                      return (<>
                     <div style={{textAlign:'center', marginBottom:20}}>
                       <div style={{fontSize:48, marginBottom:12}}>📱</div>
                       <h3 style={{margin:'0 0 8px', fontSize:18, fontWeight:800, color:'#111'}}>Confirmer l'envoi SMS</h3>
                       <p style={{margin:0, color:'#666', fontSize:14}}>
-                        Vous allez envoyer <strong>{smsSelected.length} SMS</strong> (~{(smsSelected.length * 0.045).toFixed(2)}€)
+                        Vous allez envoyer <strong>{mobilesModal.length} SMS</strong> (~{(mobilesModal.length * 0.045).toFixed(2)}€)
                       </p>
                     </div>
+                    {fixesModal.length > 0 && (
+                      <div style={{background:'#fff8e1', border:'1.5px solid #E8C547', borderRadius:8, padding:'12px 14px', marginBottom:16}}>
+                        <p style={{margin:0, fontSize:13, fontWeight:700, color:'#b45309'}}>⚠️ {fixesModal.length} numéro(s) fixe(s) exclu(s) :</p>
+                        {fixesModal.map(id => {
+                          const c = clients.find(x=>x.id===id);
+                          return <p key={id} style={{margin:'4px 0 0', fontSize:12, color:'#92400e'}}>• {c?.prenom} {c?.nom} — {c?.tel}</p>;
+                        })}
+                        <p style={{margin:'6px 0 0', fontSize:12, color:'#92400e', fontStyle:'italic'}}>Ces numéros ne recevront pas le SMS.</p>
+                      </div>
+                    )}
                     <div style={{background:'#f9f9f9', borderRadius:8, padding:12, marginBottom:16, maxHeight:120, overflowY:'auto'}}>
-                      {smsSelected.map(id => {
+                      {mobilesModal.map(id => {
                         const c = clients.find(x => x.id === id);
                         return c ? (
                           <div key={id} style={{display:'flex', alignItems:'center', gap:8, padding:'4px 0', fontSize:13}}>
@@ -2089,6 +2119,8 @@ function CRMApp({ user, onLogout }) {
                         ) : null;
                       })}
                     </div>
+                      </>);
+                    })()}
                     <div style={{display:'flex', gap:10}}>
                       <button onClick={()=>setShowConfirmSms(false)} style={{flex:1, height:44, border:'1.5px solid #ddd', borderRadius:10, background:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', color:'#666'}}>
                         Annuler
