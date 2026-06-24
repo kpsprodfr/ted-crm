@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { supabase } from "./supabase";
+import { messaging, getToken, onMessage } from './firebase';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const GENRES = ["Homme", "Femme", "Entreprise", "Non renseigné"];
@@ -1289,6 +1290,26 @@ function CRMApp({ user, onLogout }) {
   const smsTextareaRef = useRef(null);
   const [notifResa, setNotifResa] = useState(null);
 
+  async function initFCM() {
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') return;
+      const token = await getToken(messaging, { vapidKey: process.env.REACT_APP_FCM_VAPID_KEY });
+      if (token) {
+        console.log('FCM Token:', token);
+        await supabase.from('fcm_tokens').upsert([{ token, user_id: user?.id, created_at: new Date().toISOString() }]);
+      }
+      onMessage(messaging, payload => {
+        const { title, body } = payload.notification || {};
+        const isMob = window.innerWidth < 768;
+        if (!isMob) {
+          setNotifResa({ nom: body || '', message: title || '', id: Date.now() });
+          setTimeout(() => setNotifResa(null), 6000);
+        }
+      });
+    } catch(e) { console.error('FCM erreur:', e); }
+  }
+
   async function demanderPermissionNotif() {
     if (!('Notification' in window)) {
       showToast('Notifications non supportées sur cet appareil', 'error');
@@ -1363,6 +1384,8 @@ function CRMApp({ user, onLogout }) {
     if (activeView === 'communications') { loadEmailsHistorique(); loadSmsHistorique(); }
   }, [activeView]);
 
+  useEffect(() => { if (user) initFCM(); }, [user]);
+
   useEffect(() => {
     const channel = supabase
       .channel('nouvelles-reservations')
@@ -1391,6 +1414,7 @@ function CRMApp({ user, onLogout }) {
         setTimeout(() => setNotifResa(null), 6000);
         await envoyerNotifLocale(`📅 Nouvelle réservation !`, `${nom} · ${date} · ${payload.new.heure || ''} · ${payload.new.nb_personnes} pers.`);
         setResaAttenteCount(prev => { const n = prev + 1; updateBadge(n); return n; });
+        fetch('/send-push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: '📅 Nouvelle réservation !', body: `${nom} · ${date} · ${payload.new.heure || ''} · ${payload.new.nb_personnes} pers.` }) }).catch(() => {});
       })
       .subscribe((status) => {
         console.log('Statut Realtime:', status);
