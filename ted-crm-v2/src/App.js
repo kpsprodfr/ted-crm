@@ -1212,7 +1212,10 @@ function CRMApp({ user, onLogout }) {
   const [commMode, setCommMode] = useState('email');
   const [smsMessage, setSmsMessage] = useState('');
   const [smsSelected, setSmsSelected] = useState([]);
+  const [smsFilter, setSmsFilter] = useState('tous');
+  const [smsSearch, setSmsSearch] = useState('');
   const [showConfirmSms, setShowConfirmSms] = useState(false);
+  const [showSmsEmojiPicker, setShowSmsEmojiPicker] = useState(false);
   const [smsHistorique, setSmsHistorique] = useState([]);
   const [smsExpanded, setSmsExpanded] = useState({});
   const smsTextareaRef = useRef(null);
@@ -1700,16 +1703,27 @@ function CRMApp({ user, onLogout }) {
 
         {/* ─── Vue SMS ─── */}
         {commMode === 'sms' && (() => {
-          const smsClients = clients.filter(c => c.tel);
-          const allSmsSelected = smsClients.length > 0 && smsClients.every(c => smsSelected.includes(c.id));
+          const clientsSms = clients.filter(c => {
+            if (!c.tel) return false;
+            if (smsFilter === 'hommes') return c.genre === 'Homme';
+            if (smsFilter === 'femmes') return c.genre === 'Femme';
+            if (smsFilter === 'entreprises') return c.genre === 'Entreprise';
+            return true;
+          }).filter(c => {
+            if (!smsSearch) return true;
+            const s = smsSearch.toLowerCase();
+            return (c.nom||'').toLowerCase().includes(s) ||
+                   (c.prenom||'').toLowerCase().includes(s) ||
+                   (c.tel||'').includes(s);
+          });
+          const allSmsSelected = clientsSms.length > 0 && clientsSms.every(c => smsSelected.includes(c.id));
           const toggleAllSms = () => {
-            if (allSmsSelected) setSmsSelected([]);
-            else setSmsSelected(smsClients.map(c => c.id));
+            if (allSmsSelected) setSmsSelected(s => s.filter(id => !clientsSms.find(c => c.id === id)));
+            else setSmsSelected(s => [...new Set([...s, ...clientsSms.map(c => c.id)])]);
           };
           const toggleOneSms = (id) => setSmsSelected(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
           const canSendSms = smsSelected.length > 0 && smsMessage.trim();
-          const avatarColors = ['#4f46e5','#0891b2','#059669','#d97706','#dc2626','#7c3aed','#db2777'];
-          const avatarColor = (c) => avatarColors[(c.prenom||c.nom||'?').charCodeAt(0) % avatarColors.length];
+          const smsAvatarColor = (c) => c.genre === 'Homme' ? '#0891b2' : c.genre === 'Femme' ? '#db2777' : c.genre === 'Entreprise' ? '#059669' : '#9ca3af';
 
           const doSendSms = async () => {
             let success = 0;
@@ -1754,19 +1768,30 @@ function CRMApp({ user, onLogout }) {
                     <span style={{fontSize:13, fontWeight:700, color:'#555', textTransform:'uppercase', letterSpacing:0.5}}>À :</span>
                     <span style={{fontSize:12, color:'#aaa'}}>{smsSelected.length} sélectionné(s)</span>
                   </div>
+                  {/* Filtres */}
+                  <div style={{padding:'10px 12px', borderBottom:'1px solid #f0f0f0', display:'flex', gap:4, flexWrap:'wrap'}}>
+                    {[['tous','Tous'],['hommes','Hommes'],['femmes','Femmes'],['entreprises','Entreprises']].map(([val,label]) => (
+                      <button key={val} onClick={()=>setSmsFilter(val)} style={{background:smsFilter===val?'#111':'#f0f0f0', color:smsFilter===val?'#fff':'#666', border:'none', borderRadius:99, padding:'4px 10px', fontSize:11, fontWeight:600, cursor:'pointer'}}>{label}</button>
+                    ))}
+                  </div>
+                  {/* Recherche */}
+                  <div style={{padding:'8px 12px', borderBottom:'1px solid #f0f0f0'}}>
+                    <input value={smsSearch} onChange={e=>setSmsSearch(e.target.value)} placeholder="Rechercher nom, prénom, tél…" style={{width:'100%', border:'1px solid #e8e8e8', borderRadius:7, padding:'7px 10px', fontSize:13, outline:'none', boxSizing:'border-box', background:'#fafafa'}} />
+                  </div>
+                  {/* Tout sélectionner */}
                   <div style={{padding:'8px 16px', borderBottom:'1px solid #f0f0f0'}}>
                     <button onClick={toggleAllSms} style={{background:'none', border:'none', fontSize:12, color:'#4f46e5', fontWeight:600, cursor:'pointer', padding:0}}>
-                      {allSmsSelected ? '☑ Désélectionner tout' : '☐ Tout sélectionner'} <span style={{color:'#bbb', fontWeight:400}}>({smsClients.length})</span>
+                      {allSmsSelected ? '☑ Désélectionner tout' : '☐ Tout sélectionner'} <span style={{color:'#bbb', fontWeight:400}}>({clientsSms.length})</span>
                     </button>
                   </div>
-                  <div style={{maxHeight:'calc(100vh - 280px)', overflowY:'auto'}}>
-                    {smsClients.map(c => {
+                  <div style={{maxHeight:'calc(100vh - 340px)', overflowY:'auto'}}>
+                    {clientsSms.map(c => {
                       const checked = smsSelected.includes(c.id);
                       const initial = ((c.prenom||'')[0]||(c.nom||'')[0]||'?').toUpperCase();
                       return (
                         <label key={c.id} style={{display:'flex', alignItems:'center', gap:10, padding:'10px 16px', cursor:'pointer', background:checked?'#fefce8':'#fff', borderBottom:'1px solid #f8f8f8', transition:'background 0.1s'}}>
                           <input type="checkbox" checked={checked} onChange={()=>toggleOneSms(c.id)} style={{width:15, height:15, accentColor:'#E8C547', flexShrink:0}} />
-                          <div style={{width:34, height:34, borderRadius:'50%', background:avatarColor(c), color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:13, flexShrink:0}}>{initial}</div>
+                          <div style={{width:34, height:34, borderRadius:'50%', background:smsAvatarColor(c), color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:13, flexShrink:0}}>{initial}</div>
                           <div style={{flex:1, minWidth:0}}>
                             <div style={{fontWeight:600, fontSize:13, color:'#111', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>{c.prenom} {c.nom}</div>
                             <div style={{fontSize:11, color:'#6b7280'}}>{c.tel}</div>
@@ -1774,8 +1799,8 @@ function CRMApp({ user, onLogout }) {
                         </label>
                       );
                     })}
-                    {smsClients.length === 0 && (
-                      <div style={{textAlign:'center', padding:'2rem', color:'#bbb', fontSize:13}}>Aucun client avec un numéro de téléphone</div>
+                    {clientsSms.length === 0 && (
+                      <div style={{textAlign:'center', padding:'2rem', color:'#bbb', fontSize:13}}>Aucun résultat</div>
                     )}
                   </div>
                 </div>
@@ -1800,7 +1825,8 @@ function CRMApp({ user, onLogout }) {
                       ~{smsSelected.length} SMS · ~{(smsSelected.length * 0.045).toFixed(2)}€
                     </span>
                   </div>
-                  <div style={{marginBottom:16}}>
+                  <div style={{display:'flex', gap:6, flexWrap:'wrap', alignItems:'center', marginBottom:16}}>
+                    <span style={{fontSize:11, color:'#bbb', alignSelf:'center'}}>Insérer :</span>
                     {['{prenom}','{nom}'].map(v => (
                       <button key={v} onClick={()=>{
                         const ta = smsTextareaRef.current;
@@ -1809,10 +1835,49 @@ function CRMApp({ user, onLogout }) {
                         const newVal = (smsMessage.substring(0, start) + v + smsMessage.substring(start)).slice(0, 160);
                         setSmsMessage(newVal);
                         setTimeout(()=>{ ta.focus(); ta.setSelectionRange(start + v.length, start + v.length); }, 0);
-                      }} style={{background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:6, padding:'4px 10px', fontSize:12, fontWeight:600, color:'#111', cursor:'pointer', marginRight:6}}>
+                      }} style={{background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:6, padding:'4px 10px', fontSize:12, fontWeight:600, color:'#111', cursor:'pointer'}}>
                         {v}
                       </button>
                     ))}
+                    {/* Bouton emoji */}
+                    <div style={{position:'relative', marginLeft:4}}>
+                      <button onClick={()=>setShowSmsEmojiPicker(p=>!p)} style={{background:'#f5f5f5', border:'1px solid #eee', borderRadius:6, padding:'4px 10px', fontSize:16, cursor:'pointer', lineHeight:1}}>😊</button>
+                      {showSmsEmojiPicker && (
+                        <>
+                          <div onClick={()=>setShowSmsEmojiPicker(false)} style={{position:'fixed', inset:0, zIndex:100}} />
+                          <div style={{position:'absolute', bottom:'calc(100% + 8px)', left:0, background:'#fff', border:'1.5px solid #eee', borderRadius:12, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', padding:12, zIndex:101, width:280}}>
+                            {[
+                              {label:'Fêtes', emojis:['🎉','🎊','🥳','🎂','🎁','🎈','🥂','🍾']},
+                              {label:'Restaurant', emojis:['🍽️','🥩','🍷','🍸','🥗','🍕','👨‍🍳','⭐']},
+                              {label:'Communication', emojis:['👋','❤️','🔥','✨','💫','👀','📣','💌']},
+                              {label:'Temps', emojis:['📅','🕐','⏰','🌙','🌟','☀️','🌴']},
+                              {label:'Divers', emojis:['✅','⚠️','💡','🎯','🚀','💎','🏆','👑']},
+                            ].map(group => (
+                              <div key={group.label} style={{marginBottom:8}}>
+                                <div style={{fontSize:10, color:'#bbb', fontWeight:700, textTransform:'uppercase', letterSpacing:0.5, marginBottom:4}}>{group.label}</div>
+                                <div style={{display:'grid', gridTemplateColumns:'repeat(8,1fr)', gap:2}}>
+                                  {group.emojis.map(emoji => (
+                                    <button key={emoji} onClick={()=>{
+                                      const ta = smsTextareaRef.current;
+                                      if (!ta) return;
+                                      const start = ta.selectionStart;
+                                      const end = ta.selectionEnd;
+                                      const newVal = (smsMessage.substring(0, start) + emoji + smsMessage.substring(end)).slice(0, 160);
+                                      setSmsMessage(newVal);
+                                      setShowSmsEmojiPicker(false);
+                                      setTimeout(()=>{ ta.focus(); ta.setSelectionRange(start + emoji.length, start + emoji.length); }, 0);
+                                    }} style={{background:'none', border:'none', borderRadius:4, fontSize:18, cursor:'pointer', padding:'2px', lineHeight:1, textAlign:'center'}}
+                                      onMouseEnter={e=>e.currentTarget.style.background='#fffbea'}
+                                      onMouseLeave={e=>e.currentTarget.style.background='none'}
+                                    >{emoji}</button>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                   <button
                     disabled={!canSendSms}
