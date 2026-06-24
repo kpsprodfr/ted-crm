@@ -922,15 +922,30 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
     if (error) { showToast('Erreur', 'error'); return; }
     showToast('Réservation confirmée ✓');
     loadResa();
-    if (r.clients?.mail) {
-      const res = await sendBrevoEmail(
-        r.clients.mail,
-        `${r.clients.prenom || ''} ${r.clients.nom || ''}`.trim(),
-        'Confirmation de votre réservation au TED',
-        `<h2>Bonjour ${r.clients.prenom},</h2><p>Votre réservation au TED est <strong>confirmée</strong> pour le <strong>${r.date}</strong> à <strong>${r.heure}</strong> pour <strong>${r.nb_personnes} personne(s)</strong>.</p><p>Nous avons hâte de vous accueillir !</p><br><p><strong>Le TED</strong><br>28 Av. des Frères Montgolfier, 69680 Chassieu<br>04 78 90 67 80</p>`
-      );
-      showToast(res.success ? '📧 Email envoyé' : '⚠️ Email non envoyé');
-    }
+    if (!r.clients?.mail) { showToast('⚠️ Email non envoyé (pas d\'adresse)'); return; }
+    const resEmail = await sendBrevoEmail(
+      r.clients.mail,
+      `${r.clients.prenom || ''} ${r.clients.nom || ''}`.trim(),
+      '✅ Votre réservation au TED est confirmée !',
+      `<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px">
+        <div style="background:#111;padding:20px;text-align:center;border-bottom:3px solid #E8C547">
+          <h1 style="color:#E8C547;margin:0;font-size:24px">LE TED</h1>
+        </div>
+        <div style="padding:24px;background:#fff">
+          <h2 style="color:#111">Bonjour ${r.clients.prenom},</h2>
+          <p>Votre réservation est <strong style="color:#16a34a">confirmée</strong> 🎉</p>
+          <div style="background:#f9f9f9;border-left:4px solid #E8C547;padding:16px;margin:20px 0;border-radius:4px">
+            <p style="margin:4px 0">📅 <strong>Date :</strong> ${r.date}</p>
+            <p style="margin:4px 0">🕐 <strong>Heure :</strong> ${r.heure}</p>
+            <p style="margin:4px 0">👥 <strong>Personnes :</strong> ${r.nb_personnes}</p>
+            <p style="margin:4px 0">🍽 <strong>Service :</strong> ${r.service}</p>
+          </div>
+          <p>Nous avons hâte de vous accueillir !</p>
+          <p style="color:#888;font-size:13px">28 Av. des Frères Montgolfier, 69680 Chassieu — 04 78 90 67 80</p>
+        </div>
+      </div>`
+    );
+    showToast(resEmail?.success ? '📧 Email envoyé' : '⚠️ Email non envoyé');
   }
 
   async function refuser(r, raison) {
@@ -941,15 +956,26 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
     if (error) { showToast('Erreur', 'error'); return; }
     showToast('Réservation refusée');
     loadResa();
-    if (r.clients?.mail) {
-      const res = await sendBrevoEmail(
-        r.clients.mail,
-        `${r.clients.prenom || ''} ${r.clients.nom || ''}`.trim(),
-        'Votre demande de réservation au TED',
-        `<h2>Bonjour ${r.clients.prenom},</h2><p>Nous avons bien reçu votre demande de réservation pour le <strong>${r.date}</strong>.</p><p>Malheureusement, nous ne pouvons pas la confirmer.<br>Motif : <strong>${raison}</strong>.</p><p>N'hésitez pas à nous contacter pour trouver une autre disponibilité.</p><br><p><strong>Le TED</strong><br>04 78 90 67 80</p>`
-      );
-      showToast(res.success ? '📧 Email envoyé' : '⚠️ Email non envoyé');
-    }
+    if (!r.clients?.mail) { showToast('⚠️ Email non envoyé (pas d\'adresse)'); return; }
+    const resEmail = await sendBrevoEmail(
+      r.clients.mail,
+      `${r.clients.prenom || ''} ${r.clients.nom || ''}`.trim(),
+      'Votre demande de réservation au TED',
+      `<div style="font-family:Arial,sans-serif;max-width:500px;margin:0 auto;padding:20px">
+        <div style="background:#111;padding:20px;text-align:center;border-bottom:3px solid #E8C547">
+          <h1 style="color:#E8C547;margin:0;font-size:24px">LE TED</h1>
+        </div>
+        <div style="padding:24px;background:#fff">
+          <h2 style="color:#111">Bonjour ${r.clients.prenom},</h2>
+          <p>Nous avons bien reçu votre demande de réservation pour le <strong>${r.date}</strong>.</p>
+          <p>Malheureusement, nous ne pouvons pas la confirmer.<br>
+          <strong>Motif :</strong> ${raison}</p>
+          <p>N'hésitez pas à nous recontacter pour une autre date.</p>
+          <p style="color:#888;font-size:13px">28 Av. des Frères Montgolfier, 69680 Chassieu — 04 78 90 67 80</p>
+        </div>
+      </div>`
+    );
+    showToast(resEmail?.success ? '📧 Email envoyé' : '⚠️ Email non envoyé');
   }
 
   function copyLink() {
