@@ -2381,7 +2381,7 @@ function CRMApp({ user, onLogout }) {
 
             {/* Centre — + */}
             <div style={{ flex:'0 0 auto' }}>
-              <button onClick={()=>setShowPlusSheet(true)} style={{ width:60, height:60, borderRadius:'50%', background:G, border:'4px solid #fff', boxShadow:'0 4px 16px rgba(232,197,71,0.5)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', fontSize:32, color:'#111', marginBottom:8, flexShrink:0 }}>+</button>
+              <button onClick={()=>setShowPlusSheet(true)} style={{ width:68, height:68, borderRadius:'50%', background:G, border:'4px solid #fff', boxShadow:'0 -4px 20px rgba(232,197,71,0.5)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', fontSize:36, color:'#111', marginTop:-24, flexShrink:0 }}>+</button>
             </div>
 
             {/* Droite — Réservations */}
