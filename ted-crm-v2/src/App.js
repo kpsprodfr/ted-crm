@@ -497,7 +497,7 @@ function useIsMobile() {
 }
 
 // ─── Réservations Page ────────────────────────────────────────────────────────
-const FORM_URL = "https://leted-crm.netlify.app/reserver.html";
+const FORM_URL = "https://ted-crm.pages.dev/reserver.html";
 
 const OCCASIONS = ["Anniversaire","Saint-Valentin","Repas d'affaires","Mariage","Fiançailles","Autre"];
 const HEURES_MIDI = ["12:00","12:15","12:30","12:45","13:00","13:15","13:30","13:45","14:00"];
