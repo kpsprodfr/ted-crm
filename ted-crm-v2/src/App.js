@@ -1458,7 +1458,7 @@ function CRMApp({ user, onLogout }) {
 
               <div>
                 <div style={{fontSize:12, fontWeight:600, color:'#555', marginBottom:6}}>Variables disponibles :</div>
-                <div style={{display:'flex', gap:6', flexWrap:'wrap'}}>
+                <div style={{display:'flex', gap:6, flexWrap:'wrap'}}>
                   {['{prenom}','{nom}','{tel}'].map(v => (
                     <button key={v} onClick={()=>insertVar(v)} style={{background:'#f0f0f0', border:'1px solid #ddd', borderRadius:6, padding:'3px 10px', fontSize:12, fontWeight:600, cursor:'pointer', color:'#444'}}>{v}</button>
                   ))}
