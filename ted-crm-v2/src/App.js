@@ -568,6 +568,9 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
   const [occasion, setOccasion] = useState('');
   const [saving, setSaving] = useState(false);
   const [heureError, setHeureError] = useState(false);
+  const [showCalPicker, setShowCalPicker] = useState(false);
+  const [calPickerDate, setCalPickerDate] = useState(new Date());
+  const isMobile = useIsMobile();
 
   const heures = service === 'midi' ? HEURES_MIDI : HEURES_SOIR;
 
@@ -776,12 +779,62 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
           <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="optionnel" type="email" style={inp(false)} />
         </div>
 
-        {/* 5. Date — select 30 jours */}
-        <div>
+        {/* 5. Date — calendrier visuel */}
+        <div style={{ position:'relative' }}>
           <label style={lbl}>Date *</label>
-          <select value={dateIso} onChange={e=>setDateIso(e.target.value)} style={{ width:'100%', height:44, border:'1.5px solid #ddd', borderRadius:7, padding:'0 12px', fontSize:15, background:'#fff', outline:'none', cursor:'pointer' }}>
-            {DATE_OPTS.map(o => <option key={o.iso} value={o.iso}>{o.label}</option>)}
-          </select>
+          <button onClick={()=>setShowCalPicker(!showCalPicker)} style={{ width:'100%', height:44, border:'1.5px solid #ddd', borderRadius:8, background:'#fff', fontSize:14, cursor:'pointer', textAlign:'left', padding:'0 14px', color: dateIso ? '#111' : '#aaa' }}>
+            📅 {dateIso ? new Date(dateIso+'T12:00:00').toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'}) : 'Choisir une date'}
+          </button>
+          {showCalPicker && (() => {
+            const JOURS_P = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+            const MOIS_P = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+            const anneeP = calPickerDate.getFullYear();
+            const moisP = calPickerDate.getMonth();
+            const premierP = new Date(anneeP, moisP, 1);
+            const dernierP = new Date(anneeP, moisP + 1, 0);
+            const debutP = (premierP.getDay() + 6) % 7;
+            const casesP = [];
+            for (let i = 0; i < debutP; i++) casesP.push(null);
+            for (let d = 1; d <= dernierP.getDate(); d++) casesP.push(d);
+            while (casesP.length % 7 !== 0) casesP.push(null);
+            const todayP = new Date();
+            const calStyle = isMobile
+              ? { position:'fixed', top:0, left:0, right:0, bottom:0, background:'#fff', zIndex:1000, padding:24, overflowY:'auto', display:'flex', flexDirection:'column' }
+              : { position:'absolute', top:'100%', left:0, right:0, background:'#fff', borderRadius:12, border:'1.5px solid #eee', boxShadow:'0 8px 32px rgba(0,0,0,0.12)', padding:16, zIndex:500, marginTop:4 };
+            return (
+              <div style={calStyle}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+                  <button onClick={e=>{e.stopPropagation();setCalPickerDate(new Date(anneeP, moisP-1, 1));}} style={{ background:'#f0f0f0', border:'none', borderRadius:7, width:32, height:32, fontSize:15, cursor:'pointer', fontWeight:700 }}>‹</button>
+                  <span style={{ fontWeight:800, fontSize:14 }}>{MOIS_P[moisP]} {anneeP}</span>
+                  <button onClick={e=>{e.stopPropagation();setCalPickerDate(new Date(anneeP, moisP+1, 1));}} style={{ background:'#f0f0f0', border:'none', borderRadius:7, width:32, height:32, fontSize:15, cursor:'pointer', fontWeight:700 }}>›</button>
+                </div>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2, marginBottom:4 }}>
+                  {JOURS_P.map(j => <div key={j} style={{ textAlign:'center', fontSize:10, fontWeight:700, color:'#aaa', padding:'3px 0' }}>{j}</div>)}
+                </div>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2, flex:1 }}>
+                  {casesP.map((d, i) => {
+                    if (!d) return <div key={i} />;
+                    const iso = `${anneeP}-${String(moisP+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                    const isToday = todayP.getFullYear()===anneeP && todayP.getMonth()===moisP && todayP.getDate()===d;
+                    const isSelected = dateIso === iso;
+                    return (
+                      <div key={i} onClick={()=>{ setDateIso(iso); setShowCalPicker(false); }}
+                        style={{ textAlign:'center', padding: isMobile ? '12px 4px' : '7px 4px', borderRadius:7, cursor:'pointer',
+                          background: isSelected ? '#111' : isToday ? '#fffbeb' : '#fff',
+                          border: isToday && !isSelected ? '1.5px solid #E8C547' : '1.5px solid transparent',
+                          color: isSelected ? '#fff' : '#111', fontWeight: isToday ? 800 : 400, fontSize:13,
+                          transition:'background 0.1s' }}>
+                        {d}
+                      </div>
+                    );
+                  })}
+                </div>
+                {isMobile && (
+                  <button onClick={()=>setShowCalPicker(false)} style={{ marginTop:20, width:'100%', height:48, background:'#111', color:'#fff', border:'none', borderRadius:10, fontSize:15, fontWeight:700, cursor:'pointer' }}>Fermer</button>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* 6. Service */}
