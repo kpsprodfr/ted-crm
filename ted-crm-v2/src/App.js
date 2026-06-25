@@ -2181,9 +2181,9 @@ function CRMApp({ user, onLogout }) {
           const allSmsSelected = clientsSms.length > 0 && clientsSms.every(c => smsSelected.includes(c.id));
           const toggleAllSms = () => {
             if (allSmsSelected) setSmsSelected(s => s.filter(id => !clientsSms.find(c => c.id === id)));
-            else setSmsSelected(s => [...new Set([...s, ...clientsSms.map(c => c.id)])]);
+            else setSmsSelected(s => [...new Set([...s, ...clientsSms.filter(c => isNumeroMobile(c.tel)).map(c => c.id)])]);
           };
-          const toggleOneSms = (id) => setSmsSelected(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
+          const toggleOneSms = (id) => { const c = clientsSms.find(x => x.id === id); if (c && !isNumeroMobile(c.tel)) return; setSmsSelected(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]); };
           const canSendSms = smsSelected.length > 0 && smsMessage.trim();
           const smsAvatarColor = (c) => c.genre === 'Homme' ? '#0891b2' : c.genre === 'Femme' ? '#db2777' : c.genre === 'Entreprise' ? '#059669' : '#9ca3af';
           const containsEmoji = (str) => /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{FE00}-\u{FE0F}]|[\u{1F000}-\u{1F02F}]/u.test(str);
@@ -2294,7 +2294,7 @@ function CRMApp({ user, onLogout }) {
                       const initial = ((c.prenom||'')[0]||(c.nom||'')[0]||'?').toUpperCase();
                       const mobile = isNumeroMobile(c.tel);
                       return (
-                        <label key={c.id} style={{display:'flex', alignItems:'center', gap:10, padding:'10px 16px', cursor:'pointer', background:checked?'#fefce8': mobile?'#fff':'#fafafa', borderBottom:'1px solid #f8f8f8', transition:'background 0.1s', opacity:mobile?1:0.6}}>
+                        <label key={c.id} style={{display:'flex', alignItems:'center', gap:10, padding:'10px 16px', cursor:mobile?'pointer':'not-allowed', background:checked?'#fefce8': mobile?'#fff':'#fafafa', borderBottom:'1px solid #f8f8f8', transition:'background 0.1s', opacity:mobile?1:0.4, pointerEvents:mobile?'auto':'none'}}>
                           <input type="checkbox" checked={checked} onChange={()=>toggleOneSms(c.id)} style={{width:15, height:15, accentColor:'#E8C547', flexShrink:0}} />
                           <div style={{width:34, height:34, borderRadius:'50%', background:smsAvatarColor(c), color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:13, flexShrink:0}}>{initial}</div>
                           <div style={{flex:1, minWidth:0}}>
