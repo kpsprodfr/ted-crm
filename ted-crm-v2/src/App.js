@@ -997,10 +997,12 @@ function DetailResaModal({ resa, onClose, onSaved }) {
 
   async function saveStatut() {
     setSaving(true);
-    const { error } = await supabase.from('reservations').update({ statut, updated_at: new Date().toISOString() }).eq('id', resa.id);
+    const updates = { statut, updated_at: new Date().toISOString() };
+    if (statut === 'annulee') updates.raison_annulation = '';
+    const { error } = await supabase.from('reservations').update(updates).eq('id', resa.id);
     setSaving(false);
     if (error) { alert('Erreur lors de la mise à jour'); return; }
-    onSaved();
+    onSaved(statut);
     onClose();
   }
 
@@ -1561,7 +1563,7 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
       )}
       {acceptResa && <AccepterModal resa={acceptResa} onConfirm={()=>accepter(acceptResa)} onCancel={()=>setAcceptResa(null)} />}
       {refusResa && <RefusModal onConfirm={raison=>refuser(refusResa, raison)} onCancel={()=>setRefusResa(null)} />}
-      {detailResa && <DetailResaModal resa={detailResa} onClose={()=>setDetailResa(null)} onSaved={()=>{ loadResa(); setDetailResa(null); }} />}
+      {detailResa && <DetailResaModal resa={detailResa} onClose={()=>setDetailResa(null)} onSaved={(newStatut)=>{ setResaList(prev => prev.map(r => r.id === detailResa.id ? {...r, statut: newStatut} : r)); setDetailResa(null); loadResa(); }} />}
       {showAddResa && <AddResaModal onClose={()=>setShowAddResa(false)} onSaved={()=>{ loadResa(); setShowAddResa(false); }} showToast={showToast} user={user} />}
     </div>
   );
