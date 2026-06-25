@@ -1000,13 +1000,11 @@ function DetailResaModal({ resa, onClose, onSaved, resaList = [], showToast }) {
   const [showStatutPanel, setShowStatutPanel] = useState(false);
 
   const STATUTS_COLORS = [
-    { value:'attente',  label:'En attente',  desc:'Demande en attente',              color:'#f59e0b', bg:'#fffbea' },
-    { value:'confirmee',label:'Confirmée',   desc:'La réservation est confirmée',    color:'#16a34a', bg:'#f0fdf4' },
-    { value:'venue',    label:'Venue',       desc:'Le client est venu',              color:'#22c55e', bg:'#f0fdf4' },
-    { value:'absente',  label:'Absente',     desc:"Le client ne s'est pas présenté", color:'#dc2626', bg:'#fff5f5' },
-    { value:'annulee',  label:'Annulée',     desc:'Réservation annulée',             color:'#dc2626', bg:'#fff5f5' },
-    { value:'refusee',  label:'Refusée',     desc:'Réservation refusée',             color:'#9ca3af', bg:'#f3f4f6' },
-    { value:'rappeler', label:'À rappeler',  desc:'À recontacter',                   color:'#f97316', bg:'#fff7ed' },
+    { value:'attente',  label:'En attente',  desc:'Demande en attente',              color:'#f59e0b' },
+    { value:'confirmee',label:'Confirmée',   desc:'La réservation est confirmée',    color:'#16a34a' },
+    { value:'venue',    label:'Venue',       desc:'Le client est venu',              color:'#22c55e' },
+    { value:'absente',  label:'Absente',     desc:"Le client ne s'est pas présenté", color:'#dc2626' },
+    { value:'annulee',  label:'Annulée',     desc:'Réservation annulée',             color:'#dc2626' },
   ];
 
   const aujourd = new Date().toISOString().split('T')[0];
@@ -1119,7 +1117,7 @@ function DetailResaModal({ resa, onClose, onSaved, resaList = [], showToast }) {
             {(() => {
               const s = STATUTS_COLORS.find(x => x.value === statut) || STATUTS_COLORS[0];
               return (
-                <button onClick={()=>setShowStatutPanel(!showStatutPanel)} style={{ display:'flex', alignItems:'center', gap:8, background:s.bg, border:`1.5px solid ${s.color}`, borderRadius:20, padding:'6px 14px', cursor:'pointer', fontWeight:700, fontSize:13, color:s.color }}>
+                <button onClick={()=>setShowStatutPanel(!showStatutPanel)} style={{ display:'flex', alignItems:'center', gap:8, background:`${s.color}18`, border:`1.5px solid ${s.color}`, borderRadius:20, padding:'6px 14px', cursor:'pointer', fontWeight:700, fontSize:13, color:s.color }}>
                   <span style={{ width:8, height:8, borderRadius:'50%', background:s.color, display:'inline-block' }}/>
                   {s.label}
                   <span style={{ fontSize:10, opacity:0.7 }}>▼</span>
@@ -1132,7 +1130,7 @@ function DetailResaModal({ resa, onClose, onSaved, resaList = [], showToast }) {
               <div onClick={()=>setShowStatutPanel(false)} style={{ position:'fixed', inset:0, zIndex:100 }} />
               <div style={{ position:'absolute', right:0, top:'calc(100% + 6px)', background:'#fff', borderRadius:14, boxShadow:'0 8px 32px rgba(0,0,0,0.15)', border:'1px solid #f0f0f0', zIndex:101, minWidth:260, overflow:'hidden' }}>
                 {STATUTS_COLORS.map(s => (
-                  <button key={s.value} onClick={()=>{ handleStatutChange(s.value); setShowStatutPanel(false); }} style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'12px 16px', background: statut === s.value ? s.bg : '#fff', border:'none', borderBottom:'1px solid #f5f5f5', cursor:'pointer', textAlign:'left' }}>
+                  <button key={s.value} onClick={()=>{ handleStatutChange(s.value); setShowStatutPanel(false); }} style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'12px 16px', background: statut === s.value ? `${s.color}12` : '#fff', border:'none', borderBottom:'1px solid #f5f5f5', cursor:'pointer', textAlign:'left' }}>
                     <span style={{ width:10, height:10, borderRadius:'50%', background:s.color, flexShrink:0 }}/>
                     <div style={{ flex:1 }}>
                       <div style={{ fontWeight:700, fontSize:14, color: statut === s.value ? s.color : '#111' }}>{s.label}</div>
