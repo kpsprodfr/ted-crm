@@ -1414,28 +1414,26 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
                   <div style={{ textAlign:'center', padding:'24px 0', color:'#bbb', fontSize:14 }}>Aucune réservation confirmée pour ce service</div>
                 ) : (
                   <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
-                    <thead>
-                      <tr style={{ background:'#f8f8f8', borderBottom:'2px solid #E8C547' }}>
-                        {['Nom Prénom','Heure','Couverts','N° Table','Commentaire','Validé'].map(h => (
-                          <th key={h} style={{ padding:'10px 12px', textAlign:'left', fontWeight:700, fontSize:12, color:'#555', whiteSpace:'nowrap' }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
                     <tbody>
-                      {resasDuJour.map((r, idx) => {
-                        const c = r.clients || {};
-                        const nomAff = c.entreprise ? c.entreprise : `${c.prenom||''} ${c.nom||''}`.trim();
-                        return (
-                          <tr key={r.id} style={{ borderBottom:'1px solid #f0f0f0', background: idx % 2 === 0 ? '#fff' : '#fafafa' }}>
-                            <td style={{ padding:'10px 12px', fontWeight:600 }}>{nomAff || '—'}</td>
-                            <td style={{ padding:'10px 12px' }}>{r.heure || '—'}</td>
-                            <td style={{ padding:'10px 12px', textAlign:'center' }}>{r.nb_personnes}</td>
-                            <td style={{ padding:'10px 12px' }}></td>
-                            <td style={{ padding:'10px 12px', color:'#888', fontStyle: r.commentaire_client ? 'italic' : 'normal', maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.commentaire_client || ''}</td>
-                            <td style={{ padding:'10px 12px' }}></td>
-                          </tr>
-                        );
-                      })}
+                      {resasDuJour.map((r) => (
+                        <tr key={r.id} style={{ borderBottom:'1px solid #f0f0f0' }}>
+                          <td style={{ padding:'12px 16px' }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:16, flexWrap:'nowrap' }}>
+                              <span style={{ fontWeight:700, minWidth:140, color: r.clients?.genre==='Entreprise' ? '#E8C547' : '#111' }}>
+                                {r.clients?.genre==='Entreprise' ? r.clients?.entreprise : `${r.clients?.prenom||''} ${r.clients?.nom||''}`}
+                              </span>
+                              <span style={{ color:'#666', minWidth:50 }}>{r.heure || '—'}</span>
+                              <span style={{ color:'#666', minWidth:60 }}>{r.nb_personnes} pers.</span>
+                              {r.clients?.tel && (
+                                <a href={`tel:${r.clients.tel}`} style={{ display:'inline-flex', alignItems:'center', gap:4, background:'#f0f0f0', borderRadius:6, padding:'3px 10px', fontSize:12, color:'#111', textDecoration:'none', fontWeight:600, whiteSpace:'nowrap' }}>📞 {r.clients.tel}</a>
+                              )}
+                              {r.commentaire_client && (
+                                <span style={{ fontSize:12, color:'#999', fontStyle:'italic' }}>{r.commentaire_client}</span>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 )}
