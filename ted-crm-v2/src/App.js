@@ -1317,12 +1317,12 @@ function CRMApp({ user, onLogout }) {
       console.log('Endpoint:', subscription.endpoint);
       const token = subscription.endpoint.split('/').pop();
       console.log('Token extrait:', token);
-      const { error } = await supabase.from('fcm_tokens').upsert(
-        [{ token, user_id: user?.id, created_at: new Date().toISOString() }],
-        { onConflict: 'token', ignoreDuplicates: true }
-      );
-      if (error) console.error('Erreur upsert Supabase:', error);
-      else console.log('Token sauvé en base ✓');
+      const { data: existing } = await supabase.from('fcm_tokens').select('id').eq('token', token).single();
+      if (!existing) {
+        const { error } = await supabase.from('fcm_tokens').insert([{ token, user_id: user?.id, created_at: new Date().toISOString() }]);
+        if (error) console.error('Erreur insert Supabase:', error);
+      }
+      console.log('Token FCM sauvé ou déjà existant');
     } catch(e) { console.error('FCM erreur:', e); }
   }
 
