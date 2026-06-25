@@ -1368,20 +1368,15 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
           function telechargerTableau(date, service, reservations) {
             const dateFormatee = new Date(date + 'T12:00:00').toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
             const serviceLabel2 = service === 'midi' ? '☀️ Déjeuner' : '🌙 Dîner';
-            const nbConfirmees = reservations.filter(r => r.statut !== 'annulee').length;
-            const nbAnnulees = reservations.filter(r => r.statut === 'annulee').length;
-            const lignes = reservations.map((r) => {
-              const estAnnulee = r.statut === 'annulee';
+            const resasConfirmees = reservations.filter(r => r.statut !== 'annulee');
+            const lignes = resasConfirmees.map((r) => {
               const nom = r.clients?.genre === 'Entreprise'
                 ? (r.clients?.entreprise || '')
                 : `${r.clients?.prenom || ''} ${r.clients?.nom || ''}`;
-              return `<tr style="${estAnnulee ? 'background:#fff0f0;' : ''}">
-    <td style="${estAnnulee ? 'color:#dc2626;' : ''}">
-      ${nom}
-      ${estAnnulee ? ' <span style="background:#dc2626;color:white;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;">ANNULÉE</span>' : ''}
-    </td>
-    <td style="text-align:center;${estAnnulee ? 'color:#dc2626;' : ''}">${r.heure || ''}</td>
-    <td style="text-align:center;${estAnnulee ? 'color:#dc2626;' : ''}">${r.nb_personnes || ''}</td>
+              return `<tr>
+    <td>${nom}</td>
+    <td style="text-align:center">${r.heure || ''}</td>
+    <td style="text-align:center">${r.nb_personnes || ''}</td>
     <td></td>
     <td>${r.commentaire_client || ''}</td>
     <td></td>
@@ -1393,8 +1388,8 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
 </head><body>
 <div class="header"><div class="logo">LE TED</div><div class="subtitle">Restaurant &amp; Club — Chassieu</div><div class="date-title">${dateFormatee}</div><div class="service-badge">${serviceLabel2}</div></div>
 <table><thead><tr><th>Nom Prénom</th><th style="text-align:center">Heure</th><th style="text-align:center">Couverts</th><th style="text-align:center">N° Table</th><th>Commentaire</th><th style="text-align:center">Validé</th></tr></thead>
-<tbody>${lignes}${Array(Math.max(0, 8 - reservations.length)).fill('<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>').join('')}</tbody></table>
-<div class="footer">Imprimé le ${new Date().toLocaleDateString('fr-FR')} · ${nbConfirmees} réservation(s) confirmée(s)${nbAnnulees > 0 ? ` · ${nbAnnulees} annulée(s)` : ''} — Le TED · 28 Av. des Frères Montgolfier, 69680 Chassieu · 04 78 90 67 80</div>
+<tbody>${lignes}${Array(Math.max(0, 8 - resasConfirmees.length)).fill('<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>').join('')}</tbody></table>
+<div class="footer">Imprimé le ${new Date().toLocaleDateString('fr-FR')} · ${resasConfirmees.length} réservation(s) — Le TED · 28 Av. des Frères Montgolfier, 69680 Chassieu · 04 78 90 67 80</div>
 </body></html>`;
             const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
             const url = URL.createObjectURL(blob);
