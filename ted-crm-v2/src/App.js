@@ -977,6 +977,7 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
   const [calJourSelectionne, setCalJourSelectionne] = useState(null);
   const [calServiceSelectionne, setCalServiceSelectionne] = useState(null);
   const [calOuvert, setCalOuvert] = useState(true);
+  const [showFormDropdown, setShowFormDropdown] = useState(false);
   const isMobile = useIsMobile();
   const qr = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(FORM_URL)}`;
 
@@ -1136,34 +1137,25 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
         <header style={{ background:'#111', color:'#fff', padding:'0 20px', height:56, display:'flex', alignItems:'center', gap:14, borderBottom:`3px solid ${G}`, flexShrink:0 }}>
           <button onClick={onBack} style={{ background:'rgba(255,255,255,0.1)', border:'none', borderRadius:8, height:34, padding:'0 14px', color:'#fff', fontWeight:600, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>← Retour</button>
           <span style={{ fontWeight:700, fontSize:15, flex:1 }}>📅 Réservations</span>
-          {attente.length > 0 && <span style={{ background:'#dc2626', color:'#fff', borderRadius:99, padding:'2px 8px', fontSize:12, fontWeight:700 }}>{attente.length}</span>}
+          <div style={{ position:'relative' }}>
+            <button onClick={() => setShowFormDropdown(v => !v)} style={{ background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:8, height:34, padding:'0 14px', color:'#fff', fontWeight:600, fontSize:13, cursor:'pointer' }}>🔗 Formulaire</button>
+            {showFormDropdown && (
+              <div style={{ position:'absolute', top:40, right:0, background:'#fff', borderRadius:10, border:'1.5px solid #eee', boxShadow:'0 8px 24px rgba(0,0,0,0.12)', padding:8, zIndex:200, minWidth:180 }}>
+                <button onClick={()=>{ navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver'); showToast('Lien copié !'); setShowFormDropdown(false); }}
+                  style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}>📋 Copier</button>
+                <button onClick={()=>{ window.open('https://ted-crm.pages.dev/reserver','_blank'); setShowFormDropdown(false); }}
+                  style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}>🔗 Ouvrir</button>
+                <button onClick={()=>{ if(navigator.share){ navigator.share({title:'Réservation Le TED', text:'Réservez votre table au TED', url:'https://ted-crm.pages.dev/reserver'}); } else { navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver'); showToast('Lien copié !'); } setShowFormDropdown(false); }}
+                  style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}>📤 Partager</button>
+              </div>
+            )}
+          </div>
           <button onClick={()=>setShowAddResa(true)} style={{ background:G, border:'none', borderRadius:8, height:34, padding:'0 16px', color:'#111', fontWeight:700, fontSize:13, cursor:'pointer' }}>+ Ajouter une réservation</button>
         </header>
       )}
 
       <main style={{ maxWidth:800, margin:'0 auto', padding: isMobile ? '16px 12px 100px' : '24px 20px 40px' }}>
 
-        {/* ── Bloc partage lien ── */}
-        <div style={{background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:'16px', marginBottom:16, boxShadow:'0 2px 8px rgba(0,0,0,0.05)'}}>
-          <p style={{fontSize:11, fontWeight:700, color:'#999', letterSpacing:1, textTransform:'uppercase', margin:'0 0 10px'}}>🔗 Formulaire de réservation en ligne</p>
-          <div style={{background:'#f8f8f8', borderRadius:8, padding:'10px 12px', marginBottom:12, fontSize:12, color:'#555', wordBreak:'break-all', fontFamily:'monospace'}}>
-            https://ted-crm.pages.dev/reserver
-          </div>
-          <div style={{display:'flex', gap:8}}>
-            <button onClick={()=>{ navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver'); showToast('Lien copié !'); }}
-              style={{flex:1, height:42, background:'#111', color:'#fff', border:'none', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer'}}>
-              📋 Copier
-            </button>
-            <button onClick={()=>window.open('https://ted-crm.pages.dev/reserver','_blank')}
-              style={{flex:1, height:42, background:'#E8C547', color:'#111', border:'none', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer'}}>
-              🔗 Ouvrir
-            </button>
-            <button onClick={()=>{ if(navigator.share){ navigator.share({title:'Réservation Le TED', text:'Réservez votre table au TED', url:'https://ted-crm.pages.dev/reserver'}); } else { navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver'); showToast('Lien copié !'); }}}
-              style={{flex:1, height:42, background:'#f0f0f0', color:'#111', border:'none', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer'}}>
-              📤 Partager
-            </button>
-          </div>
-        </div>
 
         {/* ── Calendrier mensuel ── */}
         {!isMobile && (() => {
@@ -1432,6 +1424,13 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
         )}
       </main>
 
+      {!isMobile && (
+        <div style={{ position:'fixed', bottom:24, left:'50%', transform:'translateX(-50%)', zIndex:1000 }}>
+          <button onClick={()=>setShowAddResa(true)} style={{ background:'#E8C547', color:'#111', border:'none', borderRadius:50, padding:'16px 40px', fontSize:16, fontWeight:800, cursor:'pointer', boxShadow:'0 8px 32px rgba(232,197,71,0.5)', whiteSpace:'nowrap' }}>
+            + Ajouter une réservation
+          </button>
+        </div>
+      )}
       {acceptResa && <AccepterModal resa={acceptResa} onConfirm={()=>accepter(acceptResa)} onCancel={()=>setAcceptResa(null)} />}
       {refusResa && <RefusModal onConfirm={raison=>refuser(refusResa, raison)} onCancel={()=>setRefusResa(null)} />}
       {detailResa && <DetailResaModal resa={detailResa} onClose={()=>setDetailResa(null)} onSaved={()=>{ loadResa(); setDetailResa(null); }} />}
