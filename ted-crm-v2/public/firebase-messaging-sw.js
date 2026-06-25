@@ -2,7 +2,7 @@ importScripts('https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js'
 importScripts('https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js');
 
 firebase.initializeApp({
-  apiKey: "AIzaSyDzIqs5W49wqIve3654rVB9oyDbUGOJf0Y",
+  apiKey: "AIzaSyDzIqs5W49wqIve3654rVB9oyDbUG0Jf0Y",
   authDomain: "le-ted.firebaseapp.com",
   projectId: "le-ted",
   storageBucket: "le-ted.firebasestorage.app",
@@ -13,6 +13,7 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage(payload => {
+  console.log('Background message reçu:', payload);
   const { title, body } = payload.notification;
   self.registration.showNotification(title, {
     body,
@@ -20,6 +21,7 @@ messaging.onBackgroundMessage(payload => {
     badge: '/favicon.png',
     tag: 'nouvelle-resa',
     renotify: true,
-    vibrate: [200, 100, 200]
+    vibrate: [200, 100, 200],
+    data: { url: 'https://ted-crm.pages.dev' }
   });
 });
