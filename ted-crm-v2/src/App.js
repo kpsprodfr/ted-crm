@@ -131,7 +131,7 @@ function Modal({ title, onClose, children, footer, maxW=520, zIndex=3000 }) {
       >
         <div style={{ background:"#111", color:"#fff", padding:"14px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
           <span style={{ fontWeight:700, fontSize:15 }}>{title}</span>
-          <button type="button" onClick={onClose} style={{ background:"none", border:"none", color:"#fff", fontSize:20, cursor:"pointer" }}>✕</button>
+          <button type="button" onPointerDown={onClose} style={{ background:"none", border:"none", color:"#fff", fontSize:20, cursor:"pointer", touchAction:'manipulation' }}>✕</button>
         </div>
         <div style={{ padding:"18px", overflowY:"auto", flex:1, WebkitOverflowScrolling:"touch" }}>{children}</div>
         {footer && <div style={{ padding: isMobile ? "12px 16px" : "0 18px 18px", paddingBottom: isMobile ? 'calc(16px + env(safe-area-inset-bottom))' : 18, display:"flex", gap:8, justifyContent:"flex-end", flexShrink:0, background:'#fff' }}>{footer}</div>}
@@ -798,16 +798,16 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
             const casesP = Array(premierJourSemaine - 1).fill(null).concat(Array.from({length: nbJours}, (_, i) => i + 1));
             const todayIso = new Date().toISOString().split('T')[0];
             if (isMobile) return (
-              <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'#fff', zIndex:2000, display:'flex', flexDirection:'column' }}>
+              <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'#fff', zIndex:4000, display:'flex', flexDirection:'column' }}>
                 {/* Header : navigation mois */}
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px', background:'#fff', borderBottom:'1px solid #eee', flexShrink:0 }}>
-                  <button onClick={()=>setCalPickerDate(new Date(anneeP, moisP-1))}
-                    style={{ width:44, height:44, borderRadius:12, border:'1.5px solid #ddd', background:'#fff', fontSize:22, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>‹</button>
+                  <button onPointerDown={()=>setCalPickerDate(new Date(anneeP, moisP-1))}
+                    style={{ width:44, height:44, borderRadius:12, border:'1.5px solid #ddd', background:'#fff', fontSize:22, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', touchAction:'manipulation' }}>‹</button>
                   <span style={{ fontSize:17, fontWeight:800, color:'#111', textTransform:'capitalize' }}>
                     {calPickerDate.toLocaleDateString('fr-FR', {month:'long', year:'numeric'})}
                   </span>
-                  <button onClick={()=>setCalPickerDate(new Date(anneeP, moisP+1))}
-                    style={{ width:44, height:44, borderRadius:12, border:'1.5px solid #ddd', background:'#fff', fontSize:22, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>›</button>
+                  <button onPointerDown={()=>setCalPickerDate(new Date(anneeP, moisP+1))}
+                    style={{ width:44, height:44, borderRadius:12, border:'1.5px solid #ddd', background:'#fff', fontSize:22, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', touchAction:'manipulation' }}>›</button>
                 </div>
                 {/* Jours de la semaine */}
                 <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', textAlign:'center', padding:'8px 8px 0', flexShrink:0 }}>
@@ -823,12 +823,12 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
                     const estAujourdhui = iso === todayIso;
                     const estSelectionne = dateTempCalPicker === iso;
                     return (
-                      <button key={i} onClick={()=>setDateTempCalPicker(iso)} style={{
+                      <button key={i} onPointerDown={()=>setDateTempCalPicker(iso)} style={{
                         height:44, borderRadius:10,
                         border: estAujourdhui && !estSelectionne ? '2px solid #E8C547' : '1.5px solid transparent',
                         background: estSelectionne ? '#E8C547' : 'transparent',
                         fontWeight: estAujourdhui || estSelectionne ? 800 : 400,
-                        fontSize:15, cursor:'pointer', color:'#111'
+                        fontSize:15, cursor:'pointer', color:'#111', touchAction:'manipulation'
                       }}>{jour}</button>
                     );
                   })}
@@ -836,14 +836,14 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
                 {/* Footer : Valider / Fermer */}
                 <div style={{ padding:'0 16px 24px', flexShrink:0, borderTop:'1px solid #eee' }}>
                   {dateTempCalPicker ? (
-                    <button onClick={()=>{ setDateIso(dateTempCalPicker); setShowCalPicker(false); setDateTempCalPicker(null); }} style={{
+                    <button onPointerDown={()=>{ setDateIso(dateTempCalPicker); setShowCalPicker(false); setDateTempCalPicker(null); }} style={{
                       width:'100%', height:50, background:'#E8C547', border:'none', borderRadius:12,
-                      fontSize:16, fontWeight:800, cursor:'pointer', color:'#111', marginTop:12
+                      fontSize:16, fontWeight:800, cursor:'pointer', color:'#111', marginTop:12, touchAction:'manipulation'
                     }}>✓ Valider — {new Date(dateTempCalPicker+'T12:00:00').toLocaleDateString('fr-FR', {weekday:'short', day:'numeric', month:'long'})}</button>
                   ) : (
-                    <button onClick={()=>setShowCalPicker(false)} style={{
+                    <button onPointerDown={()=>setShowCalPicker(false)} style={{
                       width:'100%', height:50, background:'#f0f0f0', border:'none', borderRadius:12,
-                      fontSize:15, fontWeight:700, cursor:'pointer', color:'#666', marginTop:12
+                      fontSize:15, fontWeight:700, cursor:'pointer', color:'#666', marginTop:12, touchAction:'manipulation'
                     }}>Fermer</button>
                   )}
                 </div>
