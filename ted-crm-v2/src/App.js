@@ -1297,20 +1297,29 @@ function CRMApp({ user, onLogout }) {
   }
 
   async function initFCM() {
+    console.log('initFCM démarré');
+    console.log('Permission:', Notification.permission);
+    console.log('SW disponible:', 'serviceWorker' in navigator);
+    console.log('PushManager disponible:', 'PushManager' in window);
     try {
-      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-      if (Notification.permission !== 'granted') return;
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) { console.warn('SW ou PushManager absent'); return; }
+      if (Notification.permission !== 'granted') { console.warn('Permission non granted:', Notification.permission); return; }
       const reg = await navigator.serviceWorker.ready;
+      console.log('SW ready, scope:', reg.scope);
       const vapidKey = process.env.REACT_APP_FCM_VAPID_KEY;
+      console.log('VAPID key présente:', !!vapidKey, vapidKey?.substring(0, 10) + '...');
       if (!vapidKey) return;
       const subscription = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(vapidKey)
       });
-      // L'endpoint FCM contient le token : https://fcm.googleapis.com/fcm/send/TOKEN
+      console.log('Subscription:', JSON.stringify(subscription.toJSON()));
+      console.log('Endpoint:', subscription.endpoint);
       const token = subscription.endpoint.split('/').pop();
-      console.log('FCM Token:', token);
-      await supabase.from('fcm_tokens').upsert([{ token, user_id: user?.id, created_at: new Date().toISOString() }]);
+      console.log('Token extrait:', token);
+      const { error } = await supabase.from('fcm_tokens').upsert([{ token, user_id: user?.id, created_at: new Date().toISOString() }]);
+      if (error) console.error('Erreur upsert Supabase:', error);
+      else console.log('Token sauvé en base ✓');
     } catch(e) { console.error('FCM erreur:', e); }
   }
 

@@ -12,6 +12,7 @@ export async function onRequestPost(context) {
     }
   });
   const tokens = await res.json();
+  console.log('Tokens trouvés:', tokens?.length ?? 0, tokens);
   if (!tokens?.length) return Response.json({ success: true, sent: 0 });
 
   // 2. Génère un JWT pour OAuth2 Google
@@ -68,12 +69,14 @@ export async function onRequestPost(context) {
   }
 
   const accessToken = await getAccessToken(serviceAccount);
+  console.log('Access token obtenu:', !!accessToken);
   const projectId = serviceAccount.project_id;
 
   // 3. Envoie à chaque token via FCM v1
   let sent = 0;
   const errors = [];
   for (const { token } of tokens) {
+    console.log('Envoi à token:', token.substring(0, 20) + '...');
     const fcmRes = await fetch(
       `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
       {
@@ -102,11 +105,15 @@ export async function onRequestPost(context) {
         })
       }
     );
+    console.log('FCM response status:', fcmRes.status);
+    const responseBody = await fcmRes.text();
+    console.log('FCM response body:', responseBody);
     if (fcmRes.ok) {
       sent++;
     } else {
-      const err = await fcmRes.json();
-      errors.push({ token: token.slice(-8), error: err?.error?.message });
+      let err = {};
+      try { err = JSON.parse(responseBody); } catch(e) {}
+      errors.push({ token: token.slice(-8), error: err?.error?.message || responseBody });
     }
   }
 
