@@ -1359,7 +1359,7 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
         })()}
 
         {/* ── Tableau réservations du jour ── */}
-        {calJourSelectionne && calServiceSelectionne && (() => {
+        {calOuvert && calJourSelectionne && calServiceSelectionne && (() => {
           const resasDuJour = resaList
             .filter(r => (r.statut === 'confirmee' || r.statut === 'annulee') && r.date === calJourSelectionne && r.service === calServiceSelectionne)
             .sort((a,b) => (a.heure||'').localeCompare(b.heure||''));
