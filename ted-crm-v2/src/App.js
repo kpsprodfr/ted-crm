@@ -1412,6 +1412,32 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
                 </div>
                 {resasDuJour.length === 0 ? (
                   <div style={{ textAlign:'center', padding:'24px 0', color:'#bbb', fontSize:14 }}>Aucune réservation confirmée pour ce service</div>
+                ) : isMobile ? (
+                  <div style={{ padding:'0 16px 16px' }}>
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0 16px', marginBottom:8, padding:'8px 0', borderBottom:'2px solid #E8C547' }}>
+                      <span style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1 }}>Nom Prénom</span>
+                      <span style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1 }}>Heure</span>
+                    </div>
+                    {resasDuJour.map(r => (
+                      <div key={r.id} style={{ borderBottom:'1px solid #f0f0f0', padding:'10px 0' }}>
+                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'4px 16px', marginBottom:6 }}>
+                          <span style={{ fontWeight:700, fontSize:14, color: r.clients?.genre==='Entreprise' ? '#E8C547' : '#111' }}>
+                            {r.clients?.genre==='Entreprise' ? r.clients?.entreprise : `${r.clients?.prenom||''} ${r.clients?.nom||''}`}
+                          </span>
+                          <span style={{ fontSize:14, color:'#444' }}>{r.heure || '—'}</span>
+                        </div>
+                        <div style={{ display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
+                          <span style={{ fontSize:12, color:'#666' }}>👥 {r.nb_personnes} pers.</span>
+                          {r.clients?.tel && (
+                            <a href={`tel:${r.clients.tel}`} style={{ fontSize:12, color:'#111', textDecoration:'none', fontWeight:600, background:'#f0f0f0', borderRadius:6, padding:'3px 10px' }}>📞 {r.clients.tel}</a>
+                          )}
+                          {r.commentaire_client && (
+                            <span style={{ fontSize:12, color:'#999', fontStyle:'italic' }}>{r.commentaire_client}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
                   <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
                     <tbody>
