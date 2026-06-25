@@ -1034,6 +1034,14 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
   const isMobile = useIsMobile();
   const qr = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(FORM_URL)}`;
 
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (!e.target.closest('#formulaire-dropdown')) setShowFormDropdown(false);
+    }
+    if (showFormDropdown) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showFormDropdown]);
+
   useEffect(() => { loadResa(); }, []);
 
   async function loadResa() {
@@ -1205,7 +1213,7 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
         {/* ── Bouton Formulaire ── */}
         {!isMobile && (
           <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:12 }}>
-            <div style={{ position:'relative' }}>
+            <div id="formulaire-dropdown" style={{ position:'relative' }}>
               <button onClick={() => setShowFormDropdown(v => !v)} style={{ background:'transparent', border:'1.5px solid #ddd', borderRadius:8, padding:'8px 16px', fontSize:13, fontWeight:600, cursor:'pointer', color:'#666' }}>🔗 Formulaire</button>
               {showFormDropdown && (
                 <div style={{ position:'absolute', top:40, right:0, background:'#fff', borderRadius:10, border:'1.5px solid #eee', boxShadow:'0 8px 24px rgba(0,0,0,0.12)', padding:8, zIndex:200, minWidth:180 }}>
