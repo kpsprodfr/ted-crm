@@ -552,22 +552,24 @@ function buildDateOptions() {
   return opts;
 }
 
-function AddResaModal({ onClose, onSaved, showToast, user }) {
+function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
   const DATE_OPTS = useMemo(() => buildDateOptions(), []);
+  const isEdit = !!initialResa?.id;
+  const initClient = initialResa?.clients || {};
 
-  const [tel, setTel] = useState('');
-  const [clientFound, setClientFound] = useState(null); // objet client ou null
+  const [tel, setTel] = useState(initClient.tel || '');
+  const [clientFound, setClientFound] = useState(isEdit ? initClient : null);
   const [lookingUp, setLookingUp] = useState(false);
-  const [genre, setGenre] = useState('');
-  const [prenom, setPrenom] = useState('');
-  const [nom, setNom] = useState('');
-  const [entreprise, setEntreprise] = useState('');
-  const [email, setEmail] = useState('');
-  const [dateIso, setDateIso] = useState(DATE_OPTS[0].iso);
-  const [service, setService] = useState('soir');
-  const [heure, setHeure] = useState('');
-  const [nbPersonnes, setNbPersonnes] = useState(2);
-  const [occasion, setOccasion] = useState('');
+  const [genre, setGenre] = useState(initClient.genre || '');
+  const [prenom, setPrenom] = useState(initClient.prenom || '');
+  const [nom, setNom] = useState(initClient.nom || '');
+  const [entreprise, setEntreprise] = useState(initClient.entreprise || '');
+  const [email, setEmail] = useState(initClient.mail || '');
+  const [dateIso, setDateIso] = useState(initialResa?.date || DATE_OPTS[0].iso);
+  const [service, setService] = useState(initialResa?.service || 'soir');
+  const [heure, setHeure] = useState(initialResa?.heure || '');
+  const [nbPersonnes, setNbPersonnes] = useState(initialResa?.nb_personnes || 2);
+  const [occasion, setOccasion] = useState(initialResa?.occasion || '');
   const [saving, setSaving] = useState(false);
   const [heureError, setHeureError] = useState(false);
   const [showCalPicker, setShowCalPicker] = useState(false);
@@ -699,19 +701,31 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
       clientId = newClient.id;
     }
 
-    const { error } = await supabase.from('reservations').insert({
-      client_id: clientId,
-      date: dateIso,
-      service,
-      heure: heure || null,
-      nb_personnes: nbPersonnes,
-      occasion: occasion || null,
-      statut: 'attente',
-      source: 'manuel',
-    });
+    let error;
+    if (isEdit) {
+      ({ error } = await supabase.from('reservations').update({
+        date: dateIso,
+        service,
+        heure: heure || null,
+        nb_personnes: nbPersonnes,
+        occasion: occasion || null,
+        updated_at: new Date().toISOString(),
+      }).eq('id', initialResa.id));
+    } else {
+      ({ error } = await supabase.from('reservations').insert({
+        client_id: clientId,
+        date: dateIso,
+        service,
+        heure: heure || null,
+        nb_personnes: nbPersonnes,
+        occasion: occasion || null,
+        statut: 'attente',
+        source: 'manuel',
+      }));
+    }
     setSaving(false);
-    if (error) { showToast('Erreur lors de la création', 'error'); return; }
-    showToast('Réservation créée ✓');
+    if (error) { showToast(isEdit ? 'Erreur lors de la modification' : 'Erreur lors de la création', 'error'); return; }
+    showToast(isEdit ? 'Réservation modifiée ✓' : 'Réservation créée ✓');
     onSaved();
     onClose();
   }
@@ -731,17 +745,17 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
   const resaValide = !!(tel && genre && nom && prenom && dateIso && service && heure);
 
   return (
-    <Modal title="Ajouter une réservation" onClose={onClose} footer={[
+    <Modal title={isEdit ? "Modifier la réservation" : "Ajouter une réservation"} onClose={onClose} footer={[
       <button key="cancel" onClick={onClose} style={btnSecondary}>Annuler</button>,
-      <button key="save" onClick={handleSave} disabled={saving || !resaValide} style={{ ...btnPrimary, background: resaValide ? '#E8C547' : '#f0f0f0', color: resaValide ? '#111' : '#bbb', opacity: saving ? 0.5 : 1, cursor: resaValide ? 'pointer' : 'not-allowed' }}>{saving ? 'Enregistrement…' : 'Enregistrer'}</button>
+      <button key="save" onClick={handleSave} disabled={saving || !resaValide} style={{ ...btnPrimary, background: resaValide ? '#E8C547' : '#f0f0f0', color: resaValide ? '#111' : '#bbb', opacity: saving ? 0.5 : 1, cursor: resaValide ? 'pointer' : 'not-allowed' }}>{saving ? 'Enregistrement…' : (isEdit ? 'Modifier' : 'Enregistrer')}</button>
     ]}>
       <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
 
         {/* Bandeau info statut */}
-        <div style={{ background:'#fffbeb', border:'1.5px solid #fbbf24', borderRadius:10, padding:'10px 14px', fontSize:13, color:'#92400e', display:'flex', alignItems:'center', gap:8 }}>
+        {!isEdit && <div style={{ background:'#fffbeb', border:'1.5px solid #fbbf24', borderRadius:10, padding:'10px 14px', fontSize:13, color:'#92400e', display:'flex', alignItems:'center', gap:8 }}>
           <span style={{ fontSize:16 }}>⏳</span>
           <span>Cette réservation sera créée comme <strong>demande en attente</strong> — vous pourrez l'accepter depuis la page Réservations.</span>
-        </div>
+        </div>}
 
         {/* 1. Téléphone */}
         <div>
@@ -989,7 +1003,7 @@ const STATUTS_OPTIONS = [
   { val:'absente',   label:'Absente' },
 ];
 
-function DetailResaModal({ resa, onClose, onSaved, resaList = [], showToast }) {
+function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showToast }) {
   const c = resa.clients || {};
   const nom = c.entreprise ? c.entreprise : `${c.prenom || ''} ${c.nom || ''}`.trim();
   const [statut, setStatut] = useState(resa.statut);
@@ -1050,12 +1064,25 @@ function DetailResaModal({ resa, onClose, onSaved, resaList = [], showToast }) {
 
   return (
     <Modal title="Détail de la réservation" onClose={onClose} maxW={480} zIndex={3000}
-      footer={[
-        <button key="f" type="button" onClick={onClose} style={{...btnSecondary}}>Fermer</button>,
-        <button key="s" type="button" onClick={saveStatut} disabled={saving || statut === resa.statut} style={{ background: statut !== resa.statut ? '#111' : '#ddd', color: statut !== resa.statut ? '#fff' : '#999', border:'none', borderRadius:8, padding:'0 18px', height:38, fontWeight:700, fontSize:14, cursor: statut !== resa.statut ? 'pointer' : 'not-allowed' }}>
-          {saving ? 'Enregistrement…' : 'Enregistrer'}
-        </button>
-      ]}>
+      footer={
+        <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:8 }}>
+          <div style={{ display:'flex', gap:8 }}>
+            {c.tel && (
+              <button onClick={()=>{ setShowSmsPanel(!showSmsPanel); setSmsTexte(smsSuggestions[0]); }} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background: showSmsPanel ? '#111' : '#f0f0f0', color: showSmsPanel ? '#fff' : '#111', border:'none', borderRadius:10, height:44, fontSize:13, fontWeight:700, cursor:'pointer' }}>💬 SMS</button>
+            )}
+            {c.tel && (
+              <a href={`tel:${c.tel}`} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:G, color:'#111', borderRadius:10, height:44, fontSize:13, fontWeight:700, textDecoration:'none' }}>📞 Appeler</a>
+            )}
+            {onEdit && <button onClick={()=>{ onClose(); onEdit(resa); }} style={{ flex:1, height:44, border:'1.5px solid #ddd', borderRadius:10, background:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', color:'#111' }}>✏️ Modifier</button>}
+          </div>
+          <div style={{ display:'flex', gap:8 }}>
+            <button key="f" type="button" onClick={onClose} style={{...btnSecondary}}>Fermer</button>
+            <button key="s" type="button" onClick={saveStatut} disabled={saving || statut === resa.statut} style={{ background: statut !== resa.statut ? '#111' : '#ddd', color: statut !== resa.statut ? '#fff' : '#999', border:'none', borderRadius:8, padding:'0 18px', height:38, fontWeight:700, fontSize:14, cursor: statut !== resa.statut ? 'pointer' : 'not-allowed' }}>
+              {saving ? 'Enregistrement…' : 'Enregistrer'}
+            </button>
+          </div>
+        </div>
+      }>
       <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
 
         {/* Nom + contact */}
@@ -1064,17 +1091,6 @@ function DetailResaModal({ resa, onClose, onSaved, resaList = [], showToast }) {
           {c.prenom && c.nom && c.entreprise && <div style={{ fontSize:13, color:'#888' }}>{c.prenom} {c.nom}</div>}
           {c.tel && <div style={{ fontSize:14, color:'#444', marginTop:2 }}>📞 {c.tel}</div>}
           {c.mail && <a href={`mailto:${c.mail}`} style={{ fontSize:13, color:'#3b82f6', textDecoration:'none' }}>{c.mail}</a>}
-        </div>
-
-        {/* Actions rapides : SMS | Appeler | Modifier */}
-        <div style={{ display:'flex', gap:8 }}>
-          {c.tel && (
-            <button onClick={()=>{ setShowSmsPanel(!showSmsPanel); setSmsTexte(smsSuggestions[0]); }} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background: showSmsPanel ? '#111' : '#f0f0f0', color: showSmsPanel ? '#fff' : '#111', border:'none', borderRadius:10, height:44, fontSize:13, fontWeight:700, cursor:'pointer' }}>💬 SMS</button>
-          )}
-          {c.tel && (
-            <a href={`tel:${c.tel}`} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:G, color:'#111', borderRadius:10, height:44, fontSize:13, fontWeight:700, textDecoration:'none' }}>📞 Appeler</a>
-          )}
-          <button onClick={()=>{}} style={{ flex:1, height:44, border:'1.5px solid #ddd', borderRadius:10, background:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', color:'#111' }}>✏️ Modifier</button>
         </div>
 
         {/* Panneau SMS */}
@@ -1177,6 +1193,7 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
   const [refusResa, setRefusResa] = useState(null);
   const [acceptResa, setAcceptResa] = useState(null);
   const [detailResa, setDetailResa] = useState(null);
+  const [editResa, setEditResa] = useState(null);
   const [histOpen, setHistOpen] = useState(false);
   const [showAddResa, setShowAddResa] = useState(false);
   const [calDate, setCalDate] = useState(new Date());
@@ -1695,8 +1712,9 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
       )}
       {acceptResa && <AccepterModal resa={acceptResa} onConfirm={()=>accepter(acceptResa)} onCancel={()=>setAcceptResa(null)} />}
       {refusResa && <RefusModal onConfirm={raison=>refuser(refusResa, raison)} onCancel={()=>setRefusResa(null)} />}
-      {detailResa && <DetailResaModal resa={detailResa} resaList={resaList} showToast={showToast} onClose={()=>setDetailResa(null)} onSaved={(newStatut)=>{ setResaList(prev => prev.map(r => r.id === detailResa.id ? {...r, statut: newStatut} : r)); setDetailResa(null); loadResa(); }} />}
+      {detailResa && <DetailResaModal resa={detailResa} resaList={resaList} showToast={showToast} onClose={()=>setDetailResa(null)} onEdit={(r)=>setEditResa(r)} onSaved={(newStatut)=>{ setResaList(prev => prev.map(r => r.id === detailResa.id ? {...r, statut: newStatut} : r)); setDetailResa(null); loadResa(); }} />}
       {showAddResa && <AddResaModal onClose={()=>setShowAddResa(false)} onSaved={()=>{ loadResa(); setShowAddResa(false); }} showToast={showToast} user={user} />}
+      {editResa && <AddResaModal initialResa={editResa} onClose={()=>setEditResa(null)} onSaved={()=>{ loadResa(); setEditResa(null); }} showToast={showToast} user={user} />}
     </div>
   );
 }
