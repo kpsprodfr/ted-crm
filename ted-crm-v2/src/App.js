@@ -1418,19 +1418,20 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
                   <div style={{ textAlign:'center', padding:'24px 0', color:'#bbb', fontSize:14 }}>Aucune réservation confirmée pour ce service</div>
                 ) : isMobile ? (
                   <div style={{padding:'0 16px 16px'}}>
-                    <div style={{display:'grid', gridTemplateColumns:'2fr 1fr 1fr', gap:8, padding:'8px 0', borderBottom:'2px solid #E8C547', marginBottom:4}}>
+                    <div style={{display:'grid', gridTemplateColumns:'2fr 1fr 1fr auto', gap:8, padding:'8px 0', borderBottom:'2px solid #E8C547', marginBottom:4}}>
                       <span style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1}}>Nom Prénom</span>
                       <span style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1}}>Heure</span>
                       <span style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1}}>Couverts</span>
+                      <span/>
                     </div>
                     {resasDuJour.map(r => (
-                      <div key={r.id} style={{display:'grid', gridTemplateColumns:'2fr 1fr 1fr', gap:8, alignItems:'center', padding:'10px 0', borderBottom:'1px solid #f0f0f0'}}>
+                      <div key={r.id} onClick={() => setDetailResa(r)} style={{display:'grid', gridTemplateColumns:'2fr 1fr 1fr auto', gap:8, alignItems:'center', padding:'10px 0', borderBottom:'1px solid #f0f0f0', cursor:'pointer'}}>
                         <div>
                           <div style={{fontWeight:700, fontSize:14, color: r.clients?.genre==='Entreprise' ? '#E8C547' : '#111'}}>
                             {r.clients?.genre==='Entreprise' ? r.clients?.entreprise : `${r.clients?.prenom||''} ${r.clients?.nom||''}`}
                           </div>
                           {r.clients?.tel && (
-                            <a href={`tel:${r.clients.tel}`} style={{fontSize:12, color:'#666', textDecoration:'none'}}>
+                            <a href={`tel:${r.clients.tel}`} onClick={e => e.stopPropagation()} style={{fontSize:12, color:'#666', textDecoration:'none'}}>
                               📞 {r.clients.tel}
                             </a>
                           )}
@@ -1440,6 +1441,7 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
                         </div>
                         <div style={{fontSize:14, color:'#444', fontWeight:600}}>{r.heure || '—'}</div>
                         <div style={{fontSize:14, color:'#444', fontWeight:600}}>{r.nb_personnes} pers.</div>
+                        <span style={{color:'#ccc', fontSize:16}}>›</span>
                       </div>
                     ))}
                   </div>
@@ -1447,7 +1449,10 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
                   <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
                     <tbody>
                       {resasDuJour.map((r) => (
-                        <tr key={r.id} style={{ borderBottom:'1px solid #f0f0f0' }}>
+                        <tr key={r.id} onClick={() => setDetailResa(r)} style={{ borderBottom:'1px solid #f0f0f0', cursor:'pointer' }}
+                          onMouseEnter={e => e.currentTarget.style.background='#fffbea'}
+                          onMouseLeave={e => e.currentTarget.style.background=''}
+                        >
                           <td style={{ padding:'12px 16px' }}>
                             <div style={{ display:'flex', alignItems:'center', gap:16, flexWrap:'nowrap' }}>
                               <span style={{ fontWeight:700, minWidth:140, color: r.clients?.genre==='Entreprise' ? '#E8C547' : '#111' }}>
@@ -1456,11 +1461,12 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
                               <span style={{ color:'#666', minWidth:50 }}>{r.heure || '—'}</span>
                               <span style={{ color:'#666', minWidth:60 }}>{r.nb_personnes} pers.</span>
                               {r.clients?.tel && (
-                                <a href={`tel:${r.clients.tel}`} style={{ display:'inline-flex', alignItems:'center', gap:4, background:'#f0f0f0', borderRadius:6, padding:'3px 10px', fontSize:12, color:'#111', textDecoration:'none', fontWeight:600, whiteSpace:'nowrap' }}>📞 {r.clients.tel}</a>
+                                <a href={`tel:${r.clients.tel}`} onClick={e => e.stopPropagation()} style={{ display:'inline-flex', alignItems:'center', gap:4, background:'#f0f0f0', borderRadius:6, padding:'3px 10px', fontSize:12, color:'#111', textDecoration:'none', fontWeight:600, whiteSpace:'nowrap' }}>📞 {r.clients.tel}</a>
                               )}
                               {r.commentaire_client && (
                                 <span style={{ fontSize:12, color:'#999', fontStyle:'italic' }}>{r.commentaire_client}</span>
                               )}
+                              <span style={{ color:'#ccc', fontSize:16, marginLeft:'auto' }}>›</span>
                             </div>
                           </td>
                         </tr>
