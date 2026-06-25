@@ -831,7 +831,21 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
                     );
                   })}
                 </div>
-                {dateTempCalPicker && (
+                {isMobile ? (
+                  <div style={{ padding:'12px 16px', borderTop:'1px solid #eee' }}>
+                    {dateTempCalPicker ? (
+                      <button onClick={()=>{ setDateIso(dateTempCalPicker); setShowCalPicker(false); setDateTempCalPicker(null); }}
+                        style={{ width:'100%', height:48, background:'#E8C547', border:'none', borderRadius:10, fontSize:15, fontWeight:800, cursor:'pointer', color:'#111' }}>
+                        Valider — {new Date(dateTempCalPicker+'T12:00:00').toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'})} ✓
+                      </button>
+                    ) : (
+                      <button onClick={()=>setShowCalPicker(false)}
+                        style={{ width:'100%', height:48, background:'#111', border:'none', borderRadius:10, fontSize:15, fontWeight:700, cursor:'pointer', color:'#fff' }}>
+                        Fermer
+                      </button>
+                    )}
+                  </div>
+                ) : dateTempCalPicker && (
                   <div style={{ padding:'12px 16px', borderTop:'1px solid #eee', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                     <span style={{ fontSize:14, color:'#111', fontWeight:600 }}>
                       {new Date(dateTempCalPicker+'T12:00:00').toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'})}
@@ -841,9 +855,6 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
                       Valider ✓
                     </button>
                   </div>
-                )}
-                {isMobile && (
-                  <button onClick={()=>{ setShowCalPicker(false); setDateTempCalPicker(null); }} style={{ marginTop:20, width:'100%', height:48, background:'#111', color:'#fff', border:'none', borderRadius:10, fontSize:15, fontWeight:700, cursor:'pointer' }}>Fermer</button>
                 )}
               </div>
             );
