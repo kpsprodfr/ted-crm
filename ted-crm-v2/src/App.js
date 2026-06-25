@@ -785,11 +785,13 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
         </div>
 
         {/* 5. Date — calendrier visuel */}
-        <div style={{ position:'relative' }}>
+        <div>
           <label style={lbl}>Date *</label>
-          <button onClick={()=>setShowCalPicker(!showCalPicker)} style={{ width:'100%', height:44, border:'1.5px solid #ddd', borderRadius:8, background:'#fff', fontSize:14, cursor:'pointer', textAlign:'left', padding:'0 14px', color: dateIso ? '#111' : '#aaa' }}>
+          {/* Bouton toggle date (toujours visible) */}
+          <button onPointerDown={()=>setShowCalPicker(!showCalPicker)} style={{ width:'100%', height:44, border:`1.5px solid ${showCalPicker ? '#E8C547' : '#ddd'}`, borderRadius:8, background:'#fff', fontSize:14, cursor:'pointer', textAlign:'left', padding:'0 14px', color: dateIso ? '#111' : '#aaa', touchAction:'manipulation', WebkitTapHighlightColor:'transparent' }}>
             📅 {dateIso ? new Date(dateIso+'T12:00:00').toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'}) : 'Choisir une date'}
           </button>
+          {/* Calendrier inline (mobile et desktop) */}
           {showCalPicker && (() => {
             const anneeP = calPickerDate.getFullYear();
             const moisP = calPickerDate.getMonth();
@@ -797,102 +799,55 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
             const nbJours = new Date(anneeP, moisP + 1, 0).getDate();
             const casesP = Array(premierJourSemaine - 1).fill(null).concat(Array.from({length: nbJours}, (_, i) => i + 1));
             const todayIso = new Date().toISOString().split('T')[0];
-            if (isMobile) return (
-              <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'#fff', zIndex:4000, display:'flex', flexDirection:'column' }}>
-                {/* Header : navigation mois */}
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'16px', background:'#fff', borderBottom:'1px solid #eee', flexShrink:0 }}>
+            return (
+              <div style={{ marginTop:8, background:'#fff', borderRadius:12, border:'1.5px solid #eee', boxShadow:'0 4px 16px rgba(0,0,0,0.08)', overflow:'hidden' }}>
+                {/* Header navigation mois */}
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 12px', borderBottom:'1px solid #eee', background:'#fff' }}>
                   <button onPointerDown={()=>setCalPickerDate(new Date(anneeP, moisP-1))}
-                    style={{ width:44, height:44, borderRadius:12, border:'1.5px solid #ddd', background:'#fff', fontSize:22, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', touchAction:'manipulation' }}>‹</button>
-                  <span style={{ fontSize:17, fontWeight:800, color:'#111', textTransform:'capitalize' }}>
+                    style={{ width:40, height:40, borderRadius:10, border:'1.5px solid #ddd', background:'#fff', fontSize:20, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', touchAction:'manipulation', WebkitTapHighlightColor:'transparent' }}>‹</button>
+                  <span style={{ fontSize:15, fontWeight:800, color:'#111', textTransform:'capitalize' }}>
                     {calPickerDate.toLocaleDateString('fr-FR', {month:'long', year:'numeric'})}
                   </span>
                   <button onPointerDown={()=>setCalPickerDate(new Date(anneeP, moisP+1))}
-                    style={{ width:44, height:44, borderRadius:12, border:'1.5px solid #ddd', background:'#fff', fontSize:22, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', touchAction:'manipulation' }}>›</button>
+                    style={{ width:40, height:40, borderRadius:10, border:'1.5px solid #ddd', background:'#fff', fontSize:20, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', touchAction:'manipulation', WebkitTapHighlightColor:'transparent' }}>›</button>
                 </div>
                 {/* Jours de la semaine */}
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', textAlign:'center', padding:'8px 8px 0', flexShrink:0 }}>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', padding:'6px 6px 2px' }}>
                   {['L','M','M','J','V','S','D'].map((j,i) => (
-                    <div key={i} style={{ fontSize:12, fontWeight:700, color:'#999', padding:'4px 0' }}>{j}</div>
+                    <div key={i} style={{ textAlign:'center', fontSize:11, fontWeight:700, color:'#aaa', padding:'3px 0' }}>{j}</div>
                   ))}
                 </div>
                 {/* Grille des jours */}
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', padding:'4px 8px', gap:4, flex:1 }}>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', padding:'2px 6px 8px', gap:2 }}>
                   {casesP.map((jour, i) => {
                     if (!jour) return <div key={i}/>;
                     const iso = `${anneeP}-${String(moisP+1).padStart(2,'0')}-${String(jour).padStart(2,'0')}`;
                     const estAujourdhui = iso === todayIso;
-                    const estSelectionne = dateTempCalPicker === iso;
+                    const estSelectionne = dateTempCalPicker === iso || (dateIso === iso && !dateTempCalPicker);
                     return (
                       <button key={i} onPointerDown={()=>setDateTempCalPicker(iso)} style={{
-                        height:44, borderRadius:10,
+                        height:40, borderRadius:8,
                         border: estAujourdhui && !estSelectionne ? '2px solid #E8C547' : '1.5px solid transparent',
                         background: estSelectionne ? '#E8C547' : 'transparent',
                         fontWeight: estAujourdhui || estSelectionne ? 800 : 400,
-                        fontSize:15, cursor:'pointer', color:'#111', touchAction:'manipulation'
+                        fontSize:14, cursor:'pointer', color:'#111',
+                        touchAction:'manipulation', WebkitTapHighlightColor:'transparent'
                       }}>{jour}</button>
                     );
                   })}
                 </div>
-                {/* Footer : Valider / Fermer */}
-                <div style={{ padding:'0 16px 24px', flexShrink:0, borderTop:'1px solid #eee' }}>
+                {/* Valider */}
+                <div style={{ padding:'8px 12px 12px', borderTop:'1px solid #eee' }}>
                   {dateTempCalPicker ? (
                     <button onPointerDown={()=>{ setDateIso(dateTempCalPicker); setShowCalPicker(false); setDateTempCalPicker(null); }} style={{
-                      width:'100%', height:50, background:'#E8C547', border:'none', borderRadius:12,
-                      fontSize:16, fontWeight:800, cursor:'pointer', color:'#111', marginTop:12, touchAction:'manipulation'
+                      width:'100%', height:46, background:'#E8C547', border:'none', borderRadius:10,
+                      fontSize:15, fontWeight:800, cursor:'pointer', color:'#111',
+                      touchAction:'manipulation', WebkitTapHighlightColor:'transparent'
                     }}>✓ Valider — {new Date(dateTempCalPicker+'T12:00:00').toLocaleDateString('fr-FR', {weekday:'short', day:'numeric', month:'long'})}</button>
                   ) : (
-                    <button onPointerDown={()=>setShowCalPicker(false)} style={{
-                      width:'100%', height:50, background:'#f0f0f0', border:'none', borderRadius:12,
-                      fontSize:15, fontWeight:700, cursor:'pointer', color:'#666', marginTop:12, touchAction:'manipulation'
-                    }}>Fermer</button>
+                    <div style={{ textAlign:'center', fontSize:13, color:'#aaa', padding:'6px 0' }}>Sélectionnez une date</div>
                   )}
                 </div>
-              </div>
-            );
-            // Desktop : dropdown
-            const MOIS_P = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-            const todayP = new Date();
-            return (
-              <div style={{ position:'absolute', top:'100%', left:0, right:0, background:'#fff', borderRadius:12, border:'1.5px solid #eee', boxShadow:'0 8px 32px rgba(0,0,0,0.12)', padding:16, zIndex:500, marginTop:4 }}>
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-                  <button onClick={e=>{e.stopPropagation();setCalPickerDate(new Date(anneeP, moisP-1, 1));}}
-                    style={{ background:'#f0f0f0', border:'none', borderRadius:7, width:32, height:32, fontSize:15, cursor:'pointer', fontWeight:700 }}>‹</button>
-                  <span style={{ fontWeight:800, fontSize:14 }}>{MOIS_P[moisP]} {anneeP}</span>
-                  <button onClick={e=>{e.stopPropagation();setCalPickerDate(new Date(anneeP, moisP+1, 1));}}
-                    style={{ background:'#f0f0f0', border:'none', borderRadius:7, width:32, height:32, fontSize:15, cursor:'pointer', fontWeight:700 }}>›</button>
-                </div>
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2, marginBottom:4 }}>
-                  {['L','M','M','J','V','S','D'].map((j,i) => <div key={i} style={{ textAlign:'center', fontSize:10, fontWeight:700, color:'#aaa', padding:'3px 0' }}>{j}</div>)}
-                </div>
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2 }}>
-                  {casesP.map((d, i) => {
-                    if (!d) return <div key={i}/>;
-                    const iso = `${anneeP}-${String(moisP+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-                    const isToday = todayP.getFullYear()===anneeP && todayP.getMonth()===moisP && todayP.getDate()===d;
-                    const isTemp = dateTempCalPicker === iso;
-                    const isSelected = dateIso === iso && !dateTempCalPicker;
-                    return (
-                      <div key={i} onClick={()=>setDateTempCalPicker(iso)}
-                        style={{ textAlign:'center', padding:'7px 4px', borderRadius:7, cursor:'pointer',
-                          background: isTemp ? '#E8C547' : isSelected ? '#111' : isToday ? '#fffbeb' : '#fff',
-                          border: isToday && !isTemp && !isSelected ? '1.5px solid #E8C547' : '1.5px solid transparent',
-                          color: isTemp ? '#111' : isSelected ? '#fff' : '#111', fontWeight: isToday||isTemp ? 800 : 400, fontSize:13 }}>
-                        {d}
-                      </div>
-                    );
-                  })}
-                </div>
-                {dateTempCalPicker && (
-                  <div style={{ padding:'12px 0 0', borderTop:'1px solid #eee', marginTop:8, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                    <span style={{ fontSize:14, color:'#111', fontWeight:600 }}>
-                      {new Date(dateTempCalPicker+'T12:00:00').toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'})}
-                    </span>
-                    <button onClick={()=>{ setDateIso(dateTempCalPicker); setShowCalPicker(false); setDateTempCalPicker(null); }}
-                      style={{ background:'#E8C547', border:'none', borderRadius:8, padding:'8px 20px', fontSize:14, fontWeight:800, cursor:'pointer', color:'#111' }}>
-                      Valider ✓
-                    </button>
-                  </div>
-                )}
               </div>
             );
           })()}
