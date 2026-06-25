@@ -1164,20 +1164,6 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
           </div>
         )}
 
-        <div style={{ height:1, background:'#f0f0f0' }} />
-
-        {/* Historique client */}
-        {resasClient.length > 0 && (
-          <div style={{ fontSize:12, color:'#888', display:'flex', alignItems:'center', gap:12 }}>
-            <span>📊</span>
-            <span><strong style={{ color:'#111' }}>{resasClient.length}</strong> résa au total</span>
-            <span>·</span>
-            <span><strong style={{ color:'#16a34a' }}>{nbVenues}</strong> venue{nbVenues > 1 ? 's' : ''}</span>
-            <span>·</span>
-            <span><strong style={{ color: nbAbsentes > 0 ? '#dc2626' : '#888' }}>{nbAbsentes}</strong> no-show</span>
-          </div>
-        )}
-
       </div>
     </Modal>
   );
@@ -1193,9 +1179,10 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
   const [histOpen, setHistOpen] = useState(false);
   const [showAddResa, setShowAddResa] = useState(false);
   const [calDate, setCalDate] = useState(new Date());
-  const [calJourSelectionne, setCalJourSelectionne] = useState(null);
-  const [calServiceSelectionne, setCalServiceSelectionne] = useState(null);
-  const [calOuvert, setCalOuvert] = useState(false);
+  const [calJourSelectionne, setCalJourSelectionne] = useState(new Date().toISOString().split('T')[0]);
+  const [calServiceSelectionne, setCalServiceSelectionne] = useState(new Date().getHours() < 15 ? 'midi' : 'soir');
+  const [calOuvert, setCalOuvert] = useState(true);
+  const [showDemandesAttente, setShowDemandesAttente] = useState(false);
   const [showFormDropdown, setShowFormDropdown] = useState(false);
   const isMobile = useIsMobile();
   const qr = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(FORM_URL)}`;
@@ -1395,6 +1382,24 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
           </div>
         )}
 
+        {/* ── Bouton Demandes en attente ── */}
+        {(() => {
+          const nbAttente = resaList.filter(r => r.statut === 'attente').length;
+          return (
+            <button onClick={()=>setShowDemandesAttente(true)} style={{ width:'100%', height:52, background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 16px', cursor:'pointer', marginBottom:16, boxShadow:'0 2px 8px rgba(0,0,0,0.05)' }}>
+              <span style={{ fontSize:15, fontWeight:700, color:'#111' }}>📋 Demandes de réservation en attente</span>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                {nbAttente > 0 ? (
+                  <span style={{ background:'#dc2626', color:'#fff', borderRadius:'50%', width:24, height:24, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:800 }}>{nbAttente}</span>
+                ) : (
+                  <span style={{ fontSize:13, color:'#999' }}>Aucune</span>
+                )}
+                <span style={{ color:'#ccc', fontSize:18 }}>›</span>
+              </div>
+            </button>
+          );
+        })()}
+
         {/* ── Calendrier mensuel ── */}
         {(() => {
           const JOURS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
@@ -1447,7 +1452,7 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
                   const isSelected = calJourSelectionne === iso;
                   const estPasse = new Date(iso) < new Date(new Date().setHours(0,0,0,0));
                   return (
-                    <div key={i} onClick={() => { setCalJourSelectionne(iso); setCalServiceSelectionne(null); }}
+                    <div key={i} onClick={() => { setCalJourSelectionne(iso); }}
                       style={{ textAlign:'center', padding:'7px 4px', borderRadius:8, cursor:'pointer', position:'relative',
                         background: isSelected ? '#111' : isToday ? '#fffbeb' : '#fff',
                         border: isToday && !isSelected ? '1.5px solid #E8C547' : '1.5px solid transparent',
@@ -1623,52 +1628,51 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
           );
         })()}
 
-        {/* ── Demandes en attente ── */}
-        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
-          <h2 style={{ fontSize:17, fontWeight:800, margin:0 }}>Demandes en attente</h2>
-          {attente.length > 0 && <span style={{ background:'#dc2626', color:'#fff', borderRadius:99, padding:'2px 9px', fontSize:12, fontWeight:700 }}>{attente.length}</span>}
-        </div>
-
-        {loading && <p style={{ color:'#bbb', fontSize:14, padding:'20px 0' }}>Chargement…</p>}
-
-        {!loading && attente.length === 0 && (
-          <div style={{ textAlign:'center', padding:'32px 0', color:'#bbb' }}>
-            <div style={{ fontSize:40, marginBottom:10 }}>📭</div>
-            <p style={{ fontSize:15 }}>Aucune nouvelle demande</p>
-          </div>
-        )}
-
-        {attente.map(r => {
-          const c = r.clients || {};
-          const nom = c.entreprise ? c.entreprise : `${c.prenom || ''} ${c.nom || ''}`.trim();
-          return (
-            <div key={r.id} style={cardStyle}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:8, marginBottom:10 }}>
-                <div>
-                  <span style={{ fontWeight:700, fontSize:15 }}>{nom || '—'}</span>
-                  {c.mail && <span style={{ fontSize:12, color:'#888', marginTop:2, display:'block' }}>{c.mail}</span>}
-                  {c.tel && (
-                    <a href={`tel:${c.tel}`} style={{ display:'inline-flex', alignItems:'center', gap:6, background:G, color:'#111', borderRadius:8, padding:'6px 14px', fontSize:13, fontWeight:700, textDecoration:'none', marginTop:8 }}>
-                      📞 Appeler · {c.tel}
-                    </a>
-                  )}
-                </div>
-                <div style={{ textAlign:'right', flexShrink:0 }}>
-                  <div style={{ fontSize:13, fontWeight:700 }}>{fmtResaDate(r.date)}</div>
-                  <div style={{ fontSize:12, color:'#888' }}>{r.service === 'midi' ? '🌞 Midi' : '🌙 Soir'}{r.heure ? ` · ${r.heure}` : ''}</div>
-                  <div style={{ fontSize:12, color:'#555', marginTop:2 }}>👥 {r.nb_personnes} pers.</div>
-                </div>
+        {/* ── Modal Demandes en attente ── */}
+        {showDemandesAttente && (
+          <Modal title={`📋 Demandes en attente${attente.length > 0 ? ` (${attente.length})` : ''}`} onClose={()=>setShowDemandesAttente(false)} maxW={560} zIndex={3100}>
+            {loading && <p style={{ color:'#bbb', fontSize:14, padding:'20px 0' }}>Chargement…</p>}
+            {!loading && attente.length === 0 && (
+              <div style={{ textAlign:'center', padding:'32px 0', color:'#bbb' }}>
+                <div style={{ fontSize:40, marginBottom:10 }}>📭</div>
+                <p style={{ fontSize:15 }}>Aucune nouvelle demande</p>
               </div>
-              {r.occasion && <p style={{ fontSize:12, color:'#6b7280', marginBottom:6 }}>🎉 {r.occasion}</p>}
-              {r.commentaire_client && <p style={{ fontSize:12, color:'#aaa', fontStyle:'italic', marginBottom:8, borderLeft:`3px solid #eee`, paddingLeft:8 }}>"{r.commentaire_client}"</p>}
-              <div style={{ fontSize:11, color:'#bbb', marginBottom:10 }}>Reçue le {new Date(r.created_at).toLocaleDateString('fr-FR')} à {new Date(r.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
-              <div style={{ display:'flex', gap:8 }}>
-                <button onClick={()=>setAcceptResa(r)} style={{ flex:1, background:'#16a34a', color:'#fff', border:'none', borderRadius:8, height:40, fontWeight:700, fontSize:14, cursor:'pointer' }}>✓ Accepter</button>
-                <button onClick={()=>setRefusResa(r)} style={{ flex:1, background:'#fef2f2', color:'#dc2626', border:'1.5px solid #dc2626', borderRadius:8, height:40, fontWeight:700, fontSize:14, cursor:'pointer' }}>✕ Refuser</button>
-              </div>
+            )}
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              {attente.map(r => {
+                const c = r.clients || {};
+                const nom = c.entreprise ? c.entreprise : `${c.prenom || ''} ${c.nom || ''}`.trim();
+                return (
+                  <div key={r.id} style={cardStyle}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:8, marginBottom:10 }}>
+                      <div>
+                        <span style={{ fontWeight:700, fontSize:15 }}>{nom || '—'}</span>
+                        {c.mail && <span style={{ fontSize:12, color:'#888', marginTop:2, display:'block' }}>{c.mail}</span>}
+                        {c.tel && (
+                          <a href={`tel:${c.tel}`} style={{ display:'inline-flex', alignItems:'center', gap:6, background:G, color:'#111', borderRadius:8, padding:'6px 14px', fontSize:13, fontWeight:700, textDecoration:'none', marginTop:8 }}>
+                            📞 Appeler · {c.tel}
+                          </a>
+                        )}
+                      </div>
+                      <div style={{ textAlign:'right', flexShrink:0 }}>
+                        <div style={{ fontSize:13, fontWeight:700 }}>{fmtResaDate(r.date)}</div>
+                        <div style={{ fontSize:12, color:'#888' }}>{r.service === 'midi' ? '🌞 Midi' : '🌙 Soir'}{r.heure ? ` · ${r.heure}` : ''}</div>
+                        <div style={{ fontSize:12, color:'#555', marginTop:2 }}>👥 {r.nb_personnes} pers.</div>
+                      </div>
+                    </div>
+                    {r.occasion && <p style={{ fontSize:12, color:'#6b7280', marginBottom:6 }}>🎉 {r.occasion}</p>}
+                    {r.commentaire_client && <p style={{ fontSize:12, color:'#aaa', fontStyle:'italic', marginBottom:8, borderLeft:`3px solid #eee`, paddingLeft:8 }}>"{r.commentaire_client}"</p>}
+                    <div style={{ fontSize:11, color:'#bbb', marginBottom:10 }}>Reçue le {new Date(r.created_at).toLocaleDateString('fr-FR')} à {new Date(r.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
+                    <div style={{ display:'flex', gap:8 }}>
+                      <button onClick={()=>setAcceptResa(r)} style={{ flex:1, background:'#16a34a', color:'#fff', border:'none', borderRadius:8, height:40, fontWeight:700, fontSize:14, cursor:'pointer' }}>✓ Accepter</button>
+                      <button onClick={()=>setRefusResa(r)} style={{ flex:1, background:'#fef2f2', color:'#dc2626', border:'1.5px solid #dc2626', borderRadius:8, height:40, fontWeight:700, fontSize:14, cursor:'pointer' }}>✕ Refuser</button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          );
-        })}
+          </Modal>
+        )}
 
         {/* ── Historique accordéon ── */}
         {historique.length > 0 && (
