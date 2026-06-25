@@ -1370,19 +1370,23 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
             const serviceLabel2 = service === 'midi' ? '☀️ Déjeuner' : '🌙 Dîner';
             const nbConfirmees = reservations.filter(r => r.statut !== 'annulee').length;
             const nbAnnulees = reservations.filter(r => r.statut === 'annulee').length;
-            const lignes = reservations.map(r => `
-              <tr style="${r.statut === 'annulee' ? 'background:#fff5f5;color:#999;text-decoration:line-through;' : ''}">
-                <td>
-                  ${r.clients?.genre === 'Entreprise' ? (r.clients?.entreprise || '') : `${r.clients?.prenom || ''} ${r.clients?.nom || ''}`}
-                  ${r.statut === 'annulee' ? '<span style="display:inline-block;background:#dc2626;color:#fff;font-size:9px;font-weight:700;border-radius:3px;padding:1px 5px;margin-left:6px;text-decoration:none">ANNULÉE</span>' : ''}
-                </td>
-                <td style="text-align:center">${r.heure || ''}</td>
-                <td style="text-align:center">${r.nb_personnes || ''}</td>
-                <td></td>
-                <td>${r.commentaire_client || ''}</td>
-                <td></td>
-              </tr>
-            `).join('');
+            const lignes = reservations.map((r) => {
+              const estAnnulee = r.statut === 'annulee';
+              const nom = r.clients?.genre === 'Entreprise'
+                ? (r.clients?.entreprise || '')
+                : `${r.clients?.prenom || ''} ${r.clients?.nom || ''}`;
+              return `<tr style="${estAnnulee ? 'background:#fff0f0;' : ''}">
+    <td style="${estAnnulee ? 'color:#dc2626;' : ''}">
+      ${nom}
+      ${estAnnulee ? ' <span style="background:#dc2626;color:white;font-size:9px;padding:1px 5px;border-radius:3px;font-weight:700;">ANNULÉE</span>' : ''}
+    </td>
+    <td style="text-align:center;${estAnnulee ? 'color:#dc2626;' : ''}">${r.heure || ''}</td>
+    <td style="text-align:center;${estAnnulee ? 'color:#dc2626;' : ''}">${r.nb_personnes || ''}</td>
+    <td></td>
+    <td>${r.commentaire_client || ''}</td>
+    <td></td>
+  </tr>`;
+            }).join('');
             const html = `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8"><title>Réservations TED - ${dateFormatee}</title>
 <style>* { margin:0; padding:0; box-sizing:border-box; } body { font-family: Arial, sans-serif; background: #fff; padding: 40px; } .header { text-align: center; margin-bottom: 32px; border-bottom: 3px solid #E8C547; padding-bottom: 20px; } .logo { font-size: 32px; font-weight: 900; letter-spacing: 4px; color: #111; } .subtitle { font-size: 13px; color: #888; letter-spacing: 2px; margin-top: 4px; text-transform: uppercase; } .date-title { font-size: 20px; font-weight: 700; color: #111; margin-top: 16px; } .service-badge { display: inline-block; background: #E8C547; color: #111; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 700; margin-top: 8px; } table { width: 100%; border-collapse: collapse; margin-top: 24px; } th { background: #111; color: #E8C547; padding: 12px 16px; text-align: left; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; } td { padding: 12px 16px; border-bottom: 1px solid #eee; font-size: 14px; color: #333; } tr:last-child td { border-bottom: 2px solid #111; } .footer { margin-top: 32px; text-align: center; font-size: 11px; color: #bbb; } @media print { body { padding: 20px; } }</style>
