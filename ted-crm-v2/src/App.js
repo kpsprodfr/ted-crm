@@ -1238,15 +1238,41 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
             .sort((a,b) => (a.heure||'').localeCompare(b.heure||''));
           const dateLabel = new Date(calJourSelectionne + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
           const serviceLabel = calServiceSelectionne === 'midi' ? 'Déjeuner' : 'Dîner';
+          function telechargerTableau(date, service, reservations) {
+            const dateFormatee = new Date(date + 'T12:00:00').toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+            const serviceLabel2 = service === 'midi' ? '☀️ Déjeuner' : '🌙 Dîner';
+            const lignes = reservations.map(r => `
+              <tr>
+                <td>${r.clients?.prenom || ''} ${r.clients?.nom || ''}</td>
+                <td style="text-align:center">${r.heure || ''}</td>
+                <td style="text-align:center">${r.nb_personnes || ''}</td>
+                <td></td>
+                <td>${r.commentaire_client || ''}</td>
+                <td></td>
+              </tr>
+            `).join('');
+            const html = `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8"><title>Réservations TED - ${dateFormatee}</title>
+<style>* { margin:0; padding:0; box-sizing:border-box; } body { font-family: Arial, sans-serif; background: #fff; padding: 40px; } .header { text-align: center; margin-bottom: 32px; border-bottom: 3px solid #E8C547; padding-bottom: 20px; } .logo { font-size: 32px; font-weight: 900; letter-spacing: 4px; color: #111; } .subtitle { font-size: 13px; color: #888; letter-spacing: 2px; margin-top: 4px; text-transform: uppercase; } .date-title { font-size: 20px; font-weight: 700; color: #111; margin-top: 16px; } .service-badge { display: inline-block; background: #E8C547; color: #111; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 700; margin-top: 8px; } table { width: 100%; border-collapse: collapse; margin-top: 24px; } th { background: #111; color: #E8C547; padding: 12px 16px; text-align: left; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; } td { padding: 12px 16px; border-bottom: 1px solid #eee; font-size: 14px; color: #333; } tr:nth-child(even) td { background: #fafafa; } tr:last-child td { border-bottom: 2px solid #111; } .footer { margin-top: 32px; text-align: center; font-size: 11px; color: #bbb; } @media print { body { padding: 20px; } }</style>
+</head><body>
+<div class="header"><div class="logo">LE TED</div><div class="subtitle">Restaurant &amp; Club — Chassieu</div><div class="date-title">${dateFormatee}</div><div class="service-badge">${serviceLabel2}</div></div>
+<table><thead><tr><th>Nom Prénom</th><th style="text-align:center">Heure</th><th style="text-align:center">Couverts</th><th style="text-align:center">N° Table</th><th>Commentaire</th><th style="text-align:center">Validé</th></tr></thead>
+<tbody>${lignes}${Array(Math.max(0, 8 - reservations.length)).fill('<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>').join('')}</tbody></table>
+<div class="footer">Imprimé le ${new Date().toLocaleDateString('fr-FR')} — Le TED · 28 Av. des Frères Montgolfier, 69680 Chassieu · 04 78 90 67 80</div>
+<script>window.onload = () => window.print();<\/script>
+</body></html>`;
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+          }
           return (
             <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:20, marginBottom:20, boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
-              <style>{`@media print { body > *:not(#print-tableau) { display:none !important; } #print-tableau { display:block !important; position:static !important; } }`}</style>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
                 <div>
                   <div style={{ fontWeight:800, fontSize:17 }}>Réservations TED</div>
                   <div style={{ fontSize:13, color:'#888', marginTop:2 }}>{dateLabel} — {serviceLabel}</div>
                 </div>
-                <button onClick={() => window.print()} style={{ background:'#111', color:'#fff', border:'none', borderRadius:9, padding:'0 18px', height:38, fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+                <button onClick={() => telechargerTableau(calJourSelectionne, calServiceSelectionne, resasDuJour)} style={{ background:'#111', color:'#fff', border:'none', borderRadius:9, padding:'0 18px', height:38, fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
                   📥 Télécharger
                 </button>
               </div>
