@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { supabase } from "./supabase";
+import { initializeApp } from 'firebase/app';
+import { getMessaging, getToken } from 'firebase/messaging';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const GENRES = ["Homme", "Femme", "Entreprise", "Non renseigné"];
@@ -1289,40 +1291,36 @@ function CRMApp({ user, onLogout }) {
   const smsTextareaRef = useRef(null);
   const [notifResa, setNotifResa] = useState(null);
 
-  function urlBase64ToUint8Array(base64String) {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-    const raw = atob(base64);
-    return new Uint8Array([...raw].map(c => c.charCodeAt(0)));
-  }
+  const firebaseApp = initializeApp({
+    apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+    authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.REACT_APP_FIREBASE_APP_ID
+  });
+  const fcmMessaging = getMessaging(firebaseApp);
 
   async function initFCM() {
-    console.log('initFCM démarré');
+    console.log('initFCM démarré (SDK Firebase)');
     console.log('Permission:', Notification.permission);
-    console.log('SW disponible:', 'serviceWorker' in navigator);
-    console.log('PushManager disponible:', 'PushManager' in window);
     try {
-      if (!('serviceWorker' in navigator) || !('PushManager' in window)) { console.warn('SW ou PushManager absent'); return; }
+      if (!('Notification' in window)) { console.warn('Notifications non supportées'); return; }
       if (Notification.permission !== 'granted') { console.warn('Permission non granted:', Notification.permission); return; }
-      const reg = await navigator.serviceWorker.ready;
-      console.log('SW ready, scope:', reg.scope);
       const vapidKey = process.env.REACT_APP_FCM_VAPID_KEY;
       console.log('VAPID key présente:', !!vapidKey, vapidKey?.substring(0, 10) + '...');
       if (!vapidKey) return;
-      const subscription = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey)
-      });
-      console.log('Subscription:', JSON.stringify(subscription.toJSON()));
-      console.log('Endpoint:', subscription.endpoint);
-      const token = subscription.endpoint.split('/').pop();
-      console.log('Token extrait:', token);
+      const token = await getToken(fcmMessaging, { vapidKey });
+      if (!token) { console.warn('Aucun token FCM obtenu'); return; }
+      console.log('Token FCM:', token);
       const { data: existing } = await supabase.from('fcm_tokens').select('id').eq('token', token).single();
       if (!existing) {
         const { error } = await supabase.from('fcm_tokens').insert([{ token, user_id: user?.id, created_at: new Date().toISOString() }]);
         if (error) console.error('Erreur insert Supabase:', error);
+        else console.log('Token FCM sauvé ✓');
+      } else {
+        console.log('Token FCM déjà en base');
       }
-      console.log('Token FCM sauvé ou déjà existant');
     } catch(e) { console.error('FCM erreur:', e); }
   }
 
