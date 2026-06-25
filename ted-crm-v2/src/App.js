@@ -976,7 +976,7 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
   const [calDate, setCalDate] = useState(new Date());
   const [calJourSelectionne, setCalJourSelectionne] = useState(null);
   const [calServiceSelectionne, setCalServiceSelectionne] = useState(null);
-  const [calOuvert, setCalOuvert] = useState(true);
+  const [calOuvert, setCalOuvert] = useState(false);
   const [showFormDropdown, setShowFormDropdown] = useState(false);
   const isMobile = useIsMobile();
   const qr = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(FORM_URL)}`;
@@ -1139,8 +1139,21 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
             <span style={{ fontWeight:700, fontSize:15, color:'#fff' }}>📅 <span style={{ color:G }}>TED</span> — Réservations</span>
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            <button onClick={onBack} style={{ background:'rgba(255,255,255,0.08)', border:'1px solid #444', borderRadius:8, height:34, padding:'0 14px', color:'#ccc', fontWeight:600, fontSize:13, cursor:'pointer' }}>👥 Mes Clients</button>
+            <button onClick={()=>onBack('communications')} style={{ background:'rgba(255,255,255,0.08)', border:'1px solid #444', borderRadius:8, height:34, padding:'0 14px', color:'#ccc', fontWeight:600, fontSize:13, cursor:'pointer' }}>📣 Communications</button>
+            <button onClick={onLogout} style={{ background:'transparent', color:'#ccc', border:'1px solid #444', borderRadius:7, padding:'0 10px', height:32, fontSize:12, cursor:'pointer' }}>🚪 Quitter</button>
+          </div>
+        </header>
+      )}
+
+      <main style={{ maxWidth:800, margin:'0 auto', padding: isMobile ? '16px 12px 100px' : '24px 20px 40px' }}>
+
+
+        {/* ── Bouton Formulaire ── */}
+        {!isMobile && (
+          <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:12 }}>
             <div style={{ position:'relative' }}>
-              <button onClick={() => setShowFormDropdown(v => !v)} style={{ background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:8, height:34, padding:'0 14px', color:'#fff', fontWeight:600, fontSize:13, cursor:'pointer' }}>🔗 Formulaire</button>
+              <button onClick={() => setShowFormDropdown(v => !v)} style={{ background:'transparent', border:'1.5px solid #ddd', borderRadius:8, padding:'8px 16px', fontSize:13, fontWeight:600, cursor:'pointer', color:'#666' }}>🔗 Formulaire</button>
               {showFormDropdown && (
                 <div style={{ position:'absolute', top:40, right:0, background:'#fff', borderRadius:10, border:'1.5px solid #eee', boxShadow:'0 8px 24px rgba(0,0,0,0.12)', padding:8, zIndex:200, minWidth:180 }}>
                   <button onClick={()=>{ navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver'); showToast('Lien copié !'); setShowFormDropdown(false); }}
@@ -1152,16 +1165,8 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
                 </div>
               )}
             </div>
-            <button onClick={()=>setShowAddResa(true)} style={{ background:G, border:'none', borderRadius:8, height:34, padding:'0 16px', color:'#111', fontWeight:700, fontSize:13, cursor:'pointer' }}>+ Ajouter</button>
-            <button onClick={onBack} style={{ background:'rgba(255,255,255,0.08)', border:'1px solid #444', borderRadius:8, height:34, padding:'0 14px', color:'#ccc', fontWeight:600, fontSize:13, cursor:'pointer' }}>👥 Mes Clients</button>
-            <button onClick={()=>onBack('communications')} style={{ background:'rgba(255,255,255,0.08)', border:'1px solid #444', borderRadius:8, height:34, padding:'0 14px', color:'#ccc', fontWeight:600, fontSize:13, cursor:'pointer' }}>📣 Communications</button>
-            <button onClick={onLogout} style={{ background:'transparent', color:'#ccc', border:'1px solid #444', borderRadius:7, padding:'0 10px', height:32, fontSize:12, cursor:'pointer' }}>🚪 Quitter</button>
           </div>
-        </header>
-      )}
-
-      <main style={{ maxWidth:800, margin:'0 auto', padding: isMobile ? '16px 12px 100px' : '24px 20px 40px' }}>
-
+        )}
 
         {/* ── Calendrier mensuel ── */}
         {!isMobile && (() => {
@@ -1432,7 +1437,7 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
 
       {!isMobile && (
         <div style={{ position:'fixed', bottom:24, left:'50%', transform:'translateX(-50%)', zIndex:1000 }}>
-          <button onClick={()=>setShowAddResa(true)} style={{ background:'#E8C547', color:'#111', border:'none', borderRadius:50, padding:'16px 40px', fontSize:16, fontWeight:800, cursor:'pointer', boxShadow:'0 8px 32px rgba(232,197,71,0.5)', whiteSpace:'nowrap' }}>
+          <button onClick={()=>setShowAddResa(true)} style={{ background:'#E8C547', color:'#111', border:'none', borderRadius:50, padding:'16px 80px', fontSize:16, fontWeight:800, cursor:'pointer', boxShadow:'0 8px 32px rgba(232,197,71,0.5)', whiteSpace:'nowrap' }}>
             + Ajouter une réservation
           </button>
         </div>
