@@ -989,16 +989,44 @@ const STATUTS_OPTIONS = [
   { val:'absente',   label:'Absente' },
 ];
 
-function DetailResaModal({ resa, onClose, onSaved }) {
+function DetailResaModal({ resa, onClose, onSaved, resaList = [], showToast }) {
   const c = resa.clients || {};
   const nom = c.entreprise ? c.entreprise : `${c.prenom || ''} ${c.nom || ''}`.trim();
   const [statut, setStatut] = useState(resa.statut);
   const [saving, setSaving] = useState(false);
+  const [showSmsPanel, setShowSmsPanel] = useState(false);
+  const [smsTexte, setSmsTexte] = useState('');
+  const [toastVenue, setToastVenue] = useState(false);
+
+  const aujourd = new Date().toISOString().split('T')[0];
+  const demain = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+
+  const smsSuggestions = [
+    resa.date === demain
+      ? `Bonjour ${c.prenom || ''} 👋 Rappel : votre résa au TED est demain à ${resa.heure} pour ${resa.nb_personnes} pers. À demain !`
+      : resa.date < aujourd
+      ? `Bonjour ${c.prenom || ''}, merci pour votre visite au TED. À bientôt ! 🙏`
+      : `Bonjour ${c.prenom || ''}, votre résa au TED le ${new Date(resa.date + 'T12:00:00').toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'})} à ${resa.heure} est confirmée ✅`,
+    `Bonjour ${c.prenom || ''}, pouvez-vous confirmer votre présence au TED ? Merci 🙏`,
+  ];
+
+  const resasClient = resaList.filter(r => r.client_id === resa.client_id);
+  const nbVenues = resasClient.filter(r => r.statut === 'venue').length;
+  const nbAbsentes = resasClient.filter(r => r.statut === 'absente').length;
+
+  function handleStatutChange(val) {
+    setStatut(val);
+    if (val === 'venue') setToastVenue(true);
+    else setToastVenue(false);
+  }
 
   async function saveStatut() {
     setSaving(true);
     const updates = { statut, updated_at: new Date().toISOString() };
     if (statut === 'annulee') updates.raison_annulation = '';
+    if (statut === 'absente') {
+      await supabase.from('clients').update({ nb_absences: (c.nb_absences || 0) + 1 }).eq('id', resa.client_id);
+    }
     const { error } = await supabase.from('reservations').update(updates).eq('id', resa.id);
     setSaving(false);
     if (error) { alert('Erreur lors de la mise à jour'); return; }
@@ -1006,20 +1034,57 @@ function DetailResaModal({ resa, onClose, onSaved }) {
     onClose();
   }
 
+  function envoyerSms() {
+    if (!c.tel || !smsTexte.trim()) return;
+    window.location.href = `sms:${c.tel}?body=${encodeURIComponent(smsTexte)}`;
+  }
+
   return (
-    <Modal title="Détail de la réservation" onClose={onClose} maxW={460} zIndex={3000}
+    <Modal title="Détail de la réservation" onClose={onClose} maxW={480} zIndex={3000}
       footer={[
         <button key="f" type="button" onClick={onClose} style={{...btnSecondary}}>Fermer</button>,
         <button key="s" type="button" onClick={saveStatut} disabled={saving || statut === resa.statut} style={{ background: statut !== resa.statut ? '#111' : '#ddd', color: statut !== resa.statut ? '#fff' : '#999', border:'none', borderRadius:8, padding:'0 18px', height:38, fontWeight:700, fontSize:14, cursor: statut !== resa.statut ? 'pointer' : 'not-allowed' }}>
           {saving ? 'Enregistrement…' : 'Enregistrer'}
         </button>
       ]}>
-      <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-        <div style={{ fontSize:18, fontWeight:800 }}>{nom || '—'}</div>
-        {c.prenom && c.nom && c.entreprise && <div style={{ fontSize:13, color:'#888' }}>{c.prenom} {c.nom}</div>}
-        {c.tel && <a href={`tel:${c.tel}`} style={{ display:'inline-flex', alignItems:'center', gap:8, background:G, color:'#111', borderRadius:9, padding:'8px 18px', fontSize:14, fontWeight:700, textDecoration:'none', width:'fit-content' }}>📞 Appeler · {c.tel}</a>}
-        {c.mail && <div style={{ fontSize:13, color:'#3b82f6' }}>{c.mail}</div>}
-        <div style={{ height:1, background:'#f0f0f0', margin:'4px 0' }} />
+      <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+
+        {/* Nom + contact */}
+        <div>
+          <div style={{ fontSize:18, fontWeight:800, marginBottom:2 }}>{nom || '—'}</div>
+          {c.prenom && c.nom && c.entreprise && <div style={{ fontSize:13, color:'#888' }}>{c.prenom} {c.nom}</div>}
+          {c.mail && <a href={`mailto:${c.mail}`} style={{ fontSize:13, color:'#3b82f6', textDecoration:'none' }}>{c.mail}</a>}
+        </div>
+
+        {/* Actions rapides */}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+          {c.tel && (
+            <a href={`tel:${c.tel}`} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:G, color:'#111', borderRadius:10, padding:'10px 0', fontSize:13, fontWeight:700, textDecoration:'none' }}>📞 Appeler</a>
+          )}
+          {c.tel && (
+            <button onClick={()=>{ setShowSmsPanel(!showSmsPanel); setSmsTexte(smsSuggestions[0]); }} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, background: showSmsPanel ? '#111' : '#f0f0f0', color: showSmsPanel ? '#fff' : '#111', border:'none', borderRadius:10, padding:'10px 0', fontSize:13, fontWeight:700, cursor:'pointer' }}>💬 SMS</button>
+          )}
+        </div>
+
+        {/* Panneau SMS */}
+        {showSmsPanel && c.tel && (
+          <div style={{ background:'#f8f8f8', borderRadius:12, padding:14, display:'flex', flexDirection:'column', gap:8 }}>
+            <div style={{ fontSize:12, fontWeight:700, color:'#555', marginBottom:2 }}>Suggestions</div>
+            <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+              {smsSuggestions.map((s, i) => (
+                <button key={i} onClick={()=>setSmsTexte(s)} style={{ textAlign:'left', background: smsTexte === s ? '#E8C547' : '#fff', border:'1.5px solid #eee', borderRadius:8, padding:'8px 10px', fontSize:12, cursor:'pointer', color:'#111', fontWeight: smsTexte === s ? 700 : 400 }}>{s}</button>
+              ))}
+            </div>
+            <textarea value={smsTexte} onChange={e=>setSmsTexte(e.target.value)} rows={3} style={{ width:'100%', border:'1.5px solid #ddd', borderRadius:8, padding:'8px 10px', fontSize:13, resize:'vertical', outline:'none', fontFamily:'inherit' }} placeholder="Rédigez votre message…" />
+            <button onClick={envoyerSms} disabled={!smsTexte.trim()} style={{ background: smsTexte.trim() ? '#111' : '#ddd', color: smsTexte.trim() ? '#fff' : '#999', border:'none', borderRadius:9, height:40, fontSize:14, fontWeight:700, cursor: smsTexte.trim() ? 'pointer' : 'not-allowed' }}>
+              📤 Envoyer le SMS · {c.tel}
+            </button>
+          </div>
+        )}
+
+        <div style={{ height:1, background:'#f0f0f0' }} />
+
+        {/* Infos réservation */}
         {[
           ['Date', fmtResaDate(resa.date)],
           ['Service', resa.service === 'midi' ? '🌞 Midi' : '🌙 Soir'],
@@ -1027,19 +1092,43 @@ function DetailResaModal({ resa, onClose, onSaved }) {
           ['Personnes', `${resa.nb_personnes} personne${resa.nb_personnes > 1 ? 's' : ''}`],
           resa.occasion ? ['Occasion', resa.occasion] : null,
         ].filter(Boolean).map(([l,v]) => (
-          <div key={l} style={{ display:'flex', justifyContent:'space-between', fontSize:14, padding:'4px 0', borderBottom:'1px solid #f8f8f8' }}>
+          <div key={l} style={{ display:'flex', justifyContent:'space-between', fontSize:14, padding:'3px 0', borderBottom:'1px solid #f8f8f8' }}>
             <span style={{ color:'#888' }}>{l}</span><span style={{ fontWeight:600 }}>{v}</span>
           </div>
         ))}
-        {resa.commentaire_client && <p style={{ fontSize:13, color:'#aaa', fontStyle:'italic', borderLeft:'3px solid #eee', paddingLeft:10, margin:'4px 0' }}>"{resa.commentaire_client}"</p>}
+        {resa.commentaire_client && <p style={{ fontSize:13, color:'#aaa', fontStyle:'italic', borderLeft:'3px solid #eee', paddingLeft:10, margin:'2px 0' }}>"{resa.commentaire_client}"</p>}
         {resa.raison_refus && <div style={{ background:'#fef2f2', borderRadius:8, padding:'8px 12px', fontSize:13, color:'#dc2626' }}>Motif refus : {resa.raison_refus}</div>}
-        <div style={{ height:1, background:'#f0f0f0', margin:'4px 0' }} />
+
+        {/* Statut */}
         <div style={{ display:'flex', alignItems:'center', gap:12 }}>
           <span style={{ fontSize:13, color:'#555', fontWeight:600, flexShrink:0 }}>Statut</span>
-          <select value={statut} onChange={e=>setStatut(e.target.value)} style={{ flex:1, height:40, border:'1.5px solid #ddd', borderRadius:8, padding:'0 10px', fontSize:14, background:'#fff', outline:'none', cursor:'pointer' }}>
+          <select value={statut} onChange={e=>handleStatutChange(e.target.value)} style={{ flex:1, height:40, border:'1.5px solid #ddd', borderRadius:8, padding:'0 10px', fontSize:14, background:'#fff', outline:'none', cursor:'pointer' }}>
             {STATUTS_OPTIONS.map(o => <option key={o.val} value={o.val}>{o.label}</option>)}
           </select>
         </div>
+
+        {/* Toast venue */}
+        {toastVenue && (
+          <div style={{ background:'#f0fdf4', border:'1.5px solid #22c55e', borderRadius:10, padding:'10px 14px', fontSize:13, display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
+            <span>💬 Envoyer un remerciement ?</span>
+            <button onClick={()=>{ setShowSmsPanel(true); setSmsTexte(smsSuggestions[1]); setToastVenue(false); }} style={{ background:'#22c55e', color:'#fff', border:'none', borderRadius:7, padding:'4px 12px', fontSize:12, fontWeight:700, cursor:'pointer' }}>SMS</button>
+          </div>
+        )}
+
+        <div style={{ height:1, background:'#f0f0f0' }} />
+
+        {/* Historique client */}
+        {resasClient.length > 0 && (
+          <div style={{ fontSize:12, color:'#888', display:'flex', alignItems:'center', gap:12 }}>
+            <span>📊</span>
+            <span><strong style={{ color:'#111' }}>{resasClient.length}</strong> résa au total</span>
+            <span>·</span>
+            <span><strong style={{ color:'#16a34a' }}>{nbVenues}</strong> venue{nbVenues > 1 ? 's' : ''}</span>
+            <span>·</span>
+            <span><strong style={{ color: nbAbsentes > 0 ? '#dc2626' : '#888' }}>{nbAbsentes}</strong> no-show</span>
+          </div>
+        )}
+
       </div>
     </Modal>
   );
@@ -1569,7 +1658,7 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
       )}
       {acceptResa && <AccepterModal resa={acceptResa} onConfirm={()=>accepter(acceptResa)} onCancel={()=>setAcceptResa(null)} />}
       {refusResa && <RefusModal onConfirm={raison=>refuser(refusResa, raison)} onCancel={()=>setRefusResa(null)} />}
-      {detailResa && <DetailResaModal resa={detailResa} onClose={()=>setDetailResa(null)} onSaved={(newStatut)=>{ setResaList(prev => prev.map(r => r.id === detailResa.id ? {...r, statut: newStatut} : r)); setDetailResa(null); loadResa(); }} />}
+      {detailResa && <DetailResaModal resa={detailResa} resaList={resaList} showToast={showToast} onClose={()=>setDetailResa(null)} onSaved={(newStatut)=>{ setResaList(prev => prev.map(r => r.id === detailResa.id ? {...r, statut: newStatut} : r)); setDetailResa(null); loadResa(); }} />}
       {showAddResa && <AddResaModal onClose={()=>setShowAddResa(false)} onSaved={()=>{ loadResa(); setShowAddResa(false); }} showToast={showToast} user={user} />}
     </div>
   );
