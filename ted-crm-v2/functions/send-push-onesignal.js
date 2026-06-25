@@ -9,7 +9,10 @@ export async function onRequestPost(context) {
     },
     body: JSON.stringify({
       app_id: '87b29550-ffb0-412a-9682-05fdace514fc',
-      included_segments: ['All'],
+      target_channel: 'push',
+      include_aliases: {
+        external_id: ['ted-admin']
+      },
       headings: { en: title },
       contents: { en: body },
       web_push_topic: 'nouvelle-resa'
