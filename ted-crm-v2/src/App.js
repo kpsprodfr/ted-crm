@@ -1376,6 +1376,7 @@ function CRMApp({ user, onLogout }) {
           setTimeout(() => setNotifResa(null), 6000);
         }
         setResaAttenteCount(prev => { const n = prev + 1; updateBadge(n); return n; });
+        console.log('REALTIME DÉCLENCHÉ - envoi notif', new Date().toISOString());
         fetch('/send-push-onesignal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: '📅 Nouvelle réservation !', body: `${nom} · ${date} · ${payload.new.heure || ''} · ${payload.new.nb_personnes} pers.` }) }).catch(() => {});
         setTimeout(() => { notifEnCoursRef.current = false; }, 3000);
       })

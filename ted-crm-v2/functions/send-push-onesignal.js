@@ -1,4 +1,5 @@
 export async function onRequestPost(context) {
+  console.log('SEND-PUSH APPELÉ', new Date().toISOString());
   const { title, body } = await context.request.json();
 
   const res = await fetch('https://api.onesignal.com/notifications', {
