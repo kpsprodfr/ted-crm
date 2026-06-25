@@ -24,6 +24,12 @@
         outline: none;
         box-shadow: 0 0 0 2px rgba(232,197,71,0.2);
       }
+      @media print {
+        body * { visibility: hidden; }
+        #print-tableau, #print-tableau * { visibility: visible; }
+        #print-tableau { position: fixed; top: 0; left: 0; width: 100%; padding: 24px; }
+        .print-only { display: block !important; }
+      }
     </style>
   </head>
   <body>

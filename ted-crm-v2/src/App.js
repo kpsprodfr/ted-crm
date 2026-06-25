@@ -973,6 +973,9 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
   const [detailResa, setDetailResa] = useState(null);
   const [histOpen, setHistOpen] = useState(false);
   const [showAddResa, setShowAddResa] = useState(false);
+  const [calDate, setCalDate] = useState(new Date());
+  const [calJourSelectionne, setCalJourSelectionne] = useState(null);
+  const [calServiceSelectionne, setCalServiceSelectionne] = useState(null);
   const isMobile = useIsMobile();
   const qr = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(FORM_URL)}`;
 
@@ -1150,6 +1153,141 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
             </button>
           </div>
         </div>
+
+        {/* ── Calendrier mensuel ── */}
+        {!isMobile && (() => {
+          const JOURS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+          const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+          const annee = calDate.getFullYear();
+          const mois = calDate.getMonth();
+          const premierJour = new Date(annee, mois, 1);
+          const dernierJour = new Date(annee, mois + 1, 0);
+          const debutSemaine = (premierJour.getDay() + 6) % 7;
+          const confirmeesParJour = {};
+          resaList.filter(r => r.statut === 'confirmee').forEach(r => {
+            if (!confirmeesParJour[r.date]) confirmeesParJour[r.date] = [];
+            confirmeesParJour[r.date].push(r);
+          });
+          const cases = [];
+          for (let i = 0; i < debutSemaine; i++) cases.push(null);
+          for (let d = 1; d <= dernierJour.getDate(); d++) cases.push(d);
+          while (cases.length % 7 !== 0) cases.push(null);
+          const today = new Date();
+          return (
+            <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:20, marginBottom:20, boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+                <button onClick={() => setCalDate(new Date(annee, mois - 1, 1))} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, fontSize:16, cursor:'pointer', fontWeight:700 }}>‹</button>
+                <span style={{ fontWeight:800, fontSize:16 }}>{MOIS[mois]} {annee}</span>
+                <button onClick={() => setCalDate(new Date(annee, mois + 1, 1))} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, fontSize:16, cursor:'pointer', fontWeight:700 }}>›</button>
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2, marginBottom:4 }}>
+                {JOURS.map(j => <div key={j} style={{ textAlign:'center', fontSize:11, fontWeight:700, color:'#aaa', padding:'4px 0' }}>{j}</div>)}
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2 }}>
+                {cases.map((d, i) => {
+                  if (!d) return <div key={i} />;
+                  const iso = `${annee}-${String(mois+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                  const hasResa = !!confirmeesParJour[iso];
+                  const isToday = today.getFullYear()===annee && today.getMonth()===mois && today.getDate()===d;
+                  const isSelected = calJourSelectionne === iso;
+                  return (
+                    <div key={i} onClick={() => { setCalJourSelectionne(iso); setCalServiceSelectionne(null); }}
+                      style={{ textAlign:'center', padding:'7px 4px', borderRadius:8, cursor:'pointer', position:'relative',
+                        background: isSelected ? '#111' : isToday ? '#fffbeb' : '#fff',
+                        border: isToday && !isSelected ? '1.5px solid #E8C547' : '1.5px solid transparent',
+                        color: isSelected ? '#fff' : '#111', fontWeight: isToday ? 800 : 400, fontSize:13,
+                        transition:'background 0.15s' }}>
+                      {d}
+                      {hasResa && <span style={{ display:'block', width:5, height:5, borderRadius:'50%', background: isSelected ? '#E8C547' : '#E8C547', margin:'2px auto 0' }} />}
+                    </div>
+                  );
+                })}
+              </div>
+              {calJourSelectionne && (() => {
+                const dateLabel = new Date(calJourSelectionne + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+                return (
+                  <div style={{ marginTop:16, borderTop:'1px solid #f0f0f0', paddingTop:16 }}>
+                    <div style={{ fontSize:13, fontWeight:700, color:'#555', marginBottom:10 }}>{dateLabel}</div>
+                    <div style={{ display:'flex', gap:8 }}>
+                      <button onClick={() => setCalServiceSelectionne(calServiceSelectionne === 'midi' ? null : 'midi')}
+                        style={{ flex:1, height:40, borderRadius:9, border:'1.5px solid', fontSize:13, fontWeight:700, cursor:'pointer',
+                          background: calServiceSelectionne === 'midi' ? '#111' : '#fff',
+                          color: calServiceSelectionne === 'midi' ? '#E8C547' : '#111',
+                          borderColor: calServiceSelectionne === 'midi' ? '#111' : '#ddd' }}>
+                        ☀️ Midi
+                      </button>
+                      <button onClick={() => setCalServiceSelectionne(calServiceSelectionne === 'soir' ? null : 'soir')}
+                        style={{ flex:1, height:40, borderRadius:9, border:'1.5px solid', fontSize:13, fontWeight:700, cursor:'pointer',
+                          background: calServiceSelectionne === 'soir' ? '#111' : '#fff',
+                          color: calServiceSelectionne === 'soir' ? '#E8C547' : '#111',
+                          borderColor: calServiceSelectionne === 'soir' ? '#111' : '#ddd' }}>
+                        🌙 Soir
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          );
+        })()}
+
+        {/* ── Tableau réservations du jour ── */}
+        {!isMobile && calJourSelectionne && calServiceSelectionne && (() => {
+          const resasDuJour = resaList
+            .filter(r => r.statut === 'confirmee' && r.date === calJourSelectionne && r.service === calServiceSelectionne)
+            .sort((a,b) => (a.heure||'').localeCompare(b.heure||''));
+          const dateLabel = new Date(calJourSelectionne + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+          const serviceLabel = calServiceSelectionne === 'midi' ? 'Déjeuner' : 'Dîner';
+          return (
+            <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:20, marginBottom:20, boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
+              <style>{`@media print { body > *:not(#print-tableau) { display:none !important; } #print-tableau { display:block !important; position:static !important; } }`}</style>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+                <div>
+                  <div style={{ fontWeight:800, fontSize:17 }}>Réservations TED</div>
+                  <div style={{ fontSize:13, color:'#888', marginTop:2 }}>{dateLabel} — {serviceLabel}</div>
+                </div>
+                <button onClick={() => window.print()} style={{ background:'#111', color:'#fff', border:'none', borderRadius:9, padding:'0 18px', height:38, fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+                  📥 Télécharger
+                </button>
+              </div>
+              <div id="print-tableau">
+                <div style={{ textAlign:'center', marginBottom:16, display:'none' }} className="print-only">
+                  <div style={{ fontWeight:800, fontSize:22 }}>Réservations TED</div>
+                  <div style={{ fontSize:15, color:'#555', marginTop:4 }}>{dateLabel} — {serviceLabel}</div>
+                </div>
+                {resasDuJour.length === 0 ? (
+                  <div style={{ textAlign:'center', padding:'24px 0', color:'#bbb', fontSize:14 }}>Aucune réservation confirmée pour ce service</div>
+                ) : (
+                  <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+                    <thead>
+                      <tr style={{ background:'#f8f8f8', borderBottom:'2px solid #E8C547' }}>
+                        {['Nom Prénom','Heure','Couverts','N° Table','Commentaire','Validé'].map(h => (
+                          <th key={h} style={{ padding:'10px 12px', textAlign:'left', fontWeight:700, fontSize:12, color:'#555', whiteSpace:'nowrap' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {resasDuJour.map((r, idx) => {
+                        const c = r.clients || {};
+                        const nomAff = c.entreprise ? c.entreprise : `${c.prenom||''} ${c.nom||''}`.trim();
+                        return (
+                          <tr key={r.id} style={{ borderBottom:'1px solid #f0f0f0', background: idx % 2 === 0 ? '#fff' : '#fafafa' }}>
+                            <td style={{ padding:'10px 12px', fontWeight:600 }}>{nomAff || '—'}</td>
+                            <td style={{ padding:'10px 12px' }}>{r.heure || '—'}</td>
+                            <td style={{ padding:'10px 12px', textAlign:'center' }}>{r.nb_personnes}</td>
+                            <td style={{ padding:'10px 12px' }}></td>
+                            <td style={{ padding:'10px 12px', color:'#888', fontStyle: r.commentaire_client ? 'italic' : 'normal', maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{r.commentaire_client || ''}</td>
+                            <td style={{ padding:'10px 12px' }}></td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ── Demandes en attente ── */}
         <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
