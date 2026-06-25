@@ -574,6 +574,15 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
   const [calPickerDate, setCalPickerDate] = useState(new Date());
   const [dateTempCalPicker, setDateTempCalPicker] = useState(null);
   const isMobile = useIsMobile();
+  const calPickerRef = useRef(null);
+
+  useEffect(() => {
+    if (showCalPicker && calPickerRef.current) {
+      setTimeout(() => {
+        calPickerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [showCalPicker]);
 
   const heures = service === 'midi' ? HEURES_MIDI : HEURES_SOIR;
 
@@ -800,7 +809,7 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
             const casesP = Array(premierJourSemaine - 1).fill(null).concat(Array.from({length: nbJours}, (_, i) => i + 1));
             const todayIso = new Date().toISOString().split('T')[0];
             return (
-              <div style={{ marginTop:8, background:'#fff', borderRadius:12, border:'1.5px solid #eee', boxShadow:'0 4px 16px rgba(0,0,0,0.08)', overflow:'hidden' }}>
+              <div ref={calPickerRef} style={{ marginTop:8, background:'#fff', borderRadius:12, border:'1.5px solid #eee', boxShadow:'0 4px 16px rgba(0,0,0,0.08)', overflow:'hidden' }}>
                 {/* Header navigation mois */}
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 12px', borderBottom:'1px solid #eee', background:'#fff' }}>
                   <button onPointerDown={()=>setCalPickerDate(new Date(anneeP, moisP-1))}
