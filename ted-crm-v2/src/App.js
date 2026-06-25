@@ -2900,9 +2900,17 @@ function CRMApp({ user, onLogout }) {
             </button>
           </div>
           {/* Bouton flottant + */}
-          <div style={{ position:'fixed', bottom:'calc(85px + env(safe-area-inset-bottom))', right:16, zIndex:1000 }}>
-            <button onClick={()=> mobileTab==='reservations' ? setShowAddResa(true) : setModalAdd(true)} style={{ width:72, height:72, borderRadius:'50%', background:'#E8C547', border:'3px solid #111', fontSize:36, fontWeight:700, cursor:'pointer', boxShadow:'0 6px 24px rgba(0,0,0,0.25)', display:'flex', alignItems:'center', justifyContent:'center', color:'#111', lineHeight:1 }}>+</button>
-          </div>
+          {mobileTab === 'reservations' ? (
+            <div style={{ position:'fixed', bottom:'calc(85px + env(safe-area-inset-bottom))', left:'50%', transform:'translateX(-50%)', zIndex:1000 }}>
+              <button onClick={()=>setShowAddResa(true)} style={{ background:'#E8C547', border:'none', borderRadius:50, padding:'16px 24px', fontSize:14, fontWeight:800, cursor:'pointer', boxShadow:'0 6px 24px rgba(232,197,71,0.5)', color:'#111', whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:8 }}>
+                + Nouvelle réservation
+              </button>
+            </div>
+          ) : (
+            <div style={{ position:'fixed', bottom:'calc(85px + env(safe-area-inset-bottom))', right:16, zIndex:1000 }}>
+              <button onClick={()=>setModalAdd(true)} style={{ width:72, height:72, borderRadius:'50%', background:'#E8C547', border:'none', fontSize:36, fontWeight:700, cursor:'pointer', boxShadow:'0 6px 24px rgba(232,197,71,0.5)', display:'flex', alignItems:'center', justifyContent:'center', color:'#111', lineHeight:1 }}>+</button>
+            </div>
+          )}
         </>
       )}
 
