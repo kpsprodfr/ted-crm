@@ -12,7 +12,7 @@ export async function onRequestPost(context) {
     }
   });
   const tokens = await res.json();
-  console.log('Tokens trouvés:', tokens?.length ?? 0, tokens);
+  console.log('Tokens en base:', JSON.stringify(tokens));
   if (!tokens?.length) return Response.json({ success: true, sent: 0 });
 
   // 2. Génère un JWT pour OAuth2 Google
@@ -69,7 +69,7 @@ export async function onRequestPost(context) {
   }
 
   const accessToken = await getAccessToken(serviceAccount);
-  console.log('Access token obtenu:', !!accessToken);
+  console.log('Access token généré:', !!accessToken);
   const projectId = serviceAccount.project_id;
 
   // 3. Envoie à chaque token via FCM v1

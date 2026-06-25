@@ -1317,7 +1317,10 @@ function CRMApp({ user, onLogout }) {
       console.log('Endpoint:', subscription.endpoint);
       const token = subscription.endpoint.split('/').pop();
       console.log('Token extrait:', token);
-      const { error } = await supabase.from('fcm_tokens').upsert([{ token, user_id: user?.id, created_at: new Date().toISOString() }]);
+      const { error } = await supabase.from('fcm_tokens').upsert(
+        [{ token, user_id: user?.id, created_at: new Date().toISOString() }],
+        { onConflict: 'token', ignoreDuplicates: true }
+      );
       if (error) console.error('Erreur upsert Supabase:', error);
       else console.log('Token sauvé en base ✓');
     } catch(e) { console.error('FCM erreur:', e); }
