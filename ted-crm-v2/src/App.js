@@ -1235,7 +1235,7 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
 
 
         {/* ── Bouton Formulaire ── */}
-        {!isMobile && (
+        {!isMobile && ( /* formulaire desktop uniquement */
           <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:12 }}>
             <div id="formulaire-dropdown" style={{ position:'relative' }}>
               <button onClick={() => setShowFormDropdown(v => !v)} style={{ background:'transparent', border:'1.5px solid #ddd', borderRadius:8, padding:'8px 16px', fontSize:13, fontWeight:600, cursor:'pointer', color:'#666' }}>🔗 Formulaire réservation en ligne</button>
@@ -1254,7 +1254,7 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
         )}
 
         {/* ── Calendrier mensuel ── */}
-        {!isMobile && (() => {
+        {(() => {
           const JOURS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
           const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
           const annee = calDate.getFullYear();
@@ -1356,7 +1356,7 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
         })()}
 
         {/* ── Tableau réservations du jour ── */}
-        {!isMobile && calJourSelectionne && calServiceSelectionne && (() => {
+        {calJourSelectionne && calServiceSelectionne && (() => {
           const resasDuJour = resaList
             .filter(r => r.statut === 'confirmee' && r.date === calJourSelectionne && r.service === calServiceSelectionne)
             .sort((a,b) => (a.heure||'').localeCompare(b.heure||''));
@@ -2880,22 +2880,15 @@ function CRMApp({ user, onLogout }) {
       {/* Barre nav fixe mobile */}
       {isMobile && (
         <>
-          <div style={{ position:'fixed', bottom:0, left:0, right:0, background:'#fff', borderTop:'1px solid #eee', display:'flex', alignItems:'center', justifyContent:'space-around', zIndex:1000, paddingTop:10, paddingBottom:'env(safe-area-inset-bottom, 16px)', minHeight:80 }}>
-
-            {/* Gauche — Clients */}
+          <div style={{ position:'fixed', bottom:0, left:0, right:0, background:'#fff', borderTop:'1px solid #eee', display:'flex', alignItems:'center', zIndex:1000, paddingTop:10, paddingBottom:'env(safe-area-inset-bottom, 16px)', minHeight:70 }}>
+            {/* Clients */}
             <button onClick={()=>setMobileTab('clients')} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:5, border:'none', background:'none', cursor:'pointer', color: mobileTab==='clients' ? '#111' : '#aaa', paddingBottom:4 }}>
               <svg width="28" height="28" fill="none" viewBox="0 0 24 24">
                 <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="currentColor"/>
               </svg>
               <span style={{ fontSize:12, fontWeight: mobileTab==='clients' ? 700 : 500 }}>Clients</span>
             </button>
-
-            {/* Centre — + */}
-            <div style={{ flex:'0 0 auto' }}>
-              <button onClick={()=>setShowPlusSheet(true)} style={{ width:68, height:68, borderRadius:'50%', background:G, border:'4px solid #fff', boxShadow:'0 -4px 20px rgba(232,197,71,0.5)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', fontSize:36, color:'#111', marginTop:-24, flexShrink:0 }}>+</button>
-            </div>
-
-            {/* Droite — Réservations */}
+            {/* Réservations */}
             <button onClick={()=>setMobileTab('reservations')} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:5, border:'none', background:'none', cursor:'pointer', color: mobileTab==='reservations' ? '#111' : '#aaa', paddingBottom:4, position:'relative' }}>
               <div style={{ position:'relative' }}>
                 <svg width="28" height="28" fill="none" viewBox="0 0 24 24">
@@ -2908,29 +2901,10 @@ function CRMApp({ user, onLogout }) {
               <span style={{ fontSize:12, fontWeight: mobileTab==='reservations' ? 700 : 500 }}>Réservations</span>
             </button>
           </div>
-          {/* Bottom sheet + */}
-          {showPlusSheet && (
-            <>
-              <div onPointerDown={()=>setShowPlusSheet(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:2999 }} />
-              <div style={{ position:'fixed', bottom:0, left:0, right:0, background:'#fff', borderRadius:'20px 20px 0 0', zIndex:3000, paddingTop:20, paddingBottom:'calc(16px + env(safe-area-inset-bottom))' }}>
-                <div style={{ width:40, height:4, background:'#e5e5e5', borderRadius:99, margin:'0 auto 16px' }} />
-                <button onClick={()=>{ setShowPlusSheet(false); setModalAdd(true); }} style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', border:'none', background:'none', width:'100%', cursor:'pointer', borderBottom:'1px solid #f0f0f0' }}>
-                  <div style={{ width:44, height:44, background:'#f0fdf4', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>👤</div>
-                  <div style={{ textAlign:'left' }}>
-                    <div style={{ fontWeight:700, fontSize:14, color:'#111' }}>Ajouter un client</div>
-                    <div style={{ fontSize:12, color:'#888' }}>Créer une nouvelle fiche client</div>
-                  </div>
-                </button>
-                <button onClick={()=>{ setShowPlusSheet(false); setShowAddResa(true); }} style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', border:'none', background:'none', width:'100%', cursor:'pointer' }}>
-                  <div style={{ width:44, height:44, background:'#fffbea', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>📅</div>
-                  <div style={{ textAlign:'left' }}>
-                    <div style={{ fontWeight:700, fontSize:14, color:'#111' }}>Ajouter une réservation</div>
-                    <div style={{ fontSize:12, color:'#888' }}>Saisie manuelle par téléphone</div>
-                  </div>
-                </button>
-              </div>
-            </>
-          )}
+          {/* Bouton flottant + */}
+          <div style={{ position:'fixed', bottom:'calc(70px + env(safe-area-inset-bottom))', right:20, zIndex:1000 }}>
+            <button onClick={()=> mobileTab==='reservations' ? setShowAddResa(true) : setModalAdd(true)} style={{ width:60, height:60, borderRadius:'50%', background:G, border:'none', fontSize:28, fontWeight:700, cursor:'pointer', boxShadow:'0 4px 20px rgba(232,197,71,0.5)', display:'flex', alignItems:'center', justifyContent:'center', color:'#111' }}>+</button>
+          </div>
         </>
       )}
 
