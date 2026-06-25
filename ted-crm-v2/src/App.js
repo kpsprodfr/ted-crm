@@ -126,7 +126,7 @@ function Modal({ title, onClose, children, footer, maxW=520, zIndex=3000 }) {
       onPointerDown={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        style={{ background:"#fff", borderRadius: isMobile ? '16px 16px 0 0' : 12, width:"100%", maxWidth: isMobile ? '100%' : maxW, overflow:"hidden", maxHeight:"90vh", display:"flex", flexDirection:"column" }}
+        style={{ background:"#fff", borderRadius: isMobile ? '20px 20px 0 0' : 12, width:"100%", maxWidth: isMobile ? '100%' : maxW, overflow:"hidden", maxHeight: isMobile ? 'none' : '90vh', height: isMobile ? '90vh' : 'auto', display:"flex", flexDirection:"column" }}
         onPointerDown={e => e.stopPropagation()}
       >
         <div style={{ background:"#111", color:"#fff", padding:"14px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
@@ -134,7 +134,7 @@ function Modal({ title, onClose, children, footer, maxW=520, zIndex=3000 }) {
           <button type="button" onClick={onClose} style={{ background:"none", border:"none", color:"#fff", fontSize:20, cursor:"pointer" }}>✕</button>
         </div>
         <div style={{ padding:"18px", overflowY:"auto", flex:1, WebkitOverflowScrolling:"touch" }}>{children}</div>
-        {footer && <div style={{ padding: isMobile ? "12px 16px 24px" : "0 18px 18px", display:"flex", gap:8, justifyContent:"flex-end", flexShrink:0, background:'#fff' }}>{footer}</div>}
+        {footer && <div style={{ padding: isMobile ? "12px 16px" : "0 18px 18px", paddingBottom: isMobile ? 'calc(16px + env(safe-area-inset-bottom))' : 18, display:"flex", gap:8, justifyContent:"flex-end", flexShrink:0, background:'#fff' }}>{footer}</div>}
       </div>
     </div>
   );
@@ -296,6 +296,8 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
   const labelStyle = { display: "block", fontSize: 12, fontWeight: 600, color: "#444", marginBottom: 5 };
   const fieldGroup = { marginBottom: 14 };
 
+  const clientValide = !!(form.tel && form.nom && form.prenom && form.genre && form.genre !== 'Non renseigné');
+
   return (
     <>
       {dupWarn && (
@@ -316,12 +318,12 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
             padding: "0 14px", height: 48, fontWeight: 500, fontSize: 15,
             cursor: "pointer", flex: 1, touchAction: "manipulation"
           }}>Annuler</button>,
-          <button key="s" type="button" onPointerDown={dupClient ? undefined : handleSubmit} disabled={!!dupClient} style={{
-            background: dupClient ? "#ddd" : (success ? "#22c55e" : "#E8C547"),
-            color: dupClient ? "#999" : (success ? "#fff" : "#111"),
+          <button key="s" type="button" onPointerDown={dupClient || !clientValide ? undefined : handleSubmit} disabled={!!dupClient || !clientValide} style={{
+            background: dupClient ? "#ddd" : (success ? "#22c55e" : (clientValide ? "#E8C547" : "#f0f0f0")),
+            color: dupClient ? "#999" : (success ? "#fff" : (clientValide ? "#111" : "#bbb")),
             border: "none", borderRadius: 12,
             height: 52, fontWeight: 700, fontSize: 16,
-            cursor: dupClient ? "not-allowed" : "pointer", flex: 2, touchAction: "manipulation",
+            cursor: dupClient || !clientValide ? "not-allowed" : "pointer", flex: 2, touchAction: "manipulation",
             transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
             transform: success ? "scale(1.05)" : "scale(1)",
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
@@ -717,10 +719,12 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
     color: genre === g ? G : '#666', fontWeight: 700, fontSize: 13, cursor: 'pointer'
   });
 
+  const resaValide = !!(tel && genre && nom && prenom && dateIso && service && heure);
+
   return (
     <Modal title="Ajouter une réservation" onClose={onClose} footer={[
       <button key="cancel" onClick={onClose} style={btnSecondary}>Annuler</button>,
-      <button key="save" onClick={handleSave} disabled={saving || !heure} style={{ ...btnPrimary, opacity: (saving || !heure) ? 0.5 : 1 }}>{saving ? 'Enregistrement…' : 'Enregistrer'}</button>
+      <button key="save" onClick={handleSave} disabled={saving || !resaValide} style={{ ...btnPrimary, background: resaValide ? '#E8C547' : '#f0f0f0', color: resaValide ? '#111' : '#bbb', opacity: saving ? 0.5 : 1, cursor: resaValide ? 'pointer' : 'not-allowed' }}>{saving ? 'Enregistrement…' : 'Enregistrer'}</button>
     ]}>
       <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
 
@@ -2927,14 +2931,14 @@ function CRMApp({ user, onLogout }) {
           </div>
           {/* Bouton flottant + */}
           {mobileTab === 'reservations' ? (
-            <div style={{ position:'fixed', bottom:'calc(85px + env(safe-area-inset-bottom))', left:'50%', transform:'translateX(-50%)', zIndex:1000 }}>
-              <button onClick={()=>setShowAddResa(true)} style={{ background:'#E8C547', border:'none', borderRadius:50, padding:'16px 24px', fontSize:14, fontWeight:800, cursor:'pointer', boxShadow:'0 6px 24px rgba(232,197,71,0.5)', color:'#111', whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:8 }}>
+            <div style={{ position:'fixed', bottom:'calc(85px + env(safe-area-inset-bottom))', right:16, zIndex:1000 }}>
+              <button onClick={()=>setShowAddResa(true)} style={{ background:'#E8C547', border:'3px solid #fff', borderRadius:50, padding:'14px 20px', fontSize:13, fontWeight:800, cursor:'pointer', boxShadow:'0 6px 24px rgba(0,0,0,0.15)', color:'#111', whiteSpace:'nowrap' }}>
                 + Nouvelle réservation
               </button>
             </div>
           ) : (
             <div style={{ position:'fixed', bottom:'calc(85px + env(safe-area-inset-bottom))', right:16, zIndex:1000 }}>
-              <button onClick={()=>setModalAdd(true)} style={{ width:72, height:72, borderRadius:'50%', background:'#E8C547', border:'none', fontSize:36, fontWeight:700, cursor:'pointer', boxShadow:'0 6px 24px rgba(232,197,71,0.5)', display:'flex', alignItems:'center', justifyContent:'center', color:'#111', lineHeight:1 }}>+</button>
+              <button onClick={()=>setModalAdd(true)} style={{ background:'#E8C547', border:'3px solid #fff', borderRadius:50, padding:'14px 20px', fontSize:13, fontWeight:800, cursor:'pointer', boxShadow:'0 6px 24px rgba(0,0,0,0.15)', color:'#111', whiteSpace:'nowrap' }}>+ Nouveau client</button>
             </div>
           )}
         </>
