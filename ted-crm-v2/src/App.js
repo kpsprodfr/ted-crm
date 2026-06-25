@@ -1185,6 +1185,9 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
           const today = new Date();
           return (
             <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:20, marginBottom:20, boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
+              <div style={{ fontWeight:800, fontSize:15, color:'#111', marginBottom:14 }}>
+                Aujourd'hui — {today.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}
+              </div>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
                 <button onClick={() => setCalDate(new Date(annee, mois - 1, 1))} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, fontSize:16, cursor:'pointer', fontWeight:700 }}>‹</button>
                 <span style={{ fontWeight:800, fontSize:16 }}>{MOIS[mois]} {annee}</span>
@@ -1269,11 +1272,16 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
 <table><thead><tr><th>Nom Prénom</th><th style="text-align:center">Heure</th><th style="text-align:center">Couverts</th><th style="text-align:center">N° Table</th><th>Commentaire</th><th style="text-align:center">Validé</th></tr></thead>
 <tbody>${lignes}${Array(Math.max(0, 8 - reservations.length)).fill('<tr><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>').join('')}</tbody></table>
 <div class="footer">Imprimé le ${new Date().toLocaleDateString('fr-FR')} — Le TED · 28 Av. des Frères Montgolfier, 69680 Chassieu · 04 78 90 67 80</div>
-<script>window.onload = () => window.print();<\/script>
 </body></html>`;
-            const blob = new Blob([html], { type: 'text/html' });
+            const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
             const url = URL.createObjectURL(blob);
-            window.open(url, '_blank');
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `reservations-ted-${date}-${service}.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
           }
           return (
             <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:20, marginBottom:20, boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
