@@ -1848,7 +1848,7 @@ function CRMApp({ user, onLogout }) {
       <div style={{minHeight:'100vh', background:'#f5f5f5', fontFamily:"'Inter','Segoe UI',Arial,sans-serif"}}>
         {/* Header sobre */}
         <div style={{background:'#fff', borderBottom:'1px solid #e0e0e0', padding:'0 24px', height:56, display:'flex', alignItems:'center', gap:16}}>
-          <button onClick={()=>setActiveView('crm')} style={{background:'none', border:'1px solid #ddd', borderRadius:7, padding:'0 12px', height:32, fontSize:13, cursor:'pointer', color:'#555'}}>← Retour</button>
+          <button onClick={()=>{ setActiveView('crm'); setShowResaPage(true); }} style={{background:'none', border:'1px solid #ddd', borderRadius:7, padding:'0 12px', height:32, fontSize:13, cursor:'pointer', color:'#555'}}>← Retour</button>
           <span style={{fontSize:16, fontWeight:700, color:'#111'}}>📣 Communications</span>
         </div>
 
