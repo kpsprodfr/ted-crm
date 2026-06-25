@@ -1357,23 +1357,13 @@ function CRMApp({ user, onLogout }) {
         console.log('Service Worker disponible:', 'serviceWorker' in navigator);
         const { data: client } = await supabase.from('clients').select('nom, prenom, tel').eq('id', payload.new.client_id).single();
         loadResaCount();
-        try {
-          const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-          const oscillator = audioCtx.createOscillator();
-          const gainNode = audioCtx.createGain();
-          oscillator.connect(gainNode);
-          gainNode.connect(audioCtx.destination);
-          oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
-          oscillator.frequency.setValueAtTime(660, audioCtx.currentTime + 0.1);
-          gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
-          oscillator.start(audioCtx.currentTime);
-          oscillator.stop(audioCtx.currentTime + 0.5);
-        } catch(e) {}
         const nom = client ? `${client.prenom} ${client.nom}` : 'Nouveau client';
         const date = new Date(payload.new.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-        setNotifResa({ nom, message: `${date} · ${payload.new.heure || ''} · ${payload.new.nb_personnes} pers.`, id: payload.new.id });
-        setTimeout(() => setNotifResa(null), 6000);
+        const isMob = window.innerWidth < 768;
+        if (!isMob) {
+          setNotifResa({ nom, message: `${date} · ${payload.new.heure || ''} · ${payload.new.nb_personnes} pers.`, id: payload.new.id });
+          setTimeout(() => setNotifResa(null), 6000);
+        }
         setResaAttenteCount(prev => { const n = prev + 1; updateBadge(n); return n; });
         fetch('/send-push-onesignal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: '📅 Nouvelle réservation !', body: `${nom} · ${date} · ${payload.new.heure || ''} · ${payload.new.nb_personnes} pers.` }) }).catch(() => {});
       })
