@@ -1365,7 +1365,7 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
             .filter(r => r.statut === 'confirmee' && r.date === calJourSelectionne && r.service === calServiceSelectionne)
             .sort((a,b) => (a.heure||'').localeCompare(b.heure||''));
           const dateLabel = new Date(calJourSelectionne + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-          const serviceLabel = calServiceSelectionne === 'midi' ? 'Déjeuner' : 'Dîner';
+          const serviceLabel = calServiceSelectionne === 'midi' ? '☀️ Midi' : '🌙 Soir';
           function telechargerTableau(date, service, reservations) {
             const dateFormatee = new Date(date + 'T12:00:00').toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
             const serviceLabel2 = service === 'midi' ? '☀️ Déjeuner' : '🌙 Dîner';
