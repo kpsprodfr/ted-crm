@@ -1299,6 +1299,9 @@ function CRMApp({ user, onLogout }) {
         allowLocalhostAsSecureOrigin: true
       });
       console.log('OneSignal initialisé');
+      const userId = user?.id || 'ted-admin';
+      await OneSignal.login(userId);
+      console.log('OneSignal user logged in:', userId);
     });
   }
 
