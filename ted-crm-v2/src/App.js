@@ -1306,14 +1306,19 @@ function CRMApp({ user, onLogout }) {
   }
 
   async function demanderPermissionNotif() {
-    if (typeof window.OneSignalDeferred === 'undefined') {
-      showToast('Notifications non supportées sur cet appareil', 'error');
-      return;
-    }
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
     window.OneSignalDeferred.push(async function(OneSignal) {
+      const isSubscribed = await OneSignal.User.PushSubscription.optedIn;
+      if (isSubscribed) {
+        showToast('🔔 Notifications déjà activées !');
+        return;
+      }
       const permission = await OneSignal.Notifications.requestPermission();
-      if (permission) showToast('🔔 Notifications activées !');
-      else showToast('⚠️ Notifications refusées', 'error');
+      if (permission) {
+        showToast('🔔 Les nouvelles demandes de réservation arriveront ici !');
+      } else {
+        showToast('⚠️ Notifications refusées', 'error');
+      }
     });
   }
   const deleteGuard = useRef(false);
