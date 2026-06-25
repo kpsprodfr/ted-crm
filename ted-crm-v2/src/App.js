@@ -570,6 +570,7 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
   const [heureError, setHeureError] = useState(false);
   const [showCalPicker, setShowCalPicker] = useState(false);
   const [calPickerDate, setCalPickerDate] = useState(new Date());
+  const [dateTempCalPicker, setDateTempCalPicker] = useState(null);
   const isMobile = useIsMobile();
 
   const heures = service === 'midi' ? HEURES_MIDI : HEURES_SOIR;
@@ -816,21 +817,33 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
                     if (!d) return <div key={i} />;
                     const iso = `${anneeP}-${String(moisP+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                     const isToday = todayP.getFullYear()===anneeP && todayP.getMonth()===moisP && todayP.getDate()===d;
-                    const isSelected = dateIso === iso;
+                    const isTemp = dateTempCalPicker === iso;
+                    const isSelected = dateIso === iso && !dateTempCalPicker;
                     return (
-                      <div key={i} onClick={()=>{ setDateIso(iso); setShowCalPicker(false); }}
+                      <div key={i} onClick={()=>setDateTempCalPicker(iso)}
                         style={{ textAlign:'center', padding: isMobile ? '12px 4px' : '7px 4px', borderRadius:7, cursor:'pointer',
-                          background: isSelected ? '#111' : isToday ? '#fffbeb' : '#fff',
-                          border: isToday && !isSelected ? '1.5px solid #E8C547' : '1.5px solid transparent',
-                          color: isSelected ? '#fff' : '#111', fontWeight: isToday ? 800 : 400, fontSize:13,
+                          background: isTemp ? '#E8C547' : isSelected ? '#111' : isToday ? '#fffbeb' : '#fff',
+                          border: isToday && !isTemp && !isSelected ? '1.5px solid #E8C547' : '1.5px solid transparent',
+                          color: isTemp ? '#111' : isSelected ? '#fff' : '#111', fontWeight: isToday || isTemp ? 800 : 400, fontSize:13,
                           transition:'background 0.1s' }}>
                         {d}
                       </div>
                     );
                   })}
                 </div>
+                {dateTempCalPicker && (
+                  <div style={{ padding:'12px 16px', borderTop:'1px solid #eee', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                    <span style={{ fontSize:14, color:'#111', fontWeight:600 }}>
+                      {new Date(dateTempCalPicker+'T12:00:00').toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'})}
+                    </span>
+                    <button onClick={()=>{ setDateIso(dateTempCalPicker); setShowCalPicker(false); setDateTempCalPicker(null); }}
+                      style={{ background:'#E8C547', border:'none', borderRadius:8, padding:'8px 20px', fontSize:14, fontWeight:800, cursor:'pointer', color:'#111' }}>
+                      Valider ✓
+                    </button>
+                  </div>
+                )}
                 {isMobile && (
-                  <button onClick={()=>setShowCalPicker(false)} style={{ marginTop:20, width:'100%', height:48, background:'#111', color:'#fff', border:'none', borderRadius:10, fontSize:15, fontWeight:700, cursor:'pointer' }}>Fermer</button>
+                  <button onClick={()=>{ setShowCalPicker(false); setDateTempCalPicker(null); }} style={{ marginTop:20, width:'100%', height:48, background:'#111', color:'#fff', border:'none', borderRadius:10, fontSize:15, fontWeight:700, cursor:'pointer' }}>Fermer</button>
                 )}
               </div>
             );
