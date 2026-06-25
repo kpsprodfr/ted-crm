@@ -1064,17 +1064,19 @@ function DetailResaModal({ resa, onClose, onSaved, resaList = [], showToast }) {
         <div>
           <div style={{ fontSize:18, fontWeight:800, marginBottom:2 }}>{nom || '—'}</div>
           {c.prenom && c.nom && c.entreprise && <div style={{ fontSize:13, color:'#888' }}>{c.prenom} {c.nom}</div>}
+          {c.tel && <div style={{ fontSize:14, color:'#444', marginTop:2 }}>📞 {c.tel}</div>}
           {c.mail && <a href={`mailto:${c.mail}`} style={{ fontSize:13, color:'#3b82f6', textDecoration:'none' }}>{c.mail}</a>}
         </div>
 
-        {/* Actions rapides */}
-        <div style={{ display:'grid', gridTemplateColumns: c.tel ? '1fr 1fr' : '1fr', gap:8 }}>
+        {/* Actions rapides : SMS | Appeler | Modifier */}
+        <div style={{ display:'flex', gap:8 }}>
           {c.tel && (
-            <a href={`tel:${c.tel}`} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:G, color:'#111', borderRadius:10, padding:'10px 0', fontSize:13, fontWeight:700, textDecoration:'none' }}>📞 Appeler</a>
+            <button onClick={()=>{ setShowSmsPanel(!showSmsPanel); setSmsTexte(smsSuggestions[0]); }} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background: showSmsPanel ? '#111' : '#f0f0f0', color: showSmsPanel ? '#fff' : '#111', border:'none', borderRadius:10, height:44, fontSize:13, fontWeight:700, cursor:'pointer' }}>💬 SMS</button>
           )}
           {c.tel && (
-            <button onClick={()=>{ setShowSmsPanel(!showSmsPanel); setSmsTexte(smsSuggestions[0]); }} style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:6, background: showSmsPanel ? '#111' : '#f0f0f0', color: showSmsPanel ? '#fff' : '#111', border:'none', borderRadius:10, padding:'10px 0', fontSize:13, fontWeight:700, cursor:'pointer' }}>💬 SMS</button>
+            <a href={`tel:${c.tel}`} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:G, color:'#111', borderRadius:10, height:44, fontSize:13, fontWeight:700, textDecoration:'none' }}>📞 Appeler</a>
           )}
+          <button onClick={()=>{}} style={{ flex:1, height:44, border:'1.5px solid #ddd', borderRadius:10, background:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', color:'#111' }}>✏️ Modifier</button>
         </div>
 
         {/* Panneau SMS */}
