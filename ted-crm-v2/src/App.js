@@ -1,7 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { supabase } from "./supabase";
-import { initializeApp } from 'firebase/app';
-import { getMessaging, getToken } from 'firebase/messaging';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const GENRES = ["Homme", "Femme", "Entreprise", "Non renseigné"];
@@ -1291,79 +1289,29 @@ function CRMApp({ user, onLogout }) {
   const smsTextareaRef = useRef(null);
   const [notifResa, setNotifResa] = useState(null);
 
-  const firebaseApp = initializeApp({
-    apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-    authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.REACT_APP_FIREBASE_APP_ID
-  });
-  const fcmMessaging = getMessaging(firebaseApp);
-
-  async function initFCM() {
-    console.log('initFCM démarré (SDK Firebase)');
-    console.log('Permission:', Notification.permission);
-    try {
-      if (!('Notification' in window)) { console.warn('Notifications non supportées'); return; }
-      if (Notification.permission !== 'granted') { console.warn('Permission non granted:', Notification.permission); return; }
-      const vapidKey = process.env.REACT_APP_FCM_VAPID_KEY;
-      console.log('VAPID key présente:', !!vapidKey, vapidKey?.substring(0, 10) + '...');
-      if (!vapidKey) return;
-      const token = await getToken(fcmMessaging, { vapidKey });
-      if (!token) { console.warn('Aucun token FCM obtenu'); return; }
-      console.log('Token FCM:', token);
-      const { data: existing } = await supabase.from('fcm_tokens').select('id').eq('token', token).single();
-      if (!existing) {
-        const { error } = await supabase.from('fcm_tokens').insert([{ token, user_id: user?.id, created_at: new Date().toISOString() }]);
-        if (error) console.error('Erreur insert Supabase:', error);
-        else console.log('Token FCM sauvé ✓');
-      } else {
-        console.log('Token FCM déjà en base');
-      }
-    } catch(e) { console.error('FCM erreur:', e); }
+  async function initOneSignal() {
+    if (typeof window.OneSignalDeferred === 'undefined') window.OneSignalDeferred = [];
+    window.OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.init({
+        appId: '87b29550-ffb0-412a-9682-05fdace514fc',
+        safari_web_id: 'web.onesignal.auto.87b29550-ffb0-412a-9682-05fdace514fc',
+        notifyButton: { enable: false },
+        allowLocalhostAsSecureOrigin: true
+      });
+      console.log('OneSignal initialisé');
+    });
   }
 
   async function demanderPermissionNotif() {
-    if (!('Notification' in window)) {
+    if (typeof window.OneSignalDeferred === 'undefined') {
       showToast('Notifications non supportées sur cet appareil', 'error');
       return;
     }
-    if (Notification.permission === 'granted') {
-      showToast('🔔 Notifications déjà activées !');
-      return;
-    }
-    const perm = await Notification.requestPermission();
-    if (perm === 'granted') {
-      showToast('🔔 Notifications activées !');
-      try {
-        const reg = await navigator.serviceWorker.ready;
-        await reg.showNotification('TED CRM 🎉', { body: 'Les notifications sont activées !', icon: '/favicon.png', badge: '/favicon.png' });
-      } catch(e) {}
-    } else {
-      showToast('⚠️ Notifications refusées', 'error');
-    }
-  }
-
-  async function envoyerNotifLocale(titre, corps) {
-    console.log('envoyerNotifLocale appelée:', titre, corps);
-    if (!('serviceWorker' in navigator)) { console.warn('SW non disponible'); return; }
-    if (Notification.permission !== 'granted') { console.warn('Permission refusée:', Notification.permission); return; }
-    try {
-      console.log('En attente SW ready...');
-      const reg = await navigator.serviceWorker.ready;
-      console.log('SW ready:', reg.scope);
-      await reg.showNotification(titre, {
-        body: corps,
-        icon: '/favicon.png',
-        badge: '/favicon.png',
-        tag: 'nouvelle-resa',
-        renotify: true,
-        vibrate: [200, 100, 200],
-        data: { url: 'https://ted-crm.pages.dev' }
-      });
-      console.log('Notif envoyée !');
-    } catch(e) { console.error('Notif erreur:', e); }
+    window.OneSignalDeferred.push(async function(OneSignal) {
+      const permission = await OneSignal.Notifications.requestPermission();
+      if (permission) showToast('🔔 Notifications activées !');
+      else showToast('⚠️ Notifications refusées', 'error');
+    });
   }
   const deleteGuard = useRef(false);
   const isMobile = useIsMobile();
@@ -1398,7 +1346,7 @@ function CRMApp({ user, onLogout }) {
     if (activeView === 'communications') { loadEmailsHistorique(); loadSmsHistorique(); }
   }, [activeView]);
 
-  useEffect(() => { if (user) initFCM(); }, [user]);
+  useEffect(() => { if (user) initOneSignal(); }, [user]);
 
   useEffect(() => {
     const channel = supabase
@@ -1426,9 +1374,8 @@ function CRMApp({ user, onLogout }) {
         const date = new Date(payload.new.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
         setNotifResa({ nom, message: `${date} · ${payload.new.heure || ''} · ${payload.new.nb_personnes} pers.`, id: payload.new.id });
         setTimeout(() => setNotifResa(null), 6000);
-        await envoyerNotifLocale(`📅 Nouvelle réservation !`, `${nom} · ${date} · ${payload.new.heure || ''} · ${payload.new.nb_personnes} pers.`);
         setResaAttenteCount(prev => { const n = prev + 1; updateBadge(n); return n; });
-        fetch('/send-push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: '📅 Nouvelle réservation !', body: `${nom} · ${date} · ${payload.new.heure || ''} · ${payload.new.nb_personnes} pers.` }) }).catch(() => {});
+        fetch('/send-push-onesignal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: '📅 Nouvelle réservation !', body: `${nom} · ${date} · ${payload.new.heure || ''} · ${payload.new.nb_personnes} pers.` }) }).catch(() => {});
       })
       .subscribe((status) => {
         console.log('Statut Realtime:', status);
