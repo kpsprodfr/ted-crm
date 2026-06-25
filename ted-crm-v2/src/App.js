@@ -1038,6 +1038,16 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
     <div style="text-align:center;margin-bottom:24px">
       <a href="${agendaUrl}" target="_blank" style="display:inline-block;background:#E8C547;color:#111;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:800;font-size:15px">📅 Ajouter à mon agenda</a>
     </div>
+    <div style="background:#f9f9f9;border:1.5px solid #ddd;border-radius:8px;padding:16px;margin-bottom:20px">
+      <p style="margin:0 0 10px;font-size:14px;font-weight:800;color:#111">👔 Dress code</p>
+      <p style="margin:0 0 8px;font-size:13px;color:#555;line-height:1.6">Afin de garantir une ambiance soignée à tous nos clients, nous vous remercions de respecter notre dress code :</p>
+      <ul style="margin:0;padding-left:18px;font-size:13px;color:#555;line-height:2">
+        <li>Pas de pulls à capuches ni de joggings ou pantalons style cargo</li>
+        <li>Pas de couvre-chef, quel qu'il soit</li>
+        <li>Pas de baskets type Air Max, TN ou similaires</li>
+      </ul>
+      <p style="margin:8px 0 0;font-size:12px;color:#999;font-style:italic">Merci de votre compréhension — nous nous réservons le droit de refuser l'accès en cas de non-respect.</p>
+    </div>
     <div style="background:#fff8e1;border:1.5px solid #E8C547;border-radius:8px;padding:16px;margin-bottom:24px">
       <p style="margin:0;font-size:14px;color:#555;line-height:1.6">⚠️ <strong>En cas d'annulation ou de modification</strong>, merci de nous prévenir au plus tôt au <strong>04 78 90 67 80</strong> ou par email afin que nous puissions libérer la table pour d'autres clients. Merci de votre compréhension.</p>
     </div>
