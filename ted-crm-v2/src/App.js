@@ -2933,13 +2933,27 @@ function CRMApp({ user, onLogout }) {
           {/* Bouton flottant + */}
           {mobileTab === 'reservations' ? (
             <div style={{ position:'fixed', bottom:'calc(85px + env(safe-area-inset-bottom))', right:16, zIndex:1000 }}>
-              <button onClick={()=>setShowAddResa(true)} style={{ background:'#E8C547', border:'3px solid #fff', borderRadius:50, padding:'14px 20px', fontSize:13, fontWeight:800, cursor:'pointer', boxShadow:'0 6px 24px rgba(0,0,0,0.15)', color:'#111', whiteSpace:'nowrap' }}>
-                + Nouvelle réservation
-              </button>
+              <button
+                className="btn-pulse"
+                onClick={()=>setShowAddResa(true)}
+                onMouseEnter={e => e.currentTarget.style.transform='scale(1.05)'}
+                onMouseLeave={e => e.currentTarget.style.transform='scale(1)'}
+                onTouchStart={e => e.currentTarget.style.transform='scale(0.95)'}
+                onTouchEnd={e => e.currentTarget.style.transform='scale(1)'}
+                style={{ background:'#E8C547', border:'3px solid #fff', borderRadius:50, padding:'14px 20px', fontSize:13, fontWeight:800, cursor:'pointer', color:'#111', whiteSpace:'nowrap', transition:'transform 0.15s ease' }}
+              >+ Nouvelle réservation</button>
             </div>
           ) : (
             <div style={{ position:'fixed', bottom:'calc(85px + env(safe-area-inset-bottom))', right:16, zIndex:1000 }}>
-              <button onClick={()=>setModalAdd(true)} style={{ background:'#E8C547', border:'3px solid #fff', borderRadius:50, padding:'14px 20px', fontSize:13, fontWeight:800, cursor:'pointer', boxShadow:'0 6px 24px rgba(0,0,0,0.15)', color:'#111', whiteSpace:'nowrap' }}>+ Nouveau client</button>
+              <button
+                className="btn-pulse"
+                onClick={()=>setModalAdd(true)}
+                onMouseEnter={e => e.currentTarget.style.transform='scale(1.05)'}
+                onMouseLeave={e => e.currentTarget.style.transform='scale(1)'}
+                onTouchStart={e => e.currentTarget.style.transform='scale(0.95)'}
+                onTouchEnd={e => e.currentTarget.style.transform='scale(1)'}
+                style={{ background:'#E8C547', border:'3px solid #fff', borderRadius:50, padding:'14px 20px', fontSize:13, fontWeight:800, cursor:'pointer', color:'#111', whiteSpace:'nowrap', transition:'transform 0.15s ease' }}
+              >+ Nouveau client</button>
             </div>
           )}
         </>
