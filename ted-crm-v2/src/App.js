@@ -808,15 +808,26 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
               : { position:'absolute', top:'100%', left:0, right:0, background:'#fff', borderRadius:12, border:'1.5px solid #eee', boxShadow:'0 8px 32px rgba(0,0,0,0.12)', padding:16, zIndex:500, marginTop:4 };
             return (
               <div style={calStyle}>
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
-                  <button onClick={e=>{e.stopPropagation();setCalPickerDate(new Date(anneeP, moisP-1, 1));}} style={{ background:'#f0f0f0', border:'none', borderRadius:7, width:32, height:32, fontSize:15, cursor:'pointer', fontWeight:700 }}>‹</button>
-                  <span style={{ fontWeight:800, fontSize:14 }}>{MOIS_P[moisP]} {anneeP}</span>
-                  <button onClick={e=>{e.stopPropagation();setCalPickerDate(new Date(anneeP, moisP+1, 1));}} style={{ background:'#f0f0f0', border:'none', borderRadius:7, width:32, height:32, fontSize:15, cursor:'pointer', fontWeight:700 }}>›</button>
+                {/* Header sticky : navigation mois + ✕ */}
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding: isMobile ? '12px 16px' : '0 0 12px', borderBottom:'1px solid #eee', position: isMobile ? 'sticky' : 'static', top:0, background:'#fff', zIndex:10, marginBottom: isMobile ? 0 : 0, flexShrink:0 }}>
+                  <button onClick={e=>{e.stopPropagation();setCalPickerDate(new Date(anneeP, moisP-1, 1));}}
+                    style={{ width:40, height:40, border:'1.5px solid #ddd', borderRadius:10, background:'#fff', fontSize:20, cursor:'pointer', fontWeight:700 }}>‹</button>
+                  <span style={{ fontWeight:800, fontSize: isMobile ? 18 : 14, color:'#111' }}>{MOIS_P[moisP]} {anneeP}</span>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <button onClick={e=>{e.stopPropagation();setCalPickerDate(new Date(anneeP, moisP+1, 1));}}
+                      style={{ width:40, height:40, border:'1.5px solid #ddd', borderRadius:10, background:'#fff', fontSize:20, cursor:'pointer', fontWeight:700 }}>›</button>
+                    {isMobile && (
+                      <button onClick={()=>setShowCalPicker(false)}
+                        style={{ width:36, height:36, borderRadius:'50%', background:'#f0f0f0', border:'none', fontSize:18, cursor:'pointer', color:'#111', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
+                    )}
+                  </div>
                 </div>
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2, marginBottom:4 }}>
+                {/* Jours de la semaine */}
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2, padding: isMobile ? '8px 16px 4px' : '8px 0 4px' }}>
                   {JOURS_P.map(j => <div key={j} style={{ textAlign:'center', fontSize:10, fontWeight:700, color:'#aaa', padding:'3px 0' }}>{j}</div>)}
                 </div>
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2, flex:1 }}>
+                {/* Grille des jours */}
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2, flex:1, padding: isMobile ? '0 16px' : 0 }}>
                   {casesP.map((d, i) => {
                     if (!d) return <div key={i} />;
                     const iso = `${anneeP}-${String(moisP+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -825,7 +836,7 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
                     const isSelected = dateIso === iso && !dateTempCalPicker;
                     return (
                       <div key={i} onClick={()=>setDateTempCalPicker(iso)}
-                        style={{ textAlign:'center', padding: isMobile ? '12px 4px' : '7px 4px', borderRadius:7, cursor:'pointer',
+                        style={{ textAlign:'center', height: isMobile ? 44 : 'auto', padding: isMobile ? 0 : '7px 4px', display:'flex', alignItems:'center', justifyContent:'center', borderRadius:7, cursor:'pointer',
                           background: isTemp ? '#E8C547' : isSelected ? '#111' : isToday ? '#fffbeb' : '#fff',
                           border: isToday && !isTemp && !isSelected ? '1.5px solid #E8C547' : '1.5px solid transparent',
                           color: isTemp ? '#111' : isSelected ? '#fff' : '#111', fontWeight: isToday || isTemp ? 800 : 400, fontSize:13,
@@ -835,18 +846,16 @@ function AddResaModal({ onClose, onSaved, showToast, user }) {
                     );
                   })}
                 </div>
+                {/* Footer : Valider */}
                 {isMobile ? (
-                  <div style={{ padding:'12px 16px', borderTop:'1px solid #eee' }}>
+                  <div style={{ padding:'12px 16px', borderTop:'1px solid #eee', flexShrink:0 }}>
                     {dateTempCalPicker ? (
                       <button onClick={()=>{ setDateIso(dateTempCalPicker); setShowCalPicker(false); setDateTempCalPicker(null); }}
                         style={{ width:'100%', height:48, background:'#E8C547', border:'none', borderRadius:10, fontSize:15, fontWeight:800, cursor:'pointer', color:'#111' }}>
                         Valider — {new Date(dateTempCalPicker+'T12:00:00').toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'})} ✓
                       </button>
                     ) : (
-                      <button onClick={()=>setShowCalPicker(false)}
-                        style={{ width:'100%', height:48, background:'#111', border:'none', borderRadius:10, fontSize:15, fontWeight:700, cursor:'pointer', color:'#fff' }}>
-                        Fermer
-                      </button>
+                      <div style={{ textAlign:'center', fontSize:13, color:'#aaa', padding:'12px 0' }}>Sélectionnez une date</div>
                     )}
                   </div>
                 ) : dateTempCalPicker && (
