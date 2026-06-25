@@ -1322,6 +1322,7 @@ function CRMApp({ user, onLogout }) {
     });
   }
   const deleteGuard = useRef(false);
+  const notifEnCoursRef = useRef(false);
   const isMobile = useIsMobile();
 
   const showToast = useCallback((msg, type="success") => setToast({msg,type}), []);
@@ -1360,6 +1361,8 @@ function CRMApp({ user, onLogout }) {
     const channel = supabase
       .channel('nouvelles-reservations')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reservations', filter: 'statut=eq.attente' }, async (payload) => {
+        if (notifEnCoursRef.current) return;
+        notifEnCoursRef.current = true;
         console.log('PAYLOAD REÇU:', payload);
         console.log('Permission notifications:', Notification.permission);
         console.log('Service Worker disponible:', 'serviceWorker' in navigator);
@@ -1374,6 +1377,7 @@ function CRMApp({ user, onLogout }) {
         }
         setResaAttenteCount(prev => { const n = prev + 1; updateBadge(n); return n; });
         fetch('/send-push-onesignal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: '📅 Nouvelle réservation !', body: `${nom} · ${date} · ${payload.new.heure || ''} · ${payload.new.nb_personnes} pers.` }) }).catch(() => {});
+        setTimeout(() => { notifEnCoursRef.current = false; }, 3000);
       })
       .subscribe((status) => {
         console.log('Statut Realtime:', status);
