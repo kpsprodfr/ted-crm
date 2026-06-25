@@ -1214,7 +1214,7 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
         {!isMobile && (
           <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:12 }}>
             <div id="formulaire-dropdown" style={{ position:'relative' }}>
-              <button onClick={() => setShowFormDropdown(v => !v)} style={{ background:'transparent', border:'1.5px solid #ddd', borderRadius:8, padding:'8px 16px', fontSize:13, fontWeight:600, cursor:'pointer', color:'#666' }}>🔗 Formulaire</button>
+              <button onClick={() => setShowFormDropdown(v => !v)} style={{ background:'transparent', border:'1.5px solid #ddd', borderRadius:8, padding:'8px 16px', fontSize:13, fontWeight:600, cursor:'pointer', color:'#666' }}>🔗 Formulaire réservation en ligne</button>
               {showFormDropdown && (
                 <div style={{ position:'absolute', top:40, right:0, background:'#fff', borderRadius:10, border:'1.5px solid #eee', boxShadow:'0 8px 24px rgba(0,0,0,0.12)', padding:8, zIndex:200, minWidth:180 }}>
                   <button onClick={()=>{ navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver'); showToast('Lien copié !'); setShowFormDropdown(false); }}
