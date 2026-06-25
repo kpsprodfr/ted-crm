@@ -965,7 +965,7 @@ function DetailResaModal({ resa, onClose, onSaved }) {
   );
 }
 
-function ReservationsPage({ onBack, showToast, user, inline = false, onResaCountChange }) {
+function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, onResaCountChange }) {
   const [resaList, setResaList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refusResa, setRefusResa] = useState(null);
@@ -1134,23 +1134,29 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
     <div style={{ fontFamily:"'Inter','Segoe UI',Arial,sans-serif", background:'#f8f8f8', minHeight: inline ? undefined : '100vh' }}>
       {/* Header — desktop full-page mode only */}
       {!inline && (
-        <header style={{ background:'#111', color:'#fff', padding:'0 20px', height:56, display:'flex', alignItems:'center', gap:14, borderBottom:`3px solid ${G}`, flexShrink:0 }}>
-          <button onClick={onBack} style={{ background:'rgba(255,255,255,0.1)', border:'none', borderRadius:8, height:34, padding:'0 14px', color:'#fff', fontWeight:600, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>👥 Mes Clients</button>
-          <span style={{ fontWeight:700, fontSize:15, flex:1 }}>📅 Réservations</span>
-          <div style={{ position:'relative' }}>
-            <button onClick={() => setShowFormDropdown(v => !v)} style={{ background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:8, height:34, padding:'0 14px', color:'#fff', fontWeight:600, fontSize:13, cursor:'pointer' }}>🔗 Formulaire</button>
-            {showFormDropdown && (
-              <div style={{ position:'absolute', top:40, right:0, background:'#fff', borderRadius:10, border:'1.5px solid #eee', boxShadow:'0 8px 24px rgba(0,0,0,0.12)', padding:8, zIndex:200, minWidth:180 }}>
-                <button onClick={()=>{ navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver'); showToast('Lien copié !'); setShowFormDropdown(false); }}
-                  style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}>📋 Copier</button>
-                <button onClick={()=>{ window.open('https://ted-crm.pages.dev/reserver','_blank'); setShowFormDropdown(false); }}
-                  style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}>🔗 Ouvrir</button>
-                <button onClick={()=>{ if(navigator.share){ navigator.share({title:'Réservation Le TED', text:'Réservez votre table au TED', url:'https://ted-crm.pages.dev/reserver'}); } else { navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver'); showToast('Lien copié !'); } setShowFormDropdown(false); }}
-                  style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}>📤 Partager</button>
-              </div>
-            )}
+        <header style={{ background:'#111', color:'#fff', padding:'0 20px', height:56, display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:`3px solid ${G}`, flexShrink:0 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <span style={{ fontWeight:700, fontSize:15, color:'#fff' }}>📅 <span style={{ color:G }}>TED</span> — Réservations</span>
           </div>
-          <button onClick={()=>setShowAddResa(true)} style={{ background:G, border:'none', borderRadius:8, height:34, padding:'0 16px', color:'#111', fontWeight:700, fontSize:13, cursor:'pointer' }}>+ Ajouter une réservation</button>
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            <div style={{ position:'relative' }}>
+              <button onClick={() => setShowFormDropdown(v => !v)} style={{ background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:8, height:34, padding:'0 14px', color:'#fff', fontWeight:600, fontSize:13, cursor:'pointer' }}>🔗 Formulaire</button>
+              {showFormDropdown && (
+                <div style={{ position:'absolute', top:40, right:0, background:'#fff', borderRadius:10, border:'1.5px solid #eee', boxShadow:'0 8px 24px rgba(0,0,0,0.12)', padding:8, zIndex:200, minWidth:180 }}>
+                  <button onClick={()=>{ navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver'); showToast('Lien copié !'); setShowFormDropdown(false); }}
+                    style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}>📋 Copier</button>
+                  <button onClick={()=>{ window.open('https://ted-crm.pages.dev/reserver','_blank'); setShowFormDropdown(false); }}
+                    style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}>🔗 Ouvrir</button>
+                  <button onClick={()=>{ if(navigator.share){ navigator.share({title:'Réservation Le TED', text:'Réservez votre table au TED', url:'https://ted-crm.pages.dev/reserver'}); } else { navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver'); showToast('Lien copié !'); } setShowFormDropdown(false); }}
+                    style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}>📤 Partager</button>
+                </div>
+              )}
+            </div>
+            <button onClick={()=>setShowAddResa(true)} style={{ background:G, border:'none', borderRadius:8, height:34, padding:'0 16px', color:'#111', fontWeight:700, fontSize:13, cursor:'pointer' }}>+ Ajouter</button>
+            <button onClick={onBack} style={{ background:'rgba(255,255,255,0.08)', border:'1px solid #444', borderRadius:8, height:34, padding:'0 14px', color:'#ccc', fontWeight:600, fontSize:13, cursor:'pointer' }}>👥 Mes Clients</button>
+            <button onClick={()=>onBack('communications')} style={{ background:'rgba(255,255,255,0.08)', border:'1px solid #444', borderRadius:8, height:34, padding:'0 14px', color:'#ccc', fontWeight:600, fontSize:13, cursor:'pointer' }}>📣 Communications</button>
+            <button onClick={onLogout} style={{ background:'transparent', color:'#ccc', border:'1px solid #444', borderRadius:7, padding:'0 10px', height:32, fontSize:12, cursor:'pointer' }}>🚪 Quitter</button>
+          </div>
         </header>
       )}
 
@@ -1742,7 +1748,7 @@ function CRMApp({ user, onLogout }) {
   }
 
   if (loading) return <div style={{ textAlign:"center", paddingTop:80, fontSize:16, color:"#888" }}>Chargement des clients…</div>;
-  if (showResaPage && !isMobile) return <ReservationsPage onBack={()=>{ setShowResaPage(false); loadResaCount(); loadClients(); }} showToast={showToast} user={user} />;
+  if (showResaPage && !isMobile) return <ReservationsPage onBack={(dest)=>{ setShowResaPage(false); loadResaCount(); loadClients(); if(dest==='communications') setActiveView('communications'); }} showToast={showToast} user={user} onLogout={onLogout} />;
 
   if (activeView === 'communications' && !isMobile) {
     const commClients = clients.filter(c => {
@@ -2572,20 +2578,14 @@ function CRMApp({ user, onLogout }) {
       {!isMobile && (
         <header style={{background:"#111", color:"#fff", padding:"0 20px", display:"flex", alignItems:"center", justifyContent:"space-between", height:56, borderBottom:`3px solid ${G}`, flexShrink:0}}>
           <div style={{display:"flex", alignItems:"center", gap:10}}>
-            <img src={require('./logo.png')} alt="TED" style={{height:30, filter:'brightness(0) invert(1)'}} onError={e=>e.target.style.display='none'} />
+            <button onClick={()=>setShowResaPage(true)} style={{background:'rgba(255,255,255,0.08)', border:'1px solid #444', borderRadius:8, height:34, padding:'0 14px', color:'#ccc', fontWeight:600, fontSize:13, cursor:'pointer'}}>← Retour</button>
             <h1 style={{fontSize:15, fontWeight:700, letterSpacing:2, color:"#fff", margin:0}}>
-              <span style={{color:G}}>TED</span> — FICHIER CLIENTS
+              👥 Fichier Clients
             </h1>
           </div>
           <div style={{display:"flex", gap:6, alignItems:"center", flexShrink:0}}>
-            <span style={{fontSize:11, color:"#666", marginRight:4, maxWidth:120, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{user.email}</span>
-            <button onClick={()=>setModalCorbeille(true)} style={{background:"transparent", color:G, border:`1px solid ${G}`, borderRadius:7, padding:"0 10px", height:32, fontSize:12, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap"}}>🗑 Corbeille</button>
-            <button onClick={()=>setShowResaPage(true)} style={{ position:'relative', background:'transparent', color:'#ccc', border:'1px solid #444', borderRadius:7, padding:'0 10px', height:32, fontSize:12, cursor:'pointer', whiteSpace:'nowrap' }}>
-              📅 Réservations
-              {resaAttenteCount > 0 && <span style={{ marginLeft:6, background:'#dc2626', color:'#fff', borderRadius:99, fontSize:10, fontWeight:700, padding:'1px 6px' }}>{resaAttenteCount}</span>}
-            </button>
-            <button onClick={()=>setActiveView('communications')} style={{background:'transparent', color:'#ccc', border:'1px solid #444', borderRadius:7, padding:'0 12px', height:32, fontSize:12, cursor:'pointer', whiteSpace:'nowrap'}}>📣 Communications</button>
-            <button onClick={onLogout} style={{background:"transparent", color:"#ccc", border:"1px solid #444", borderRadius:7, padding:"0 10px", height:32, fontSize:12, cursor:"pointer"}}>⎋ Quitter</button>
+            <button onClick={()=>setModalCorbeille(true)} style={{background:"transparent", color:G, border:`1px solid ${G}`, borderRadius:7, padding:"0 10px", height:32, fontSize:12, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap"}}>🗑️ Corbeille</button>
+            <button onClick={onLogout} style={{background:"transparent", color:"#ccc", border:"1px solid #444", borderRadius:7, padding:"0 10px", height:32, fontSize:12, cursor:"pointer"}}>🚪 Quitter</button>
           </div>
         </header>
       )}
