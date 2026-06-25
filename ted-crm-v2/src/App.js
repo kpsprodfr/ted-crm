@@ -976,6 +976,7 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
   const [calDate, setCalDate] = useState(new Date());
   const [calJourSelectionne, setCalJourSelectionne] = useState(null);
   const [calServiceSelectionne, setCalServiceSelectionne] = useState(null);
+  const [calOuvert, setCalOuvert] = useState(true);
   const isMobile = useIsMobile();
   const qr = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(FORM_URL)}`;
 
@@ -1185,9 +1186,20 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
           const today = new Date();
           return (
             <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:20, marginBottom:20, boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
-              <div style={{ fontWeight:800, fontSize:15, color:'#111', marginBottom:14 }}>
-                Aujourd'hui — {today.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: calOuvert ? 14 : 0 }}>
+                <div style={{ fontWeight:800, fontSize:15, color:'#111' }}>
+                  Aujourd'hui — {today.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}
+                  {!calOuvert && calJourSelectionne && (
+                    <span style={{ fontWeight:400, fontSize:13, color:'#888', marginLeft:10 }}>
+                      · {new Date(calJourSelectionne + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' })}
+                    </span>
+                  )}
+                </div>
+                <button onClick={() => setCalOuvert(!calOuvert)} style={{ background:'none', border:'1.5px solid #ddd', borderRadius:8, padding:'6px 14px', fontSize:12, fontWeight:700, cursor:'pointer', color:'#666', flexShrink:0 }}>
+                  {calOuvert ? '▲ Rétracter' : '▼ Agenda'}
+                </button>
               </div>
+              {calOuvert && (<>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
                 <button onClick={() => setCalDate(new Date(annee, mois - 1, 1))} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, fontSize:16, cursor:'pointer', fontWeight:700 }}>‹</button>
                 <span style={{ fontWeight:800, fontSize:16 }}>{MOIS[mois]} {annee}</span>
@@ -1203,43 +1215,54 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
                   const hasResa = !!confirmeesParJour[iso];
                   const isToday = today.getFullYear()===annee && today.getMonth()===mois && today.getDate()===d;
                   const isSelected = calJourSelectionne === iso;
+                  const estPasse = new Date(iso) < new Date(new Date().setHours(0,0,0,0));
                   return (
                     <div key={i} onClick={() => { setCalJourSelectionne(iso); setCalServiceSelectionne(null); }}
                       style={{ textAlign:'center', padding:'7px 4px', borderRadius:8, cursor:'pointer', position:'relative',
                         background: isSelected ? '#111' : isToday ? '#fffbeb' : '#fff',
                         border: isToday && !isSelected ? '1.5px solid #E8C547' : '1.5px solid transparent',
                         color: isSelected ? '#fff' : '#111', fontWeight: isToday ? 800 : 400, fontSize:13,
+                        opacity: estPasse ? 0.4 : 1,
                         transition:'background 0.15s' }}>
                       {d}
-                      {hasResa && <span style={{ display:'block', width:5, height:5, borderRadius:'50%', background: isSelected ? '#E8C547' : '#E8C547', margin:'2px auto 0' }} />}
+                      {hasResa && <span style={{ display:'block', width:5, height:5, borderRadius:'50%', background:'#E8C547', margin:'2px auto 0' }} />}
                     </div>
                   );
                 })}
               </div>
               {calJourSelectionne && (() => {
                 const dateLabel = new Date(calJourSelectionne + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+                const nbMidi = resaList.filter(r => r.date === calJourSelectionne && r.service === 'midi' && r.statut === 'confirmee').length;
+                const nbSoir = resaList.filter(r => r.date === calJourSelectionne && r.service === 'soir' && r.statut === 'confirmee').length;
                 return (
                   <div style={{ marginTop:16, borderTop:'1px solid #f0f0f0', paddingTop:16 }}>
                     <div style={{ fontSize:13, fontWeight:700, color:'#555', marginBottom:10 }}>{dateLabel}</div>
                     <div style={{ display:'flex', gap:8 }}>
-                      <button onClick={() => setCalServiceSelectionne(calServiceSelectionne === 'midi' ? null : 'midi')}
-                        style={{ flex:1, height:40, borderRadius:9, border:'1.5px solid', fontSize:13, fontWeight:700, cursor:'pointer',
-                          background: calServiceSelectionne === 'midi' ? '#111' : '#fff',
-                          color: calServiceSelectionne === 'midi' ? '#E8C547' : '#111',
-                          borderColor: calServiceSelectionne === 'midi' ? '#111' : '#ddd' }}>
-                        ☀️ Midi
-                      </button>
-                      <button onClick={() => setCalServiceSelectionne(calServiceSelectionne === 'soir' ? null : 'soir')}
-                        style={{ flex:1, height:40, borderRadius:9, border:'1.5px solid', fontSize:13, fontWeight:700, cursor:'pointer',
-                          background: calServiceSelectionne === 'soir' ? '#111' : '#fff',
-                          color: calServiceSelectionne === 'soir' ? '#E8C547' : '#111',
-                          borderColor: calServiceSelectionne === 'soir' ? '#111' : '#ddd' }}>
-                        🌙 Soir
-                      </button>
+                      <div style={{ flex:1, display:'flex', flexDirection:'column', gap:4 }}>
+                        <button onClick={() => setCalServiceSelectionne(calServiceSelectionne === 'midi' ? null : 'midi')}
+                          style={{ height:40, borderRadius:9, border:'1.5px solid', fontSize:13, fontWeight:700, cursor:'pointer',
+                            background: calServiceSelectionne === 'midi' ? '#111' : '#fff',
+                            color: calServiceSelectionne === 'midi' ? '#E8C547' : '#111',
+                            borderColor: calServiceSelectionne === 'midi' ? '#111' : '#ddd' }}>
+                          ☀️ Midi
+                        </button>
+                        <div style={{ textAlign:'center', fontSize:11, color:'#888' }}>{nbMidi} réservation{nbMidi !== 1 ? 's' : ''} confirmée{nbMidi !== 1 ? 's' : ''}</div>
+                      </div>
+                      <div style={{ flex:1, display:'flex', flexDirection:'column', gap:4 }}>
+                        <button onClick={() => setCalServiceSelectionne(calServiceSelectionne === 'soir' ? null : 'soir')}
+                          style={{ height:40, borderRadius:9, border:'1.5px solid', fontSize:13, fontWeight:700, cursor:'pointer',
+                            background: calServiceSelectionne === 'soir' ? '#111' : '#fff',
+                            color: calServiceSelectionne === 'soir' ? '#E8C547' : '#111',
+                            borderColor: calServiceSelectionne === 'soir' ? '#111' : '#ddd' }}>
+                          🌙 Soir
+                        </button>
+                        <div style={{ textAlign:'center', fontSize:11, color:'#888' }}>{nbSoir} réservation{nbSoir !== 1 ? 's' : ''} confirmée{nbSoir !== 1 ? 's' : ''}</div>
+                      </div>
                     </div>
                   </div>
                 );
               })()}
+              </>)}
             </div>
           );
         })()}
