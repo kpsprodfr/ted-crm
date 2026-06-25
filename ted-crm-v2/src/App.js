@@ -2682,7 +2682,7 @@ function CRMApp({ user, onLogout }) {
 
       {/* ═══ MOBILE — RÉSERVATIONS INLINE ═══ */}
       {isMobile && mobileTab === 'reservations' && (
-        <div style={{ paddingTop:56 }}>
+        <div style={{ paddingTop:56, overflowX:'hidden', maxWidth:'100vw', width:'100%' }}>
           <ReservationsPage
             inline
             showToast={showToast}
@@ -2902,8 +2902,8 @@ function CRMApp({ user, onLogout }) {
             </button>
           </div>
           {/* Bouton flottant + */}
-          <div style={{ position:'fixed', bottom:'calc(70px + env(safe-area-inset-bottom))', right:20, zIndex:1000 }}>
-            <button onClick={()=> mobileTab==='reservations' ? setShowAddResa(true) : setModalAdd(true)} style={{ width:60, height:60, borderRadius:'50%', background:G, border:'none', fontSize:28, fontWeight:700, cursor:'pointer', boxShadow:'0 4px 20px rgba(232,197,71,0.5)', display:'flex', alignItems:'center', justifyContent:'center', color:'#111' }}>+</button>
+          <div style={{ position:'fixed', bottom:'calc(85px + env(safe-area-inset-bottom))', right:16, zIndex:1000 }}>
+            <button onClick={()=> mobileTab==='reservations' ? setShowAddResa(true) : setModalAdd(true)} style={{ width:72, height:72, borderRadius:'50%', background:'#E8C547', border:'3px solid #111', fontSize:36, fontWeight:700, cursor:'pointer', boxShadow:'0 6px 24px rgba(0,0,0,0.25)', display:'flex', alignItems:'center', justifyContent:'center', color:'#111', lineHeight:1 }}>+</button>
           </div>
         </>
       )}
