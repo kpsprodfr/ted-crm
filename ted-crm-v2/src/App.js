@@ -1361,7 +1361,7 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
         {/* ── Tableau réservations du jour ── */}
         {calJourSelectionne && calServiceSelectionne && (() => {
           const resasDuJour = resaList
-            .filter(r => r.statut === 'confirmee' && r.date === calJourSelectionne && r.service === calServiceSelectionne)
+            .filter(r => (r.statut === 'confirmee' || r.statut === 'annulee') && r.date === calJourSelectionne && r.service === calServiceSelectionne)
             .sort((a,b) => (a.heure||'').localeCompare(b.heure||''));
           const dateLabel = new Date(calJourSelectionne + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
           const serviceLabel = calServiceSelectionne === 'midi' ? '☀️ Midi' : '🌙 Soir';
@@ -1424,10 +1424,11 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
                       <span/>
                     </div>
                     {resasDuJour.map(r => (
-                      <div key={r.id} onClick={() => setDetailResa(r)} style={{display:'grid', gridTemplateColumns:'2fr 1fr 1fr auto', gap:8, alignItems:'center', padding:'10px 0', borderBottom:'1px solid #f0f0f0', cursor:'pointer'}}>
+                      <div key={r.id} onClick={() => setDetailResa(r)} style={{display:'grid', gridTemplateColumns:'2fr 1fr 1fr auto', gap:8, alignItems:'center', padding:'10px 0', borderBottom:'1px solid #f0f0f0', cursor:'pointer', borderLeft: r.statut==='annulee' ? '4px solid #dc2626' : '4px solid transparent', background: r.statut==='annulee' ? '#fff5f5' : 'white', opacity: r.statut==='annulee' ? 0.85 : 1, paddingLeft: r.statut==='annulee' ? 8 : 0}}>
                         <div>
-                          <div style={{fontWeight:700, fontSize:14, color: r.clients?.genre==='Entreprise' ? '#E8C547' : '#111'}}>
+                          <div style={{fontWeight:700, fontSize:14, color: r.clients?.genre==='Entreprise' ? '#E8C547' : '#111', display:'flex', alignItems:'center', flexWrap:'wrap', gap:4}}>
                             {r.clients?.genre==='Entreprise' ? r.clients?.entreprise : `${r.clients?.prenom||''} ${r.clients?.nom||''}`}
+                            {r.statut==='annulee' && <span style={{background:'#dc2626', color:'#fff', fontSize:10, fontWeight:700, borderRadius:4, padding:'2px 6px', textTransform:'uppercase'}}>Annulée</span>}
                           </div>
                           {r.clients?.tel && (
                             <a href={`tel:${r.clients.tel}`} onClick={e => e.stopPropagation()} style={{fontSize:12, color:'#666', textDecoration:'none'}}>
@@ -1448,14 +1449,15 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
                   <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
                     <tbody>
                       {resasDuJour.map((r) => (
-                        <tr key={r.id} onClick={() => setDetailResa(r)} style={{ borderBottom:'1px solid #f0f0f0', cursor:'pointer' }}
-                          onMouseEnter={e => e.currentTarget.style.background='#fffbea'}
-                          onMouseLeave={e => e.currentTarget.style.background=''}
+                        <tr key={r.id} onClick={() => setDetailResa(r)} style={{ borderBottom:'1px solid #f0f0f0', cursor:'pointer', background: r.statut==='annulee' ? '#fff5f5' : 'white', opacity: r.statut==='annulee' ? 0.8 : 1 }}
+                          onMouseEnter={e => e.currentTarget.style.background= r.statut==='annulee' ? '#ffe8e8' : '#fffbea'}
+                          onMouseLeave={e => e.currentTarget.style.background= r.statut==='annulee' ? '#fff5f5' : ''}
                         >
                           <td style={{ padding:'12px 16px' }}>
                             <div style={{ display:'flex', alignItems:'center', gap:16, flexWrap:'nowrap' }}>
-                              <span style={{ fontWeight:700, minWidth:140, color: r.clients?.genre==='Entreprise' ? '#E8C547' : '#111' }}>
+                              <span style={{ fontWeight:700, minWidth:140, color: r.clients?.genre==='Entreprise' ? '#E8C547' : '#111', display:'flex', alignItems:'center', gap:6 }}>
                                 {r.clients?.genre==='Entreprise' ? r.clients?.entreprise : `${r.clients?.prenom||''} ${r.clients?.nom||''}`}
+                                {r.statut==='annulee' && <span style={{background:'#dc2626', color:'#fff', fontSize:10, fontWeight:700, borderRadius:4, padding:'2px 6px', textTransform:'uppercase'}}>Annulée</span>}
                               </span>
                               <span style={{ color:'#666', minWidth:50 }}>{r.heure || '—'}</span>
                               <span style={{ color:'#666', minWidth:60 }}>{r.nb_personnes} pers.</span>
