@@ -1376,18 +1376,7 @@ function CRMApp({ user, onLogout }) {
           setTimeout(() => setNotifResa(null), 6000);
         }
         setResaAttenteCount(prev => { const n = prev + 1; updateBadge(n); return n; });
-        const resaId = payload.new.id;
-        const lockKey = `notif_sent_${resaId}`;
-        const { data: alreadySent } = await supabase.from('parametres').select('valeur').eq('cle', lockKey).single();
-        if (!alreadySent) {
-          await supabase.from('parametres').insert({ cle: lockKey, valeur: 'sent' });
-          console.log('REALTIME DÉCLENCHÉ - envoi notif', new Date().toISOString());
-          await fetch('/send-push-onesignal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: '📅 Nouvelle réservation !', body: `${nom} · ${date} · ${payload.new.heure || ''} · ${payload.new.nb_personnes} pers.` }) });
-          console.log('Push envoyé pour resa:', resaId);
-        } else {
-          console.log('Push déjà envoyé pour resa:', resaId);
-        }
-        setTimeout(() => { notifEnCoursRef.current = false; }, 3000);
+        notifEnCoursRef.current = false;
       })
       .subscribe((status) => {
         console.log('Statut Realtime:', status);
