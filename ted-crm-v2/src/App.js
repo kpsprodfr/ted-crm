@@ -1135,7 +1135,7 @@ function ReservationsPage({ onBack, showToast, user, inline = false, onResaCount
       {/* Header — desktop full-page mode only */}
       {!inline && (
         <header style={{ background:'#111', color:'#fff', padding:'0 20px', height:56, display:'flex', alignItems:'center', gap:14, borderBottom:`3px solid ${G}`, flexShrink:0 }}>
-          <button onClick={onBack} style={{ background:'rgba(255,255,255,0.1)', border:'none', borderRadius:8, height:34, padding:'0 14px', color:'#fff', fontWeight:600, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>← Retour</button>
+          <button onClick={onBack} style={{ background:'rgba(255,255,255,0.1)', border:'none', borderRadius:8, height:34, padding:'0 14px', color:'#fff', fontWeight:600, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>👥 Mes Clients</button>
           <span style={{ fontWeight:700, fontSize:15, flex:1 }}>📅 Réservations</span>
           <div style={{ position:'relative' }}>
             <button onClick={() => setShowFormDropdown(v => !v)} style={{ background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)', borderRadius:8, height:34, padding:'0 14px', color:'#fff', fontWeight:600, fontSize:13, cursor:'pointer' }}>🔗 Formulaire</button>
@@ -1463,7 +1463,7 @@ function CRMApp({ user, onLogout }) {
   const [showSearch, setShowSearch] = useState(false);
   const [modalCorbeille, setModalCorbeille] = useState(false);
   const [mobileAction, setMobileAction] = useState(null);
-  const [showResaPage, setShowResaPage] = useState(false);
+  const [showResaPage, setShowResaPage] = useState(true);
   const [resaAttenteCount, setResaAttenteCount] = useState(0);
   const [showPlusSheet, setShowPlusSheet] = useState(false);
   const [mobileTab, setMobileTab] = useState(window.innerWidth < 768 ? 'reservations' : 'clients'); // 'clients' | 'reservations'
