@@ -570,11 +570,11 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
   const [heure, setHeure] = useState(initialResa?.heure || '');
   const [nbPersonnes, setNbPersonnes] = useState(initialResa?.nb_personnes || 2);
   const [occasion, setOccasion] = useState(initialResa?.occasion || '');
+  const [commentaire, setCommentaire] = useState(initialResa?.commentaire_client || '');
   const [saving, setSaving] = useState(false);
   const [heureError, setHeureError] = useState(false);
   const [showCalPicker, setShowCalPicker] = useState(false);
   const [calPickerDate, setCalPickerDate] = useState(new Date());
-  const [dateTempCalPicker, setDateTempCalPicker] = useState(null);
   const isMobile = useIsMobile();
   const calPickerRef = useRef(null);
 
@@ -709,6 +709,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
         heure: heure || null,
         nb_personnes: nbPersonnes,
         occasion: occasion || null,
+        commentaire_client: commentaire.trim() || null,
         updated_at: new Date().toISOString(),
       }).eq('id', initialResa.id));
     } else {
@@ -719,6 +720,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
         heure: heure || null,
         nb_personnes: nbPersonnes,
         occasion: occasion || null,
+        commentaire_client: commentaire.trim() || null,
         statut: 'attente',
         source: 'manuel',
       }));
@@ -846,9 +848,9 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
                     if (!jour) return <div key={i}/>;
                     const iso = `${anneeP}-${String(moisP+1).padStart(2,'0')}-${String(jour).padStart(2,'0')}`;
                     const estAujourdhui = iso === todayIso;
-                    const estSelectionne = dateTempCalPicker === iso || (dateIso === iso && !dateTempCalPicker);
+                    const estSelectionne = dateIso === iso;
                     return (
-                      <button key={i} onPointerDown={()=>setDateTempCalPicker(iso)} style={{
+                      <button key={i} onPointerDown={()=>{ setDateIso(iso); setShowCalPicker(false); }} style={{
                         height:40, borderRadius:8,
                         border: estAujourdhui && !estSelectionne ? '2px solid #E8C547' : '1.5px solid transparent',
                         background: estSelectionne ? '#E8C547' : 'transparent',
@@ -858,18 +860,6 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
                       }}>{jour}</button>
                     );
                   })}
-                </div>
-                {/* Valider */}
-                <div style={{ padding:'8px 12px 12px', borderTop:'1px solid #eee' }}>
-                  {dateTempCalPicker ? (
-                    <button onPointerDown={()=>{ setDateIso(dateTempCalPicker); setShowCalPicker(false); setDateTempCalPicker(null); }} style={{
-                      width:'100%', height:46, background:'#E8C547', border:'none', borderRadius:10,
-                      fontSize:15, fontWeight:800, cursor:'pointer', color:'#111',
-                      touchAction:'manipulation', WebkitTapHighlightColor:'transparent'
-                    }}>✓ Valider — {new Date(dateTempCalPicker+'T12:00:00').toLocaleDateString('fr-FR', {weekday:'short', day:'numeric', month:'long'})}</button>
-                  ) : (
-                    <div style={{ textAlign:'center', fontSize:13, color:'#aaa', padding:'6px 0' }}>Sélectionnez une date</div>
-                  )}
                 </div>
               </div>
             );
@@ -913,6 +903,12 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
             <option value="">— Aucune —</option>
             {OCCASIONS.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
+        </div>
+
+        {/* 10. Commentaire */}
+        <div>
+          <label style={lbl}>Commentaire</label>
+          <textarea value={commentaire} onChange={e=>setCommentaire(e.target.value)} placeholder="Informations complémentaires..." rows={3} style={{ width:'100%', minHeight:70, border:'1.5px solid #ddd', borderRadius:8, padding:10, fontSize:14, resize:'none', outline:'none', boxSizing:'border-box', fontFamily:'inherit' }} />
         </div>
 
       </div>
@@ -1066,15 +1062,15 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
     <Modal title="Détail de la réservation" onClose={onClose} maxW={480} zIndex={3000}
       footer={
         <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:8 }}>
-          <div style={{ display:'flex', gap:8 }}>
-            {c.tel && (
+          {c.tel && (
+            <div style={{ display:'flex', gap:8 }}>
               <button onClick={()=>{ setShowSmsPanel(!showSmsPanel); setSmsTexte(smsSuggestions[0]); }} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background: showSmsPanel ? '#111' : '#f0f0f0', color: showSmsPanel ? '#fff' : '#111', border:'none', borderRadius:10, height:44, fontSize:13, fontWeight:700, cursor:'pointer' }}>💬 SMS</button>
-            )}
-            {c.tel && (
               <a href={`tel:${c.tel}`} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:G, color:'#111', borderRadius:10, height:44, fontSize:13, fontWeight:700, textDecoration:'none' }}>📞 Appeler</a>
-            )}
-            {onEdit && <button onClick={()=>{ onClose(); onEdit(resa); }} style={{ flex:1, height:44, border:'1.5px solid #ddd', borderRadius:10, background:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', color:'#111' }}>✏️ Modifier</button>}
-          </div>
+            </div>
+          )}
+          {onEdit && (
+            <button onClick={()=>{ onClose(); onEdit(resa); }} style={{ width:'100%', height:44, background:'#111', color:'#fff', border:'none', borderRadius:10, fontSize:14, fontWeight:700, cursor:'pointer' }}>✏️ Modifier la réservation</button>
+          )}
           <div style={{ display:'flex', gap:8 }}>
             <button key="f" type="button" onClick={onClose} style={{...btnSecondary}}>Fermer</button>
             <button key="s" type="button" onClick={saveStatut} disabled={saving || statut === resa.statut} style={{ background: statut !== resa.statut ? '#111' : '#ddd', color: statut !== resa.statut ? '#fff' : '#999', border:'none', borderRadius:8, padding:'0 18px', height:38, fontWeight:700, fontSize:14, cursor: statut !== resa.statut ? 'pointer' : 'not-allowed' }}>
