@@ -1304,6 +1304,30 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
 
   useEffect(() => { loadResa(); }, []);
 
+  useEffect(() => {
+    const ch = supabase
+      .channel('resa-page-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reservations' }, async (payload) => {
+        const nouvelleResa = payload.new;
+        const { data: clientData } = await supabase.from('clients').select('*').eq('id', nouvelleResa.client_id).single();
+        const resaComplete = { ...nouvelleResa, clients: clientData };
+        setResaList(prev => {
+          const updated = [resaComplete, ...prev];
+          onResaCountChange?.(updated.filter(r => r.statut === 'attente').length);
+          return updated;
+        });
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'reservations' }, (payload) => {
+        setResaList(prev => {
+          const updated = prev.map(r => r.id === payload.new.id ? { ...r, ...payload.new } : r);
+          onResaCountChange?.(updated.filter(r => r.statut === 'attente').length);
+          return updated;
+        });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, []);
+
   async function loadResa() {
     setLoading(true);
     const { data, error } = await supabase
