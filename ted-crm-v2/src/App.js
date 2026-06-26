@@ -1867,6 +1867,7 @@ function CRMApp({ user, onLogout }) {
   const [page, setPage] = useState(1);
   const [modalAdd, setModalAdd] = useState(false);
   const [modalDetailClient, setModalDetailClient] = useState(null);
+  const [showTop300, setShowTop300] = useState(false);
   const [statsClients, setStatsClients] = useState({});
   const [topJours, setTopJours] = useState([]);
   const [resasData, setResasData] = useState([]);
@@ -3191,6 +3192,54 @@ function CRMApp({ user, onLogout }) {
               <div style={{ fontSize:12, color:"#bbb", marginTop:3 }}>ce mois-ci</div>
             </div>
           </div>
+
+          {/* Top 300 clients */}
+          {(() => {
+            const today = new Date().toISOString().split('T')[0];
+            const top300 = clients.map(c => {
+              const resasC = resasData.filter(r => r.client_id === c.id && (r.statut === 'confirmee' || r.statut === 'venue'));
+              const total = resasC.length;
+              const derniereVisite = resasC.sort((a,b) => b.date.localeCompare(a.date))[0];
+              return { ...c, totalResas: total, derniereVisite: derniereVisite?.date };
+            }).filter(c => c.totalResas > 0).sort((a,b) => b.totalResas - a.totalResas).slice(0, 300);
+            return (
+              <div style={{background:'#fff', borderRadius:12, border:'1.5px solid #f0f0f0', marginBottom:16, overflow:'hidden'}}>
+                <div onClick={()=>setShowTop300(!showTop300)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', cursor:'pointer', background:'#fff' }}>
+                  <span style={{fontSize:14, fontWeight:800, color:'#111'}}>🏆 Top clients</span>
+                  <div style={{display:'flex', alignItems:'center', gap:8}}>
+                    <span style={{fontSize:12, color:'#999'}}>{top300.length} client(s)</span>
+                    <span style={{color:'#ccc', fontSize:18, display:'inline-block', transform: showTop300?'rotate(90deg)':'rotate(0deg)', transition:'transform 0.2s'}}>›</span>
+                  </div>
+                </div>
+                {showTop300 && (
+                  <div style={{maxHeight:400, overflowY:'auto', borderTop:'1px solid #f0f0f0'}}>
+                    {top300.map((c, i) => (
+                      <div key={c.id} onClick={()=>setModalDetailClient(c)}
+                        style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 16px', borderBottom:'1px solid #f8f8f8', cursor:'pointer', background:'#fff' }}
+                        onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'}
+                        onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
+                        <span style={{fontSize:13, fontWeight:800, color:'#999', minWidth:24}}>#{i+1}</span>
+                        <div style={{ width:32, height:32, borderRadius:'50%', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700,
+                          background: c.genre==='Homme' ? '#dbeafe' : c.genre==='Femme' ? '#fce7f3' : '#dcfce7',
+                          color: c.genre==='Homme' ? '#1d4ed8' : c.genre==='Femme' ? '#be185d' : '#15803d' }}>
+                          {(c.prenom||c.nom||'?')[0]?.toUpperCase()}
+                        </div>
+                        <div style={{flex:1, minWidth:0}}>
+                          <div style={{fontWeight:700, fontSize:13, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+                            {c.genre==='Entreprise' ? (c.entreprise||c.nom) : `${c.prenom||''} ${c.nom||''}`.trim()}
+                          </div>
+                          <div style={{fontSize:11, color:'#999'}}>
+                            {c.derniereVisite ? new Date(c.derniereVisite+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}) : 'Jamais'}
+                          </div>
+                        </div>
+                        <span style={{ background:'#E8C547', color:'#111', borderRadius:20, padding:'3px 10px', fontSize:12, fontWeight:800, flexShrink:0 }}>{c.totalResas} résa</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Tabs */}
           <div style={{ display:"flex", gap:0, marginBottom:16, background:"#f0f0f0", borderRadius:10, padding:3, width:"fit-content" }}>
