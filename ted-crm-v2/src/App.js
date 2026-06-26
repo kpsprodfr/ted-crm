@@ -753,11 +753,22 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
     color: service === s ? '#fff' : '#666', fontWeight: 700, fontSize: 14, cursor: 'pointer'
   });
 
-  const btnGenre = (g) => ({
-    flex: 1, height: 42, border: `1.5px solid ${genre === g ? '#111' : '#eee'}`,
-    borderRadius: 8, background: genre === g ? '#111' : '#f8f8f8',
-    color: genre === g ? G : '#666', fontWeight: 700, fontSize: 13, cursor: 'pointer'
-  });
+  const GENRE_STYLES = {
+    'Homme':      { bg:'#dbeafe', border:'#3b82f6', color:'#1d4ed8' },
+    'Femme':      { bg:'#fce7f3', border:'#ec4899', color:'#be185d' },
+    'Entreprise': { bg:'#dcfce7', border:'#22c55e', color:'#15803d' },
+  };
+  const btnGenre = (g) => {
+    const sel = genre === g;
+    const s = GENRE_STYLES[g] || {};
+    return {
+      flex:1, height:44, borderRadius:10, cursor:'pointer', fontSize:14, fontWeight:700,
+      border: sel ? `2px solid ${s.border}` : '1.5px solid #ddd',
+      background: sel ? s.bg : '#fff',
+      color: sel ? s.color : '#666',
+      transition:'all 0.15s'
+    };
+  };
 
   const resaValide = !!(tel && genre && nom && prenom && dateIso && service && heure);
 
@@ -812,7 +823,9 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
           <label style={lbl}>Vous êtes *</label>
           <div style={{ display:'flex', gap:8 }}>
             {['Homme','Femme','Entreprise'].map(g => (
-              <button key={g} onClick={()=>setGenre(g)} style={btnGenre(g)}>{g}</button>
+              <button key={g} onClick={()=>setGenre(g)} style={btnGenre(g)}>
+                {g === 'Homme' ? '👤 Homme' : g === 'Femme' ? '👤 Femme' : '🏢 Entreprise'}
+              </button>
             ))}
           </div>
         </div>
