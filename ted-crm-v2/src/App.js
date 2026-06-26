@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle } from 'lucide-react';
 import { supabase } from "./supabase";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -181,7 +182,7 @@ function LoginPage({ onLogin }) {
       <div style={{ marginBottom:22 }}>
         <label style={{ fontSize:15, fontWeight:600, color:'#111', display:'block', marginBottom:8 }}>Email</label>
         <div style={{ position:'relative' }}>
-          <span style={{ position:'absolute', left:16, top:'50%', transform:'translateY(-50%)', color:'#aaa', fontSize:18, pointerEvents:'none' }}>✉</span>
+          <Mail size={20} color="#aaa" strokeWidth={1.8} style={{ position:'absolute', left:16, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} />
           <input type="email" autoComplete="email" placeholder="votre@email.com" value={loginEmail} onChange={e=>setLoginEmail(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleLogin()}
             style={{ width:'100%', height:60, border:'1px solid #ddd', borderRadius:12, padding:'0 18px 0 48px', fontSize:16, outline:'none', boxSizing:'border-box', background:'#fff', color:'#111', transition:'border-color 0.2s, box-shadow 0.2s' }}
             onFocus={e=>{ e.target.style.borderColor='#efc434'; e.target.style.boxShadow='0 0 0 4px rgba(239,196,52,0.14)'; }}
@@ -193,18 +194,20 @@ function LoginPage({ onLogin }) {
       <div style={{ marginBottom:28 }}>
         <label style={{ fontSize:15, fontWeight:600, color:'#111', display:'block', marginBottom:8 }}>Mot de passe</label>
         <div style={{ position:'relative' }}>
-          <span style={{ position:'absolute', left:16, top:'50%', transform:'translateY(-50%)', color:'#aaa', fontSize:18, pointerEvents:'none' }}>🔒</span>
+          <LockKeyhole size={20} color="#aaa" strokeWidth={1.8} style={{ position:'absolute', left:16, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} />
           <input type={showPassword ? 'text' : 'password'} autoComplete="current-password" placeholder="Votre mot de passe" value={loginPassword} onChange={e=>setLoginPassword(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleLogin()}
             style={{ width:'100%', height:60, border:'1px solid #ddd', borderRadius:12, padding:'0 48px 0 48px', fontSize:16, outline:'none', boxSizing:'border-box', background:'#fff', color:'#111', transition:'border-color 0.2s, box-shadow 0.2s' }}
             onFocus={e=>{ e.target.style.borderColor='#efc434'; e.target.style.boxShadow='0 0 0 4px rgba(239,196,52,0.14)'; }}
             onBlur={e=>{ e.target.style.borderColor='#ddd'; e.target.style.boxShadow='none'; }} />
-          <button onClick={()=>setShowPassword(v=>!v)} aria-label={showPassword ? 'Masquer' : 'Afficher le mot de passe'} style={{ position:'absolute', right:16, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'#aaa', fontSize:18, padding:4 }}>{showPassword ? '🙈' : '👁️'}</button>
+          <button onClick={()=>setShowPassword(v=>!v)} aria-label={showPassword ? 'Masquer' : 'Afficher le mot de passe'} style={{ position:'absolute', right:16, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', padding:4, display:'flex', alignItems:'center' }}>
+            {showPassword ? <EyeOff size={20} color="#aaa" strokeWidth={1.8} /> : <Eye size={20} color="#aaa" strokeWidth={1.8} />}
+          </button>
         </div>
       </div>
 
       {loginError && (
         <div style={{ background:'#fef2f2', border:'1px solid #fca5a5', borderRadius:10, padding:'10px 14px', marginBottom:16, fontSize:14, color:'#d92d20', display:'flex', alignItems:'center', gap:8 }}>
-          ⚠️ {loginError}
+          <AlertCircle size={16} color="#d92d20" strokeWidth={1.8} style={{ flexShrink:0 }} /> {loginError}
         </div>
       )}
 
@@ -212,16 +215,16 @@ function LoginPage({ onLogin }) {
         style={{ width:'100%', height:60, background:'#efc434', border:'none', borderRadius:12, fontSize:17, fontWeight:700, cursor: loginLoading ? 'not-allowed' : 'pointer', color:'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:10, boxShadow:'0 4px 14px rgba(239,196,52,0.28)', transition:'background 0.2s, transform 0.1s' }}
         onMouseEnter={e=>{ if(!loginLoading) e.currentTarget.style.background='#ddb226'; }}
         onMouseLeave={e=>{ if(!loginLoading) e.currentTarget.style.background='#efc434'; }}>
-        {loginLoading ? 'Connexion...' : <><span>Se connecter</span><span style={{ fontSize:20 }}>→</span></>}
+        {loginLoading ? 'Connexion...' : <><span>Se connecter</span><ArrowRight size={20} strokeWidth={2} /></>}
       </button>
 
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, paddingTop:20, marginTop:22, borderTop:'1px solid #eee' }}>
         <div style={{ display:'flex', alignItems:'flex-start', gap:10 }}>
-          <span style={{ fontSize:18, marginTop:1 }}>🔒</span>
+          <LockKeyhole size={20} color="#999" strokeWidth={1.8} style={{ marginTop:1, flexShrink:0 }} />
           <div><div style={{ fontSize:13, fontWeight:700, color:'#111' }}>Vos données sont protégées.</div><div style={{ fontSize:12, color:'#999' }}>Confidentialité garantie.</div></div>
         </div>
         <div style={{ display:'flex', alignItems:'flex-start', gap:10 }}>
-          <span style={{ fontSize:18, marginTop:1 }}>🎧</span>
+          <Headphones size={20} color="#999" strokeWidth={1.8} style={{ marginTop:1, flexShrink:0 }} />
           <div><div style={{ fontSize:13, fontWeight:700, color:'#111' }}>Besoin d'aide ?</div><div style={{ fontSize:12, color:'#999' }}>Contactez votre responsable.</div></div>
         </div>
       </div>
@@ -250,12 +253,12 @@ function LoginPage({ onLogin }) {
           </div>
           <div style={{ display:'flex', position:'relative' }}>
             {[
-              { icon:'🔄', title:'Synchronisé', sub:'en temps réel' },
-              { icon:'🛡️', title:'Sécurisé', sub:'et fiable' },
-              { icon:'📱', title:'iPad / PC / Mobile', sub:'Partout avec vous' },
+              { icon:<RefreshCw size={26} color="#efc434" strokeWidth={1.8} />, title:'Synchronisé', sub:'en temps réel' },
+              { icon:<ShieldCheck size={26} color="#efc434" strokeWidth={1.8} />, title:'Sécurisé', sub:'et fiable' },
+              { icon:<MonitorSmartphone size={26} color="#efc434" strokeWidth={1.8} />, title:'iPad / PC / Mobile', sub:'Partout avec vous' },
             ].map((f, i) => (
               <div key={i} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'0 12px', borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.08)' : 'none' }}>
-                <span style={{ fontSize:26, color:'#efc434' }}>{f.icon}</span>
+                {f.icon}
                 <span style={{ fontSize:14, fontWeight:700, color:'#fff', textAlign:'center' }}>{f.title}</span>
                 <span style={{ fontSize:12, color:'rgba(255,255,255,0.4)', textAlign:'center' }}>{f.sub}</span>
               </div>
