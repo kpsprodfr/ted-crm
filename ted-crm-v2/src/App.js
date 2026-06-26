@@ -1003,6 +1003,8 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
   const c = resa.clients || {};
   const nom = c.entreprise ? c.entreprise : `${c.prenom || ''} ${c.nom || ''}`.trim();
   const [statut, setStatut] = useState(resa.statut);
+  const [statutEnCours, setStatutEnCours] = useState(resa.statut);
+  const [statutModifie, setStatutModifie] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showSmsPanel, setShowSmsPanel] = useState(false);
   const [smsTexte, setSmsTexte] = useState('');
@@ -1040,21 +1042,26 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
     ? new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR', {day:'numeric', month:'long', year:'numeric'})
     : 'Jamais';
 
-  function handleStatutChange(val) {
-    setStatut(val);
+  function fermerModal() {
+    if (statutModifie) {
+      const confirme = window.confirm('Vous avez modifié le statut sans valider. Quitter sans sauvegarder ?');
+      if (!confirme) return;
+    }
+    onClose();
   }
 
-  async function saveStatutDirect(val) {
+  async function sauvegarderStatut() {
     setSaving(true);
-    const updates = { statut: val, updated_at: new Date().toISOString() };
-    if (val === 'annulee') updates.raison_annulation = '';
-    if (val === 'absente') {
+    const updates = { statut: statutEnCours, updated_at: new Date().toISOString() };
+    if (statutEnCours === 'annulee') updates.raison_annulation = '';
+    if (statutEnCours === 'absente') {
       await supabase.from('clients').update({ nb_absences: (c.nb_absences || 0) + 1 }).eq('id', resa.client_id);
     }
     const { error } = await supabase.from('reservations').update(updates).eq('id', resa.id);
     setSaving(false);
     if (error) { showToast('Erreur lors de la mise à jour', 'error'); return; }
-    onSaved(val);
+    showToast('✅ Statut mis à jour');
+    onSaved(statutEnCours);
     onClose();
   }
 
@@ -1064,7 +1071,7 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
   }
 
   return (
-    <Modal title="Détail de la réservation" onClose={onClose} maxW={480} zIndex={3000}
+    <Modal title="Détail de la réservation" onClose={fermerModal} maxW={480} zIndex={3000}
       footer={
         <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:8 }}>
           <div style={{ background:'#f9f9f9', borderRadius:10, padding:'12px 16px', marginBottom:4, display:'flex', gap:16, flexWrap:'wrap' }}>
@@ -1085,7 +1092,13 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
             <button onClick={()=>{ onClose(); onEdit(resa); }} style={{ width:'100%', height:44, background:'#E8C547', color:'#111', border:'none', borderRadius:10, fontSize:14, fontWeight:700, cursor:'pointer' }}>✏️ Modifier la réservation</button>
           )}
           <div style={{ borderTop:'1px solid #f0f0f0', paddingTop:8 }}>
-            <button type="button" onClick={onClose} style={{ width:'100%', ...btnSecondary }}>Fermer</button>
+            {statutModifie ? (
+              <button onClick={sauvegarderStatut} disabled={saving} style={{ width:'100%', height:44, background: saving ? '#ddd' : '#16a34a', color: saving ? '#999' : '#fff', border:'none', borderRadius:10, fontSize:14, fontWeight:800, cursor: saving ? 'not-allowed' : 'pointer' }}>
+                {saving ? 'Enregistrement…' : '✓ Valider'}
+              </button>
+            ) : (
+              <button type="button" onClick={fermerModal} style={{ width:'100%', ...btnSecondary }}>Fermer</button>
+            )}
           </div>
         </div>
       }>
@@ -1175,11 +1188,12 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'4px 0' }}>
             <span style={{ fontSize:14, color:'#999', fontWeight:500 }}>Statut</span>
             {(() => {
-              const s = STATUTS_COLORS.find(x => x.value === statut) || STATUTS_COLORS[0];
+              const s = STATUTS_COLORS.find(x => x.value === statutEnCours) || STATUTS_COLORS[0];
               return (
                 <button onClick={()=>setShowStatutPanel(!showStatutPanel)} style={{ display:'flex', alignItems:'center', gap:8, background:`${s.color}18`, border:`1.5px solid ${s.color}`, borderRadius:20, padding:'6px 14px', cursor:'pointer', fontWeight:700, fontSize:13, color:s.color }}>
                   <span style={{ width:8, height:8, borderRadius:'50%', background:s.color, display:'inline-block' }}/>
                   {s.label}
+                  {statutModifie && <span style={{ fontSize:10, color:s.color, opacity:0.8 }}>●</span>}
                   <span style={{ fontSize:10, opacity:0.7 }}>▼</span>
                 </button>
               );
@@ -1190,17 +1204,17 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
               <div style={{ background:'#fff', borderRadius:16, padding:24, width:320, boxShadow:'0 20px 60px rgba(0,0,0,0.2)' }} onClick={e=>e.stopPropagation()}>
                 <h3 style={{ margin:'0 0 16px', fontSize:16, fontWeight:800 }}>Changer le statut</h3>
                 {STATUTS_COLORS.map(s => (
-                  <div key={s.value} onClick={()=>{ setShowStatutPanel(false); saveStatutDirect(s.value); }}
-                    style={{ display:'flex', alignItems:'center', gap:12, padding:12, borderRadius:10, cursor:'pointer', marginBottom:6, background: resa.statut === s.value ? '#f9f9f9' : '#fff' }}
+                  <div key={s.value} onClick={()=>{ setStatutEnCours(s.value); setStatutModifie(s.value !== resa.statut); setShowStatutPanel(false); }}
+                    style={{ display:'flex', alignItems:'center', gap:12, padding:12, borderRadius:10, cursor:'pointer', marginBottom:6, background: statutEnCours === s.value ? `${s.color}10` : '#fff' }}
                     onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'}
-                    onMouseLeave={e=>e.currentTarget.style.background=resa.statut===s.value?'#f9f9f9':'#fff'}
+                    onMouseLeave={e=>e.currentTarget.style.background=statutEnCours===s.value?`${s.color}10`:'#fff'}
                   >
                     <div style={{ width:12, height:12, borderRadius:'50%', background:s.color, flexShrink:0 }}/>
                     <div style={{ flex:1 }}>
-                      <div style={{ fontWeight:700, fontSize:14, color:'#111' }}>{s.label}</div>
+                      <div style={{ fontWeight:700, fontSize:14, color: statutEnCours === s.value ? s.color : '#111' }}>{s.label}</div>
                       <div style={{ fontSize:12, color:'#999' }}>{s.desc}</div>
                     </div>
-                    {resa.statut === s.value && <span style={{ color:'#16a34a', fontSize:18 }}>✓</span>}
+                    {statutEnCours === s.value && <span style={{ color:s.color, fontSize:18 }}>✓</span>}
                   </div>
                 ))}
               </div>
