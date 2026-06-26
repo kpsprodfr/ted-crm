@@ -1390,6 +1390,7 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
   const [calMensuelOuvert, setCalMensuelOuvert] = useState(false);
   const [calJourSelectionne, setCalJourSelectionne] = useState(new Date().toISOString().split('T')[0]);
   const [calServiceSelectionne, setCalServiceSelectionne] = useState(new Date().getHours() < 15 ? 'midi' : 'soir');
+  const [resaSearchPanel, setResaSearchPanel] = useState('');
 const [showDemandesAttente, setShowDemandesAttente] = useState(false);
   const [showFormDropdown, setShowFormDropdown] = useState(false);
   const isMobile = useIsMobile();
@@ -1601,7 +1602,8 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
         </header>
       )}
 
-      <main style={{ maxWidth:800, margin:'0 auto', padding: isMobile ? '16px 12px 100px' : '24px 20px 40px' }}>
+      <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? '1fr 400px' : undefined, gap: !isMobile ? 24 : undefined, padding: !isMobile ? '24px 32px' : undefined, maxWidth: !isMobile ? 1440 : undefined, margin: !isMobile ? '0 auto' : undefined, alignItems: 'start' }}>
+      <main style={{ maxWidth: isMobile ? 800 : 'none', margin: isMobile ? '0 auto' : 0, padding: isMobile ? '16px 12px 100px' : '0' }}>
 
 
         {/* ── Bouton Demandes en attente ── */}
@@ -1747,8 +1749,8 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           );
         })()}
 
-        {/* ── Tableau réservations du jour ── */}
-        {calJourSelectionne && calServiceSelectionne && (() => {
+        {/* ── Tableau réservations du jour (mobile only — desktop uses right panel) ── */}
+        {isMobile && calJourSelectionne && calServiceSelectionne && (() => {
           const resasDuJour = resaList
             .filter(r => (r.statut === 'confirmee' || r.statut === 'annulee' || r.statut === 'absente') && r.date === calJourSelectionne && r.service === calServiceSelectionne)
             .sort((a,b) => (a.heure||'').localeCompare(b.heure||''));
@@ -1923,13 +1925,53 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
 
       </main>
 
-      {!isMobile && (
-        <div style={{ position:'fixed', bottom:24, left:'50%', transform:'translateX(-50%)', zIndex:1000 }}>
-          <button onClick={()=>setShowAddResa(true)} style={{ background:'#E8C547', color:'#111', border:'none', borderRadius:50, padding:'16px 80px', fontSize:16, fontWeight:800, cursor:'pointer', boxShadow:'0 8px 32px rgba(232,197,71,0.5)', whiteSpace:'nowrap' }}>
-            + Ajouter une réservation
-          </button>
-        </div>
-      )}
+      {/* Right column — desktop only */}
+      {!isMobile && (() => {
+        const resasDuJour = (calJourSelectionne && calServiceSelectionne)
+          ? resaList.filter(r => (r.statut==='confirmee'||r.statut==='annulee'||r.statut==='absente') && r.date===calJourSelectionne && r.service===calServiceSelectionne).sort((a,b)=>(a.heure||'').localeCompare(b.heure||''))
+          : [];
+        const resasDuJourFiltrees = resaSearchPanel
+          ? resasDuJour.filter(r => { const n = `${r.clients?.prenom||''} ${r.clients?.nom||''} ${r.clients?.entreprise||''} ${r.clients?.tel||''}`.toLowerCase(); return n.includes(resaSearchPanel.toLowerCase()); })
+          : resasDuJour;
+        return (
+          <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:20, height:'fit-content', position:'sticky', top:24 }}>
+            <h3 style={{ margin:'0 0 12px', fontSize:15, fontWeight:800, color:'#111' }}>
+              {calJourSelectionne ? new Date(calJourSelectionne+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}) : 'Sélectionner un jour'}
+              {calServiceSelectionne ? ` — ${calServiceSelectionne==='midi'?'☀️ Midi':'🌙 Soir'}` : ''}
+            </h3>
+            <input value={resaSearchPanel} onChange={e=>setResaSearchPanel(e.target.value)} placeholder="Rechercher une réservation..." style={{ width:'100%', height:38, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:13, outline:'none', marginBottom:12, boxSizing:'border-box' }} />
+            <div>
+              {resasDuJourFiltrees.map(r => (
+                <div key={r.id} onClick={()=>setDetailResa(r)} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 0', borderBottom:'1px solid #f5f5f5', cursor:'pointer' }}
+                  onMouseEnter={e=>e.currentTarget.style.background='#fffbea'}
+                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                  <span style={{ fontSize:13, fontWeight:800, color:'#111', minWidth:44 }}>{r.heure||'—'}</span>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontWeight:700, fontSize:13, color: r.statut==='absente'?'#dc2626':'#111', display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
+                      {r.clients?.genre==='Entreprise'?r.clients?.entreprise:`${r.clients?.prenom||''} ${r.clients?.nom||''}`.trim()}
+                      {r.statut==='absente' && <span style={{ fontSize:10, background:'#dc2626', color:'#fff', borderRadius:4, padding:'1px 5px' }}>Absent</span>}
+                      {r.statut==='annulee' && <span style={{ fontSize:10, background:'#f97316', color:'#fff', borderRadius:4, padding:'1px 5px' }}>Annulée</span>}
+                    </div>
+                    <div style={{ fontSize:11, color:'#999' }}>{r.nb_personnes} pers.</div>
+                  </div>
+                  {r.clients?.tel && <a href={`tel:${r.clients.tel}`} onClick={e=>e.stopPropagation()} style={{ fontSize:11, color:'#888', textDecoration:'none', whiteSpace:'nowrap', flexShrink:0 }}>📞 {r.clients.tel}</a>}
+                </div>
+              ))}
+              {resasDuJour.length === 0 && (
+                <p style={{ color:'#bbb', fontSize:13, textAlign:'center', padding:'24px 0' }}>
+                  {calJourSelectionne && calServiceSelectionne ? 'Aucune réservation confirmée' : 'Sélectionner un jour et un service'}
+                </p>
+              )}
+            </div>
+            <button onClick={()=>setShowAddResa(true)} style={{ width:'100%', height:48, background:'#E8C547', border:'none', borderRadius:12, fontSize:14, fontWeight:800, cursor:'pointer', color:'#111', marginTop:16 }}>
+              + Nouvelle réservation
+            </button>
+          </div>
+        );
+      })()}
+
+      </div>{/* end 2-col grid */}
+
       {acceptResa && <AccepterModal resa={acceptResa} onConfirm={()=>accepter(acceptResa)} onCancel={()=>setAcceptResa(null)} />}
       {refusResa && <RefusModal onConfirm={raison=>refuser(refusResa, raison)} onCancel={()=>setRefusResa(null)} />}
       {detailResa && <DetailResaModal resa={detailResa} resaList={resaList} showToast={showToast} onClose={()=>setDetailResa(null)} onEdit={(r)=>setEditResa(r)} onSaved={(newStatut)=>{ setResaList(prev => prev.map(r => r.id === detailResa.id ? {...r, statut: newStatut} : r)); setDetailResa(null); loadResa(); }} />}
@@ -2014,12 +2056,12 @@ function CRMApp({ user, onLogout }) {
   const [showSearch, setShowSearch] = useState(false);
   const [modalCorbeille, setModalCorbeille] = useState(false);
   const [mobileAction, setMobileAction] = useState(null);
-  const [showResaPage, setShowResaPage] = useState(true);
+  const [showResaPage, setShowResaPage] = useState(false);
   const [resaAttenteCount, setResaAttenteCount] = useState(0);
   const [showPlusSheet, setShowPlusSheet] = useState(false);
   const [mobileTab, setMobileTab] = useState(window.innerWidth < 768 ? 'reservations' : 'clients'); // 'clients' | 'reservations'
   const [showAddResa, setShowAddResa] = useState(false);
-  const [activeView, setActiveView] = useState('crm'); // 'crm' | 'communications'
+  const [activeView, setActiveView] = useState('reservations'); // 'reservations' | 'clients' | 'communications'
   const [commFilter, setCommFilter] = useState('tous');
   const [filtreJours, setFiltreJours] = useState(new Set());
   const [filtreServices, setFiltreServices] = useState(new Set());
@@ -2325,7 +2367,40 @@ function CRMApp({ user, onLogout }) {
   }
 
   if (loading) return <div style={{ textAlign:"center", paddingTop:80, fontSize:16, color:"#888" }}>Chargement des clients…</div>;
-  if (showResaPage && !isMobile) return <ReservationsPage onBack={(dest)=>{ setShowResaPage(false); loadResaCount(); loadClients(); if(dest==='communications') setActiveView('communications'); }} showToast={showToast} user={user} onLogout={onLogout} />;
+
+  const sidebarDesktop = !isMobile ? (
+    <div style={{ position:'fixed', top:0, left:0, bottom:0, width:120, background:'#111', display:'flex', flexDirection:'column', alignItems:'center', padding:'20px 0', zIndex:100, borderRight:'1px solid #222' }}>
+      <img src="/favicon.png" style={{ width:40, height:40, marginBottom:32 }} alt="TED" />
+      {[
+        { id:'reservations', label:'Réservations', icon:'📅' },
+        { id:'clients', label:'Clients', icon:'👥' },
+        { id:'communications', label:'Communications', icon:'📣' },
+      ].map(item => (
+        <button key={item.id} onClick={()=>setActiveView(item.id)} style={{ width:'100%', padding:'12px 8px', border:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer', marginBottom:4, borderLeft: activeView===item.id ? '3px solid #E8C547' : '3px solid transparent', background: activeView===item.id ? 'rgba(232,197,71,0.1)' : 'transparent', color: activeView===item.id ? '#E8C547' : '#888' }}>
+          <span style={{ fontSize:22 }}>{item.icon}</span>
+          <span style={{ fontSize:10, fontWeight:600, textAlign:'center', lineHeight:1.2 }}>{item.label}</span>
+        </button>
+      ))}
+      <button onClick={()=>{ navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver'); showToast('Lien formulaire copié !'); }} style={{ width:'100%', padding:'12px 8px', border:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer', marginBottom:4, borderLeft:'3px solid transparent', background:'transparent', color:'#888' }}>
+        <span style={{ fontSize:22 }}>🔗</span>
+        <span style={{ fontSize:10, fontWeight:600, textAlign:'center', lineHeight:1.2 }}>Formulaire</span>
+      </button>
+      <div style={{ flex:1 }} />
+      <button onClick={()=>setShowConfirmDeconnexion(true)} style={{ width:'100%', padding:'12px 8px', border:'none', background:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer', color:'#555' }}>
+        <span style={{ fontSize:22 }}>🔓</span>
+        <span style={{ fontSize:10, fontWeight:600 }}>Déconnexion</span>
+      </button>
+    </div>
+  ) : null;
+
+  if (!isMobile && activeView === 'reservations') return (
+    <>
+      {sidebarDesktop}
+      <div style={{ marginLeft:120, minHeight:'100vh' }}>
+        <ReservationsPage inline showToast={showToast} user={user} onResaCountChange={(n)=>{ setResaAttenteCount(n); updateBadge(n); }} />
+      </div>
+    </>
+  );
 
   if (activeView === 'communications' && !isMobile) {
     const limiteCommDate = (() => { const d = new Date(); d.setMonth(d.getMonth() - filtreAbsentsMois); return d.toISOString().split('T')[0]; })();
@@ -2449,12 +2524,9 @@ function CRMApp({ user, onLogout }) {
     };
 
     return (
-      <div style={{minHeight:'100vh', background:'#f5f5f5', fontFamily:"'Inter','Segoe UI',Arial,sans-serif"}}>
-        {/* Header sobre */}
-        <div style={{background:'#fff', borderBottom:'1px solid #e0e0e0', padding:'0 24px', height:56, display:'flex', alignItems:'center', gap:16}}>
-          <button onClick={()=>{ setActiveView('crm'); setShowResaPage(true); }} style={{background:'none', border:'1px solid #ddd', borderRadius:7, padding:'0 12px', height:32, fontSize:13, cursor:'pointer', color:'#555'}}>← Retour</button>
-          <span style={{fontSize:16, fontWeight:700, color:'#111'}}>📣 Communications</span>
-        </div>
+      <div style={{minHeight:'100vh', background:'#f5f5f5', fontFamily:"'Inter','Segoe UI',Arial,sans-serif", display:'flex'}}>
+        {sidebarDesktop}
+        <div style={{marginLeft:120, flex:1}}>
 
         {/* Switcher Email / SMS */}
         <div style={{padding:'16px 20px 0', maxWidth:1300, margin:'0 auto'}}>
@@ -3176,6 +3248,7 @@ function CRMApp({ user, onLogout }) {
           </div>
         )}
       </div>
+        </div>
     );
   }
 
@@ -3252,21 +3325,10 @@ function CRMApp({ user, onLogout }) {
         </div>
       )}
 
-      {/* ═══ DESKTOP HEADER ═══ */}
-      {!isMobile && (
-        <header style={{background:"#111", color:"#fff", padding:"0 20px", display:"flex", alignItems:"center", justifyContent:"space-between", height:56, borderBottom:`3px solid ${G}`, flexShrink:0}}>
-          <div style={{display:"flex", alignItems:"center", gap:10}}>
-            <button onClick={()=>setShowResaPage(true)} style={{background:'rgba(255,255,255,0.08)', border:'1px solid #444', borderRadius:8, height:34, padding:'0 14px', color:'#ccc', fontWeight:600, fontSize:13, cursor:'pointer'}}>← Retour</button>
-            <h1 style={{fontSize:15, fontWeight:700, letterSpacing:2, color:"#fff", margin:0}}>
-              👥 Fichier Clients
-            </h1>
-          </div>
-          <div style={{display:"flex", gap:6, alignItems:"center", flexShrink:0}}>
-            <button onClick={()=>setModalCorbeille(true)} style={{background:"transparent", color:G, border:`1px solid ${G}`, borderRadius:7, padding:"0 10px", height:32, fontSize:12, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap"}}>🗑️ Corbeille</button>
-            <button onClick={()=>setShowConfirmDeconnexion(true)} style={{ background:'transparent', color:'#ccc', border:'1px solid #444', borderRadius:7, padding:'0 12px', height:32, fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>🔓 Déconnexion</button>
-          </div>
-        </header>
-      )}
+      {/* ═══ SIDEBAR DESKTOP ═══ */}
+      {sidebarDesktop}
+
+      <div style={{ marginLeft: isMobile ? 0 : 120 }}>
 
       {/* ═══ MOBILE — RÉSERVATIONS INLINE ═══ */}
       {isMobile && mobileTab === 'reservations' && (
@@ -3338,6 +3400,9 @@ function CRMApp({ user, onLogout }) {
             <span style={{ fontSize:14, color:"#111" }}><span style={{ color:"#888", fontWeight:500 }}>Nouveaux ce mois :</span> <span style={{ color:G, fontWeight:700 }}>{newMonth}</span></span>
             <span style={{ color:"#e5e5e5" }}>|</span>
             <span style={{ fontSize:12, color:"#bbb" }}>Mise à jour : {new Date().toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"numeric"})}</span>
+            <div style={{ marginLeft:"auto" }}>
+              <button onClick={()=>setModalCorbeille(true)} style={{ background:"transparent", color:"#888", border:"1px solid #ddd", borderRadius:7, padding:"0 10px", height:30, fontSize:12, cursor:"pointer" }}>🗑️ Corbeille</button>
+            </div>
           </div>
 
           {/* Top 300 clients */}
@@ -3702,6 +3767,8 @@ function CRMApp({ user, onLogout }) {
           </div>
         </div>
       )}
+      </div>{/* end marginLeft wrapper */}
+
       {modalAdd && <ClientForm existingClients={clients} onSave={addClient} onCancel={()=>setModalAdd(false)} />}
       {modalEdit && <ClientForm initial={modalEdit} existingClients={clients} onSave={editClient} onCancel={()=>setModalEdit(null)} />}
       {modalDelete && <ConfirmModal title={`Supprimer ${modalDelete.genre==='Entreprise'?(modalDelete.entreprise||modalDelete.nom):(`${modalDelete.prenom} ${modalDelete.nom}`)} ?`} msg="Cette action est définitive. Le client sera déplacé dans la corbeille." onOk={()=>deleteClient(modalDelete.id)} onCancel={()=>setModalDelete(null)} okLabel="Supprimer" danger />}
