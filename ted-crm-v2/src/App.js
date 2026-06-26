@@ -883,13 +883,18 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
                     const iso = `${anneeP}-${String(moisP+1).padStart(2,'0')}-${String(jour).padStart(2,'0')}`;
                     const estAujourdhui = iso === todayIso;
                     const estSelectionne = dateIso === iso;
+                    const aujourd2 = new Date(); aujourd2.setHours(0,0,0,0);
+                    const estPasse = new Date(anneeP, moisP, jour) < aujourd2;
                     return (
-                      <button key={i} onPointerDown={()=>{ setDateIso(iso); }} style={{
+                      <button key={i} disabled={estPasse} onPointerDown={()=>{ if (!estPasse) setDateIso(iso); }} style={{
                         height:40, borderRadius:8,
                         border: estAujourdhui && !estSelectionne ? '2px solid #E8C547' : '1.5px solid transparent',
                         background: estSelectionne ? '#E8C547' : 'transparent',
                         fontWeight: estAujourdhui || estSelectionne ? 800 : 400,
-                        fontSize:14, cursor:'pointer', color:'#111',
+                        fontSize:14, cursor: estPasse ? 'not-allowed' : 'pointer',
+                        color: estPasse ? '#ccc' : '#111',
+                        opacity: estPasse ? 0.4 : 1,
+                        pointerEvents: estPasse ? 'none' : 'auto',
                         touchAction:'manipulation', WebkitTapHighlightColor:'transparent'
                       }}>{jour}</button>
                     );
