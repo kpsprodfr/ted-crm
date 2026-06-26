@@ -3269,9 +3269,12 @@ function CRMApp({ user, onLogout }) {
         return (
           <Modal title={nomAffiche} onClose={()=>setModalDetailClient(null)} maxW={440}
             footer={
-              <div style={{ display:'flex', gap:8, width:'100%' }}>
-                <button onClick={()=>{ setModalDetailClient(null); setModalDelete(c); }} style={{ flex:1, height:44, border:'1.5px solid #dc2626', borderRadius:10, background:'#fef2f2', color:'#dc2626', fontSize:14, fontWeight:700, cursor:'pointer' }}>🗑️ Supprimer</button>
-                <button onClick={()=>{ setModalDetailClient(null); setModalEdit(c); }} style={{ flex:2, height:44, border:'none', borderRadius:10, background:'#E8C547', color:'#111', fontSize:14, fontWeight:700, cursor:'pointer' }}>✏️ Modifier</button>
+              <div style={{ display:'flex', flexDirection:'column', gap:8, width:'100%' }}>
+                <div style={{ display:'flex', gap:8 }}>
+                  <button onClick={()=>{ setModalDetailClient(null); setModalDelete(c); }} style={{ flex:1, height:44, border:'1.5px solid #dc2626', borderRadius:10, background:'#fef2f2', color:'#dc2626', fontSize:14, fontWeight:700, cursor:'pointer' }}>🗑️ Supprimer</button>
+                  <button onClick={()=>{ setModalDetailClient(null); setModalEdit(c); }} style={{ flex:2, height:44, border:'none', borderRadius:10, background:'#E8C547', color:'#111', fontSize:14, fontWeight:700, cursor:'pointer' }}>✏️ Modifier</button>
+                </div>
+                <button onClick={()=>setModalDetailClient(null)} style={{ width:'100%', height:44, background:'#fff', border:'1.5px solid #ddd', borderRadius:10, fontSize:14, fontWeight:600, cursor:'pointer', color:'#666' }}>Fermer</button>
               </div>
             }>
             <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
@@ -3281,6 +3284,12 @@ function CRMApp({ user, onLogout }) {
               </div>
               {c.tel && <div style={{ fontSize:14, color:'#333' }}>📞 <a href={`tel:${c.tel}`} style={{ color:'#111', textDecoration:'none', fontWeight:600 }}>{c.tel}</a></div>}
               {c.mail && <div style={{ fontSize:13, color:'#3b82f6' }}>✉️ <a href={`mailto:${c.mail}`} style={{ color:'#3b82f6', textDecoration:'none' }}>{c.mail}</a></div>}
+              {c.tel && (
+                <div style={{ display:'flex', gap:8, marginTop:4, marginBottom:4 }}>
+                  <a href={`sms:${c.tel}`} style={{ flex:1, height:44, background:'#fff', border:'1.5px solid #ddd', borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', color:'#111', display:'flex', alignItems:'center', justifyContent:'center', textDecoration:'none' }}>💬 SMS</a>
+                  <a href={`tel:${c.tel}`} style={{ flex:1, height:44, background:'#111', border:'none', borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', textDecoration:'none' }}>📞 Appeler</a>
+                </div>
+              )}
               {c.created_at && <div style={{ fontSize:12, color:'#999' }}>📋 Client depuis le {formatDate(c.created_at)}</div>}
               {c.commentaire && <div style={{ fontSize:13, color:'#555', background:'#f9f9f9', borderRadius:8, padding:'10px 12px', fontStyle:'italic' }}>"{c.commentaire}"</div>}
               <div style={{ background:'#f9f9f9', borderRadius:10, padding:'12px 16px', display:'flex', gap:16 }}>
