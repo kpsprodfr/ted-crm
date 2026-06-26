@@ -1664,7 +1664,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                   const estAujourdhui = dateStr === todayStr;
                   return (
                     <div key={dateStr} onClick={()=>setCalJourSelectionne(dateStr)}
-                      style={{ flex:1, minWidth:70, padding:'10px 8px', borderRadius:12,
+                      style={{ flex:1, minWidth:70, padding:'10px 8px', borderRadius:6,
                         border: estSelectionne ? '2px solid #E8C547' : '1.5px solid #eee',
                         background: estSelectionne ? '#fffbea' : '#fff',
                         cursor:'pointer', textAlign:'center',
@@ -1708,7 +1708,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                       const estPasse = new Date(iso) < new Date(new Date().setHours(0,0,0,0));
                       return (
                         <div key={i} onClick={() => setCalJourSelectionne(iso)}
-                          style={{ textAlign:'center', padding:'7px 4px', borderRadius:8, cursor:'pointer', position:'relative',
+                          style={{ textAlign:'center', padding:'7px 4px', borderRadius:6, cursor:'pointer', position:'relative',
                             background: isSelected ? '#111' : isToday ? '#fffbeb' : '#fff',
                             border: isToday && !isSelected ? '1.5px solid #E8C547' : '1.5px solid transparent',
                             color: isSelected ? '#fff' : '#111', fontWeight: isToday ? 800 : 400, fontSize:13,
@@ -2046,6 +2046,7 @@ function CRMApp({ user, onLogout }) {
   const [resasData, setResasData] = useState([]);
   const [modalEdit, setModalEdit] = useState(null);
   const [showConfirmDeconnexion, setShowConfirmDeconnexion] = useState(false);
+  const [showFormulaireDropdown, setShowFormulaireDropdown] = useState(false);
   const [modalDelete, setModalDelete] = useState(null);
   const [modalImport, setModalImport] = useState(false);
   const [modalComment, setModalComment] = useState(null);
@@ -2381,15 +2382,36 @@ function CRMApp({ user, onLogout }) {
           <span style={{ fontSize:10, fontWeight:600, textAlign:'center', lineHeight:1.2 }}>{item.label}</span>
         </button>
       ))}
-      <button onClick={()=>{ navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver'); showToast('Lien formulaire copié !'); }} style={{ width:'100%', padding:'12px 8px', border:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer', marginBottom:4, borderLeft:'3px solid transparent', background:'transparent', color:'#888' }}>
-        <span style={{ fontSize:22 }}>🔗</span>
-        <span style={{ fontSize:10, fontWeight:600, textAlign:'center', lineHeight:1.2 }}>Formulaire</span>
-      </button>
+      <div style={{ position:'relative' }}>
+        <button onClick={()=>setShowFormulaireDropdown(v=>!v)} style={{ width:'100%', padding:'12px 8px', border:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer', marginBottom:4, borderLeft: showFormulaireDropdown ? '3px solid #E8C547' : '3px solid transparent', background: showFormulaireDropdown ? 'rgba(232,197,71,0.1)' : 'transparent', color: showFormulaireDropdown ? '#E8C547' : '#888' }}>
+          <span style={{ fontSize:22 }}>🔗</span>
+          <span style={{ fontSize:10, fontWeight:600, textAlign:'center', lineHeight:1.2 }}>Formulaire</span>
+        </button>
+        {showFormulaireDropdown && (
+          <div style={{ position:'fixed', left:128, bottom:80, zIndex:500, background:'#fff', borderRadius:10, boxShadow:'0 8px 32px rgba(0,0,0,0.15)', padding:8, minWidth:200 }}>
+            <button onClick={()=>{ navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver'); showToast('Lien copié !'); setShowFormulaireDropdown(false); }} style={{ width:'100%', padding:'10px 14px', border:'none', background:'none', textAlign:'left', cursor:'pointer', fontSize:14, borderRadius:6 }} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>📋 Copier le lien</button>
+            <button onClick={()=>{ window.open('https://ted-crm.pages.dev/reserver','_blank'); setShowFormulaireDropdown(false); }} style={{ width:'100%', padding:'10px 14px', border:'none', background:'none', textAlign:'left', cursor:'pointer', fontSize:14, borderRadius:6 }} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>🔗 Ouvrir</button>
+            <button onClick={()=>{ if(navigator.share){ navigator.share({title:'Réservation Le TED', url:'https://ted-crm.pages.dev/reserver'}); } else { navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver'); showToast('Lien copié !'); } setShowFormulaireDropdown(false); }} style={{ width:'100%', padding:'10px 14px', border:'none', background:'none', textAlign:'left', cursor:'pointer', fontSize:14, borderRadius:6 }} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>📤 Partager</button>
+          </div>
+        )}
+      </div>
       <div style={{ flex:1 }} />
       <button onClick={()=>setShowConfirmDeconnexion(true)} style={{ width:'100%', padding:'12px 8px', border:'none', background:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer', color:'#555' }}>
         <span style={{ fontSize:22 }}>🔓</span>
         <span style={{ fontSize:10, fontWeight:600 }}>Déconnexion</span>
       </button>
+      {showConfirmDeconnexion && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:9000, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ background:'#fff', borderRadius:16, padding:'28px 24px', maxWidth:320, width:'90%', textAlign:'center', boxShadow:'0 20px 60px rgba(0,0,0,0.2)' }}>
+            <h3 style={{ margin:'0 0 8px', fontSize:17, fontWeight:800 }}>Se déconnecter ?</h3>
+            <p style={{ color:'#888', fontSize:14, margin:'0 0 20px' }}>Vous devrez vous reconnecter pour accéder au CRM.</p>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={()=>setShowConfirmDeconnexion(false)} style={{ flex:1, height:44, border:'1.5px solid #ddd', borderRadius:10, background:'#fff', fontSize:14, cursor:'pointer', color:'#666' }}>Annuler</button>
+              <button onClick={()=>{ supabase.auth.signOut(); setShowConfirmDeconnexion(false); }} style={{ flex:1, height:44, border:'none', borderRadius:10, background:'#111', fontSize:14, fontWeight:800, cursor:'pointer', color:'#fff' }}>Se déconnecter</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   ) : null;
 
