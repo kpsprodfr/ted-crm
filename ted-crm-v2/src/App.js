@@ -753,7 +753,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
         nb_personnes: nbPersonnes,
         occasion: occasion || null,
         commentaire_client: commentaire.trim() || null,
-        statut: 'confirmee',
+        statut: 'attente',
         source: 'manuel',
       }));
     }
@@ -870,8 +870,10 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
         </div>
       )}
       {!resaCree && <>
-      {/* Subtitle confirmée */}
-      {!isEdit && <div style={{ fontSize:12, color:'#16a34a', fontWeight:600, marginBottom:16, display:'flex', alignItems:'center', gap:6 }}>✅ Créée directement en confirmée</div>}
+      {!isEdit && <div style={{ background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:10, padding:'10px 14px', marginBottom:16, display:'flex', alignItems:'center', gap:10 }}>
+        <span style={{ fontSize:20 }}>⏳</span>
+        <p style={{ margin:0, fontSize:13, color:'#92400e', lineHeight:1.5 }}>Cette réservation sera créée comme <strong>demande en attente</strong> — vous pourrez l'accepter depuis la page Réservations.</p>
+      </div>}
 
       <div style={{ display:'flex', flexDirection:'column', gap:20, paddingBottom:8 }}>
 
