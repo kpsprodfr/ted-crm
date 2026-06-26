@@ -872,7 +872,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
       {!resaCree && <>
       {!isEdit && <div style={{ background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:10, padding:'10px 14px', marginBottom:16, display:'flex', alignItems:'center', gap:10 }}>
         <span style={{ fontSize:20 }}>⏳</span>
-        <p style={{ margin:0, fontSize:13, color:'#92400e', lineHeight:1.5 }}>Cette réservation sera créée comme <strong>demande en attente</strong> — vous pourrez l'accepter depuis la page Réservations.</p>
+        <p style={{ margin:0, fontSize:13, color:'#92400e' }}>Cette réservation sera créée comme <strong>demande en attente</strong>.</p>
       </div>}
 
       <div style={{ display:'flex', flexDirection:'column', gap:20, paddingBottom:8 }}>
