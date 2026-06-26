@@ -1655,7 +1655,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
   const cardStyle = { background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:16, marginBottom:10, boxShadow:'0 2px 8px rgba(0,0,0,0.04)' };
 
   return (
-    <div style={{ fontFamily:"'Inter','Segoe UI',Arial,sans-serif", background:'#f8f8f8', minHeight: inline ? undefined : '100vh' }}>
+    <div style={{ fontFamily:"'Inter','Segoe UI',Arial,sans-serif", background:'#f8f8f8', minHeight: inline ? undefined : '100vh', overflow: !isMobile ? 'hidden' : undefined, height: (!isMobile && inline) ? '100vh' : undefined }}>
       {/* Header — desktop full-page mode only */}
       {!inline && (
         <header style={{ background:'#111', color:'#fff', padding:'0 20px', height:56, display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:`3px solid ${G}`, flexShrink:0 }}>
