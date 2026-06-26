@@ -1164,21 +1164,25 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
             })()}
           </div>
           {showStatutPanel && (
-            <>
-              <div onClick={()=>setShowStatutPanel(false)} style={{ position:'fixed', inset:0, zIndex:100 }} />
-              <div style={{ position:'absolute', top:'100%', right:0, zIndex:101, background:'#fff', borderRadius:12, boxShadow:'0 8px 32px rgba(0,0,0,0.15)', width:280, maxHeight:300, overflowY:'auto', border:'1px solid #f0f0f0' }}>
+            <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:5000, display:'flex', alignItems:'center', justifyContent:'center' }} onClick={()=>setShowStatutPanel(false)}>
+              <div style={{ background:'#fff', borderRadius:16, padding:24, width:320, boxShadow:'0 20px 60px rgba(0,0,0,0.2)' }} onClick={e=>e.stopPropagation()}>
+                <h3 style={{ margin:'0 0 16px', fontSize:16, fontWeight:800 }}>Changer le statut</h3>
                 {STATUTS_COLORS.map(s => (
-                  <button key={s.value} onClick={()=>{ handleStatutChange(s.value); setShowStatutPanel(false); saveStatutDirect(s.value); }} style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'12px 16px', background: statut === s.value ? `${s.color}12` : '#fff', border:'none', borderBottom:'1px solid #f5f5f5', cursor:'pointer', textAlign:'left' }}>
-                    <span style={{ width:10, height:10, borderRadius:'50%', background:s.color, flexShrink:0 }}/>
+                  <div key={s.value} onClick={()=>{ setShowStatutPanel(false); saveStatutDirect(s.value); }}
+                    style={{ display:'flex', alignItems:'center', gap:12, padding:12, borderRadius:10, cursor:'pointer', marginBottom:6, background: resa.statut === s.value ? '#f9f9f9' : '#fff' }}
+                    onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'}
+                    onMouseLeave={e=>e.currentTarget.style.background=resa.statut===s.value?'#f9f9f9':'#fff'}
+                  >
+                    <div style={{ width:12, height:12, borderRadius:'50%', background:s.color, flexShrink:0 }}/>
                     <div style={{ flex:1 }}>
-                      <div style={{ fontWeight:700, fontSize:14, color: statut === s.value ? s.color : '#111' }}>{s.label}</div>
+                      <div style={{ fontWeight:700, fontSize:14, color:'#111' }}>{s.label}</div>
                       <div style={{ fontSize:12, color:'#999' }}>{s.desc}</div>
                     </div>
-                    {statut === s.value && <span style={{ color:s.color, fontWeight:800, fontSize:16 }}>✓</span>}
-                  </button>
+                    {resa.statut === s.value && <span style={{ color:'#16a34a', fontSize:18 }}>✓</span>}
+                  </div>
                 ))}
               </div>
-            </>
+            </div>
           )}
         </div>
 
