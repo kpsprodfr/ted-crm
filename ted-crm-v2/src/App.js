@@ -665,6 +665,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
   });
   const isMobile = useIsMobile();
   const calPickerRef = useRef(null);
+  const submitLockRef = useRef(false);
 
   useEffect(() => {
     if (showCalPicker) {
@@ -721,12 +722,14 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
   }
 
   async function handleSave() {
+    if (submitLockRef.current) return;
     if (!tel.trim()) { showToast('Téléphone requis', 'error'); return; }
     if (!genre) { showToast('Genre requis', 'error'); return; }
     if (!prenom.trim()) { showToast('Prénom requis', 'error'); return; }
     if (!nom.trim()) { showToast('Nom requis', 'error'); return; }
     if (genre === 'Entreprise' && !entreprise.trim()) { showToast('Nom d\'entreprise requis', 'error'); return; }
     if (!heure) { setHeureError(true); return; }
+    submitLockRef.current = true;
     setSaving(true);
 
     const telSaisi = tel.replace(/\s/g, '');
@@ -834,6 +837,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
       }));
     }
     setSaving(false);
+    submitLockRef.current = false;
     if (error) { showToast(isEdit ? 'Erreur lors de la modification' : 'Erreur lors de la création', 'error'); return; }
     onSaved();
     if (isEdit) {
@@ -2034,20 +2038,24 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           ? resasDuJour.filter(r => { const n = `${r.clients?.prenom||''} ${r.clients?.nom||''} ${r.clients?.entreprise||''} ${r.clients?.tel||''}`.toLowerCase(); return n.includes(resaSearchPanel.toLowerCase()); })
           : resasDuJour;
         return (
-          <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:20, height:'fit-content', position:'sticky', top:24 }}>
-            <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12}}>
-              <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#111' }}>
-                {calJourSelectionne ? new Date(calJourSelectionne+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}) : 'Sélectionner un jour'}
-                {calServiceSelectionne ? ` — ${calServiceSelectionne==='midi'?'☀️ Midi':'🌙 Soir'}` : ''}
-              </h3>
-              {calJourSelectionne && calServiceSelectionne && (
-                <button onClick={()=>telechargerTableau(calJourSelectionne, calServiceSelectionne, resasDuJour)} style={{ background:'#111', color:'#fff', border:'none', borderRadius:8, padding:'6px 14px', fontSize:12, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
-                  📥 Télécharger
-                </button>
-              )}
+          <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', position:'sticky', top:24, height:'calc(100vh - 48px)', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+            {/* Header fixe */}
+            <div style={{ flexShrink:0, padding:'20px 20px 12px' }}>
+              <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12}}>
+                <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#111' }}>
+                  {calJourSelectionne ? new Date(calJourSelectionne+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}) : 'Sélectionner un jour'}
+                  {calServiceSelectionne ? ` — ${calServiceSelectionne==='midi'?'☀️ Midi':'🌙 Soir'}` : ''}
+                </h3>
+                {calJourSelectionne && calServiceSelectionne && (
+                  <button onClick={()=>telechargerTableau(calJourSelectionne, calServiceSelectionne, resasDuJour)} style={{ background:'#111', color:'#fff', border:'none', borderRadius:8, padding:'6px 14px', fontSize:12, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+                    📥 Télécharger
+                  </button>
+                )}
+              </div>
+              <input value={resaSearchPanel} onChange={e=>setResaSearchPanel(e.target.value)} placeholder="Rechercher une réservation..." style={{ width:'100%', height:38, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:13, outline:'none', boxSizing:'border-box' }} />
             </div>
-            <input value={resaSearchPanel} onChange={e=>setResaSearchPanel(e.target.value)} placeholder="Rechercher une réservation..." style={{ width:'100%', height:38, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:13, outline:'none', marginBottom:12, boxSizing:'border-box' }} />
-            <div>
+            {/* Liste scrollable */}
+            <div style={{ flex:1, overflowY:'auto', padding:'0 20px' }}>
               {resasDuJourFiltrees.map(r => (
                 <div key={r.id} onClick={()=>setDetailResa(r)} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 0', borderBottom:'1px solid #f5f5f5', cursor:'pointer' }}
                   onMouseEnter={e=>e.currentTarget.style.background='#fffbea'}
@@ -2065,14 +2073,17 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                 </div>
               ))}
               {resasDuJour.length === 0 && (
-                <p style={{ color:'#bbb', fontSize:13, textAlign:'center', padding:'24px 0' }}>
+                <p style={{ color:'#bbb', fontSize:13, textAlign:'center', padding:'32px 0' }}>
                   {calJourSelectionne && calServiceSelectionne ? 'Aucune réservation confirmée' : 'Sélectionner un jour et un service'}
                 </p>
               )}
             </div>
-            <button onClick={()=>setShowAddResa(true)} style={{ width:'100%', height:48, background:'#E8C547', border:'none', borderRadius:12, fontSize:14, fontWeight:800, cursor:'pointer', color:'#111', marginTop:16 }}>
-              + Nouvelle réservation
-            </button>
+            {/* Bouton fixe en bas */}
+            <div style={{ flexShrink:0, padding:'12px 20px 20px', borderTop:'1px solid #f0f0f0' }}>
+              <button onClick={()=>setShowAddResa(true)} style={{ width:'100%', height:50, background:'#E8C547', border:'none', borderRadius:12, fontSize:15, fontWeight:800, cursor:'pointer', color:'#111' }}>
+                + Nouvelle réservation
+              </button>
+            </div>
           </div>
         );
       })()}
