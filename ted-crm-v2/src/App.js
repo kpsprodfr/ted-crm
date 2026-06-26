@@ -1677,16 +1677,15 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
         </header>
       )}
 
-      {!isMobile && <h1 style={{fontSize:28, fontWeight:900, color:'#111', margin:'0 0 20px', padding:'24px 32px 0'}}>Réservations</h1>}
-      <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? '1fr 400px' : undefined, gap: !isMobile ? 24 : undefined, padding: !isMobile ? '0 32px 32px' : undefined, maxWidth: !isMobile ? 1440 : undefined, margin: !isMobile ? '0 auto' : undefined, alignItems: 'start', minHeight: !isMobile ? 'calc(100vh - 120px)' : undefined }}>
-      <main style={{ maxWidth: isMobile ? 800 : 'none', margin: isMobile ? '0 auto' : 0, padding: isMobile ? '16px 12px 100px' : '0' }}>
+      <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? '1fr 400px' : undefined, gap: !isMobile ? 24 : undefined, padding: !isMobile ? '24px 32px' : undefined, maxWidth: !isMobile ? 1440 : undefined, margin: !isMobile ? '0 auto' : undefined, alignItems: !isMobile ? 'stretch' : 'start', height: !isMobile ? 'calc(100vh - 48px)' : undefined, boxSizing: !isMobile ? 'border-box' : undefined }}>
+      <main style={{ maxWidth: isMobile ? 800 : 'none', margin: isMobile ? '0 auto' : 0, padding: isMobile ? '16px 12px 100px' : '0', display: !isMobile ? 'flex' : 'block', flexDirection: !isMobile ? 'column' : undefined, gap: !isMobile ? 16 : undefined, height: !isMobile ? '100%' : undefined, overflow: !isMobile ? 'hidden' : undefined }}>
 
 
         {/* ── Bouton Demandes en attente ── */}
         {(() => {
           const nbAttente = resaList.filter(r => r.statut === 'attente').length;
           return (
-            <div onClick={()=>setShowDemandesAttente(true)} className={nbAttente > 0 ? 'alarm-blink' : ''} style={{ background: nbAttente > 0 ? '#dc2626' : '#fff', border: nbAttente > 0 ? 'none' : '1.5px solid #f0f0f0', borderRadius:12, padding:'14px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', marginBottom:16, transition:'background 0.1s' }}>
+            <div onClick={()=>setShowDemandesAttente(true)} className={nbAttente > 0 ? 'alarm-blink' : ''} style={{ background: nbAttente > 0 ? '#dc2626' : '#fff', border: nbAttente > 0 ? 'none' : '1.5px solid #f0f0f0', borderRadius:12, padding:'14px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', flexShrink:0, transition:'background 0.1s' }}>
               <span style={{ fontSize:15, fontWeight:800, color: nbAttente > 0 ? '#fff' : '#111' }}>📋 Demandes de réservation en attente</span>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                 {nbAttente > 0 ? (
@@ -1730,9 +1729,9 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           const couvertsMidi = calJourSelectionne ? resaList.filter(r => r.date === calJourSelectionne && r.service === 'midi' && r.statut === 'confirmee').reduce((sum, r) => sum + (r.nb_personnes || 0), 0) : 0;
           const couvertsSoir = calJourSelectionne ? resaList.filter(r => r.date === calJourSelectionne && r.service === 'soir' && r.statut === 'confirmee').reduce((sum, r) => sum + (r.nb_personnes || 0), 0) : 0;
           return (
-            <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:16, marginBottom:20, boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
+            <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:16, flex:1, display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
               {/* 1. 7 rectangles */}
-              <div style={{ display:'flex', gap:8, marginBottom:12, overflowX:'auto' }}>
+              <div style={{ display:'flex', gap:8, marginBottom:12, overflowX:'auto', flexShrink:0 }}>
                 {sept7Jours.map(dateStr => {
                   const d = new Date(dateStr+'T12:00:00');
                   const totalCouverts = resaList.filter(r => r.date === dateStr && r.statut === 'confirmee').reduce((sum, r) => sum + (r.nb_personnes || 0), 0);
@@ -1758,9 +1757,9 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                   );
                 })}
               </div>
-              <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? '3fr 2fr' : undefined, gap: !isMobile ? 16 : 0, marginTop: !isMobile ? 16 : 0 }}>
+              <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? '3fr 2fr' : undefined, gap: !isMobile ? 16 : 0, marginTop: !isMobile ? 16 : 0, flex: !isMobile ? 1 : undefined, minHeight: !isMobile ? 0 : undefined, overflow: !isMobile ? 'hidden' : undefined }}>
                 {/* Colonne calendrier */}
-                <div style={!isMobile ? { background:'#f8f8f8', borderRadius:12, padding:12 } : {}}>
+                <div style={!isMobile ? { background:'#f8f8f8', borderRadius:12, padding:12, overflow:'auto' } : {}}>
                   {/* 2. Bouton toggle (mobile only) */}
                   {isMobile && (
                     <button onClick={()=>setCalMensuelOuvert(v=>!v)} style={{ width:'100%', padding:'10px 12px', background:'#f8f8f8', border:'1.5px solid #eee', borderRadius:8, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: calMensuelOuvert ? 12 : 0 }}>
@@ -2038,7 +2037,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           ? resasDuJour.filter(r => { const n = `${r.clients?.prenom||''} ${r.clients?.nom||''} ${r.clients?.entreprise||''} ${r.clients?.tel||''}`.toLowerCase(); return n.includes(resaSearchPanel.toLowerCase()); })
           : resasDuJour;
         return (
-          <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', position:'sticky', top:24, height:'calc(100vh - 48px)', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+          <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', height:'100%', display:'flex', flexDirection:'column', overflow:'hidden' }}>
             {/* Header fixe */}
             <div style={{ flexShrink:0, padding:'20px 20px 12px' }}>
               <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12}}>
