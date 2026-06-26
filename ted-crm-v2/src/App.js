@@ -1031,6 +1031,14 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
   const resasClient = resaList.filter(r => r.client_id === resa.client_id);
   const nbVenues = resasClient.filter(r => r.statut === 'venue').length;
   const nbAbsentes = resasClient.filter(r => r.statut === 'absente').length;
+  const totalResas = resasClient.length;
+  const noshow = nbAbsentes;
+  const derniereVisite = resasClient
+    .filter(r => r.statut === 'venue' && r.date < aujourd)
+    .sort((a,b) => b.date.localeCompare(a.date))[0];
+  const derniereVisiteFormatee = derniereVisite
+    ? new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR', {day:'numeric', month:'long', year:'numeric'})
+    : 'Jamais';
 
   function handleStatutChange(val) {
     setStatut(val);
@@ -1059,6 +1067,20 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
     <Modal title="Détail de la réservation" onClose={onClose} maxW={480} zIndex={3000}
       footer={
         <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:8 }}>
+          <div style={{ background:'#f9f9f9', borderRadius:10, padding:'12px 16px', marginBottom:4, display:'flex', gap:16, flexWrap:'wrap' }}>
+            <div style={{ textAlign:'center', flex:1 }}>
+              <div style={{ fontSize:20, fontWeight:800, color:'#111' }}>{totalResas}</div>
+              <div style={{ fontSize:11, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Résa total</div>
+            </div>
+            <div style={{ textAlign:'center', flex:1 }}>
+              <div style={{ fontSize:20, fontWeight:800, color: noshow > 0 ? '#dc2626' : '#111' }}>{noshow}</div>
+              <div style={{ fontSize:11, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>No-show</div>
+            </div>
+            <div style={{ textAlign:'center', flex:2 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:'#111' }}>{derniereVisiteFormatee}</div>
+              <div style={{ fontSize:11, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Dernière visite</div>
+            </div>
+          </div>
           {onEdit && (
             <button onClick={()=>{ onClose(); onEdit(resa); }} style={{ width:'100%', height:44, background:'#E8C547', color:'#111', border:'none', borderRadius:10, fontSize:14, fontWeight:700, cursor:'pointer' }}>✏️ Modifier la réservation</button>
           )}
