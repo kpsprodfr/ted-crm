@@ -1987,6 +1987,7 @@ function CRMApp({ user, onLogout }) {
   const [topJours, setTopJours] = useState([]);
   const [resasData, setResasData] = useState([]);
   const [modalEdit, setModalEdit] = useState(null);
+  const [showConfirmDeconnexion, setShowConfirmDeconnexion] = useState(false);
   const [modalDelete, setModalDelete] = useState(null);
   const [modalImport, setModalImport] = useState(false);
   const [modalComment, setModalComment] = useState(null);
@@ -3246,7 +3247,7 @@ function CRMApp({ user, onLogout }) {
           </div>
           <div style={{display:"flex", gap:6, alignItems:"center", flexShrink:0}}>
             <button onClick={()=>setModalCorbeille(true)} style={{background:"transparent", color:G, border:`1px solid ${G}`, borderRadius:7, padding:"0 10px", height:32, fontSize:12, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap"}}>🗑️ Corbeille</button>
-            <button onClick={onLogout} style={{background:"transparent", color:"#ccc", border:"1px solid #444", borderRadius:7, padding:"0 10px", height:32, fontSize:12, cursor:"pointer"}}>🚪 Quitter</button>
+            <button onClick={()=>setShowConfirmDeconnexion(true)} style={{ background:'transparent', color:'#ccc', border:'1px solid #444', borderRadius:7, padding:'0 12px', height:32, fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>⎋ Déconnexion</button>
           </div>
         </header>
       )}
@@ -3418,64 +3419,34 @@ function CRMApp({ user, onLogout }) {
             </div>
           </div>
 
-          {/* Table desktop */}
+          {/* Liste clients compacte */}
           <div style={{ background:"#fff", borderRadius:10, border:"1.5px solid #e5e5e5", overflow:"hidden" }}>
-            <div style={{ overflowX:"auto" }}>
-              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
-                <thead>
-                  <tr>
-                    <Th col="genre" label="Genre"/>
-                    {activeTab === "entreprises" ? (
-                      <>
-                        <Th col="entreprise" label="Entreprise"/>
-                        <Th col="nom" label="Contact"/>
-                      </>
-                    ) : (
-                      <>
-                        <Th col="nom" label="Nom"/>
-                        <Th col="prenom" label="Prénom"/>
-                      </>
+            {pageClients.length === 0 && (
+              <div style={{ textAlign:"center", padding:"3rem", color:"#bbb", fontSize:14 }}>{(search||filterGenre||filterMonth)?"Aucun client trouvé":"Aucun client dans la base"}</div>
+            )}
+            {pageClients.map((c) => (
+              <div key={c.id} onClick={()=>setModalDetailClient(c)} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 16px', borderBottom:'1px solid #f5f5f5', cursor:'pointer', background:'#fff' }}
+                onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'}
+                onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
+                <div style={{ width:36, height:36, borderRadius:'50%', flexShrink:0, background: c.genre==='Homme'?'#dbeafe':c.genre==='Femme'?'#fce7f3':'#dcfce7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:700, color: c.genre==='Homme'?'#1d4ed8':c.genre==='Femme'?'#be185d':'#15803d' }}>
+                  {(c.prenom||c.entreprise||'?')[0]?.toUpperCase()}
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontWeight:700, fontSize:14, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                    {c.genre==='Entreprise' ? c.entreprise : `${c.prenom||''} ${c.nom||''}`.trim()}
+                  </div>
+                  <div style={{ fontSize:12, color:'#999', display:'flex', gap:8, marginTop:2 }}>
+                    <span>{c.tel}</span>
+                    <span>·</span>
+                    <span>{statsClients[c.id]?.total || 0} résa</span>
+                    {statsClients[c.id]?.derniereVisite && (
+                      <><span>·</span><span>Vu le {new Date(statsClients[c.id].derniereVisite+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span></>
                     )}
-                    <Th col="tel" label="Téléphone"/>
-                    <Th col="mail" label="Mail"/>
-                    <Th col="created_at" label="Date d'ajout"/>
-                    <th style={{ background:"#111", color:"#fff", padding:"10px 12px", textAlign:"left", fontWeight:600, fontSize:12 }}>Réservations</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pageClients.length === 0 && (
-                    <tr><td colSpan={8} style={{ textAlign:"center", padding:"3rem", color:"#bbb", fontSize:14 }}>{(search||filterGenre||filterMonth)?"Aucun client trouvé":"Aucun client dans la base"}</td></tr>
-                  )}
-                  {pageClients.map((c, i) => {
-                    const isHov = hoverRow === c.id;
-                    const bg = isHov?"#fffbea":i%2===0?"#fff":"#f9f9f9";
-                    const td = { padding:"9px 12px", borderBottom:"1px solid #f0f0f0", verticalAlign:"middle", background:bg };
-                    return (
-                      <tr key={c.id} onClick={()=>setModalDetailClient(c)} onMouseEnter={()=>setHoverRow(c.id)} onMouseLeave={()=>setHoverRow(null)} style={{ cursor:'pointer' }}>
-                        <td style={td}><span style={badge(c.genre)}>{c.genre||"—"}</span></td>
-                        {activeTab === "entreprises" ? (
-                          <>
-                            <td style={{...td,fontWeight:700,color:"#065f46"}}>{c.entreprise||"—"}</td>
-                            <td style={td}>{c.nom||""} {c.prenom||""}</td>
-                          </>
-                        ) : (
-                          <>
-                            <td style={{...td,fontWeight:600}}>{c.genre==="Entreprise" ? <span style={{color:'#065f46',fontWeight:700}}>{c.entreprise||"—"}</span> : c.nom||"—"}</td>
-                            <td style={td}>{c.genre==="Entreprise" ? <span style={{fontSize:11,color:'#999'}}>{c.nom} {c.prenom}</span> : c.prenom||"—"}</td>
-                          </>
-                        )}
-                        <td style={{...td,fontFamily:"'Courier New',monospace"}}>{c.tel||"—"}</td>
-                        <td style={{...td,fontSize:12,color:"#3b82f6",maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.mail||"—"}</td>
-                        <td style={{...td,whiteSpace:"nowrap"}}>{formatDate(c.created_at)}</td>
-                        <td style={td}>
-                          <span style={{ fontSize:12, color:'#666' }}>📅 {statsClients[c.id]?.total || 0} résa</span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                  </div>
+                </div>
+                <span style={{ color:'#ddd', fontSize:18 }}>›</span>
+              </div>
+            ))}
             {/* Pagination desktop */}
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", borderTop:"1px solid #eee", flexWrap:"wrap", gap:8 }}>
               <span style={{ fontSize:12, color:"#999" }}>{filtered.length===0?"0 résultat":`${(safePage-1)*pageSize+1}–${Math.min(safePage*pageSize,filtered.length)} sur ${filtered.length} client(s)`}</span>
@@ -3566,19 +3537,8 @@ function CRMApp({ user, onLogout }) {
         const c = modalDetailClient;
         const s = statsClients[c.id] || { total:0, noshow:0, derniereVisite:null };
         const nomAffiche = c.genre === 'Entreprise' ? (c.entreprise || c.nom || '—') : `${c.prenom||''} ${c.nom||''}`.trim() || '—';
-        return (
-          <Modal title={nomAffiche} onClose={()=>{ setModalDetailClient(null); setFicheClientReadOnly(false); }} maxW={440} zIndex={6000}
-            footer={
-              <div style={{ display:'flex', flexDirection:'column', gap:8, width:'100%' }}>
-                {!ficheClientReadOnly && (
-                  <div style={{ display:'flex', gap:8 }}>
-                    <button onClick={()=>{ setModalDetailClient(null); setFicheClientReadOnly(false); setModalDelete(c); }} style={{ flex:1, height:44, border:'1.5px solid #dc2626', borderRadius:10, background:'#fef2f2', color:'#dc2626', fontSize:14, fontWeight:700, cursor:'pointer' }}>🗑️ Supprimer</button>
-                    <button onClick={()=>{ setModalDetailClient(null); setFicheClientReadOnly(false); setModalEdit(c); }} style={{ flex:2, height:44, border:'none', borderRadius:10, background:'#E8C547', color:'#111', fontSize:14, fontWeight:700, cursor:'pointer' }}>✏️ Modifier</button>
-                  </div>
-                )}
-                <button onClick={()=>{ setModalDetailClient(null); setFicheClientReadOnly(false); }} style={{ width:'100%', height:44, background:'#fff', border:'1.5px solid #ddd', borderRadius:10, fontSize:14, fontWeight:600, cursor:'pointer', color:'#666' }}>Fermer</button>
-              </div>
-            }>
+        const fermerFiche = () => { setModalDetailClient(null); setFicheClientReadOnly(false); };
+        const ficheBody = (
             <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
               <div style={{ display:'flex', gap:8, alignItems:'center' }}>
                 <span style={badge(c.genre)}>{c.genre}</span>
@@ -3595,18 +3555,9 @@ function CRMApp({ user, onLogout }) {
               {c.created_at && <div style={{ fontSize:12, color:'#999' }}>📋 Client depuis le {formatDate(c.created_at)}</div>}
               {c.commentaire && <div style={{ fontSize:13, color:'#555', background:'#f9f9f9', borderRadius:8, padding:'10px 12px', fontStyle:'italic' }}>"{c.commentaire}"</div>}
               <div style={{ background:'#f9f9f9', borderRadius:10, padding:'12px 16px', display:'flex', gap:16 }}>
-                <div style={{ textAlign:'center', flex:1 }}>
-                  <div style={{ fontSize:22, fontWeight:800, color:'#111' }}>{s.total}</div>
-                  <div style={{ fontSize:11, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Résa total</div>
-                </div>
-                <div style={{ textAlign:'center', flex:1 }}>
-                  <div style={{ fontSize:22, fontWeight:800, color: s.noshow > 0 ? '#dc2626' : '#111' }}>{s.noshow}</div>
-                  <div style={{ fontSize:11, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>No-show</div>
-                </div>
-                <div style={{ textAlign:'center', flex:2 }}>
-                  <div style={{ fontSize:13, fontWeight:700, color:'#111' }}>{s.derniereVisite ? new Date(s.derniereVisite+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) : 'Jamais'}</div>
-                  <div style={{ fontSize:11, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Dernière visite</div>
-                </div>
+                <div style={{ textAlign:'center', flex:1 }}><div style={{ fontSize:22, fontWeight:800, color:'#111' }}>{s.total}</div><div style={{ fontSize:11, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Résa total</div></div>
+                <div style={{ textAlign:'center', flex:1 }}><div style={{ fontSize:22, fontWeight:800, color: s.noshow > 0 ? '#dc2626' : '#111' }}>{s.noshow}</div><div style={{ fontSize:11, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>No-show</div></div>
+                <div style={{ textAlign:'center', flex:2 }}><div style={{ fontSize:13, fontWeight:700, color:'#111' }}>{s.derniereVisite ? new Date(s.derniereVisite+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) : 'Jamais'}</div><div style={{ fontSize:11, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Dernière visite</div></div>
               </div>
               {(() => {
                 const aujourd2 = new Date();
@@ -3641,9 +3592,47 @@ function CRMApp({ user, onLogout }) {
                 );
               })()}
             </div>
+        );
+        const ficheFooter = (
+          <div style={{ display:'flex', flexDirection:'column', gap:8, width:'100%' }}>
+            {!ficheClientReadOnly && (
+              <div style={{ display:'flex', gap:8 }}>
+                <button onClick={()=>{ fermerFiche(); setModalDelete(c); }} style={{ flex:1, height:44, border:'1.5px solid #dc2626', borderRadius:10, background:'#fef2f2', color:'#dc2626', fontSize:14, fontWeight:700, cursor:'pointer' }}>🗑️ Supprimer</button>
+                <button onClick={()=>{ fermerFiche(); setModalEdit(c); }} style={{ flex:2, height:44, border:'none', borderRadius:10, background:'#E8C547', color:'#111', fontSize:14, fontWeight:700, cursor:'pointer' }}>✏️ Modifier</button>
+              </div>
+            )}
+            <button onClick={fermerFiche} style={{ width:'100%', height:44, background:'#fff', border:'1.5px solid #ddd', borderRadius:10, fontSize:14, fontWeight:600, cursor:'pointer', color:'#666' }}>Fermer</button>
+          </div>
+        );
+        if (isMobile) return (
+          <div style={{ position:'fixed', inset:0, background:'#f8f8f8', zIndex:6000, display:'flex', flexDirection:'column' }}>
+            <div style={{ background:'#111', padding:'16px 20px', paddingTop:'calc(16px + env(safe-area-inset-top))', borderBottom:'3px solid #E8C547', flexShrink:0, display:'flex', alignItems:'center', gap:12 }}>
+              <button onClick={fermerFiche} style={{ background:'none', border:'none', color:'#fff', fontSize:18, cursor:'pointer', touchAction:'manipulation', padding:0 }}>← Retour</button>
+              <h2 style={{ color:'#fff', margin:0, fontSize:17, fontWeight:800, flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{nomAffiche}</h2>
+            </div>
+            <div style={{ flex:1, overflowY:'auto', padding:'16px', WebkitOverflowScrolling:'touch' }}>{ficheBody}</div>
+            <div style={{ background:'#fff', padding:'12px 16px', paddingBottom:'calc(12px + env(safe-area-inset-bottom))', borderTop:'1px solid #eee', flexShrink:0 }}>{ficheFooter}</div>
+          </div>
+        );
+        return (
+          <Modal title={nomAffiche} onClose={fermerFiche} maxW={440} zIndex={6000}
+            footer={ficheFooter}>
+            {ficheBody}
           </Modal>
         );
       })()}
+      {showConfirmDeconnexion && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:9000, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ background:'#fff', borderRadius:16, padding:'28px 24px', maxWidth:320, width:'90%', textAlign:'center' }}>
+            <h3 style={{ margin:'0 0 8px', fontSize:17, fontWeight:800 }}>Se déconnecter ?</h3>
+            <p style={{ margin:'0 0 20px', fontSize:14, color:'#666' }}>Vous devrez vous reconnecter pour accéder au CRM.</p>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={()=>setShowConfirmDeconnexion(false)} style={{ flex:1, height:44, border:'1.5px solid #ddd', borderRadius:10, background:'#fff', fontSize:14, cursor:'pointer', color:'#666' }}>Annuler</button>
+              <button onClick={()=>{ supabase.auth.signOut(); setShowConfirmDeconnexion(false); }} style={{ flex:1, height:44, border:'none', borderRadius:10, background:'#111', fontSize:14, fontWeight:800, cursor:'pointer', color:'#fff' }}>Se déconnecter</button>
+            </div>
+          </div>
+        </div>
+      )}
       {modalAdd && <ClientForm existingClients={clients} onSave={addClient} onCancel={()=>setModalAdd(false)} />}
       {modalEdit && <ClientForm initial={modalEdit} existingClients={clients} onSave={editClient} onCancel={()=>setModalEdit(null)} />}
       {modalDelete && <ConfirmModal title="Supprimer ce client ?" msg={`Êtes-vous sûr de vouloir supprimer définitivement ${modalDelete.prenom} ${modalDelete.nom} ? Cette action est irréversible.`} onOk={()=>deleteClient(modalDelete.id)} onCancel={()=>setModalDelete(null)} okLabel="Supprimer définitivement" danger />}
