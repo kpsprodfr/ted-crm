@@ -2,6 +2,7 @@
   "name": "TED CRM",
   "short_name": "TED CRM",
   "display": "standalone",
+  "orientation": "landscape",
   "background_color": "#111111",
   "theme_color": "#111111",
   "start_url": ".",
