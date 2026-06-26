@@ -940,7 +940,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
                   <input value={editClientForm.mail||''} onChange={e=>setEditClientForm(f=>({...f,mail:e.target.value}))} placeholder="Email" type="email" style={{ ...inp(false), marginBottom:12 }} />
                   <div style={{ display:'flex', gap:8 }}>
                     <button onClick={()=>setShowEditClientInline(false)} style={{ flex:1, height:40, border:'1.5px solid #ddd', borderRadius:8, background:'#fff', fontSize:13, cursor:'pointer', color:'#666' }}>Annuler</button>
-                    <button onClick={async()=>{ await supabase.from('clients').update(editClientForm).eq('id', clientFound.id); setClientFound(prev=>({...prev,...editClientForm})); setShowEditClientInline(false); showToast('✅ Infos client mises à jour'); }} style={{ flex:2, height:40, background:'#E8C547', border:'none', borderRadius:8, fontSize:13, fontWeight:800, cursor:'pointer', color:'#111' }}>Enregistrer</button>
+                    <button onClick={async()=>{ await supabase.from('clients').update(editClientForm).eq('id', clientFound.id); setClientFound(prev=>({...prev,...editClientForm})); setShowEditClientInline(false); showToast('✅ Infos client mises à jour'); }} style={{ flex:2, height:40, background:'#E8C547', border:'none', borderRadius:8, fontSize:13, fontWeight:800, cursor:'pointer', color:'#111' }}>Enregistrer les modifications</button>
                   </div>
                 </div>
               )}
@@ -1385,6 +1385,7 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
   const [editResa, setEditResa] = useState(null);
   const [showAddResa, setShowAddResa] = useState(false);
   const [ficheClientRP, setFicheClientRP] = useState(null);
+  const [showConfirmDecoRP, setShowConfirmDecoRP] = useState(false);
   const [calDate, setCalDate] = useState(new Date());
   const [calMensuelOuvert, setCalMensuelOuvert] = useState(false);
   const [calJourSelectionne, setCalJourSelectionne] = useState(new Date().toISOString().split('T')[0]);
@@ -1595,7 +1596,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <button onClick={onBack} style={{ background:'rgba(255,255,255,0.08)', border:'1px solid #444', borderRadius:8, height:34, padding:'0 14px', color:'#ccc', fontWeight:600, fontSize:13, cursor:'pointer' }}>👥 Mes Clients</button>
             <button onClick={()=>onBack('communications')} style={{ background:'rgba(255,255,255,0.08)', border:'1px solid #444', borderRadius:8, height:34, padding:'0 14px', color:'#ccc', fontWeight:600, fontSize:13, cursor:'pointer' }}>📣 Communications</button>
-            <button onClick={onLogout} style={{ background:'transparent', color:'#ccc', border:'1px solid #444', borderRadius:7, padding:'0 10px', height:32, fontSize:12, cursor:'pointer' }}>🚪 Quitter</button>
+            <button onClick={()=>setShowConfirmDecoRP(true)} style={{ background:'transparent', color:'#ccc', border:'1px solid #444', borderRadius:7, padding:'0 12px', height:32, fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>🔓 Déconnexion</button>
           </div>
         </header>
       )}
@@ -1963,6 +1964,18 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           </Modal>
         );
       })()}
+      {showConfirmDecoRP && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:9000, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ background:'#fff', borderRadius:16, padding:'28px 24px', maxWidth:320, width:'90%', textAlign:'center' }}>
+            <h3 style={{ margin:'0 0 8px', fontSize:17, fontWeight:800 }}>Se déconnecter ?</h3>
+            <p style={{ margin:'0 0 20px', fontSize:14, color:'#666' }}>Vous devrez vous reconnecter pour accéder au CRM.</p>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={()=>setShowConfirmDecoRP(false)} style={{ flex:1, height:44, border:'1.5px solid #ddd', borderRadius:10, background:'#fff', fontSize:14, cursor:'pointer', color:'#666' }}>Annuler</button>
+              <button onClick={()=>{ supabase.auth.signOut(); setShowConfirmDecoRP(false); }} style={{ flex:1, height:44, border:'none', borderRadius:10, background:'#111', fontSize:14, fontWeight:800, cursor:'pointer', color:'#fff' }}>Se déconnecter</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -3207,7 +3220,7 @@ function CRMApp({ user, onLogout }) {
               {'Notification' in window && Notification.permission !== 'granted' && (
                 <button onClick={demanderPermissionNotif} style={{ background:'#E8C547', color:'#111', border:'none', borderRadius:8, width:36, height:36, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, cursor:'pointer' }}>🔔</button>
               )}
-              <button onClick={()=>{ if(window.confirm('Voulez-vous vraiment vous déconnecter ?')) onLogout(); }} style={{ background:'rgba(255,255,255,0.1)', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, cursor:'pointer', color:'#fff' }}>⎋</button>
+              <button onClick={()=>setShowConfirmDeconnexion(true)} style={{ background:'rgba(255,255,255,0.1)', border:'none', borderRadius:8, width:36, height:36, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#fff', fontSize:16 }}>🔓</button>
             </div>
           </div>
           {/* Onglets + Recherche — uniquement sur l'onglet Clients */}
@@ -3247,7 +3260,7 @@ function CRMApp({ user, onLogout }) {
           </div>
           <div style={{display:"flex", gap:6, alignItems:"center", flexShrink:0}}>
             <button onClick={()=>setModalCorbeille(true)} style={{background:"transparent", color:G, border:`1px solid ${G}`, borderRadius:7, padding:"0 10px", height:32, fontSize:12, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap"}}>🗑️ Corbeille</button>
-            <button onClick={()=>setShowConfirmDeconnexion(true)} style={{ background:'transparent', color:'#ccc', border:'1px solid #444', borderRadius:7, padding:'0 12px', height:32, fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>⎋ Déconnexion</button>
+            <button onClick={()=>setShowConfirmDeconnexion(true)} style={{ background:'transparent', color:'#ccc', border:'1px solid #444', borderRadius:7, padding:'0 12px', height:32, fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>🔓 Déconnexion</button>
           </div>
         </header>
       )}
@@ -3597,8 +3610,8 @@ function CRMApp({ user, onLogout }) {
           <div style={{ display:'flex', flexDirection:'column', gap:8, width:'100%' }}>
             {!ficheClientReadOnly && (
               <div style={{ display:'flex', gap:8 }}>
-                <button onClick={()=>{ fermerFiche(); setModalDelete(c); }} style={{ flex:1, height:44, border:'1.5px solid #dc2626', borderRadius:10, background:'#fef2f2', color:'#dc2626', fontSize:14, fontWeight:700, cursor:'pointer' }}>🗑️ Supprimer</button>
-                <button onClick={()=>{ fermerFiche(); setModalEdit(c); }} style={{ flex:2, height:44, border:'none', borderRadius:10, background:'#E8C547', color:'#111', fontSize:14, fontWeight:700, cursor:'pointer' }}>✏️ Modifier</button>
+                <button onClick={()=>{ fermerFiche(); setModalDelete(c); }} style={{ flex:1, height:44, border:'1.5px solid #dc2626', borderRadius:10, background:'#fef2f2', color:'#dc2626', fontSize:14, fontWeight:700, cursor:'pointer' }}>🗑️ Supprimer le client</button>
+                <button onClick={()=>{ fermerFiche(); setModalEdit(c); }} style={{ flex:2, height:44, border:'none', borderRadius:10, background:'#E8C547', color:'#111', fontSize:14, fontWeight:700, cursor:'pointer' }}>✏️ Modifier le client</button>
               </div>
             )}
             <button onClick={fermerFiche} style={{ width:'100%', height:44, background:'#fff', border:'1.5px solid #ddd', borderRadius:10, fontSize:14, fontWeight:600, cursor:'pointer', color:'#666' }}>Fermer</button>
@@ -3635,7 +3648,7 @@ function CRMApp({ user, onLogout }) {
       )}
       {modalAdd && <ClientForm existingClients={clients} onSave={addClient} onCancel={()=>setModalAdd(false)} />}
       {modalEdit && <ClientForm initial={modalEdit} existingClients={clients} onSave={editClient} onCancel={()=>setModalEdit(null)} />}
-      {modalDelete && <ConfirmModal title="Supprimer ce client ?" msg={`Êtes-vous sûr de vouloir supprimer définitivement ${modalDelete.prenom} ${modalDelete.nom} ? Cette action est irréversible.`} onOk={()=>deleteClient(modalDelete.id)} onCancel={()=>setModalDelete(null)} okLabel="Supprimer définitivement" danger />}
+      {modalDelete && <ConfirmModal title={`Supprimer ${modalDelete.genre==='Entreprise'?(modalDelete.entreprise||modalDelete.nom):(`${modalDelete.prenom} ${modalDelete.nom}`)} ?`} msg="Cette action est définitive. Le client sera déplacé dans la corbeille." onOk={()=>deleteClient(modalDelete.id)} onCancel={()=>setModalDelete(null)} okLabel="Supprimer" danger />}
       {modalImport && <ImportModal existingClients={clients} onImport={importClients} onCancel={()=>setModalImport(false)} />}
       {modalComment && <Modal title={`Commentaire — ${modalComment.prenom} ${modalComment.nom}`} onClose={()=>setModalComment(null)}><p style={{fontSize:14,lineHeight:1.7,margin:0}}>{modalComment.commentaire}</p></Modal>}
       {modalCorbeille && !isMobile && <CorbeilleModal onClose={()=>{ setModalCorbeille(false); loadClients(); }} showToast={showToast} />}
