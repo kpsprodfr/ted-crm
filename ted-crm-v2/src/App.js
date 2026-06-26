@@ -2051,8 +2051,8 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                   {calServiceSelectionne ? ` — ${calServiceSelectionne==='midi'?'☀️ Midi':'🌙 Soir'}` : ''}
                 </h3>
                 {calJourSelectionne && calServiceSelectionne && (
-                  <button onClick={()=>{ const resasAExporter = resasDuJour.filter(r => r.statut === 'confirmee'); telechargerTableau(calJourSelectionne, calServiceSelectionne, resasAExporter); }} style={{ background:'#111', color:'#fff', border:'none', borderRadius:8, padding:'6px 14px', fontSize:12, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
-                    <Download size={14} strokeWidth={2} color="#fff" /> Exporter
+                  <button onClick={()=>telechargerTableau(calJourSelectionne, calServiceSelectionne, resasDuJour.filter(r=>r.statut==='confirmee'))} style={{ background:'#111', color:'#fff', border:'none', borderRadius:8, padding:'6px 14px', fontSize:12, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+                    <Download size={14} strokeWidth={2} color="#fff" /> Télécharger
                   </button>
                 )}
               </div>
