@@ -25,15 +25,15 @@ function downloadBlob(content, filename, mimeType) {
 }
 
 function exportToCSV(clients) {
-  const header = ["Genre","Nom","Prénom","Téléphone","Mail","Date d'ajout","Commentaire"];
-  const rows = clients.map(c => [c.genre,c.nom,c.prenom,c.tel,c.mail,formatDate(c.created_at),c.commentaire].map(v => `"${(v||"").replace(/"/g,'""')}"`));
+  const header = ["Genre","Entreprise","Nom","Prénom","Téléphone","Mail","Date d'ajout","Commentaire"];
+  const rows = clients.map(c => [c.genre, c.genre==='Entreprise'?(c.entreprise||''):'', c.nom,c.prenom,c.tel,c.mail,formatDate(c.created_at),c.commentaire].map(v => `"${(v||"").replace(/"/g,'""')}"`));
   const csv = "\uFEFF" + [header, ...rows].map(r => r.join(";")).join("\n");
   downloadBlob(csv, "clients_TED.csv", "text/csv;charset=utf-8;");
 }
 
 function exportToXLSX(clients) {
-  const header = ["Genre","Nom","Prénom","Téléphone","Mail","Date d'ajout","Commentaire"];
-  const rows = clients.map(c => [c.genre||"",c.nom||"",c.prenom||"",c.tel?`\t${c.tel}`:"",c.mail||"",formatDate(c.created_at),c.commentaire||""]);
+  const header = ["Genre","Entreprise","Nom","Prénom","Téléphone","Mail","Date d'ajout","Commentaire"];
+  const rows = clients.map(c => [c.genre||"", c.genre==='Entreprise'?(c.entreprise||''):'', c.nom||"",c.prenom||"",c.tel?`\t${c.tel}`:"",c.mail||"",formatDate(c.created_at),c.commentaire||""]);
   let xml = `<?xml version="1.0" encoding="UTF-8"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Worksheet ss:Name="Clients"><Table>`;
   const encCell = v => `<Cell><Data ss:Type="String">${(v||"").toString().replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}</Data></Cell>`;
   xml += `<Row>${header.map(encCell).join("")}</Row>`;
