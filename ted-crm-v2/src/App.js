@@ -1036,17 +1036,17 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
     setStatut(val);
   }
 
-  async function saveStatut() {
+  async function saveStatutDirect(val) {
     setSaving(true);
-    const updates = { statut, updated_at: new Date().toISOString() };
-    if (statut === 'annulee') updates.raison_annulation = '';
-    if (statut === 'absente') {
+    const updates = { statut: val, updated_at: new Date().toISOString() };
+    if (val === 'annulee') updates.raison_annulation = '';
+    if (val === 'absente') {
       await supabase.from('clients').update({ nb_absences: (c.nb_absences || 0) + 1 }).eq('id', resa.client_id);
     }
     const { error } = await supabase.from('reservations').update(updates).eq('id', resa.id);
     setSaving(false);
-    if (error) { alert('Erreur lors de la mise à jour'); return; }
-    onSaved(statut);
+    if (error) { showToast('Erreur lors de la mise à jour', 'error'); return; }
+    onSaved(val);
     onClose();
   }
 
@@ -1059,32 +1059,31 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
     <Modal title="Détail de la réservation" onClose={onClose} maxW={480} zIndex={3000}
       footer={
         <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:8 }}>
-          {c.tel && (
-            <div style={{ display:'flex', gap:8 }}>
-              <button onClick={()=>{ setShowSmsPanel(!showSmsPanel); setSmsTexte(smsSuggestions[0]); }} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#fff', color:'#111', border:'1.5px solid #ddd', borderRadius:10, height:44, fontSize:13, fontWeight:700, cursor:'pointer' }}>💬 SMS</button>
-              <a href={`tel:${c.tel}`} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#111', color:'#fff', borderRadius:10, height:44, fontSize:13, fontWeight:700, textDecoration:'none' }}>📞 Appeler</a>
-            </div>
-          )}
           {onEdit && (
             <button onClick={()=>{ onClose(); onEdit(resa); }} style={{ width:'100%', height:44, background:'#E8C547', color:'#111', border:'none', borderRadius:10, fontSize:14, fontWeight:700, cursor:'pointer' }}>✏️ Modifier la réservation</button>
           )}
-          <div style={{ display:'flex', gap:8 }}>
-            <button key="f" type="button" onClick={onClose} style={{...btnSecondary}}>Fermer</button>
-            <button key="s" type="button" onClick={saveStatut} disabled={saving} style={{ background: saving ? '#ddd' : '#111', color: saving ? '#999' : '#fff', border:'none', borderRadius:8, padding:'0 18px', height:38, fontWeight:700, fontSize:14, cursor: saving ? 'not-allowed' : 'pointer' }}>
-              {saving ? 'Enregistrement…' : 'Enregistrer'}
-            </button>
+          <div style={{ borderTop:'1px solid #f0f0f0', paddingTop:8 }}>
+            <button type="button" onClick={onClose} style={{ width:'100%', ...btnSecondary }}>Fermer</button>
           </div>
         </div>
       }>
-      <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+      <div style={{ display:'flex', flexDirection:'column', gap:0 }}>
 
         {/* Nom + contact */}
-        <div>
-          <div style={{ fontSize:18, fontWeight:800, marginBottom:2 }}>{nom || '—'}</div>
-          {c.prenom && c.nom && c.entreprise && <div style={{ fontSize:13, color:'#888' }}>{c.prenom} {c.nom}</div>}
-          {c.tel && <div style={{ fontSize:14, color:'#444', marginTop:2 }}>📞 {c.tel}</div>}
+        <div style={{ paddingBottom:16, marginBottom:4 }}>
+          <div style={{ fontSize:19, fontWeight:800, marginBottom:4, color:'#111' }}>{nom || '—'}</div>
+          {c.prenom && c.nom && c.entreprise && <div style={{ fontSize:13, color:'#888', marginBottom:2 }}>{c.prenom} {c.nom}</div>}
+          {c.tel && <div style={{ fontSize:14, color:'#444', marginBottom:2 }}>📞 {c.tel}</div>}
           {c.mail && <a href={`mailto:${c.mail}`} style={{ fontSize:13, color:'#3b82f6', textDecoration:'none' }}>{c.mail}</a>}
         </div>
+
+        {/* Boutons SMS + Appeler */}
+        {c.tel && (
+          <div style={{ display:'flex', gap:8, marginBottom:16 }}>
+            <button onClick={()=>{ setShowSmsPanel(!showSmsPanel); setSmsTexte(smsSuggestions[0]); }} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#fff', color:'#111', border:'1.5px solid #ddd', borderRadius:10, height:44, fontSize:13, fontWeight:700, cursor:'pointer' }}>💬 SMS</button>
+            <a href={`tel:${c.tel}`} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#111', color:'#fff', borderRadius:10, height:44, fontSize:13, fontWeight:700, textDecoration:'none' }}>📞 Appeler</a>
+          </div>
+        )}
 
         {/* Panneau SMS */}
         {showSmsPanel && c.tel && (() => {
@@ -1093,7 +1092,7 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
           }
           const smsLimit = containsEmoji(smsTexte) ? 70 : 160;
           return (
-            <div style={{ background:'#f8f8f8', borderRadius:12, padding:14, display:'flex', flexDirection:'column', gap:8 }}>
+            <div style={{ background:'#f8f8f8', borderRadius:12, padding:14, display:'flex', flexDirection:'column', gap:8, marginBottom:16 }}>
               <div style={{ fontSize:12, fontWeight:700, color:'#555', marginBottom:2 }}>Suggestions</div>
               <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
                 {smsSuggestions.map((s, i) => (
@@ -1127,27 +1126,32 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
           );
         })()}
 
-        <div style={{ height:1, background:'#f0f0f0' }} />
+        <div style={{ height:1, background:'#f0f0f0', marginBottom:16 }} />
 
         {/* Infos réservation */}
-        {[
-          ['Date', fmtResaDate(resa.date)],
-          ['Service', resa.service === 'midi' ? '🌞 Midi' : '🌙 Soir'],
-          resa.heure ? ['Heure', resa.heure] : null,
-          ['Personnes', `${resa.nb_personnes} personne${resa.nb_personnes > 1 ? 's' : ''}`],
-          resa.occasion ? ['Occasion', resa.occasion] : null,
-        ].filter(Boolean).map(([l,v]) => (
-          <div key={l} style={{ display:'flex', justifyContent:'space-between', fontSize:14, padding:'3px 0', borderBottom:'1px solid #f8f8f8' }}>
-            <span style={{ color:'#888' }}>{l}</span><span style={{ fontWeight:600 }}>{v}</span>
-          </div>
-        ))}
-        {resa.commentaire_client && <p style={{ fontSize:13, color:'#aaa', fontStyle:'italic', borderLeft:'3px solid #eee', paddingLeft:10, margin:'2px 0' }}>"{resa.commentaire_client}"</p>}
-        {resa.raison_refus && <div style={{ background:'#fef2f2', borderRadius:8, padding:'8px 12px', fontSize:13, color:'#dc2626' }}>Motif refus : {resa.raison_refus}</div>}
+        <div style={{ marginBottom:4 }}>
+          {[
+            ['Date', fmtResaDate(resa.date)],
+            ['Service', resa.service === 'midi' ? '🌞 Midi' : '🌙 Soir'],
+            resa.heure ? ['Heure', resa.heure] : null,
+            ['Personnes', `${resa.nb_personnes} personne${resa.nb_personnes > 1 ? 's' : ''}`],
+            resa.occasion ? ['Occasion', resa.occasion] : null,
+          ].filter(Boolean).map(([l,v]) => (
+            <div key={l} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 0', borderBottom:'1px solid #f5f5f5' }}>
+              <span style={{ color:'#999', fontSize:14 }}>{l}</span>
+              <span style={{ fontWeight:600, fontSize:14, color:'#111' }}>{v}</span>
+            </div>
+          ))}
+          {resa.commentaire_client && <p style={{ fontSize:13, color:'#aaa', fontStyle:'italic', borderLeft:'3px solid #eee', paddingLeft:10, margin:'10px 0 2px' }}>"{resa.commentaire_client}"</p>}
+          {resa.raison_refus && <div style={{ background:'#fef2f2', borderRadius:8, padding:'8px 12px', fontSize:13, color:'#dc2626', marginTop:8 }}>Motif refus : {resa.raison_refus}</div>}
+        </div>
+
+        <div style={{ height:1, background:'#f0f0f0', margin:'12px 0' }} />
 
         {/* Statut — badge cliquable + panneau */}
         <div style={{ position:'relative' }}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-            <span style={{ fontSize:13, color:'#555', fontWeight:600 }}>Statut</span>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'4px 0' }}>
+            <span style={{ fontSize:14, color:'#999', fontWeight:500 }}>Statut</span>
             {(() => {
               const s = STATUTS_COLORS.find(x => x.value === statut) || STATUTS_COLORS[0];
               return (
@@ -1162,9 +1166,9 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
           {showStatutPanel && (
             <>
               <div onClick={()=>setShowStatutPanel(false)} style={{ position:'fixed', inset:0, zIndex:100 }} />
-              <div style={{ position:'absolute', right:0, top:'calc(100% + 6px)', background:'#fff', borderRadius:14, boxShadow:'0 8px 32px rgba(0,0,0,0.15)', border:'1px solid #f0f0f0', zIndex:101, minWidth:260, overflow:'hidden', maxHeight:'60vh', overflowY:'auto' }}>
+              <div style={{ position:'absolute', top:'100%', right:0, zIndex:101, background:'#fff', borderRadius:12, boxShadow:'0 8px 32px rgba(0,0,0,0.15)', width:280, maxHeight:300, overflowY:'auto', border:'1px solid #f0f0f0' }}>
                 {STATUTS_COLORS.map(s => (
-                  <button key={s.value} onClick={()=>{ handleStatutChange(s.value); setShowStatutPanel(false); }} style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'12px 16px', background: statut === s.value ? `${s.color}12` : '#fff', border:'none', borderBottom:'1px solid #f5f5f5', cursor:'pointer', textAlign:'left' }}>
+                  <button key={s.value} onClick={()=>{ handleStatutChange(s.value); setShowStatutPanel(false); saveStatutDirect(s.value); }} style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'12px 16px', background: statut === s.value ? `${s.color}12` : '#fff', border:'none', borderBottom:'1px solid #f5f5f5', cursor:'pointer', textAlign:'left' }}>
                     <span style={{ width:10, height:10, borderRadius:'50%', background:s.color, flexShrink:0 }}/>
                     <div style={{ flex:1 }}>
                       <div style={{ fontWeight:700, fontSize:14, color: statut === s.value ? s.color : '#111' }}>{s.label}</div>
