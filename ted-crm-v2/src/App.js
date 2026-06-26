@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut } from 'lucide-react';
+import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2 } from 'lucide-react';
 import { supabase } from "./supabase";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -1700,7 +1700,26 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
       <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? '1fr 400px' : undefined, gap: !isMobile ? 24 : undefined, padding: !isMobile ? '24px 32px' : undefined, maxWidth: !isMobile ? 1440 : undefined, margin: !isMobile ? '0 auto' : undefined, alignItems: !isMobile ? 'stretch' : 'start', height: !isMobile ? 'calc(100vh - 48px)' : undefined, boxSizing: !isMobile ? 'border-box' : undefined }}>
       <main style={{ maxWidth: isMobile ? 800 : 'none', margin: isMobile ? '0 auto' : 0, padding: isMobile ? '16px 12px 100px' : '0', display: !isMobile ? 'flex' : 'block', flexDirection: !isMobile ? 'column' : undefined, gap: !isMobile ? 12 : undefined, height: !isMobile ? '100%' : undefined, overflow: !isMobile ? 'hidden' : undefined }}>
 
-        {!isMobile && <h1 style={{ fontSize:26, fontWeight:900, color:'#111', margin:'0 0 0 0', flexShrink:0 }}>Réservations</h1>}
+        {!isMobile && (
+          <div style={{ display:'flex', alignItems:'center', gap:12, flexShrink:0, position:'relative' }}>
+            <h1 style={{ fontSize:26, fontWeight:900, color:'#111', margin:0 }}>Réservations</h1>
+            <div style={{ position:'relative' }}>
+              <button onClick={()=>setShowFormulaireDropdown(v=>!v)} style={{ display:'flex', alignItems:'center', gap:6, background:'#f0f0f0', border:'none', borderRadius:8, padding:'6px 12px', fontSize:12, fontWeight:600, cursor:'pointer', color:'#444' }}>
+                <Link size={14} strokeWidth={2} /> Formulaire
+              </button>
+              {showFormulaireDropdown && (
+                <>
+                  <div onClick={()=>setShowFormulaireDropdown(false)} style={{ position:'fixed', inset:0, zIndex:299 }} />
+                  <div style={{ position:'absolute', top:'calc(100% + 8px)', left:0, background:'#fff', borderRadius:10, boxShadow:'0 8px 32px rgba(0,0,0,0.15)', padding:6, minWidth:200, zIndex:300 }}>
+                    <button onClick={()=>{ navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver.html'); showToast('Lien copié !'); setShowFormulaireDropdown(false); }} style={{ width:'100%', padding:'10px 14px', border:'none', background:'none', textAlign:'left', cursor:'pointer', fontSize:13, borderRadius:6, display:'flex', alignItems:'center', gap:10, color:'#111' }} onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'} onMouseLeave={e=>e.currentTarget.style.background='none'}><Copy size={15} strokeWidth={2} color="#666" /> Copier le lien</button>
+                    <button onClick={()=>{ window.open('https://ted-crm.pages.dev/reserver.html','_blank'); setShowFormulaireDropdown(false); }} style={{ width:'100%', padding:'10px 14px', border:'none', background:'none', textAlign:'left', cursor:'pointer', fontSize:13, borderRadius:6, display:'flex', alignItems:'center', gap:10, color:'#111' }} onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'} onMouseLeave={e=>e.currentTarget.style.background='none'}><ExternalLink size={15} strokeWidth={2} color="#666" /> Ouvrir</button>
+                    <button onClick={()=>{ if(navigator.share){ navigator.share({title:'Réservation Le TED', url:'https://ted-crm.pages.dev/reserver.html'}); } setShowFormulaireDropdown(false); }} style={{ width:'100%', padding:'10px 14px', border:'none', background:'none', textAlign:'left', cursor:'pointer', fontSize:13, borderRadius:6, display:'flex', alignItems:'center', gap:10, color:'#111' }} onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'} onMouseLeave={e=>e.currentTarget.style.background='none'}><Share2 size={15} strokeWidth={2} color="#666" /> Partager</button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* ── Bouton Demandes en attente ── */}
         {(() => {
@@ -2502,19 +2521,6 @@ function CRMApp({ user, onLogout }) {
           <span style={{ fontSize:10, fontWeight:600, textAlign:'center', lineHeight:1.2 }}>{item.label}</span>
         </button>
       ))}
-      <div style={{ position:'relative' }}>
-        <button onClick={()=>setShowFormulaireDropdown(v=>!v)} style={{ width:'100%', padding:'12px 8px', border:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer', marginBottom:4, borderLeft: showFormulaireDropdown ? '3px solid #E8C547' : '3px solid transparent', background: showFormulaireDropdown ? 'rgba(232,197,71,0.1)' : 'transparent', color: showFormulaireDropdown ? '#E8C547' : '#555' }}>
-          <Link size={24} strokeWidth={1.8} />
-          <span style={{ fontSize:10, fontWeight:600, textAlign:'center', lineHeight:1.2 }}>Formulaire</span>
-        </button>
-        {showFormulaireDropdown && (
-          <div style={{ position:'fixed', left:128, bottom:60, zIndex:500, background:'#fff', borderRadius:10, boxShadow:'0 8px 32px rgba(0,0,0,0.15)', padding:8, minWidth:200 }}>
-            <button onClick={()=>{ navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver'); showToast('Lien copié !'); setShowFormulaireDropdown(false); }} style={{ width:'100%', padding:'10px 14px', border:'none', background:'none', textAlign:'left', cursor:'pointer', fontSize:14, borderRadius:6 }} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>📋 Copier le lien</button>
-            <button onClick={()=>{ window.open('https://ted-crm.pages.dev/reserver','_blank'); setShowFormulaireDropdown(false); }} style={{ width:'100%', padding:'10px 14px', border:'none', background:'none', textAlign:'left', cursor:'pointer', fontSize:14, borderRadius:6 }} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>🔗 Ouvrir</button>
-            <button onClick={()=>{ if(navigator.share){ navigator.share({title:'Réservation Le TED', url:'https://ted-crm.pages.dev/reserver'}); } else { navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver'); showToast('Lien copié !'); } setShowFormulaireDropdown(false); }} style={{ width:'100%', padding:'10px 14px', border:'none', background:'none', textAlign:'left', cursor:'pointer', fontSize:14, borderRadius:6 }} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>📤 Partager</button>
-          </div>
-        )}
-      </div>
       <div style={{ flex:1 }} />
       <button onClick={()=>setShowConfirmDeconnexion(true)} style={{ width:'100%', padding:'12px 8px', border:'none', background:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer', color:'#555' }}>
         <LogOut size={22} strokeWidth={1.8} />
