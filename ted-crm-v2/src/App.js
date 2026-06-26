@@ -2044,6 +2044,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', height:'100%', display:'flex', flexDirection:'column', overflow:'hidden' }}>
             {/* Header fixe */}
             <div style={{ flexShrink:0, padding:'20px 20px 12px' }}>
+              <p style={{ fontSize:12, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 4px' }}>Réservations du</p>
               <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12}}>
                 <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#111' }}>
                   {calJourSelectionne ? new Date(calJourSelectionne+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}) : 'Sélectionner un jour'}
