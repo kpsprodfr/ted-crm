@@ -3514,7 +3514,7 @@ function CRMApp({ user, onLogout }) {
         const s = statsClients[c.id] || { total:0, noshow:0, derniereVisite:null };
         const nomAffiche = c.genre === 'Entreprise' ? (c.entreprise || c.nom || '—') : `${c.prenom||''} ${c.nom||''}`.trim() || '—';
         return (
-          <Modal title={nomAffiche} onClose={()=>{ setModalDetailClient(null); setFicheClientReadOnly(false); }} maxW={440}
+          <Modal title={nomAffiche} onClose={()=>{ setModalDetailClient(null); setFicheClientReadOnly(false); }} maxW={440} zIndex={6000}
             footer={
               <div style={{ display:'flex', flexDirection:'column', gap:8, width:'100%' }}>
                 {!ficheClientReadOnly && (
