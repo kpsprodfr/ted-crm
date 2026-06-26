@@ -575,6 +575,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
   const [saving, setSaving] = useState(false);
   const [heureError, setHeureError] = useState(false);
   const [showCalPicker, setShowCalPicker] = useState(false);
+  const [dateFlash, setDateFlash] = useState(null);
   const [calPickerDate, setCalPickerDate] = useState(() => {
     if (initialResa?.date) {
       const d = new Date(initialResa.date + 'T12:00:00');
@@ -911,15 +912,17 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
                     const aujourd2 = new Date(); aujourd2.setHours(0,0,0,0);
                     const estPasse = new Date(anneeP, moisP, jour) < aujourd2;
                     return (
-                      <button key={i} disabled={estPasse} onPointerDown={()=>{ if (!estPasse) setDateIso(iso); }} style={{
-                        height:40, borderRadius:8,
+                      <button key={i} disabled={estPasse} onPointerDown={()=>{ if (estPasse) return; setDateFlash(iso); setDateIso(iso); setTimeout(()=>{ setShowCalPicker(false); setDateFlash(null); }, 400); }} style={{
+                        height:44, borderRadius:10,
                         border: estAujourdhui && !estSelectionne ? '2px solid #E8C547' : '1.5px solid transparent',
-                        background: estSelectionne ? '#E8C547' : 'transparent',
+                        background: dateFlash === iso ? '#111' : estSelectionne ? '#E8C547' : 'transparent',
                         fontWeight: estAujourdhui || estSelectionne ? 800 : 400,
-                        fontSize:14, cursor: estPasse ? 'not-allowed' : 'pointer',
-                        color: estPasse ? '#ccc' : '#111',
+                        fontSize:15, cursor: estPasse ? 'not-allowed' : 'pointer',
+                        color: dateFlash === iso ? '#E8C547' : estPasse ? '#ccc' : '#111',
                         opacity: estPasse ? 0.4 : 1,
                         pointerEvents: estPasse ? 'none' : 'auto',
+                        transform: dateFlash === iso ? 'scale(0.92)' : 'scale(1)',
+                        transition: 'all 0.15s ease',
                         touchAction:'manipulation', WebkitTapHighlightColor:'transparent'
                       }}>{jour}</button>
                     );
