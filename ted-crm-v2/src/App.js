@@ -1035,7 +1035,7 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
   const totalResas = resasClient.length;
   const noshow = nbAbsentes;
   const derniereVisite = resasClient
-    .filter(r => r.statut === 'venue' && r.date < aujourd)
+    .filter(r => r.statut === 'venue' && r.date <= aujourd)
     .sort((a,b) => b.date.localeCompare(a.date))[0];
   const derniereVisiteFormatee = derniereVisite
     ? new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR', {day:'numeric', month:'long', year:'numeric'})
@@ -1237,8 +1237,7 @@ const [showAddResa, setShowAddResa] = useState(false);
   const [calDate, setCalDate] = useState(new Date());
   const [calJourSelectionne, setCalJourSelectionne] = useState(new Date().toISOString().split('T')[0]);
   const [calServiceSelectionne, setCalServiceSelectionne] = useState(new Date().getHours() < 15 ? 'midi' : 'soir');
-  const [calOuvert, setCalOuvert] = useState(true);
-  const [showDemandesAttente, setShowDemandesAttente] = useState(false);
+const [showDemandesAttente, setShowDemandesAttente] = useState(false);
   const [showFormDropdown, setShowFormDropdown] = useState(false);
   const isMobile = useIsMobile();
   const qr = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(FORM_URL)}`;
@@ -1441,17 +1440,17 @@ const [showAddResa, setShowAddResa] = useState(false);
         {(() => {
           const nbAttente = resaList.filter(r => r.statut === 'attente').length;
           return (
-            <button onClick={()=>setShowDemandesAttente(true)} style={{ width:'100%', height:52, background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 16px', cursor:'pointer', marginBottom:16, boxShadow:'0 2px 8px rgba(0,0,0,0.05)' }}>
-              <span style={{ fontSize:15, fontWeight:700, color:'#111' }}>📋 Demandes de réservation en attente</span>
+            <div onClick={()=>setShowDemandesAttente(true)} style={{ background:'#E8C547', borderRadius:12, padding:'14px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', marginBottom:16 }}>
+              <span style={{ fontSize:15, fontWeight:800, color:'#111' }}>📋 Demandes de réservation en attente</span>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                 {nbAttente > 0 ? (
-                  <span style={{ background:'#dc2626', color:'#fff', borderRadius:'50%', width:24, height:24, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:800 }}>{nbAttente}</span>
+                  <span style={{ background:'#dc2626', color:'#fff', borderRadius:'50%', width:26, height:26, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800 }}>{nbAttente}</span>
                 ) : (
-                  <span style={{ fontSize:13, color:'#999' }}>Aucune</span>
+                  <span style={{ fontSize:13, color:'#333', fontWeight:600 }}>Aucune</span>
                 )}
-                <span style={{ color:'#ccc', fontSize:18 }}>›</span>
+                <span style={{ color:'#333', fontSize:18 }}>›</span>
               </div>
-            </button>
+            </div>
           );
         })()}
 
@@ -1476,20 +1475,12 @@ const [showAddResa, setShowAddResa] = useState(false);
           const today = new Date();
           return (
             <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:20, marginBottom:20, boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: calOuvert ? 14 : 0 }}>
+              <div style={{ marginBottom:14 }}>
                 <div style={{ fontWeight:800, fontSize:15, color:'#111' }}>
                   Aujourd'hui — {today.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}
-                  {!calOuvert && calJourSelectionne && (
-                    <span style={{ fontWeight:400, fontSize:13, color:'#888', marginLeft:10 }}>
-                      · {new Date(calJourSelectionne + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' })}
-                    </span>
-                  )}
                 </div>
-                <button onClick={() => setCalOuvert(!calOuvert)} style={{ background:'none', border:'1.5px solid #ddd', borderRadius:8, padding:'6px 14px', fontSize:12, fontWeight:700, cursor:'pointer', color:'#666', flexShrink:0 }}>
-                  {calOuvert ? '▲ Rétracter' : '▼ Agenda'}
-                </button>
               </div>
-              {calOuvert && (<>
+              {(<>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
                 <button onClick={() => setCalDate(new Date(annee, mois - 1, 1))} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, fontSize:16, cursor:'pointer', fontWeight:700 }}>‹</button>
                 <span style={{ fontWeight:800, fontSize:16 }}>{MOIS[mois]} {annee}</span>
@@ -1558,7 +1549,7 @@ const [showAddResa, setShowAddResa] = useState(false);
         })()}
 
         {/* ── Tableau réservations du jour ── */}
-        {calOuvert && calJourSelectionne && calServiceSelectionne && (() => {
+        {calJourSelectionne && calServiceSelectionne && (() => {
           const resasDuJour = resaList
             .filter(r => (r.statut === 'confirmee' || r.statut === 'annulee' || r.statut === 'absente') && r.date === calJourSelectionne && r.service === calServiceSelectionne)
             .sort((a,b) => (a.heure||'').localeCompare(b.heure||''));
