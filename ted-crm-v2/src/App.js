@@ -1481,6 +1481,16 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
         <header style={{ background:'#111', color:'#fff', padding:'0 20px', height:56, display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:`3px solid ${G}`, flexShrink:0 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
             <span style={{ fontWeight:700, fontSize:15, color:'#fff' }}>📅 <span style={{ color:G }}>TED</span> — Réservations</span>
+            <div id="formulaire-dropdown" style={{ position:'relative' }}>
+              <button onClick={() => setShowFormDropdown(v => !v)} style={{ background:'rgba(255,255,255,0.08)', border:'1px solid #444', borderRadius:8, height:34, padding:'0 14px', color:'#ccc', fontWeight:600, fontSize:13, cursor:'pointer' }}>🔗 Formulaire</button>
+              {showFormDropdown && (
+                <div style={{ position:'absolute', top:40, left:0, background:'#fff', borderRadius:10, border:'1.5px solid #eee', boxShadow:'0 8px 24px rgba(0,0,0,0.12)', padding:8, zIndex:200, minWidth:180 }}>
+                  <button onClick={()=>{ navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver'); showToast('Lien copié !'); setShowFormDropdown(false); }} style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}>📋 Copier</button>
+                  <button onClick={()=>{ window.open('https://ted-crm.pages.dev/reserver','_blank'); setShowFormDropdown(false); }} style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}>🔗 Ouvrir</button>
+                  <button onClick={()=>{ if(navigator.share){ navigator.share({title:'Réservation Le TED', text:'Réservez votre table au TED', url:'https://ted-crm.pages.dev/reserver'}); } else { navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver'); showToast('Lien copié !'); } setShowFormDropdown(false); }} style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}>📤 Partager</button>
+                </div>
+              )}
+            </div>
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <button onClick={onBack} style={{ background:'rgba(255,255,255,0.08)', border:'1px solid #444', borderRadius:8, height:34, padding:'0 14px', color:'#ccc', fontWeight:600, fontSize:13, cursor:'pointer' }}>👥 Mes Clients</button>
@@ -1492,25 +1502,6 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
 
       <main style={{ maxWidth:800, margin:'0 auto', padding: isMobile ? '16px 12px 100px' : '24px 20px 40px' }}>
 
-
-        {/* ── Bouton Formulaire ── */}
-        {!isMobile && ( /* formulaire desktop uniquement */
-          <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:12 }}>
-            <div id="formulaire-dropdown" style={{ position:'relative' }}>
-              <button onClick={() => setShowFormDropdown(v => !v)} style={{ background:'transparent', border:'1.5px solid #ddd', borderRadius:8, padding:'8px 16px', fontSize:13, fontWeight:600, cursor:'pointer', color:'#666' }}>🔗 Formulaire réservation en ligne</button>
-              {showFormDropdown && (
-                <div style={{ position:'absolute', top:40, right:0, background:'#fff', borderRadius:10, border:'1.5px solid #eee', boxShadow:'0 8px 24px rgba(0,0,0,0.12)', padding:8, zIndex:200, minWidth:180 }}>
-                  <button onClick={()=>{ navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver'); showToast('Lien copié !'); setShowFormDropdown(false); }}
-                    style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}>📋 Copier</button>
-                  <button onClick={()=>{ window.open('https://ted-crm.pages.dev/reserver','_blank'); setShowFormDropdown(false); }}
-                    style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}>🔗 Ouvrir</button>
-                  <button onClick={()=>{ if(navigator.share){ navigator.share({title:'Réservation Le TED', text:'Réservez votre table au TED', url:'https://ted-crm.pages.dev/reserver'}); } else { navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver'); showToast('Lien copié !'); } setShowFormDropdown(false); }}
-                    style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}>📤 Partager</button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* ── Bouton Demandes en attente ── */}
         {(() => {
@@ -1530,71 +1521,49 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           );
         })()}
 
-        {/* ── Calendrier mensuel ── */}
+        {/* ── 7 prochains jours ── */}
         {(() => {
-          const JOURS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
-          const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-          const annee = calDate.getFullYear();
-          const mois = calDate.getMonth();
-          const premierJour = new Date(annee, mois, 1);
-          const dernierJour = new Date(annee, mois + 1, 0);
-          const debutSemaine = (premierJour.getDay() + 6) % 7;
-          const confirmeesParJour = {};
-          resaList.filter(r => r.statut === 'confirmee').forEach(r => {
-            if (!confirmeesParJour[r.date]) confirmeesParJour[r.date] = [];
-            confirmeesParJour[r.date].push(r);
+          const joursSemaine7 = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+          const moisCourt = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+          const sept7Jours = Array.from({length:7}, (_,i) => {
+            const d = new Date(); d.setDate(d.getDate() + i);
+            return d.toISOString().split('T')[0];
           });
-          const cases = [];
-          for (let i = 0; i < debutSemaine; i++) cases.push(null);
-          for (let d = 1; d <= dernierJour.getDate(); d++) cases.push(d);
-          while (cases.length % 7 !== 0) cases.push(null);
-          const today = new Date();
+          const todayStr = new Date().toISOString().split('T')[0];
           return (
             <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:20, marginBottom:20, boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
-              <div style={{ marginBottom:14 }}>
-                <div style={{ fontWeight:800, fontSize:15, color:'#111' }}>
-                  Aujourd'hui — {today.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}
-                </div>
-              </div>
-              {(<>
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
-                <button onClick={() => setCalDate(new Date(annee, mois - 1, 1))} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, fontSize:16, cursor:'pointer', fontWeight:700 }}>‹</button>
-                <span style={{ fontWeight:800, fontSize:16 }}>{MOIS[mois]} {annee}</span>
-                <button onClick={() => setCalDate(new Date(annee, mois + 1, 1))} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, fontSize:16, cursor:'pointer', fontWeight:700 }}>›</button>
-              </div>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2, marginBottom:4 }}>
-                {JOURS.map(j => <div key={j} style={{ textAlign:'center', fontSize:11, fontWeight:700, color:'#aaa', padding:'4px 0' }}>{j}</div>)}
-              </div>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2 }}>
-                {cases.map((d, i) => {
-                  if (!d) return <div key={i} />;
-                  const iso = `${annee}-${String(mois+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-                  const hasResa = !!confirmeesParJour[iso];
-                  const isToday = today.getFullYear()===annee && today.getMonth()===mois && today.getDate()===d;
-                  const isSelected = calJourSelectionne === iso;
-                  const estPasse = new Date(iso) < new Date(new Date().setHours(0,0,0,0));
+              <div style={{ display:'flex', gap:8, marginBottom: calJourSelectionne ? 16 : 0, overflowX:'auto' }}>
+                {sept7Jours.map(dateStr => {
+                  const d = new Date(dateStr+'T12:00:00');
+                  const totalResas = resaList.filter(r => r.date === dateStr && r.statut === 'confirmee').length;
+                  const estSelectionne = calJourSelectionne === dateStr;
+                  const estAujourdhui = dateStr === todayStr;
                   return (
-                    <div key={i} onClick={() => { setCalJourSelectionne(iso); }}
-                      style={{ textAlign:'center', padding:'7px 4px', borderRadius:8, cursor:'pointer', position:'relative',
-                        background: isSelected ? '#111' : isToday ? '#fffbeb' : '#fff',
-                        border: isToday && !isSelected ? '1.5px solid #E8C547' : '1.5px solid transparent',
-                        color: isSelected ? '#fff' : '#111', fontWeight: isToday ? 800 : 400, fontSize:13,
-                        opacity: estPasse ? 0.4 : 1,
-                        transition:'background 0.15s' }}>
-                      {d}
-                      {hasResa && <span style={{ display:'block', width:5, height:5, borderRadius:'50%', background:'#E8C547', margin:'2px auto 0' }} />}
+                    <div key={dateStr} onClick={()=>setCalJourSelectionne(dateStr)}
+                      style={{ flex:1, minWidth:70, padding:'10px 8px', borderRadius:12,
+                        border: estSelectionne ? '2px solid #E8C547' : '1.5px solid #eee',
+                        background: estSelectionne ? '#fffbea' : '#fff',
+                        cursor:'pointer', textAlign:'center',
+                        boxShadow: estSelectionne ? '0 2px 8px rgba(232,197,71,0.3)' : '0 1px 4px rgba(0,0,0,0.05)' }}>
+                      <div style={{ fontSize:11, fontWeight:700, color: estAujourdhui ? '#E8C547' : '#999', textTransform:'uppercase', letterSpacing:0.5 }}>
+                        {estAujourdhui ? 'Auj.' : joursSemaine7[d.getDay()]}
+                      </div>
+                      <div style={{ fontSize:18, fontWeight:800, color:'#111', margin:'4px 0' }}>{d.getDate()}</div>
+                      <div style={{ fontSize:11, color:'#999', marginBottom:4 }}>{moisCourt[d.getMonth()]}</div>
+                      <div style={{ fontSize:13, fontWeight:800, color: totalResas > 0 ? '#111' : '#ccc' }}>
+                        {totalResas > 0 ? totalResas : '—'}
+                      </div>
+                      {totalResas > 0 && <div style={{ fontSize:10, color:'#999' }}>résa</div>}
                     </div>
                   );
                 })}
               </div>
               {calJourSelectionne && (() => {
                 const dateLabel = new Date(calJourSelectionne + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-                const nbMidi = resaList.filter(r => r.date === calJourSelectionne && r.service === 'midi' && r.statut === 'confirmee').length;
-                const nbSoir = resaList.filter(r => r.date === calJourSelectionne && r.service === 'soir' && r.statut === 'confirmee').length;
                 const couvertsMidi = resaList.filter(r => r.date === calJourSelectionne && r.service === 'midi' && r.statut === 'confirmee').reduce((sum, r) => sum + (r.nb_personnes || 0), 0);
                 const couvertsSoir = resaList.filter(r => r.date === calJourSelectionne && r.service === 'soir' && r.statut === 'confirmee').reduce((sum, r) => sum + (r.nb_personnes || 0), 0);
                 return (
-                  <div style={{ marginTop:16, borderTop:'1px solid #f0f0f0', paddingTop:16 }}>
+                  <div style={{ borderTop:'1px solid #f0f0f0', paddingTop:16 }}>
                     <div style={{ fontSize:13, fontWeight:700, color:'#555', marginBottom:10 }}>{dateLabel}</div>
                     <div style={{ display:'flex', gap:8 }}>
                       <div style={{ flex:1, display:'flex', flexDirection:'column', gap:4 }}>
@@ -1602,9 +1571,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                           style={{ height:40, borderRadius:9, border:'1.5px solid', fontSize:13, fontWeight:700, cursor:'pointer',
                             background: calServiceSelectionne === 'midi' ? '#111' : '#fff',
                             color: calServiceSelectionne === 'midi' ? '#E8C547' : '#111',
-                            borderColor: calServiceSelectionne === 'midi' ? '#111' : '#ddd' }}>
-                          ☀️ Midi
-                        </button>
+                            borderColor: calServiceSelectionne === 'midi' ? '#111' : '#ddd' }}>☀️ Midi</button>
                         <div style={{ textAlign:'center', fontSize:11, color:'#888' }}>{couvertsMidi} couvert{couvertsMidi > 1 ? 's' : ''}</div>
                       </div>
                       <div style={{ flex:1, display:'flex', flexDirection:'column', gap:4 }}>
@@ -1612,16 +1579,13 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                           style={{ height:40, borderRadius:9, border:'1.5px solid', fontSize:13, fontWeight:700, cursor:'pointer',
                             background: calServiceSelectionne === 'soir' ? '#111' : '#fff',
                             color: calServiceSelectionne === 'soir' ? '#E8C547' : '#111',
-                            borderColor: calServiceSelectionne === 'soir' ? '#111' : '#ddd' }}>
-                          🌙 Soir
-                        </button>
+                            borderColor: calServiceSelectionne === 'soir' ? '#111' : '#ddd' }}>🌙 Soir</button>
                         <div style={{ textAlign:'center', fontSize:11, color:'#888' }}>{couvertsSoir} couvert{couvertsSoir > 1 ? 's' : ''}</div>
                       </div>
                     </div>
                   </div>
                 );
               })()}
-              </>)}
             </div>
           );
         })()}
