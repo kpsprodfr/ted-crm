@@ -1681,8 +1681,9 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
       )}
 
       <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? '1fr 400px' : undefined, gap: !isMobile ? 24 : undefined, padding: !isMobile ? '24px 32px' : undefined, maxWidth: !isMobile ? 1440 : undefined, margin: !isMobile ? '0 auto' : undefined, alignItems: !isMobile ? 'stretch' : 'start', height: !isMobile ? 'calc(100vh - 48px)' : undefined, boxSizing: !isMobile ? 'border-box' : undefined }}>
-      <main style={{ maxWidth: isMobile ? 800 : 'none', margin: isMobile ? '0 auto' : 0, padding: isMobile ? '16px 12px 100px' : '0', display: !isMobile ? 'flex' : 'block', flexDirection: !isMobile ? 'column' : undefined, gap: !isMobile ? 16 : undefined, height: !isMobile ? '100%' : undefined, overflow: !isMobile ? 'hidden' : undefined }}>
+      <main style={{ maxWidth: isMobile ? 800 : 'none', margin: isMobile ? '0 auto' : 0, padding: isMobile ? '16px 12px 100px' : '0', display: !isMobile ? 'flex' : 'block', flexDirection: !isMobile ? 'column' : undefined, gap: !isMobile ? 12 : undefined, height: !isMobile ? '100%' : undefined, overflow: !isMobile ? 'hidden' : undefined }}>
 
+        {!isMobile && <h1 style={{ fontSize:26, fontWeight:900, color:'#111', margin:'0 0 0 0', flexShrink:0 }}>Réservations</h1>}
 
         {/* ── Bouton Demandes en attente ── */}
         {(() => {
@@ -1732,9 +1733,9 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           const couvertsMidi = calJourSelectionne ? resaList.filter(r => r.date === calJourSelectionne && r.service === 'midi' && r.statut === 'confirmee').reduce((sum, r) => sum + (r.nb_personnes || 0), 0) : 0;
           const couvertsSoir = calJourSelectionne ? resaList.filter(r => r.date === calJourSelectionne && r.service === 'soir' && r.statut === 'confirmee').reduce((sum, r) => sum + (r.nb_personnes || 0), 0) : 0;
           return (
-            <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:16, flex:1, display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
+            <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:14, flex:1, display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
               {/* 1. 7 rectangles */}
-              <div style={{ display:'flex', gap:8, marginBottom:12, overflowX:'auto', flexShrink:0 }}>
+              <div style={{ display:'flex', gap:6, marginBottom:10, overflowX:'auto', flexShrink:0 }}>
                 {sept7Jours.map(dateStr => {
                   const d = new Date(dateStr+'T12:00:00');
                   const totalCouverts = resaList.filter(r => r.date === dateStr && r.statut === 'confirmee').reduce((sum, r) => sum + (r.nb_personnes || 0), 0);
@@ -1742,20 +1743,20 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                   const estAujourdhui = dateStr === todayStr;
                   return (
                     <div key={dateStr} onClick={()=>setCalJourSelectionne(dateStr)}
-                      style={{ flex:1, minWidth:70, padding:'10px 8px', borderRadius:6,
+                      style={{ flex:1, minWidth:0, padding:'8px 4px', borderRadius:10,
                         border: estSelectionne ? '2px solid #E8C547' : '1.5px solid #eee',
                         background: estSelectionne ? '#fffbea' : '#fff',
                         cursor:'pointer', textAlign:'center',
                         boxShadow: estSelectionne ? '0 2px 8px rgba(232,197,71,0.3)' : '0 1px 4px rgba(0,0,0,0.05)' }}>
-                      <div style={{ fontSize:11, fontWeight:700, color: estAujourdhui ? '#E8C547' : '#999', textTransform:'uppercase', letterSpacing:0.5 }}>
+                      <div style={{ fontSize:10, fontWeight:700, color: estAujourdhui ? '#E8C547' : '#999', textTransform:'uppercase', letterSpacing:0.5 }}>
                         {estAujourdhui ? 'Auj.' : joursSemaine7[d.getDay()]}
                       </div>
-                      <div style={{ fontSize:18, fontWeight:800, color:'#111', margin:'4px 0' }}>{d.getDate()}</div>
-                      <div style={{ fontSize:11, color:'#999', marginBottom:4 }}>{moisCourt[d.getMonth()]}</div>
-                      <div style={{ fontSize:13, fontWeight:800, color: totalCouverts > 0 ? '#111' : '#ccc' }}>
+                      <div style={{ fontSize:20, fontWeight:800, color:'#111', margin:'3px 0' }}>{d.getDate()}</div>
+                      <div style={{ fontSize:10, color:'#999', marginBottom:3 }}>{moisCourt[d.getMonth()]}</div>
+                      <div style={{ fontSize:12, fontWeight:700, color: totalCouverts > 0 ? '#111' : '#ccc' }}>
                         {totalCouverts > 0 ? totalCouverts : '—'}
                       </div>
-                      {totalCouverts > 0 && <div style={{ fontSize:10, color:'#999' }}>pers</div>}
+                      {totalCouverts > 0 && <div style={{ fontSize:9, color:'#999' }}>pers</div>}
                     </div>
                   );
                 })}
