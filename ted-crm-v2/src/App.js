@@ -1736,26 +1736,28 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                   );
                 })}
               </div>
-              <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? '1fr 1fr' : undefined, gap: !isMobile ? 16 : 0, marginTop: !isMobile ? 16 : 0 }}>
+              <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? '3fr 2fr' : undefined, gap: !isMobile ? 16 : 0, marginTop: !isMobile ? 16 : 0 }}>
                 {/* Colonne calendrier */}
                 <div style={!isMobile ? { background:'#f8f8f8', borderRadius:12, padding:12 } : {}}>
-                  {/* 2. Bouton toggle calendrier */}
-                  <button onClick={()=>setCalMensuelOuvert(v=>!v)} style={{ width:'100%', padding:'10px 12px', background: !isMobile ? '#fff' : '#f8f8f8', border:'1.5px solid #eee', borderRadius:8, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: calMensuelOuvert ? 12 : 0 }}>
-                    <span style={{ fontSize:13, fontWeight:700, color:'#555' }}>📅 Calendrier</span>
-                    <span style={{ fontSize:12, color:'#999' }}>{calMensuelOuvert ? '▲' : '▼'}</span>
-                  </button>
-                  {/* 3. Grand calendrier mensuel */}
-                  {calMensuelOuvert && (
+                  {/* 2. Bouton toggle (mobile only) */}
+                  {isMobile && (
+                    <button onClick={()=>setCalMensuelOuvert(v=>!v)} style={{ width:'100%', padding:'10px 12px', background:'#f8f8f8', border:'1.5px solid #eee', borderRadius:8, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: calMensuelOuvert ? 12 : 0 }}>
+                      <span style={{ fontSize:13, fontWeight:700, color:'#555' }}>📅 Calendrier</span>
+                      <span style={{ fontSize:12, color:'#999' }}>{calMensuelOuvert ? '▲' : '▼'}</span>
+                    </button>
+                  )}
+                  {/* 3. Grand calendrier mensuel — toujours visible sur desktop */}
+                  {(!isMobile || calMensuelOuvert) && (
                     <div style={{ marginBottom:4 }}>
-                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
-                        <button onClick={() => setCalDate(new Date(annee, mois - 1, 1))} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:30, height:30, fontSize:14, cursor:'pointer', fontWeight:700 }}>‹</button>
-                        <span style={{ fontWeight:800, fontSize:14 }}>{MOIS[mois]} {annee}</span>
-                        <button onClick={() => setCalDate(new Date(annee, mois + 1, 1))} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:30, height:30, fontSize:14, cursor:'pointer', fontWeight:700 }}>›</button>
+                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+                        <button onClick={() => setCalDate(new Date(annee, mois - 1, 1))} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, fontSize:16, cursor:'pointer', fontWeight:700 }}>‹</button>
+                        <span style={{ fontWeight:800, fontSize:18 }}>{MOIS[mois]} {annee}</span>
+                        <button onClick={() => setCalDate(new Date(annee, mois + 1, 1))} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, fontSize:16, cursor:'pointer', fontWeight:700 }}>›</button>
                       </div>
                       <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2, marginBottom:4 }}>
-                        {JOURS.map(j => <div key={j} style={{ textAlign:'center', fontSize:10, fontWeight:700, color:'#aaa', padding:'3px 0' }}>{j}</div>)}
+                        {JOURS.map(j => <div key={j} style={{ textAlign:'center', fontSize:13, fontWeight:700, color:'#999', padding:'8px 0' }}>{j}</div>)}
                       </div>
-                      <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2 }}>
+                      <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:3 }}>
                         {cases.map((d, i) => {
                           if (!d) return <div key={i} />;
                           const iso = `${annee}-${String(mois+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -1764,15 +1766,16 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                           const isSelected = calJourSelectionne === iso;
                           const estPasse = new Date(iso) < new Date(new Date().setHours(0,0,0,0));
                           return (
-                            <div key={i} onClick={() => setCalJourSelectionne(iso)}
-                              style={{ textAlign:'center', padding:'5px 2px', borderRadius:6, cursor:'pointer', position:'relative',
-                                background: isSelected ? '#111' : isToday ? '#fffbeb' : '#fff',
-                                border: isToday && !isSelected ? '1.5px solid #E8C547' : '1.5px solid transparent',
-                                color: isSelected ? '#fff' : '#111', fontWeight: isToday ? 800 : 400, fontSize:12,
+                            <button key={i} onClick={() => setCalJourSelectionne(iso)}
+                              style={{ textAlign:'center', height:48, borderRadius:6, cursor:'pointer', position:'relative', border:'none',
+                                background: isSelected ? '#111' : isToday ? '#fffbeb' : 'transparent',
+                                outline: isToday && !isSelected ? '1.5px solid #E8C547' : 'none',
+                                color: isSelected ? '#fff' : '#111',
+                                fontWeight: isSelected || isToday ? 800 : 400, fontSize:16,
                                 opacity: estPasse ? 0.4 : 1, transition:'background 0.15s' }}>
                               {d}
-                              {hasResa && <span style={{ display:'block', width:4, height:4, borderRadius:'50%', background:'#E8C547', margin:'1px auto 0' }} />}
-                            </div>
+                              {hasResa && <span style={{ display:'block', width:4, height:4, borderRadius:'50%', background: isSelected ? '#E8C547' : '#E8C547', margin:'2px auto 0' }} />}
+                            </button>
                           );
                         })}
                       </div>
@@ -1780,33 +1783,47 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                   )}
                 </div>
                 {/* Colonne Midi/Soir */}
-                <div style={!isMobile ? { background:'#f8f8f8', borderRadius:12, padding:12 } : {}}>
-                  {!isMobile && <p style={{ fontSize:12, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 10px' }}>Service</p>}
-                  {/* 4. Date + Midi/Soir */}
-                  {calJourSelectionne ? (
-                    <div style={{ borderTop: isMobile ? '1px solid #f0f0f0' : 'none', paddingTop: isMobile ? 12 : 0, marginTop: isMobile ? 4 : 0 }}>
-                      <div style={{ fontSize:12, fontWeight:700, color:'#555', marginBottom:10 }}>{dateLabel}</div>
-                      <div style={{ display:'flex', flexDirection: !isMobile ? 'column' : 'row', gap:8 }}>
-                        <div style={{ flex:1, display:'flex', flexDirection:'column', gap:4 }}>
-                          <button onClick={() => setCalServiceSelectionne(calServiceSelectionne === 'midi' ? null : 'midi')}
-                            style={{ height:40, borderRadius:9, border:'1.5px solid', fontSize:13, fontWeight:700, cursor:'pointer',
-                              background: calServiceSelectionne === 'midi' ? '#111' : '#fff',
-                              color: calServiceSelectionne === 'midi' ? '#E8C547' : '#111',
-                              borderColor: calServiceSelectionne === 'midi' ? '#111' : '#ddd' }}>☀️ Midi</button>
-                          <div style={{ textAlign:'center', fontSize:11, color:'#888' }}>{couvertsMidi} couvert{couvertsMidi > 1 ? 's' : ''}</div>
-                        </div>
-                        <div style={{ flex:1, display:'flex', flexDirection:'column', gap:4 }}>
-                          <button onClick={() => setCalServiceSelectionne(calServiceSelectionne === 'soir' ? null : 'soir')}
-                            style={{ height:40, borderRadius:9, border:'1.5px solid', fontSize:13, fontWeight:700, cursor:'pointer',
-                              background: calServiceSelectionne === 'soir' ? '#111' : '#fff',
-                              color: calServiceSelectionne === 'soir' ? '#E8C547' : '#111',
-                              borderColor: calServiceSelectionne === 'soir' ? '#111' : '#ddd' }}>🌙 Soir</button>
-                          <div style={{ textAlign:'center', fontSize:11, color:'#888' }}>{couvertsSoir} couvert{couvertsSoir > 1 ? 's' : ''}</div>
-                        </div>
-                      </div>
+                <div style={!isMobile ? { background:'#f8f8f8', borderRadius:12 } : {}}>
+                  {!isMobile ? (
+                    <div style={{ display:'flex', flexDirection:'column', gap:16, padding:16 }}>
+                      <p style={{ fontSize:12, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0 }}>SERVICE</p>
+                      <p style={{ fontSize:14, color:'#666', margin:0 }}>{dateLabel || 'Sélectionner un jour'}</p>
+                      <button onClick={() => setCalServiceSelectionne('midi')} style={{ width:'100%', padding:'20px 16px', borderRadius:12, border: calServiceSelectionne==='midi' ? '2px solid #111' : '1.5px solid #eee', background: calServiceSelectionne==='midi' ? '#111' : '#fff', cursor:'pointer', textAlign:'center' }}>
+                        <div style={{ fontSize:22 }}>☀️</div>
+                        <div style={{ fontSize:16, fontWeight:800, color: calServiceSelectionne==='midi' ? '#E8C547' : '#111', marginTop:6 }}>Midi</div>
+                        <div style={{ fontSize:13, color:'#999', marginTop:4 }}>{couvertsMidi} couvert{couvertsMidi > 1 ? 's' : ''}</div>
+                      </button>
+                      <button onClick={() => setCalServiceSelectionne('soir')} style={{ width:'100%', padding:'20px 16px', borderRadius:12, border: calServiceSelectionne==='soir' ? '2px solid #111' : '1.5px solid #eee', background: calServiceSelectionne==='soir' ? '#111' : '#fff', cursor:'pointer', textAlign:'center' }}>
+                        <div style={{ fontSize:22 }}>🌙</div>
+                        <div style={{ fontSize:16, fontWeight:800, color: calServiceSelectionne==='soir' ? '#E8C547' : '#111', marginTop:6 }}>Soir</div>
+                        <div style={{ fontSize:13, color:'#999', marginTop:4 }}>{couvertsSoir} couvert{couvertsSoir > 1 ? 's' : ''}</div>
+                      </button>
                     </div>
                   ) : (
-                    !isMobile && <p style={{ fontSize:13, color:'#bbb', textAlign:'center', marginTop:20 }}>Sélectionner un jour</p>
+                    /* Mobile Midi/Soir */
+                    calJourSelectionne && (
+                      <div style={{ borderTop:'1px solid #f0f0f0', paddingTop:12, marginTop:4 }}>
+                        <div style={{ fontSize:12, fontWeight:700, color:'#555', marginBottom:10 }}>{dateLabel}</div>
+                        <div style={{ display:'flex', gap:8 }}>
+                          <div style={{ flex:1, display:'flex', flexDirection:'column', gap:4 }}>
+                            <button onClick={() => setCalServiceSelectionne(calServiceSelectionne === 'midi' ? null : 'midi')}
+                              style={{ height:40, borderRadius:9, border:'1.5px solid', fontSize:13, fontWeight:700, cursor:'pointer',
+                                background: calServiceSelectionne === 'midi' ? '#111' : '#fff',
+                                color: calServiceSelectionne === 'midi' ? '#E8C547' : '#111',
+                                borderColor: calServiceSelectionne === 'midi' ? '#111' : '#ddd' }}>☀️ Midi</button>
+                            <div style={{ textAlign:'center', fontSize:11, color:'#888' }}>{couvertsMidi} couvert{couvertsMidi > 1 ? 's' : ''}</div>
+                          </div>
+                          <div style={{ flex:1, display:'flex', flexDirection:'column', gap:4 }}>
+                            <button onClick={() => setCalServiceSelectionne(calServiceSelectionne === 'soir' ? null : 'soir')}
+                              style={{ height:40, borderRadius:9, border:'1.5px solid', fontSize:13, fontWeight:700, cursor:'pointer',
+                                background: calServiceSelectionne === 'soir' ? '#111' : '#fff',
+                                color: calServiceSelectionne === 'soir' ? '#E8C547' : '#111',
+                                borderColor: calServiceSelectionne === 'soir' ? '#111' : '#ddd' }}>🌙 Soir</button>
+                            <div style={{ textAlign:'center', fontSize:11, color:'#888' }}>{couvertsSoir} couvert{couvertsSoir > 1 ? 's' : ''}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )
                   )}
                 </div>
               </div>
