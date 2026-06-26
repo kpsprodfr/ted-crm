@@ -1850,6 +1850,9 @@ function CRMApp({ user, onLogout }) {
   const [showAddResa, setShowAddResa] = useState(false);
   const [activeView, setActiveView] = useState('crm'); // 'crm' | 'communications'
   const [commFilter, setCommFilter] = useState('tous');
+  const [filtreAvance, setFiltreAvance] = useState('tous');
+  const [filtreVenusNb, setFiltreVenusNb] = useState(3);
+  const [filtreAbsentsMois, setFiltreAbsentsMois] = useState(3);
   const [commSearch, setCommSearch] = useState('');
   const [commSelected, setCommSelected] = useState([]);
   const [commObjet, setCommObjet] = useState('');
@@ -2150,6 +2153,7 @@ function CRMApp({ user, onLogout }) {
   if (showResaPage && !isMobile) return <ReservationsPage onBack={(dest)=>{ setShowResaPage(false); loadResaCount(); loadClients(); if(dest==='communications') setActiveView('communications'); }} showToast={showToast} user={user} onLogout={onLogout} />;
 
   if (activeView === 'communications' && !isMobile) {
+    const limiteCommDate = (() => { const d = new Date(); d.setMonth(d.getMonth() - filtreAbsentsMois); return d.toISOString().split('T')[0]; })();
     const commClients = clients.filter(c => {
       const matchFilter = commFilter === 'tous' ? true
         : commFilter === 'hommes' ? c.genre === 'Homme'
@@ -2157,7 +2161,17 @@ function CRMApp({ user, onLogout }) {
         : c.genre === 'Entreprise';
       const q = commSearch.toLowerCase();
       const matchSearch = !q || normalizeStr(c.nom).includes(normalizeStr(q)) || normalizeStr(c.prenom).includes(normalizeStr(q)) || (c.mail||'').toLowerCase().includes(q);
-      return matchFilter && matchSearch;
+      if (!matchFilter || !matchSearch) return false;
+      if (filtreAvance === 'venus_x_fois') {
+        const s = statsClients[c.id] || {};
+        const venues = (s.total || 0) - (s.noshow || 0);
+        return venues >= filtreVenusNb;
+      }
+      if (filtreAvance === 'absents_x_mois') {
+        const s = statsClients[c.id] || {};
+        return !s.derniereVisite || s.derniereVisite < limiteCommDate;
+      }
+      return true;
     });
     const withEmail = commClients.filter(c => c.mail);
     const allSelected = withEmail.length > 0 && withEmail.every(c => commSelected.includes(c.id));
@@ -2274,6 +2288,25 @@ function CRMApp({ user, onLogout }) {
               {[['tous','Tous'],['hommes','Hommes'],['femmes','Femmes'],['entreprises','Entreprises']].map(([val,label]) => (
                 <button key={val} onClick={()=>setCommFilter(val)} style={{background:commFilter===val?'#111':'#f0f0f0', color:commFilter===val?'#fff':'#666', border:'none', borderRadius:99, padding:'4px 10px', fontSize:11, fontWeight:600, cursor:'pointer'}}>{label}</button>
               ))}
+            </div>
+
+            {/* Filtres avancés */}
+            <div style={{padding:'8px 12px', borderBottom:'1px solid #f0f0f0'}}>
+              <div style={{background:'#f9f9f9', borderRadius:10, padding:12}}>
+                <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px'}}>Filtres avancés</p>
+                <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:8}}>
+                  <input type="checkbox" checked={filtreAvance==='venus_x_fois'} onChange={e=>setFiltreAvance(e.target.checked?'venus_x_fois':'tous')} />
+                  <span style={{fontSize:13}}>Clients venus au moins</span>
+                  <input type="number" min={1} max={50} value={filtreVenusNb} onChange={e=>setFiltreVenusNb(Number(e.target.value))} style={{width:48, height:28, border:'1.5px solid #ddd', borderRadius:6, textAlign:'center', fontSize:13}} />
+                  <span style={{fontSize:13}}>fois</span>
+                </div>
+                <div style={{display:'flex', alignItems:'center', gap:8}}>
+                  <input type="checkbox" checked={filtreAvance==='absents_x_mois'} onChange={e=>setFiltreAvance(e.target.checked?'absents_x_mois':'tous')} />
+                  <span style={{fontSize:13}}>Pas venus depuis</span>
+                  <input type="number" min={1} max={24} value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{width:48, height:28, border:'1.5px solid #ddd', borderRadius:6, textAlign:'center', fontSize:13}} />
+                  <span style={{fontSize:13}}>mois</span>
+                </div>
+              </div>
             </div>
 
             {/* Recherche */}
@@ -2485,18 +2518,26 @@ function CRMApp({ user, onLogout }) {
         {commMode === 'sms' && (() => {
           const isNumeroMobile = (tel) => /^(\+336|\+337|06|07)/.test((tel||'').replace(/\s/g,''));
 
+          const limiteSmsDate = (() => { const d = new Date(); d.setMonth(d.getMonth() - filtreAbsentsMois); return d.toISOString().split('T')[0]; })();
           const clientsSms = clients.filter(c => {
             if (!c.tel) return false;
-            if (smsFilter === 'hommes') return c.genre === 'Homme';
-            if (smsFilter === 'femmes') return c.genre === 'Femme';
-            if (smsFilter === 'entreprises') return c.genre === 'Entreprise';
+            if (smsFilter === 'hommes' && c.genre !== 'Homme') return false;
+            if (smsFilter === 'femmes' && c.genre !== 'Femme') return false;
+            if (smsFilter === 'entreprises' && c.genre !== 'Entreprise') return false;
+            if (smsSearch) {
+              const sq = smsSearch.toLowerCase();
+              if (!(c.nom||'').toLowerCase().includes(sq) && !(c.prenom||'').toLowerCase().includes(sq) && !(c.tel||'').includes(sq)) return false;
+            }
+            if (filtreAvance === 'venus_x_fois') {
+              const st = statsClients[c.id] || {};
+              const venues = (st.total || 0) - (st.noshow || 0);
+              return venues >= filtreVenusNb;
+            }
+            if (filtreAvance === 'absents_x_mois') {
+              const st = statsClients[c.id] || {};
+              return !st.derniereVisite || st.derniereVisite < limiteSmsDate;
+            }
             return true;
-          }).filter(c => {
-            if (!smsSearch) return true;
-            const s = smsSearch.toLowerCase();
-            return (c.nom||'').toLowerCase().includes(s) ||
-                   (c.prenom||'').toLowerCase().includes(s) ||
-                   (c.tel||'').includes(s);
           });
           const allSmsSelected = clientsSms.length > 0 && clientsSms.every(c => smsSelected.includes(c.id));
           const toggleAllSms = () => {
@@ -2597,6 +2638,24 @@ function CRMApp({ user, onLogout }) {
                     {[['tous','Tous'],['hommes','Hommes'],['femmes','Femmes'],['entreprises','Entreprises']].map(([val,label]) => (
                       <button key={val} onClick={()=>setSmsFilter(val)} style={{background:smsFilter===val?'#111':'#f0f0f0', color:smsFilter===val?'#fff':'#666', border:'none', borderRadius:99, padding:'4px 10px', fontSize:11, fontWeight:600, cursor:'pointer'}}>{label}</button>
                     ))}
+                  </div>
+                  {/* Filtres avancés SMS */}
+                  <div style={{padding:'8px 12px', borderBottom:'1px solid #f0f0f0'}}>
+                    <div style={{background:'#f9f9f9', borderRadius:10, padding:12}}>
+                      <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px'}}>Filtres avancés</p>
+                      <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:8}}>
+                        <input type="checkbox" checked={filtreAvance==='venus_x_fois'} onChange={e=>setFiltreAvance(e.target.checked?'venus_x_fois':'tous')} />
+                        <span style={{fontSize:13}}>Clients venus au moins</span>
+                        <input type="number" min={1} max={50} value={filtreVenusNb} onChange={e=>setFiltreVenusNb(Number(e.target.value))} style={{width:48, height:28, border:'1.5px solid #ddd', borderRadius:6, textAlign:'center', fontSize:13}} />
+                        <span style={{fontSize:13}}>fois</span>
+                      </div>
+                      <div style={{display:'flex', alignItems:'center', gap:8}}>
+                        <input type="checkbox" checked={filtreAvance==='absents_x_mois'} onChange={e=>setFiltreAvance(e.target.checked?'absents_x_mois':'tous')} />
+                        <span style={{fontSize:13}}>Pas venus depuis</span>
+                        <input type="number" min={1} max={24} value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{width:48, height:28, border:'1.5px solid #ddd', borderRadius:6, textAlign:'center', fontSize:13}} />
+                        <span style={{fontSize:13}}>mois</span>
+                      </div>
+                    </div>
                   </div>
                   {/* Recherche */}
                   <div style={{padding:'8px 12px', borderBottom:'1px solid #f0f0f0'}}>
