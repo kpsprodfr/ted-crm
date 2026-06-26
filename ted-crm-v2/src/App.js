@@ -1006,7 +1006,6 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
   const [saving, setSaving] = useState(false);
   const [showSmsPanel, setShowSmsPanel] = useState(false);
   const [smsTexte, setSmsTexte] = useState('');
-  const [toastVenue, setToastVenue] = useState(false);
   const [showStatutPanel, setShowStatutPanel] = useState(false);
 
   const STATUTS_COLORS = [
@@ -1035,8 +1034,6 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
 
   function handleStatutChange(val) {
     setStatut(val);
-    if (val === 'venue') setToastVenue(true);
-    else setToastVenue(false);
   }
 
   async function saveStatut() {
@@ -1064,16 +1061,16 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
         <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:8 }}>
           {c.tel && (
             <div style={{ display:'flex', gap:8 }}>
-              <button onClick={()=>{ setShowSmsPanel(!showSmsPanel); setSmsTexte(smsSuggestions[0]); }} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background: showSmsPanel ? '#111' : '#f0f0f0', color: showSmsPanel ? '#fff' : '#111', border:'none', borderRadius:10, height:44, fontSize:13, fontWeight:700, cursor:'pointer' }}>💬 SMS</button>
-              <a href={`tel:${c.tel}`} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:G, color:'#111', borderRadius:10, height:44, fontSize:13, fontWeight:700, textDecoration:'none' }}>📞 Appeler</a>
+              <button onClick={()=>{ setShowSmsPanel(!showSmsPanel); setSmsTexte(smsSuggestions[0]); }} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#fff', color:'#111', border:'1.5px solid #ddd', borderRadius:10, height:44, fontSize:13, fontWeight:700, cursor:'pointer' }}>💬 SMS</button>
+              <a href={`tel:${c.tel}`} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#111', color:'#fff', borderRadius:10, height:44, fontSize:13, fontWeight:700, textDecoration:'none' }}>📞 Appeler</a>
             </div>
           )}
           {onEdit && (
-            <button onClick={()=>{ onClose(); onEdit(resa); }} style={{ width:'100%', height:44, background:'#111', color:'#fff', border:'none', borderRadius:10, fontSize:14, fontWeight:700, cursor:'pointer' }}>✏️ Modifier la réservation</button>
+            <button onClick={()=>{ onClose(); onEdit(resa); }} style={{ width:'100%', height:44, background:'#E8C547', color:'#111', border:'none', borderRadius:10, fontSize:14, fontWeight:700, cursor:'pointer' }}>✏️ Modifier la réservation</button>
           )}
           <div style={{ display:'flex', gap:8 }}>
             <button key="f" type="button" onClick={onClose} style={{...btnSecondary}}>Fermer</button>
-            <button key="s" type="button" onClick={saveStatut} disabled={saving || statut === resa.statut} style={{ background: statut !== resa.statut ? '#111' : '#ddd', color: statut !== resa.statut ? '#fff' : '#999', border:'none', borderRadius:8, padding:'0 18px', height:38, fontWeight:700, fontSize:14, cursor: statut !== resa.statut ? 'pointer' : 'not-allowed' }}>
+            <button key="s" type="button" onClick={saveStatut} disabled={saving} style={{ background: saving ? '#ddd' : '#111', color: saving ? '#999' : '#fff', border:'none', borderRadius:8, padding:'0 18px', height:38, fontWeight:700, fontSize:14, cursor: saving ? 'not-allowed' : 'pointer' }}>
               {saving ? 'Enregistrement…' : 'Enregistrer'}
             </button>
           </div>
@@ -1165,7 +1162,7 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
           {showStatutPanel && (
             <>
               <div onClick={()=>setShowStatutPanel(false)} style={{ position:'fixed', inset:0, zIndex:100 }} />
-              <div style={{ position:'absolute', right:0, top:'calc(100% + 6px)', background:'#fff', borderRadius:14, boxShadow:'0 8px 32px rgba(0,0,0,0.15)', border:'1px solid #f0f0f0', zIndex:101, minWidth:260, overflow:'hidden' }}>
+              <div style={{ position:'absolute', right:0, top:'calc(100% + 6px)', background:'#fff', borderRadius:14, boxShadow:'0 8px 32px rgba(0,0,0,0.15)', border:'1px solid #f0f0f0', zIndex:101, minWidth:260, overflow:'hidden', maxHeight:'60vh', overflowY:'auto' }}>
                 {STATUTS_COLORS.map(s => (
                   <button key={s.value} onClick={()=>{ handleStatutChange(s.value); setShowStatutPanel(false); }} style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'12px 16px', background: statut === s.value ? `${s.color}12` : '#fff', border:'none', borderBottom:'1px solid #f5f5f5', cursor:'pointer', textAlign:'left' }}>
                     <span style={{ width:10, height:10, borderRadius:'50%', background:s.color, flexShrink:0 }}/>
@@ -1180,14 +1177,6 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
             </>
           )}
         </div>
-
-        {/* Toast venue */}
-        {toastVenue && (
-          <div style={{ background:'#f0fdf4', border:'1.5px solid #22c55e', borderRadius:10, padding:'10px 14px', fontSize:13, display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
-            <span>💬 Envoyer un remerciement ?</span>
-            <button onClick={()=>{ setShowSmsPanel(true); setSmsTexte(smsSuggestions[1]); setToastVenue(false); }} style={{ background:'#22c55e', color:'#fff', border:'none', borderRadius:7, padding:'4px 12px', fontSize:12, fontWeight:700, cursor:'pointer' }}>SMS</button>
-          </div>
-        )}
 
       </div>
     </Modal>
