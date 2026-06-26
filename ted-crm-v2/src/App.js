@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle } from 'lucide-react';
+import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download } from 'lucide-react';
 import { supabase } from "./supabase";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -2051,16 +2051,16 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                   {calServiceSelectionne ? ` — ${calServiceSelectionne==='midi'?'☀️ Midi':'🌙 Soir'}` : ''}
                 </h3>
                 {calJourSelectionne && calServiceSelectionne && (
-                  <button onClick={()=>telechargerTableau(calJourSelectionne, calServiceSelectionne, resasDuJour)} style={{ background:'#111', color:'#fff', border:'none', borderRadius:8, padding:'6px 14px', fontSize:12, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
-                    ↓ Exporter
+                  <button onClick={()=>{ const resasAExporter = resasDuJour.filter(r => r.statut === 'confirmee'); telechargerTableau(calJourSelectionne, calServiceSelectionne, resasAExporter); }} style={{ background:'#111', color:'#fff', border:'none', borderRadius:8, padding:'6px 14px', fontSize:12, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+                    <Download size={14} strokeWidth={2} color="#fff" /> Exporter
                   </button>
                 )}
               </div>
               {calJourSelectionne && calServiceSelectionne && (
-                <div style={{ display:'flex', gap:16, marginBottom:12, fontSize:13, color:'#666' }}>
-                  <span>👥 {resasDuJour.length} réservation{resasDuJour.length > 1 ? 's' : ''}</span>
+                <div style={{ display:'flex', gap:16, marginBottom:12, fontSize:13, color:'#666', alignItems:'center' }}>
+                  <span style={{ display:'flex', alignItems:'center', gap:5 }}><Users size={14} strokeWidth={2} color="#666" /> {resasDuJour.length} réservation{resasDuJour.length > 1 ? 's' : ''}</span>
                   <span>·</span>
-                  <span>🍽 {resasDuJour.reduce((s,r) => s + (r.nb_personnes||0), 0)} couverts</span>
+                  <span style={{ display:'flex', alignItems:'center', gap:5 }}><UtensilsCrossed size={14} strokeWidth={2} color="#666" /> {resasDuJour.reduce((s,r) => s + (r.nb_personnes||0), 0)} couverts</span>
                 </div>
               )}
               <input value={resaSearchPanel} onChange={e=>setResaSearchPanel(e.target.value)} placeholder="Rechercher une réservation..." style={{ width:'100%', height:38, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:13, outline:'none', boxSizing:'border-box' }} />
@@ -2088,7 +2088,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                       <div style={{ fontSize:12, color:'#999' }}>{r.nb_personnes} pers.</div>
                     </div>
                     <span style={{ background:s.bg, color:s.color, borderRadius:20, padding:'3px 10px', fontSize:11, fontWeight:700, flexShrink:0, whiteSpace:'nowrap' }}>{s.label}</span>
-                    {r.clients?.tel && <a href={`tel:${r.clients.tel}`} onClick={e=>e.stopPropagation()} style={{ color:'#666', flexShrink:0, display:'flex', alignItems:'center', padding:4, borderRadius:6, textDecoration:'none' }}>📞</a>}
+                    {r.clients?.tel && <a href={`tel:${r.clients.tel}`} onClick={e=>e.stopPropagation()} style={{ color:'#666', flexShrink:0, display:'flex', alignItems:'center', padding:4, borderRadius:6, textDecoration:'none' }}><Phone size={15} strokeWidth={2} color="#666" /></a>}
                   </div>
                 );
               })}
