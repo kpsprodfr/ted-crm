@@ -1592,7 +1592,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                       <div style={{ fontSize:13, fontWeight:800, color: totalCouverts > 0 ? '#111' : '#ccc' }}>
                         {totalCouverts > 0 ? totalCouverts : '—'}
                       </div>
-                      {totalCouverts > 0 && <div style={{ fontSize:10, color:'#999' }}>cvts</div>}
+                      {totalCouverts > 0 && <div style={{ fontSize:10, color:'#999' }}>pers</div>}
                     </div>
                   );
                 })}
