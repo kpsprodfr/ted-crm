@@ -2045,37 +2045,53 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
             {/* Header fixe */}
             <div style={{ flexShrink:0, padding:'20px 20px 12px' }}>
               <p style={{ fontSize:12, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 4px' }}>Réservations du</p>
-              <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12}}>
+              <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8}}>
                 <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#111' }}>
                   {calJourSelectionne ? new Date(calJourSelectionne+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}) : 'Sélectionner un jour'}
                   {calServiceSelectionne ? ` — ${calServiceSelectionne==='midi'?'☀️ Midi':'🌙 Soir'}` : ''}
                 </h3>
                 {calJourSelectionne && calServiceSelectionne && (
                   <button onClick={()=>telechargerTableau(calJourSelectionne, calServiceSelectionne, resasDuJour)} style={{ background:'#111', color:'#fff', border:'none', borderRadius:8, padding:'6px 14px', fontSize:12, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
-                    📥 Télécharger
+                    ↓ Exporter
                   </button>
                 )}
               </div>
+              {calJourSelectionne && calServiceSelectionne && (
+                <div style={{ display:'flex', gap:16, marginBottom:12, fontSize:13, color:'#666' }}>
+                  <span>👥 {resasDuJour.length} réservation{resasDuJour.length > 1 ? 's' : ''}</span>
+                  <span>·</span>
+                  <span>🍽 {resasDuJour.reduce((s,r) => s + (r.nb_personnes||0), 0)} couverts</span>
+                </div>
+              )}
               <input value={resaSearchPanel} onChange={e=>setResaSearchPanel(e.target.value)} placeholder="Rechercher une réservation..." style={{ width:'100%', height:38, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:13, outline:'none', boxSizing:'border-box' }} />
             </div>
             {/* Liste scrollable */}
             <div style={{ flex:1, overflowY:'auto', padding:'0 20px' }}>
-              {resasDuJourFiltrees.map(r => (
-                <div key={r.id} onClick={()=>setDetailResa(r)} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 0', borderBottom:'1px solid #f5f5f5', cursor:'pointer' }}
-                  onMouseEnter={e=>e.currentTarget.style.background='#fffbea'}
-                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                  <span style={{ fontSize:13, fontWeight:800, color:'#111', minWidth:44 }}>{r.heure||'—'}</span>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontWeight:700, fontSize:13, color: r.statut==='absente'?'#dc2626':'#111', display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
-                      {r.clients?.genre==='Entreprise'?r.clients?.entreprise:`${r.clients?.prenom||''} ${r.clients?.nom||''}`.trim()}
-                      {r.statut==='absente' && <span style={{ fontSize:10, background:'#dc2626', color:'#fff', borderRadius:4, padding:'1px 5px' }}>Absent</span>}
-                      {r.statut==='annulee' && <span style={{ fontSize:10, background:'#f97316', color:'#fff', borderRadius:4, padding:'1px 5px' }}>Annulée</span>}
+              {resasDuJourFiltrees.map(r => {
+                const statutColors = {
+                  'confirmee': {bg:'#dcfce7', color:'#16a34a', label:'Confirmée'},
+                  'attente':   {bg:'#fef9c3', color:'#ca8a04', label:'En attente'},
+                  'venue':     {bg:'#d1fae5', color:'#059669', label:'Venue'},
+                  'absente':   {bg:'#fee2e2', color:'#dc2626', label:'No-show'},
+                  'annulee':   {bg:'#f3f4f6', color:'#6b7280', label:'Annulée'},
+                };
+                const s = statutColors[r.statut] || statutColors['confirmee'];
+                return (
+                  <div key={r.id} onClick={()=>setDetailResa(r)} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 0', borderBottom:'1px solid #f5f5f5', cursor:'pointer' }}
+                    onMouseEnter={e=>e.currentTarget.style.background='#fffbea'}
+                    onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                    <span style={{ fontSize:14, fontWeight:800, color:'#111', minWidth:44, flexShrink:0 }}>{r.heure||'—'}</span>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontWeight:700, fontSize:14, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                        {r.clients?.genre==='Entreprise' ? r.clients?.entreprise : `${r.clients?.prenom||''} ${r.clients?.nom||''}`.trim()}
+                      </div>
+                      <div style={{ fontSize:12, color:'#999' }}>{r.nb_personnes} pers.</div>
                     </div>
-                    <div style={{ fontSize:11, color:'#999' }}>{r.nb_personnes} pers.</div>
+                    <span style={{ background:s.bg, color:s.color, borderRadius:20, padding:'3px 10px', fontSize:11, fontWeight:700, flexShrink:0, whiteSpace:'nowrap' }}>{s.label}</span>
+                    {r.clients?.tel && <a href={`tel:${r.clients.tel}`} onClick={e=>e.stopPropagation()} style={{ color:'#666', flexShrink:0, display:'flex', alignItems:'center', padding:4, borderRadius:6, textDecoration:'none' }}>📞</a>}
                   </div>
-                  {r.clients?.tel && <a href={`tel:${r.clients.tel}`} onClick={e=>e.stopPropagation()} style={{ fontSize:11, color:'#888', textDecoration:'none', whiteSpace:'nowrap', flexShrink:0 }}>📞 {r.clients.tel}</a>}
-                </div>
-              ))}
+                );
+              })}
               {resasDuJour.length === 0 && (
                 <p style={{ color:'#bbb', fontSize:13, textAlign:'center', padding:'32px 0' }}>
                   {calJourSelectionne && calServiceSelectionne ? 'Aucune réservation confirmée' : 'Sélectionner un jour et un service'}
