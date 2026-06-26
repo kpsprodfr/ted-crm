@@ -2208,7 +2208,11 @@ function CRMApp({ user, onLogout }) {
       const matchSearch = !q || normalizeStr(c.nom).includes(normalizeStr(q)) || normalizeStr(c.prenom).includes(normalizeStr(q)) || (c.mail||'').toLowerCase().includes(q);
       if (!matchFilter || !matchSearch) return false;
       if (filtreAbsentsActif) {
-        const derniereResa = resasData.filter(r => r.client_id === c.id && (r.statut === 'venue' || r.statut === 'confirmee') && r.date <= new Date().toISOString().split('T')[0]).sort((a,b) => b.date.localeCompare(a.date))[0];
+        const aujourd = new Date().toISOString().split('T')[0];
+        const resasC = resasData.filter(r => r.client_id === c.id);
+        const aResaFuture = resasC.some(r => r.date > aujourd && (r.statut === 'confirmee' || r.statut === 'attente'));
+        if (aResaFuture) return false;
+        const derniereResa = resasC.filter(r => r.date <= aujourd && (r.statut === 'venue' || r.statut === 'confirmee')).sort((a,b) => b.date.localeCompare(a.date))[0];
         if (derniereResa && derniereResa.date >= limiteCommDate) return false;
       }
       if (filtreJours.size > 0 && filtreServices.size > 0) {
@@ -2586,7 +2590,11 @@ function CRMApp({ user, onLogout }) {
               if (!(c.nom||'').toLowerCase().includes(sq) && !(c.prenom||'').toLowerCase().includes(sq) && !(c.tel||'').includes(sq)) return false;
             }
             if (filtreAbsentsActif) {
-              const derniereResaSms = resasData.filter(r => r.client_id === c.id && (r.statut === 'venue' || r.statut === 'confirmee') && r.date <= new Date().toISOString().split('T')[0]).sort((a,b) => b.date.localeCompare(a.date))[0];
+              const aujourd = new Date().toISOString().split('T')[0];
+              const resasSms = resasData.filter(r => r.client_id === c.id);
+              const aResaFutureSms = resasSms.some(r => r.date > aujourd && (r.statut === 'confirmee' || r.statut === 'attente'));
+              if (aResaFutureSms) return false;
+              const derniereResaSms = resasSms.filter(r => r.date <= aujourd && (r.statut === 'venue' || r.statut === 'confirmee')).sort((a,b) => b.date.localeCompare(a.date))[0];
               if (derniereResaSms && derniereResaSms.date >= limiteSmsDate) return false;
             }
             if (filtreJours.size > 0 && filtreServices.size > 0) {
