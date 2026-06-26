@@ -580,6 +580,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
   const [showEditClientInline, setShowEditClientInline] = useState(false);
   const [editClientForm, setEditClientForm] = useState({});
   const [resaCree, setResaCree] = useState(null);
+  const [showConfirmQuitter, setShowConfirmQuitter] = useState(false);
   const [calPickerDate, setCalPickerDate] = useState(() => {
     if (initialResa?.date) {
       const d = new Date(initialResa.date + 'T12:00:00');
@@ -840,6 +841,11 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
     );
   })();
 
+  const fermerFormulaireResa = () => {
+    const aDesDonnees = tel || prenom || nom || (heure && heure !== '') || (dateIso && dateIso !== (DATE_OPTS[0]?.iso));
+    if (aDesDonnees && !resaCree) { setShowConfirmQuitter(true); } else { onClose(); }
+  };
+
   const ctaFooter = !resaCree ? (
     <div style={{ width:'100%' }}>
       <button onClick={handleSave} disabled={saving || !resaValide} style={{ width:'100%', height:56, background: resaValide ? '#E8C547' : '#f0f0f0', color: resaValide ? '#111' : '#bbb', border:'none', borderRadius:14, fontSize:17, fontWeight:800, cursor: resaValide ? 'pointer' : 'not-allowed', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity: saving ? 0.6 : 1 }}>
@@ -850,7 +856,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
           {tel?.replace(/\D/g,'').length < 10 ? 'Entrez un numéro de téléphone' : !dateIso ? 'Choisissez une date' : !service ? 'Choisissez Midi ou Soir' : !heure ? 'Choisissez une heure' : 'Remplissez tous les champs'}
         </p>
       )}
-      <button onClick={onClose} style={{ width:'100%', background:'none', border:'none', color:'#999', fontSize:14, cursor:'pointer', padding:'8px', marginTop:4 }}>Annuler</button>
+      <button onClick={fermerFormulaireResa} style={{ width:'100%', background:'none', border:'none', color:'#999', fontSize:14, cursor:'pointer', padding:'8px', marginTop:4 }}>Annuler</button>
     </div>
   ) : null;
 
@@ -1026,7 +1032,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
       <div style={{ position:'fixed', inset:0, background:'#f8f8f8', zIndex:2000, display:'flex', flexDirection:'column' }}>
         <div style={{ background:'#111', padding:'16px 20px', paddingTop:'calc(16px + env(safe-area-inset-top))', borderBottom:'3px solid #E8C547', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
           <h2 style={{ color:'#fff', margin:0, fontSize:18, fontWeight:800 }}>{isEdit ? 'Modifier la réservation' : 'Nouvelle réservation'}</h2>
-          <button type="button" onClick={onClose} style={{ background:'none', border:'none', color:'#fff', fontSize:20, cursor:'pointer', touchAction:'manipulation' }}>✕</button>
+          <button type="button" onClick={fermerFormulaireResa} style={{ background:'none', border:'none', color:'#fff', fontSize:20, cursor:'pointer', touchAction:'manipulation' }}>✕</button>
         </div>
         <div style={{ flex:1, overflowY:'auto', padding:'16px', WebkitOverflowScrolling:'touch' }}>
           {formContent}
@@ -1034,11 +1040,24 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
         {ctaFooter && <div style={{ background:'#fff', padding:'12px 16px', paddingBottom:'calc(12px + env(safe-area-inset-bottom))', borderTop:'1px solid #eee', flexShrink:0 }}>{ctaFooter}</div>}
       </div>
     ) : (
-      <Modal title={isEdit ? 'Modifier la réservation' : 'Nouvelle réservation'} onClose={onClose} footer={ctaFooter}>
+      <Modal title={isEdit ? 'Modifier la réservation' : 'Nouvelle réservation'} onClose={fermerFormulaireResa} footer={ctaFooter}>
         {formContent}
       </Modal>
     )}
 
+    {showConfirmQuitter && (
+      <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:6000, display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <div style={{ background:'#fff', borderRadius:16, padding:'28px 24px', maxWidth:320, width:'90%', textAlign:'center', boxShadow:'0 20px 60px rgba(0,0,0,0.2)' }}>
+          <div style={{ fontSize:40, marginBottom:12 }}>⚠️</div>
+          <h3 style={{ margin:'0 0 8px', fontSize:17, fontWeight:800, color:'#111' }}>Quitter sans enregistrer ?</h3>
+          <p style={{ margin:'0 0 20px', fontSize:14, color:'#666' }}>Les informations saisies seront perdues.</p>
+          <div style={{ display:'flex', gap:10 }}>
+            <button onClick={()=>setShowConfirmQuitter(false)} style={{ flex:1, height:44, border:'1.5px solid #ddd', borderRadius:10, background:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', color:'#666' }}>Continuer la saisie</button>
+            <button onClick={()=>{ setShowConfirmQuitter(false); onClose(); }} style={{ flex:1, height:44, border:'none', borderRadius:10, background:'#dc2626', fontSize:14, fontWeight:800, cursor:'pointer', color:'#fff' }}>Quitter</button>
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 }
