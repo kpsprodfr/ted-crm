@@ -1287,6 +1287,7 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
   const [editResa, setEditResa] = useState(null);
 const [showAddResa, setShowAddResa] = useState(false);
   const [calDate, setCalDate] = useState(new Date());
+  const [calMensuelOuvert, setCalMensuelOuvert] = useState(false);
   const [calJourSelectionne, setCalJourSelectionne] = useState(new Date().toISOString().split('T')[0]);
   const [calServiceSelectionne, setCalServiceSelectionne] = useState(new Date().getHours() < 15 ? 'midi' : 'soir');
 const [showDemandesAttente, setShowDemandesAttente] = useState(false);
@@ -1586,6 +1587,68 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                   </div>
                 );
               })()}
+            </div>
+          );
+        })()}
+
+        {/* ── Calendrier mensuel dépliable ── */}
+        {!isMobile && (() => {
+          const JOURS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+          const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+          const annee = calDate.getFullYear();
+          const mois = calDate.getMonth();
+          const premierJour = new Date(annee, mois, 1);
+          const dernierJour = new Date(annee, mois + 1, 0);
+          const debutSemaine = (premierJour.getDay() + 6) % 7;
+          const confirmeesParJour = {};
+          resaList.filter(r => r.statut === 'confirmee').forEach(r => {
+            if (!confirmeesParJour[r.date]) confirmeesParJour[r.date] = [];
+            confirmeesParJour[r.date].push(r);
+          });
+          const cases = [];
+          for (let i = 0; i < debutSemaine; i++) cases.push(null);
+          for (let d = 1; d <= dernierJour.getDate(); d++) cases.push(d);
+          while (cases.length % 7 !== 0) cases.push(null);
+          const today = new Date();
+          return (
+            <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', marginBottom:20, boxShadow:'0 2px 8px rgba(0,0,0,0.04)', overflow:'hidden' }}>
+              <button onClick={()=>setCalMensuelOuvert(v=>!v)} style={{ width:'100%', padding:'12px 20px', background:'none', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                <span style={{ fontSize:14, fontWeight:700, color:'#555' }}>📅 Calendrier complet</span>
+                <span style={{ fontSize:13, color:'#999' }}>{calMensuelOuvert ? '▲ Réduire' : '▼ Afficher'}</span>
+              </button>
+              {calMensuelOuvert && (
+                <div style={{ padding:'0 20px 20px' }}>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+                    <button onClick={() => setCalDate(new Date(annee, mois - 1, 1))} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, fontSize:16, cursor:'pointer', fontWeight:700 }}>‹</button>
+                    <span style={{ fontWeight:800, fontSize:16 }}>{MOIS[mois]} {annee}</span>
+                    <button onClick={() => setCalDate(new Date(annee, mois + 1, 1))} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, fontSize:16, cursor:'pointer', fontWeight:700 }}>›</button>
+                  </div>
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2, marginBottom:4 }}>
+                    {JOURS.map(j => <div key={j} style={{ textAlign:'center', fontSize:11, fontWeight:700, color:'#aaa', padding:'4px 0' }}>{j}</div>)}
+                  </div>
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2 }}>
+                    {cases.map((d, i) => {
+                      if (!d) return <div key={i} />;
+                      const iso = `${annee}-${String(mois+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                      const hasResa = !!confirmeesParJour[iso];
+                      const isToday = today.getFullYear()===annee && today.getMonth()===mois && today.getDate()===d;
+                      const isSelected = calJourSelectionne === iso;
+                      const estPasse = new Date(iso) < new Date(new Date().setHours(0,0,0,0));
+                      return (
+                        <div key={i} onClick={() => setCalJourSelectionne(iso)}
+                          style={{ textAlign:'center', padding:'7px 4px', borderRadius:8, cursor:'pointer', position:'relative',
+                            background: isSelected ? '#111' : isToday ? '#fffbeb' : '#fff',
+                            border: isToday && !isSelected ? '1.5px solid #E8C547' : '1.5px solid transparent',
+                            color: isSelected ? '#fff' : '#111', fontWeight: isToday ? 800 : 400, fontSize:13,
+                            opacity: estPasse ? 0.4 : 1, transition:'background 0.15s' }}>
+                          {d}
+                          {hasResa && <span style={{ display:'block', width:5, height:5, borderRadius:'50%', background: isSelected ? '#E8C547' : '#E8C547', margin:'2px auto 0' }} />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           );
         })()}
