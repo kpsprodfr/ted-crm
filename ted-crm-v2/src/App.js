@@ -750,7 +750,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
         nb_personnes: nbPersonnes,
         occasion: occasion || null,
         commentaire_client: commentaire.trim() || null,
-        statut: 'attente',
+        statut: 'confirmee',
         source: 'manuel',
       }));
     }
@@ -784,200 +784,171 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
     };
   };
 
-  const resaValide = !!(tel && genre && nom && prenom && dateIso && service && heure && email);
+  const resaValide = tel?.replace(/\D/g,'').length >= 10 && dateIso && service && heure && nbPersonnes >= 1;
+  const showNouveauClient = !clientFound && tel?.replace(/\D/g,'').length >= 10 && !lookingUp;
+
+  const calendarJSX = showCalPicker && (() => {
+    const anneeP = calPickerDate.getFullYear();
+    const moisP = calPickerDate.getMonth();
+    const premierJourSemaine = new Date(anneeP, moisP, 1).getDay() || 7;
+    const nbJours = new Date(anneeP, moisP + 1, 0).getDate();
+    const casesP = Array(premierJourSemaine - 1).fill(null).concat(Array.from({length: nbJours}, (_, i) => i + 1));
+    const todayIso = new Date().toISOString().split('T')[0];
+    return (
+      <div ref={calPickerRef} className={calFermeture ? 'cal-fermeture' : ''} style={{ marginTop:8, background:'#fff', borderRadius:12, border:'1.5px solid #eee', boxShadow:'0 4px 16px rgba(0,0,0,0.08)', overflow:'hidden' }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 12px', borderBottom:'1px solid #eee' }}>
+          <button onPointerDown={()=>setCalPickerDate(new Date(anneeP, moisP-1))} style={{ width:40, height:40, borderRadius:10, border:'1.5px solid #ddd', background:'#fff', fontSize:20, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', touchAction:'manipulation', WebkitTapHighlightColor:'transparent' }}>‹</button>
+          <span style={{ fontSize:15, fontWeight:800, color:'#111', textTransform:'capitalize' }}>{calPickerDate.toLocaleDateString('fr-FR', {month:'long', year:'numeric'})}</span>
+          <button onPointerDown={()=>setCalPickerDate(new Date(anneeP, moisP+1))} style={{ width:40, height:40, borderRadius:10, border:'1.5px solid #ddd', background:'#fff', fontSize:20, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', touchAction:'manipulation', WebkitTapHighlightColor:'transparent' }}>›</button>
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', padding:'6px 6px 2px' }}>
+          {['L','M','M','J','V','S','D'].map((j,i) => <div key={i} style={{ textAlign:'center', fontSize:11, fontWeight:700, color:'#aaa', padding:'3px 0' }}>{j}</div>)}
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', padding:'2px 6px 8px', gap:2 }}>
+          {casesP.map((jour, i) => {
+            if (!jour) return <div key={i}/>;
+            const iso = `${anneeP}-${String(moisP+1).padStart(2,'0')}-${String(jour).padStart(2,'0')}`;
+            const estAujourdhui = iso === todayIso;
+            const estSelectionne = dateIso === iso;
+            const aujourd2 = new Date(); aujourd2.setHours(0,0,0,0);
+            const estPasse = new Date(anneeP, moisP, jour) < aujourd2;
+            return (
+              <button key={i} disabled={estPasse} className={dateFlash === iso ? 'date-flash' : ''} onPointerDown={()=>{ if (estPasse) return; setDateFlash(iso); setDateIso(iso); setTimeout(()=>{ setCalFermeture(true); setTimeout(()=>{ setShowCalPicker(false); setCalFermeture(false); setDateFlash(null); }, 300); }, 200); }} style={{
+                height:44, borderRadius:10,
+                border: estAujourdhui && !estSelectionne ? '2px solid #E8C547' : '1.5px solid transparent',
+                background: estSelectionne ? '#E8C547' : 'transparent',
+                fontWeight: estAujourdhui || estSelectionne ? 800 : 400,
+                fontSize:15, cursor: estPasse ? 'not-allowed' : 'pointer',
+                color: estPasse ? '#ccc' : '#111', opacity: estPasse ? 0.4 : 1,
+                pointerEvents: estPasse ? 'none' : 'auto',
+                touchAction:'manipulation', WebkitTapHighlightColor:'transparent'
+              }}>{jour}</button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  })();
 
   return (
-    <Modal title={isEdit ? "Modifier la réservation" : "Ajouter une réservation"} onClose={onClose} footer={[
-      <button key="cancel" onClick={onClose} style={btnSecondary}>Annuler</button>,
-      <button key="save" onClick={handleSave} disabled={saving || !resaValide} style={{ ...btnPrimary, background: resaValide ? '#E8C547' : '#f0f0f0', color: resaValide ? '#111' : '#bbb', opacity: saving ? 0.5 : 1, cursor: resaValide ? 'pointer' : 'not-allowed' }}>{saving ? 'Enregistrement…' : (isEdit ? 'Modifier' : 'Enregistrer')}</button>
-    ]}>
-      <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+    <Modal title={isEdit ? 'Modifier la réservation' : 'Nouvelle réservation'} onClose={onClose} footer={null}>
+      {/* Subtitle confirmée */}
+      {!isEdit && <div style={{ fontSize:12, color:'#16a34a', fontWeight:600, marginBottom:16, display:'flex', alignItems:'center', gap:6 }}>✅ Créée directement en confirmée</div>}
 
-        {/* Bandeau info statut */}
-        {!isEdit && <div style={{ background:'#fffbeb', border:'1.5px solid #fbbf24', borderRadius:10, padding:'10px 14px', fontSize:13, color:'#92400e', display:'flex', alignItems:'center', gap:8 }}>
-          <span style={{ fontSize:16 }}>⏳</span>
-          <span>Cette réservation sera créée comme <strong>demande en attente</strong> — vous pourrez l'accepter depuis la page Réservations.</span>
-        </div>}
+      <div style={{ display:'flex', flexDirection:'column', gap:20, paddingBottom:8 }}>
 
-        {/* 1. Téléphone */}
+        {/* ── Section 1 : Téléphone ── */}
         <div>
-          <label style={lbl}>Téléphone *</label>
+          <div style={{ fontSize:13, fontWeight:800, color:'#555', marginBottom:8, textTransform:'uppercase', letterSpacing:0.5 }}>1. Téléphone du client</div>
           <div style={{ position:'relative' }}>
-            <input value={tel} onChange={e=>handleTelChange(e.target.value)} placeholder="06 12 34 56 78" type="tel" style={inp(false)} />
+            <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', fontSize:16, pointerEvents:'none' }}>📞</span>
+            <input value={tel} onChange={e=>handleTelChange(e.target.value)} placeholder="06 12 34 56 78" type="tel" style={{ ...inp(false), paddingLeft:40 }} />
             {lookingUp && <span style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', fontSize:12, color:'#888' }}>Recherche…</span>}
           </div>
           {clientFound && (
-            <div style={{ marginTop:6, background:'#f0fdf4', borderRadius:10, padding:'12px 14px', border:'1.5px solid #22c55e' }}>
-              <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom: statsClient ? 10 : 0 }}>
-                <span style={{ fontSize:16 }}>✅</span>
-                <span style={{ fontSize:13, fontWeight:700, color:'#16a34a' }}>Client trouvé</span>
-                <span style={{ fontSize:16, fontWeight:900, color:'#111', marginLeft:4 }}>{clientFound.prenom} {clientFound.nom}</span>
+            <div style={{ marginTop:8 }}>
+              <div style={{ background:'#f0fdf4', border:'1.5px solid #22c55e', borderRadius:10, padding:'10px 14px', display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                <span style={{ fontSize:14 }}>✅</span>
+                <span style={{ fontSize:14, fontWeight:800, color:'#111', flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{clientFound.prenom} {clientFound.nom}</span>
+                {statsClient && <>
+                  <span style={{ fontSize:12, color:'#555', whiteSpace:'nowrap' }}>·&nbsp;{statsClient.total} résa</span>
+                  {statsClient.noshow > 0 && <span style={{ fontSize:12, color:'#dc2626', whiteSpace:'nowrap' }}>·&nbsp;{statsClient.noshow} no-show</span>}
+                </>}
               </div>
-              {statsClient && (
-                <div style={{ display:'flex', gap:0 }}>
-                  <div style={{ textAlign:'center', flex:1 }}>
-                    <div style={{ fontSize:20, fontWeight:900, color:'#111' }}>{statsClient.total}</div>
-                    <div style={{ fontSize:10, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Résa total</div>
-                  </div>
-                  <div style={{ textAlign:'center', flex:1 }}>
-                    <div style={{ fontSize:20, fontWeight:900, color: statsClient.noshow > 0 ? '#dc2626' : '#111' }}>{statsClient.noshow}</div>
-                    <div style={{ fontSize:10, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>No-show</div>
-                  </div>
-                  <div style={{ textAlign:'center', flex:2 }}>
-                    <div style={{ fontSize:13, fontWeight:700, color:'#111' }}>{statsClient.derniereVisite}</div>
-                    <div style={{ fontSize:10, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Dernière visite</div>
-                  </div>
+              <button onClick={()=>{ setClientFound(null); setPrenom(''); setNom(''); setEmail(''); setGenre(''); setEntreprise(''); }} style={{ background:'none', border:'none', color:'#888', fontSize:12, cursor:'pointer', padding:'6px 2px', textDecoration:'underline' }}>Modifier les infos client ›</button>
+            </div>
+          )}
+          {showNouveauClient && (
+            <div style={{ marginTop:12, display:'flex', flexDirection:'column', gap:12 }}>
+              <div>
+                <label style={lbl}>Vous êtes *</label>
+                <div style={{ display:'flex', gap:8 }}>
+                  {['Homme','Femme','Entreprise'].map(g => (
+                    <button key={g} onClick={()=>setGenre(g)} style={btnGenre(g)}>
+                      {g === 'Homme' ? '👤 Homme' : g === 'Femme' ? '👤 Femme' : '🏢 Entreprise'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {genre === 'Entreprise' && (
+                <div>
+                  <label style={lbl}>Nom de l'entreprise *</label>
+                  <input value={entreprise} onChange={e=>setEntreprise(e.target.value)} placeholder="Nom de l'entreprise" style={inp(false)} />
                 </div>
               )}
+              <div style={{ display:'flex', gap:8 }}>
+                <div style={{ flex:1 }}>
+                  <label style={lbl}>Prénom *</label>
+                  <input value={prenom} onChange={e=>setPrenom(e.target.value)} placeholder="Jean" style={inp(false)} />
+                </div>
+                <div style={{ flex:1 }}>
+                  <label style={lbl}>Nom *</label>
+                  <input value={nom} onChange={e=>setNom(e.target.value)} placeholder="Dupont" style={inp(false)} />
+                </div>
+              </div>
+              <div>
+                <label style={lbl}>Email</label>
+                <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="client@email.fr" type="email" style={inp(false)} />
+              </div>
             </div>
           )}
         </div>
 
-        {/* 2. Genre */}
+        {/* ── Section 2 : Quand ? ── */}
         <div>
-          <label style={lbl}>Vous êtes *</label>
-          <div style={{ display:'flex', gap:8 }}>
-            {['Homme','Femme','Entreprise'].map(g => (
-              <button key={g} onClick={()=>setGenre(g)} style={btnGenre(g)}>
-                {g === 'Homme' ? '👤 Homme' : g === 'Femme' ? '👤 Femme' : '🏢 Entreprise'}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Nom d'entreprise si Entreprise */}
-        {genre === 'Entreprise' && (
-          <div>
-            <label style={lbl}>Nom de l'entreprise *</label>
-            <input value={entreprise} onChange={e=>setEntreprise(e.target.value)} placeholder="Nom de l'entreprise" style={inp(false)} />
-          </div>
-        )}
-
-        {/* 3. Prénom + Nom */}
-        <div style={{ display:'flex', gap:8 }}>
-          <div style={{ flex:1 }}>
-            <label style={lbl}>Prénom *</label>
-            <input value={prenom} onChange={e=>setPrenom(e.target.value)} placeholder="Jean" style={inp(false)} />
-          </div>
-          <div style={{ flex:1 }}>
-            <label style={lbl}>Nom *</label>
-            <input value={nom} onChange={e=>setNom(e.target.value)} placeholder="Dupont" style={inp(false)} />
-          </div>
-        </div>
-
-        {/* 4. Email */}
-        <div>
-          <label style={lbl}>Email <span style={{color:'#dc2626'}}>*</span></label>
-          <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="client@email.fr" type="email" style={inp(false)} />
-        </div>
-
-        {/* 5. Date — calendrier visuel */}
-        <div>
-          <label style={lbl}>Date *</label>
-          {/* Bouton toggle date (toujours visible) */}
-          <button onPointerDown={()=>setShowCalPicker(!showCalPicker)} style={{ width:'100%', height:44, border:`1.5px solid ${showCalPicker ? '#E8C547' : '#ddd'}`, borderRadius:8, background:'#fff', fontSize:14, cursor:'pointer', textAlign:'left', padding:'0 14px', color: dateIso ? '#111' : '#aaa', touchAction:'manipulation', WebkitTapHighlightColor:'transparent' }}>
-            📅 {dateIso ? new Date(dateIso+'T12:00:00').toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'}) : 'Choisir une date'}
+          <div style={{ fontSize:13, fontWeight:800, color:'#555', marginBottom:8, textTransform:'uppercase', letterSpacing:0.5 }}>2. Quand ?</div>
+          <button onPointerDown={()=>setShowCalPicker(!showCalPicker)} style={{ width:'100%', height:48, border:`1.5px solid ${showCalPicker ? '#E8C547' : '#ddd'}`, borderRadius:10, background:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', textAlign:'left', padding:'0 14px', color: dateIso ? '#111' : '#aaa', display:'flex', alignItems:'center', justifyContent:'space-between', touchAction:'manipulation', WebkitTapHighlightColor:'transparent' }}>
+            <span>📅 {dateIso ? new Date(dateIso+'T12:00:00').toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'}) : 'Choisir une date'}</span>
+            <span style={{ color:'#ccc', fontSize:20 }}>›</span>
           </button>
-          {/* Calendrier inline (mobile et desktop) */}
-          {showCalPicker && (() => {
-            const anneeP = calPickerDate.getFullYear();
-            const moisP = calPickerDate.getMonth();
-            const premierJourSemaine = new Date(anneeP, moisP, 1).getDay() || 7;
-            const nbJours = new Date(anneeP, moisP + 1, 0).getDate();
-            const casesP = Array(premierJourSemaine - 1).fill(null).concat(Array.from({length: nbJours}, (_, i) => i + 1));
-            const todayIso = new Date().toISOString().split('T')[0];
-            return (
-              <div ref={calPickerRef} className={calFermeture ? 'cal-fermeture' : ''} style={{ marginTop:8, background:'#fff', borderRadius:12, border:'1.5px solid #eee', boxShadow:'0 4px 16px rgba(0,0,0,0.08)', overflow:'hidden' }}>
-                {/* Header navigation mois */}
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 12px', borderBottom:'1px solid #eee', background:'#fff' }}>
-                  <button onPointerDown={()=>setCalPickerDate(new Date(anneeP, moisP-1))}
-                    style={{ width:40, height:40, borderRadius:10, border:'1.5px solid #ddd', background:'#fff', fontSize:20, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', touchAction:'manipulation', WebkitTapHighlightColor:'transparent' }}>‹</button>
-                  <span style={{ fontSize:15, fontWeight:800, color:'#111', textTransform:'capitalize' }}>
-                    {calPickerDate.toLocaleDateString('fr-FR', {month:'long', year:'numeric'})}
-                  </span>
-                  <button onPointerDown={()=>setCalPickerDate(new Date(anneeP, moisP+1))}
-                    style={{ width:40, height:40, borderRadius:10, border:'1.5px solid #ddd', background:'#fff', fontSize:20, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', touchAction:'manipulation', WebkitTapHighlightColor:'transparent' }}>›</button>
-                </div>
-                {/* Jours de la semaine */}
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', padding:'6px 6px 2px' }}>
-                  {['L','M','M','J','V','S','D'].map((j,i) => (
-                    <div key={i} style={{ textAlign:'center', fontSize:11, fontWeight:700, color:'#aaa', padding:'3px 0' }}>{j}</div>
-                  ))}
-                </div>
-                {/* Grille des jours */}
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', padding:'2px 6px 8px', gap:2 }}>
-                  {casesP.map((jour, i) => {
-                    if (!jour) return <div key={i}/>;
-                    const iso = `${anneeP}-${String(moisP+1).padStart(2,'0')}-${String(jour).padStart(2,'0')}`;
-                    const estAujourdhui = iso === todayIso;
-                    const estSelectionne = dateIso === iso;
-                    const aujourd2 = new Date(); aujourd2.setHours(0,0,0,0);
-                    const estPasse = new Date(anneeP, moisP, jour) < aujourd2;
-                    return (
-                      <button key={i} disabled={estPasse} className={dateFlash === iso ? 'date-flash' : ''} onPointerDown={()=>{ if (estPasse) return; setDateFlash(iso); setDateIso(iso); setTimeout(()=>{ setCalFermeture(true); setTimeout(()=>{ setShowCalPicker(false); setCalFermeture(false); setDateFlash(null); }, 300); }, 200); }} style={{
-                        height:44, borderRadius:10,
-                        border: estAujourdhui && !estSelectionne ? '2px solid #E8C547' : '1.5px solid transparent',
-                        background: estSelectionne ? '#E8C547' : 'transparent',
-                        fontWeight: estAujourdhui || estSelectionne ? 800 : 400,
-                        fontSize:15, cursor: estPasse ? 'not-allowed' : 'pointer',
-                        color: estPasse ? '#ccc' : '#111',
-                        opacity: estPasse ? 0.4 : 1,
-                        pointerEvents: estPasse ? 'none' : 'auto',
-                        touchAction:'manipulation', WebkitTapHighlightColor:'transparent'
-                      }}>{jour}</button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-
-        {/* 6. Service */}
-        <div>
-          <label style={lbl}>Service *</label>
-          <div style={{ display:'flex', gap:8 }}>
-            <button style={btnSvc('midi')} onClick={()=>{ setService('midi'); setHeure(''); setHeureError(false); }}>🌞 Midi</button>
+          {calendarJSX}
+          <div style={{ display:'flex', gap:8, marginTop:10 }}>
+            <button style={btnSvc('midi')} onClick={()=>{ setService('midi'); setHeure(''); setHeureError(false); }}>☀️ Midi</button>
             <button style={btnSvc('soir')} onClick={()=>{ setService('soir'); setHeure(''); setHeureError(false); }}>🌙 Soir</button>
           </div>
+          {service && (
+            <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:10 }}>
+              {heures.map(h => (
+                <button key={h} onClick={()=>{ setHeure(heure===h?'':h); setHeureError(false); }} style={{ padding:'8px 14px', borderRadius:20, border:`1.5px solid ${heure===h?'#111':heureError?'#dc2626':'#eee'}`, background:heure===h?'#111':'#f8f8f8', color:heure===h?'#fff':'#555', fontWeight:700, fontSize:13, cursor:'pointer' }}>{h}</button>
+              ))}
+            </div>
+          )}
+          {heureError && <p style={{ fontSize:12, color:'#dc2626', marginTop:6 }}>* Sélectionnez un créneau horaire</p>}
         </div>
 
-        {/* 7. Heure */}
+        {/* ── Section 3 : Combien ? ── */}
         <div>
-          <label style={lbl}>Heure *</label>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-            {heures.map(h => (
-              <button key={h} onClick={()=>{ setHeure(heure===h?'':h); setHeureError(false); }} style={{ padding:'6px 12px', borderRadius:8, border:`1.5px solid ${heure===h?'#111':heureError?'#dc2626':'#eee'}`, background:heure===h?'#111':'#f8f8f8', color:heure===h?'#fff':'#555', fontWeight:600, fontSize:13, cursor:'pointer' }}>{h}</button>
-            ))}
-          </div>
-          {heureError && <p style={{ fontSize:12, color:'#dc2626', marginTop:6, margin:'6px 0 0' }}>* Sélectionnez un créneau horaire</p>}
-        </div>
-
-        {/* 8. Nb personnes */}
-        <div>
-          <label style={lbl}>Nombre de personnes *</label>
-          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-            <button onClick={()=>setNbPersonnes(n=>Math.max(1,n-1))} style={{ width:40, height:40, borderRadius:8, border:'1.5px solid #eee', background:'#f8f8f8', fontSize:20, cursor:'pointer', fontWeight:700 }}>−</button>
-            <input type="number" inputMode="numeric" pattern="[0-9]*" min={1} max={999} value={nbPersonnes === undefined ? '' : nbPersonnes} onChange={e=>{ const v=e.target.value; if(v===''||v==='0'){ setNbPersonnes(''); } else { setNbPersonnes(parseInt(v)||1); } }} onBlur={()=>{ if(!nbPersonnes||nbPersonnes<1) setNbPersonnes(1); }} style={{ width:70, height:40, border:'1.5px solid #ddd', borderRadius:8, textAlign:'center', fontSize:16, fontWeight:700, outline:'none' }} />
-            <button onClick={()=>setNbPersonnes(n=>Math.min(999,n+1))} style={{ width:40, height:40, borderRadius:8, border:'1.5px solid #eee', background:'#f8f8f8', fontSize:20, cursor:'pointer', fontWeight:700 }}>+</button>
+          <div style={{ fontSize:13, fontWeight:800, color:'#555', marginBottom:8, textTransform:'uppercase', letterSpacing:0.5 }}>3. Combien de personnes ?</div>
+          <div style={{ display:'flex', alignItems:'center', gap:0, border:'1.5px solid #eee', borderRadius:12, overflow:'hidden' }}>
+            <button onClick={()=>setNbPersonnes(n=>Math.max(1,typeof n==='number'?n:1)-0 || 1)} style={{ width:64, height:64, background:'#f8f8f8', border:'none', borderRight:'1.5px solid #eee', fontSize:28, fontWeight:700, cursor:'pointer', color:'#111', flexShrink:0 }} onClick={()=>setNbPersonnes(n=>{const v=typeof n==='number'&&n>0?n:1;return Math.max(1,v-1);})}>−</button>
+            <input type="number" inputMode="numeric" pattern="[0-9]*" min={1} max={999} value={nbPersonnes === undefined || nbPersonnes === '' ? '' : nbPersonnes} onChange={e=>{ const v=e.target.value; if(v===''||v==='0'){ setNbPersonnes(''); } else { setNbPersonnes(parseInt(v)||1); } }} onBlur={()=>{ if(!nbPersonnes||nbPersonnes<1) setNbPersonnes(1); }} style={{ flex:1, height:64, border:'none', textAlign:'center', fontSize:28, fontWeight:800, outline:'none', color:'#111' }} />
+            <button style={{ width:64, height:64, background:'#f8f8f8', border:'none', borderLeft:'1.5px solid #eee', fontSize:28, fontWeight:700, cursor:'pointer', color:'#111', flexShrink:0 }} onClick={()=>setNbPersonnes(n=>{const v=typeof n==='number'&&n>0?n:1;return Math.min(999,v+1);})}>+</button>
           </div>
         </div>
 
-        {/* 9. Occasion */}
+        {/* ── Section 4 : Occasion & Commentaire ── */}
         <div>
-          <label style={lbl}>Occasion</label>
-          <select value={occasion} onChange={e=>setOccasion(e.target.value)} style={{ width:'100%', height:44, border:'1.5px solid #ddd', borderRadius:7, padding:'0 12px', fontSize:15, background:'#fff', outline:'none', cursor:'pointer' }}>
-            <option value="">— Aucune —</option>
+          <div style={{ fontSize:13, fontWeight:800, color:'#555', marginBottom:8, textTransform:'uppercase', letterSpacing:0.5 }}>4. Occasion & Commentaire <span style={{ fontWeight:400, color:'#bbb' }}>(optionnels)</span></div>
+          <select value={occasion} onChange={e=>setOccasion(e.target.value)} style={{ width:'100%', height:44, border:'1.5px solid #ddd', borderRadius:8, padding:'0 12px', fontSize:14, background:'#fff', outline:'none', cursor:'pointer', marginBottom:10 }}>
+            <option value="">— Aucune occasion —</option>
             {OCCASIONS.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
+          <textarea value={commentaire} onChange={e=>setCommentaire(e.target.value)} placeholder="Allergies, demandes particulières…" rows={3} style={{ width:'100%', minHeight:70, border:'1.5px solid #ddd', borderRadius:8, padding:10, fontSize:14, resize:'none', outline:'none', boxSizing:'border-box', fontFamily:'inherit' }} />
         </div>
 
-        {/* 10. Commentaire */}
-        <div>
-          <label style={lbl}>Commentaire</label>
-          <textarea value={commentaire} onChange={e=>setCommentaire(e.target.value)} placeholder="Informations complémentaires..." rows={3} style={{ width:'100%', minHeight:70, border:'1.5px solid #ddd', borderRadius:8, padding:10, fontSize:14, resize:'none', outline:'none', boxSizing:'border-box', fontFamily:'inherit' }} />
-        </div>
+      </div>
 
+      {/* ── Bouton sticky ── */}
+      <div style={{ position:'sticky', bottom:0, background:'#fff', padding:'12px 0', paddingBottom:'calc(12px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #eee', marginTop:8 }}>
+        <button onClick={handleSave} disabled={saving || !resaValide} style={{ width:'100%', height:56, background: resaValide ? '#E8C547' : '#f0f0f0', color: resaValide ? '#111' : '#bbb', border:'none', borderRadius:14, fontSize:17, fontWeight:800, cursor: resaValide ? 'pointer' : 'not-allowed', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity: saving ? 0.6 : 1 }}>
+          {saving ? 'Enregistrement…' : (isEdit ? '✏️ Modifier la réservation' : '📅 Créer la réservation')}
+        </button>
+        {!resaValide && (
+          <p style={{ textAlign:'center', fontSize:12, color:'#999', margin:'6px 0 0' }}>
+            {tel?.replace(/\D/g,'').length < 10 ? 'Entrez un numéro de téléphone' : !dateIso ? 'Choisissez une date' : !service ? 'Choisissez Midi ou Soir' : !heure ? 'Choisissez une heure' : 'Remplissez tous les champs'}
+          </p>
+        )}
+        <button onClick={onClose} style={{ width:'100%', background:'none', border:'none', color:'#999', fontSize:14, cursor:'pointer', padding:'8px', marginTop:4 }}>Annuler</button>
       </div>
     </Modal>
   );
