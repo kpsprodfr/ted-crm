@@ -173,55 +173,55 @@ function LoginPage({ onLogin }) {
   }
 
   const carteBlanche = (
-    <div style={{ background:'#fbfbfa', borderRadius:24, padding: isMob ? '40px 24px' : '48px 52px', width:'100%', maxWidth: isMob ? undefined : 560, boxShadow:'0 24px 64px rgba(0,0,0,0.4)' }}>
-      <h2 style={{ fontSize:36, fontWeight:900, color:'#111', margin:'0 0 8px' }}>Connexion</h2>
-      <p style={{ fontSize:17, color:'#707070', margin:'0 0 36px' }}>Accédez à votre espace TED CRM</p>
+    <div style={{ width:500, maxWidth:'100%', background:'#fff', borderRadius:24, padding:'42px 44px', boxShadow:'0 24px 55px rgba(0,0,0,0.28)' }}>
+      <h2 style={{ fontSize:34, fontWeight:700, color:'#111', margin:'0 0 8px' }}>Connexion</h2>
+      <p style={{ fontSize:16, color:'#777', margin:'0 0 32px' }}>Accédez à votre espace TED CRM</p>
 
       {/* Email */}
-      <div style={{ marginBottom:20 }}>
-        <label style={{ fontSize:16, fontWeight:700, color:'#111', display:'block', marginBottom:8 }}>Email</label>
+      <div style={{ marginBottom:22 }}>
+        <label style={{ fontSize:15, fontWeight:600, color:'#111', display:'block', marginBottom:8 }}>Email</label>
         <div style={{ position:'relative' }}>
-          <span style={{ position:'absolute', left:18, top:'50%', transform:'translateY(-50%)', fontSize:18, color:'#999', pointerEvents:'none' }}>✉️</span>
+          <span style={{ position:'absolute', left:16, top:'50%', transform:'translateY(-50%)', color:'#aaa', fontSize:18, pointerEvents:'none' }}>✉</span>
           <input type="email" autoComplete="email" placeholder="votre@email.com" value={loginEmail} onChange={e=>setLoginEmail(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleLogin()}
-            style={{ width:'100%', height:62, border:'1.5px solid #e7e7e7', borderRadius:13, padding:'0 18px 0 50px', fontSize:17, outline:'none', boxSizing:'border-box', background:'#fff', color:'#111', transition:'border-color 0.2s, box-shadow 0.2s' }}
-            onFocus={e=>{ e.target.style.borderColor='#efc434'; e.target.style.boxShadow='0 0 0 4px rgba(239,196,52,0.16)'; }}
-            onBlur={e=>{ e.target.style.borderColor='#e7e7e7'; e.target.style.boxShadow='none'; }} />
+            style={{ width:'100%', height:60, border:'1px solid #ddd', borderRadius:12, padding:'0 18px 0 48px', fontSize:16, outline:'none', boxSizing:'border-box', background:'#fff', color:'#111', transition:'border-color 0.2s, box-shadow 0.2s' }}
+            onFocus={e=>{ e.target.style.borderColor='#efc434'; e.target.style.boxShadow='0 0 0 4px rgba(239,196,52,0.14)'; }}
+            onBlur={e=>{ e.target.style.borderColor='#ddd'; e.target.style.boxShadow='none'; }} />
         </div>
       </div>
 
       {/* Mot de passe */}
-      <div style={{ marginBottom:24 }}>
-        <label style={{ fontSize:16, fontWeight:700, color:'#111', display:'block', marginBottom:8 }}>Mot de passe</label>
+      <div style={{ marginBottom:28 }}>
+        <label style={{ fontSize:15, fontWeight:600, color:'#111', display:'block', marginBottom:8 }}>Mot de passe</label>
         <div style={{ position:'relative' }}>
-          <span style={{ position:'absolute', left:18, top:'50%', transform:'translateY(-50%)', fontSize:18, color:'#999', pointerEvents:'none' }}>🔒</span>
+          <span style={{ position:'absolute', left:16, top:'50%', transform:'translateY(-50%)', color:'#aaa', fontSize:18, pointerEvents:'none' }}>🔒</span>
           <input type={showPassword ? 'text' : 'password'} autoComplete="current-password" placeholder="Votre mot de passe" value={loginPassword} onChange={e=>setLoginPassword(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleLogin()}
-            style={{ width:'100%', height:62, border:'1.5px solid #e7e7e7', borderRadius:13, padding:'0 52px 0 50px', fontSize:17, outline:'none', boxSizing:'border-box', background:'#fff', color:'#111', transition:'border-color 0.2s, box-shadow 0.2s' }}
-            onFocus={e=>{ e.target.style.borderColor='#efc434'; e.target.style.boxShadow='0 0 0 4px rgba(239,196,52,0.16)'; }}
-            onBlur={e=>{ e.target.style.borderColor='#e7e7e7'; e.target.style.boxShadow='none'; }} />
-          <button onClick={()=>setShowPassword(v=>!v)} aria-label={showPassword ? 'Masquer' : 'Afficher'} style={{ position:'absolute', right:18, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', fontSize:18, color:'#999', padding:4 }}>{showPassword ? '🙈' : '👁️'}</button>
+            style={{ width:'100%', height:60, border:'1px solid #ddd', borderRadius:12, padding:'0 48px 0 48px', fontSize:16, outline:'none', boxSizing:'border-box', background:'#fff', color:'#111', transition:'border-color 0.2s, box-shadow 0.2s' }}
+            onFocus={e=>{ e.target.style.borderColor='#efc434'; e.target.style.boxShadow='0 0 0 4px rgba(239,196,52,0.14)'; }}
+            onBlur={e=>{ e.target.style.borderColor='#ddd'; e.target.style.boxShadow='none'; }} />
+          <button onClick={()=>setShowPassword(v=>!v)} aria-label={showPassword ? 'Masquer' : 'Afficher le mot de passe'} style={{ position:'absolute', right:16, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'#aaa', fontSize:18, padding:4 }}>{showPassword ? '🙈' : '👁️'}</button>
         </div>
       </div>
 
       {loginError && (
-        <div style={{ background:'#fef2f2', border:'1px solid #fca5a5', borderRadius:10, padding:'12px 16px', marginBottom:16, fontSize:14, color:'#d92d20', display:'flex', alignItems:'center', gap:8 }}>
+        <div style={{ background:'#fef2f2', border:'1px solid #fca5a5', borderRadius:10, padding:'10px 14px', marginBottom:16, fontSize:14, color:'#d92d20', display:'flex', alignItems:'center', gap:8 }}>
           ⚠️ {loginError}
         </div>
       )}
 
       <button onClick={handleLogin} disabled={loginLoading}
-        style={{ width:'100%', height:62, background: loginLoading ? '#ddb226' : '#efc434', border:'none', borderRadius:13, fontSize:18, fontWeight:800, cursor: loginLoading ? 'not-allowed' : 'pointer', color:'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:10, transition:'background 0.2s', boxShadow:'0 4px 16px rgba(239,196,52,0.3)' }}
+        style={{ width:'100%', height:60, background:'#efc434', border:'none', borderRadius:12, fontSize:17, fontWeight:700, cursor: loginLoading ? 'not-allowed' : 'pointer', color:'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:10, boxShadow:'0 4px 14px rgba(239,196,52,0.28)', transition:'background 0.2s, transform 0.1s' }}
         onMouseEnter={e=>{ if(!loginLoading) e.currentTarget.style.background='#ddb226'; }}
         onMouseLeave={e=>{ if(!loginLoading) e.currentTarget.style.background='#efc434'; }}>
         {loginLoading ? 'Connexion...' : <><span>Se connecter</span><span style={{ fontSize:20 }}>→</span></>}
       </button>
 
-      <div style={{ borderTop:'1px solid #eee', paddingTop:20, marginTop:24, display:'flex', gap:20 }}>
-        <div style={{ display:'flex', alignItems:'flex-start', gap:10, flex:1 }}>
-          <span style={{ fontSize:16, marginTop:2 }}>🔒</span>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, paddingTop:20, marginTop:22, borderTop:'1px solid #eee' }}>
+        <div style={{ display:'flex', alignItems:'flex-start', gap:10 }}>
+          <span style={{ fontSize:18, marginTop:1 }}>🔒</span>
           <div><div style={{ fontSize:13, fontWeight:700, color:'#111' }}>Vos données sont protégées.</div><div style={{ fontSize:12, color:'#999' }}>Confidentialité garantie.</div></div>
         </div>
-        <div style={{ display:'flex', alignItems:'flex-start', gap:10, flex:1 }}>
-          <span style={{ fontSize:16, marginTop:2 }}>🎧</span>
+        <div style={{ display:'flex', alignItems:'flex-start', gap:10 }}>
+          <span style={{ fontSize:18, marginTop:1 }}>🎧</span>
           <div><div style={{ fontSize:13, fontWeight:700, color:'#111' }}>Besoin d'aide ?</div><div style={{ fontSize:12, color:'#999' }}>Contactez votre responsable.</div></div>
         </div>
       </div>
@@ -229,41 +229,41 @@ function LoginPage({ onLogin }) {
   );
 
   if (isMob) return (
-    <div style={{ minHeight:'100vh', background:'#0d0d0d', display:'flex', alignItems:'center', justifyContent:'center', padding:24, boxSizing:'border-box' }}>
+    <div style={{ minHeight:'100vh', background:'#0a0a0a', display:'flex', alignItems:'center', justifyContent:'center', padding:24, boxSizing:'border-box' }}>
       {carteBlanche}
     </div>
   );
 
   return (
-    <div style={{ minHeight:'100vh', background:'#0d0d0d', display:'flex', alignItems:'center', justifyContent:'center', padding:32, boxSizing:'border-box' }}>
-      <div style={{ width:'100%', maxWidth:1440, minHeight:'min(900px, calc(100vh - 64px))', display:'flex', borderRadius:24, overflow:'hidden', boxShadow:'0 32px 80px rgba(0,0,0,0.5)' }}>
+    <div style={{ minHeight:'100vh', background:'#0a0a0a', display:'flex', alignItems:'center', justifyContent:'center', padding:24, boxSizing:'border-box' }}>
+      <div style={{ width:'min(1220px, calc(100vw - 48px))', height:'min(760px, calc(100vh - 48px))', background:'linear-gradient(135deg, #0d0d0d 0%, #151515 100%)', borderRadius:28, overflow:'hidden', boxShadow:'0 24px 60px rgba(0,0,0,0.5)', display:'grid', gridTemplateColumns:'46% 54%' }}>
         {/* Colonne gauche */}
-        <div style={{ flex:'0 0 50%', background:'linear-gradient(135deg, #0d0d0d 0%, #171717 100%)', padding:'48px 52px', display:'flex', flexDirection:'column', justifyContent:'space-between', position:'relative', overflow:'hidden' }}>
-          <img src="/favicon.png" style={{ position:'absolute', right:-40, top:'50%', transform:'translateY(-50%)', width:400, height:400, opacity:0.06, pointerEvents:'none' }} alt="" />
-          <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-            <img src="/favicon.png" style={{ width:48, height:48 }} alt="TED" />
-            <span style={{ fontSize:36, fontWeight:900, color:'#fff', letterSpacing:1 }}>TED <span style={{ color:'#efc434' }}>CRM</span></span>
+        <div style={{ padding:'44px 52px', display:'flex', flexDirection:'column', justifyContent:'space-between', position:'relative', overflow:'hidden' }}>
+          <img src="/favicon.png" style={{ position:'absolute', left:-20, top:'50%', transform:'translateY(-50%)', width:360, height:360, opacity:0.035, filter:'sepia(1) saturate(4) hue-rotate(355deg)', pointerEvents:'none' }} alt="" />
+          <div style={{ display:'flex', alignItems:'center', gap:12, position:'relative' }}>
+            <img src="/favicon.png" style={{ width:52, height:52 }} alt="TED" />
+            <span style={{ fontSize:36, fontWeight:900, color:'#fff', letterSpacing:0.5 }}>TED <span style={{ color:'#efc434' }}>CRM</span></span>
           </div>
-          <div>
-            <h1 style={{ fontSize:56, fontWeight:900, color:'#fff', margin:'0 0 16px', lineHeight:1.1 }}>Connexion</h1>
-            <p style={{ fontSize:20, color:'#707070', margin:0, lineHeight:1.5 }}>Accédez à votre espace TED CRM</p>
+          <div style={{ position:'relative' }}>
+            <h1 style={{ fontSize:48, fontWeight:700, color:'#fff', margin:'0 0 14px', lineHeight:1.05 }}>Connexion</h1>
+            <p style={{ fontSize:18, color:'rgba(255,255,255,0.62)', margin:0 }}>Accédez à votre espace TED CRM</p>
           </div>
-          <div style={{ display:'flex', gap:0 }}>
+          <div style={{ display:'flex', position:'relative' }}>
             {[
               { icon:'🔄', title:'Synchronisé', sub:'en temps réel' },
               { icon:'🛡️', title:'Sécurisé', sub:'et fiable' },
               { icon:'📱', title:'iPad / PC / Mobile', sub:'Partout avec vous' },
             ].map((f, i) => (
-              <div key={i} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'16px 8px', borderLeft: i > 0 ? '1px solid #2a2a2a' : 'none' }}>
-                <span style={{ fontSize:24, color:'#efc434' }}>{f.icon}</span>
-                <span style={{ fontSize:13, fontWeight:700, color:'#fff', textAlign:'center' }}>{f.title}</span>
-                <span style={{ fontSize:12, color:'#555', textAlign:'center' }}>{f.sub}</span>
+              <div key={i} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'0 12px', borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.08)' : 'none' }}>
+                <span style={{ fontSize:26, color:'#efc434' }}>{f.icon}</span>
+                <span style={{ fontSize:14, fontWeight:700, color:'#fff', textAlign:'center' }}>{f.title}</span>
+                <span style={{ fontSize:12, color:'rgba(255,255,255,0.4)', textAlign:'center' }}>{f.sub}</span>
               </div>
             ))}
           </div>
         </div>
         {/* Colonne droite */}
-        <div style={{ flex:'0 0 50%', background:'#111', display:'flex', alignItems:'center', justifyContent:'center', padding:32 }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', padding:40, background:'rgba(0,0,0,0.2)' }}>
           {carteBlanche}
         </div>
       </div>
