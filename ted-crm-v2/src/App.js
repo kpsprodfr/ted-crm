@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList } from 'lucide-react';
+import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2 } from 'lucide-react';
 import { supabase } from "./supabase";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -1122,9 +1122,198 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
         {ctaFooter && <div style={{ background:'#fff', padding:'12px 16px', paddingBottom:'calc(12px + env(safe-area-inset-bottom))', borderTop:'1px solid #eee', flexShrink:0 }}>{ctaFooter}</div>}
       </div>
     ) : (
-      <Modal title={isEdit ? 'Modifier la réservation' : 'Nouvelle réservation'} onClose={fermerFormulaireResa} footer={ctaFooter} zIndex={2000}>
-        {formContent}
-      </Modal>
+      <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:2000, display:'flex', alignItems:'center', justifyContent:'center' }}
+        onPointerDown={fermerFormulaireResa}>
+        <div style={{ background:'#fff', borderRadius:20, width:'min(560px, calc(100vw - 48px))', maxHeight:'90vh', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.25)', overflow:'hidden' }}
+          onPointerDown={e=>e.stopPropagation()}>
+
+          {/* Header */}
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'24px 28px 16px', flexShrink:0 }}>
+            <h2 style={{ margin:0, fontSize:22, fontWeight:800, color:'#111' }}>{isEdit ? 'Modifier la réservation' : 'Nouvelle réservation'}</h2>
+            <button onClick={fermerFormulaireResa} style={{ width:36, height:36, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, color:'#666' }}>✕</button>
+          </div>
+
+          {!resaCree && !isEdit && (
+            <div style={{ margin:'0 28px 12px', background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:10, padding:'10px 14px', flexShrink:0 }}>
+              <p style={{ margin:0, fontSize:13, color:'#92400e' }}>Cette réservation sera créée comme <strong>demande en attente</strong>.</p>
+            </div>
+          )}
+
+          {/* Contenu scrollable */}
+          <div style={{ flex:1, overflowY:'auto', padding:'0 28px 20px' }}>
+            {resaCree && (
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:32, textAlign:'center', minHeight:340 }}>
+                <div style={{ width:72, height:72, borderRadius:'50%', background:'#f0fdf4', border:'3px solid #22c55e', display:'flex', alignItems:'center', justifyContent:'center', fontSize:32, marginBottom:20 }}>✓</div>
+                <h2 style={{ fontSize:22, fontWeight:800, color:'#111', margin:'0 0 8px' }}>Réservation créée !</h2>
+                <p style={{ color:'#666', fontSize:15, margin:'0 0 24px' }}>{resaCree.client.prenom} {resaCree.client.nom}</p>
+                <div style={{ background:'#f9f9f9', borderRadius:12, padding:16, width:'100%', marginBottom:24, textAlign:'left' }}>
+                  {[['Date', new Date(resaCree.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})],['Service',resaCree.service==='midi'?'☀️ Midi':'🌙 Soir'],['Heure',resaCree.heure],['Personnes',`${resaCree.nb_personnes} pers.`]].map(([k,v],i,arr)=>(
+                    <div key={k} style={{ display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:i<arr.length-1?'1px solid #eee':'none' }}>
+                      <span style={{ color:'#999', fontSize:14 }}>{k}</span>
+                      <span style={{ fontWeight:700, fontSize:14 }}>{v}</span>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={onClose} style={{ width:'100%', height:52, background:'#E8C547', border:'none', borderRadius:14, fontSize:16, fontWeight:800, cursor:'pointer', color:'#111', marginBottom:8 }}>✓ Parfait !</button>
+                <button onClick={()=>{ setResaCree(null); setTel(''); setClientFound(null); setStatsClient(null); setPrenom(''); setNom(''); setEmail(''); setGenre(''); setDateIso(DATE_OPTS[0].iso); setService('soir'); setHeure(''); setNbPersonnes(2); setOccasion(''); setCommentaire(''); }} style={{ width:'100%', background:'none', border:'none', color:'#999', fontSize:14, cursor:'pointer', padding:'8px' }}>+ Ajouter une autre réservation</button>
+              </div>
+            )}
+
+            {!resaCree && (
+              <div style={{ display:'flex', flexDirection:'column', gap:0 }}>
+
+                {/* 1. Téléphone */}
+                <div style={{ marginBottom:24, marginTop:8 }}>
+                  <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>1. Téléphone du client</p>
+                  <div style={{ position:'relative' }}>
+                    <Phone size={18} strokeWidth={2} color="#999" style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} />
+                    <input type="tel" inputMode="numeric" value={tel} onChange={e=>handleTelChange(e.target.value)} placeholder="06 43 00 49 87"
+                      style={{ width:'100%', height:52, border:'1.5px solid #eee', borderRadius:12, padding:'0 46px', fontSize:16, outline:'none', boxSizing:'border-box' }} />
+                    {clientFound && <CircleCheck size={20} color="#22c55e" style={{ position:'absolute', right:14, top:'50%', transform:'translateY(-50%)' }} />}
+                    {lookingUp && <span style={{ position:'absolute', right:14, top:'50%', transform:'translateY(-50%)', fontSize:12, color:'#888' }}>Recherche…</span>}
+                  </div>
+
+                  {clientFound && (
+                    <div onClick={()=>{ if(onViewClient) onViewClient(clientFound); }} style={{ marginTop:8, background:'#f0fdf4', border:'1.5px solid #22c55e', borderRadius:10, padding:'10px 14px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                        <User size={18} strokeWidth={2} color="#16a34a" />
+                        <div>
+                          <span style={{ fontWeight:800, fontSize:14, color:'#111' }}>{clientFound.prenom} {clientFound.nom}</span>
+                          <div style={{ fontSize:12, color:'#666', marginTop:2 }}>
+                            {statsClient?.total} réservations · {statsClient?.noshow} no-show{statsClient ? '' : ''} · <span style={{ color:'#16a34a', fontWeight:600 }}>Voir la fiche</span>
+                          </div>
+                        </div>
+                      </div>
+                      <ChevronRight size={16} color="#16a34a" />
+                    </div>
+                  )}
+
+                  {clientFound && (
+                    <button onClick={()=>{ setEditClientForm({ prenom: clientFound.prenom||'', nom: clientFound.nom||'', mail: clientFound.mail||'', genre: clientFound.genre||'', entreprise: clientFound.entreprise||'' }); setShowEditClientInline(v=>!v); }} style={{ marginTop:8, width:'100%', padding:'8px 14px', background:'none', border:'1.5px solid #eee', borderRadius:8, fontSize:13, color:'#666', cursor:'pointer', textAlign:'left', display:'flex', alignItems:'center', gap:8 }}>
+                      <Pencil size={14} strokeWidth={2} color="#999" /> Modifier les informations du client
+                    </button>
+                  )}
+                  {showEditClientInline && clientFound && (
+                    <div style={{ background:'#f9f9f9', borderRadius:10, padding:14, marginTop:8, border:'1.5px solid #eee' }}>
+                      <p style={{ fontSize:12, fontWeight:700, color:'#999', marginBottom:10, textTransform:'uppercase', letterSpacing:0.5 }}>Modifier les infos client</p>
+                      <div style={{ display:'flex', gap:8, marginBottom:10 }}>
+                        {['Homme','Femme','Entreprise'].map(g => {
+                          const sel = editClientForm.genre === g;
+                          const s2 = GENRE_STYLES[g] || {};
+                          return <button key={g} onClick={()=>setEditClientForm(f=>({...f,genre:g}))} style={{ flex:1, height:38, borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:700, border: sel?`2px solid ${s2.border}`:'1.5px solid #ddd', background: sel?s2.bg:'#fff', color: sel?s2.color:'#666' }}>{g}</button>;
+                        })}
+                      </div>
+                      <div style={{ display:'flex', gap:8, marginBottom:8 }}>
+                        <input value={editClientForm.prenom||''} onChange={e=>setEditClientForm(f=>({...f,prenom:e.target.value}))} placeholder="Prénom" style={{ flex:1, height:44, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:14, outline:'none' }} />
+                        <input value={editClientForm.nom||''} onChange={e=>setEditClientForm(f=>({...f,nom:e.target.value}))} placeholder="Nom" style={{ flex:1, height:44, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:14, outline:'none' }} />
+                      </div>
+                      <input value={editClientForm.mail||''} onChange={e=>setEditClientForm(f=>({...f,mail:e.target.value}))} placeholder="Email" type="email" style={{ width:'100%', height:44, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:14, outline:'none', boxSizing:'border-box', marginBottom:12 }} />
+                      <div style={{ display:'flex', gap:8 }}>
+                        <button onClick={()=>setShowEditClientInline(false)} style={{ flex:1, height:40, border:'1.5px solid #ddd', borderRadius:8, background:'#fff', fontSize:13, cursor:'pointer', color:'#666' }}>Annuler</button>
+                        <button onClick={async()=>{ await supabase.from('clients').update(editClientForm).eq('id', clientFound.id); setClientFound(prev=>({...prev,...editClientForm})); setShowEditClientInline(false); showToast('✅ Infos client mises à jour'); }} style={{ flex:2, height:40, background:'#E8C547', border:'none', borderRadius:8, fontSize:13, fontWeight:800, cursor:'pointer', color:'#111' }}>Enregistrer les modifications</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {showNouveauClient && (
+                    <div style={{ marginTop:12, display:'flex', flexDirection:'column', gap:10 }}>
+                      <div style={{ display:'flex', gap:8 }}>
+                        {['Homme','Femme','Entreprise'].map(g=>(
+                          <button key={g} onClick={()=>setGenre(g)} style={btnGenre(g)}>{g}</button>
+                        ))}
+                      </div>
+                      {genre === 'Entreprise' && (
+                        <input value={entreprise} onChange={e=>setEntreprise(e.target.value)} placeholder="Nom de l'entreprise" style={{ width:'100%', height:44, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:14, outline:'none', boxSizing:'border-box' }} />
+                      )}
+                      <div style={{ display:'flex', gap:8 }}>
+                        <input placeholder="Prénom" value={prenom} onChange={e=>setPrenom(e.target.value)} style={{ flex:1, height:44, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:14, outline:'none' }} />
+                        <input placeholder="Nom" value={nom} onChange={e=>setNom(e.target.value)} style={{ flex:1, height:44, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:14, outline:'none' }} />
+                      </div>
+                      <input placeholder="Email" type="email" value={email} onChange={e=>setEmail(e.target.value)} style={{ width:'100%', height:44, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:14, outline:'none', boxSizing:'border-box' }} />
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Date */}
+                <div style={{ marginBottom:24 }}>
+                  <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>2. Date</p>
+                  <button onPointerDown={()=>setShowCalPicker(!showCalPicker)} style={{ width:'100%', height:52, border:`1.5px solid ${showCalPicker?'#E8C547':'#eee'}`, borderRadius:12, background:'#fff', display:'flex', alignItems:'center', gap:12, padding:'0 16px', cursor:'pointer', boxSizing:'border-box', touchAction:'manipulation' }}>
+                    <CalendarDays size={18} strokeWidth={2} color="#999" />
+                    <span style={{ flex:1, textAlign:'left', fontSize:15, color:dateIso?'#111':'#bbb' }}>
+                      {dateIso ? new Date(dateIso+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) : 'Choisir une date'}
+                    </span>
+                    <ChevronDown size={16} color="#999" />
+                  </button>
+                  {calendarJSX}
+                </div>
+
+                {/* 3. Service */}
+                <div style={{ marginBottom:24 }}>
+                  <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>3. Service</p>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                    <button onClick={()=>{ setService('midi'); setHeure(''); setHeureError(false); }} style={{ height:52, borderRadius:12, cursor:'pointer', fontSize:15, fontWeight:700, border:`1.5px solid ${service==='midi'?'#E8C547':'#eee'}`, background:service==='midi'?'#fffbea':'#fff', color:'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                      <Sun size={18} strokeWidth={2} color={service==='midi'?'#E8C547':'#999'} /> Midi
+                    </button>
+                    <button onClick={()=>{ setService('soir'); setHeure(''); setHeureError(false); }} style={{ height:52, borderRadius:12, cursor:'pointer', fontSize:15, fontWeight:700, border:service==='soir'?'none':'1.5px solid #eee', background:service==='soir'?'#111':'#fff', color:service==='soir'?'#E8C547':'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                      <Moon size={18} strokeWidth={2} color={service==='soir'?'#E8C547':'#999'} /> Soir
+                    </button>
+                  </div>
+                </div>
+
+                {/* 4. Heure */}
+                {service && (
+                  <div style={{ marginBottom:24 }}>
+                    <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>4. Heure</p>
+                    <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8 }}>
+                      {heures.map(h=>(
+                        <button key={h} onClick={()=>{ setHeure(heure===h?'':h); setHeureError(false); }} style={{ height:44, borderRadius:10, cursor:'pointer', fontSize:14, fontWeight:600, border:`1.5px solid ${heure===h?'#111':heureError?'#dc2626':'#eee'}`, background:heure===h?'#111':'#fff', color:heure===h?'#E8C547':'#111' }}>{h}</button>
+                      ))}
+                    </div>
+                    {heureError && <p style={{ fontSize:12, color:'#dc2626', marginTop:6 }}>* Sélectionnez un créneau horaire</p>}
+                  </div>
+                )}
+
+                {/* 5. Nombre de personnes */}
+                <div style={{ marginBottom:24 }}>
+                  <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>5. Nombre de personnes</p>
+                  <div style={{ display:'flex', alignItems:'center', gap:16, justifyContent:'center' }}>
+                    <button onClick={()=>setNbPersonnes(n=>{const v=typeof n==='number'&&n>0?n:1;return Math.max(1,v-1);})} style={{ width:52, height:52, borderRadius:12, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', fontSize:24, color:'#111', display:'flex', alignItems:'center', justifyContent:'center' }}>−</button>
+                    <div style={{ textAlign:'center', minWidth:60 }}>
+                      <div style={{ fontSize:32, fontWeight:800, color:'#111' }}>{nbPersonnes||1}</div>
+                      <div style={{ fontSize:12, color:'#999' }}>pers.</div>
+                    </div>
+                    <button onClick={()=>setNbPersonnes(n=>{const v=typeof n==='number'&&n>0?n:1;return Math.min(999,v+1);})} style={{ width:52, height:52, borderRadius:12, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', fontSize:24, color:'#111', display:'flex', alignItems:'center', justifyContent:'center' }}>+</button>
+                  </div>
+                </div>
+
+                {/* Occasion & Commentaire */}
+                <div style={{ marginBottom:8 }}>
+                  <select value={occasion} onChange={e=>setOccasion(e.target.value)} style={{ width:'100%', height:44, border:'1.5px solid #eee', borderRadius:10, padding:'0 12px', fontSize:14, outline:'none', background:'#fff', marginBottom:10, boxSizing:'border-box' }}>
+                    <option value="">— Aucune occasion particulière</option>
+                    {OCCASIONS.map(o=><option key={o} value={o}>{o}</option>)}
+                  </select>
+                  <textarea value={commentaire} onChange={e=>setCommentaire(e.target.value)} placeholder="Commentaire (allergies, demandes particulières...)"
+                    style={{ width:'100%', height:80, border:'1.5px solid #eee', borderRadius:10, padding:'10px 12px', fontSize:14, outline:'none', resize:'none', fontFamily:'inherit', boxSizing:'border-box' }} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Footer fixe */}
+          {!resaCree && (
+            <div style={{ flexShrink:0, padding:'16px 28px', borderTop:'1px solid #eee', background:'#fff' }}>
+              <button disabled={!resaValide||saving} onClick={handleSave} style={{ width:'100%', height:54, background:resaValide?'#E8C547':'#f0f0f0', color:resaValide?'#111':'#bbb', border:'none', borderRadius:14, fontSize:16, fontWeight:800, cursor:resaValide?'pointer':'not-allowed' }}>
+                {saving ? 'Enregistrement...' : (isEdit ? '✏️ Modifier la réservation' : 'Créer la réservation')}
+              </button>
+              {!resaValide && (
+                <p style={{ textAlign:'center', fontSize:12, color:'#999', margin:'6px 0 0' }}>
+                  {tel?.replace(/\D/g,'').length < 10 ? 'Entrez un numéro de téléphone' : !dateIso ? 'Choisissez une date' : !service ? 'Choisissez Midi ou Soir' : !heure ? 'Choisissez une heure' : 'Remplissez tous les champs'}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     )}
 
     {showConfirmQuitter && (
@@ -2175,6 +2364,7 @@ function CRMApp({ user, onLogout }) {
   const [modalAdd, setModalAdd] = useState(false);
   const [modalDetailClient, setModalDetailClient] = useState(null);
   const [ficheClientReadOnly, setFicheClientReadOnly] = useState(false);
+  const [showToutesResas, setShowToutesResas] = useState(false);
   const [showTop300, setShowTop300] = useState(false);
   const [triColonne, setTriColonne] = useState('nom');
   const [triSens, setTriSens] = useState('asc');
@@ -3881,11 +4071,139 @@ function CRMApp({ user, onLogout }) {
             <div style={{ background:'#fff', padding:'12px 16px', paddingBottom:'calc(12px + env(safe-area-inset-bottom))', borderTop:'1px solid #eee', flexShrink:0 }}>{ficheFooter}</div>
           </div>
         );
+        // Desktop — full page overlay
+        const aujourd = new Date().toISOString().split('T')[0];
+        const resasClient = resasData.filter(r => r.client_id === c.id);
+        const totalResas = resasClient.length;
+        const noshowResas = resasClient.filter(r => r.statut === 'absente').length;
+        const pct = totalResas > 0 ? Math.round(noshowResas / totalResas * 100) : 0;
+        const derniereVisite = resasClient.filter(r => r.date <= aujourd && (r.statut === 'venue' || r.statut === 'confirmee')).sort((a,b) => b.date.localeCompare(a.date))[0];
+        const prochaineResa = resasClient.filter(r => r.date > aujourd && (r.statut === 'confirmee' || r.statut === 'attente')).sort((a,b) => a.date.localeCompare(b.date))[0];
+        const derniereVisiteIlYA = derniereVisite ? Math.floor((new Date() - new Date(derniereVisite.date+'T12:00:00')) / (1000*60*60*24)) : null;
+        const createdAtLabel = c.created_at ? new Date(c.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) : '';
+        const avatarBg = c.genre==='Homme'?'#dbeafe':c.genre==='Femme'?'#fce7f3':'#dcfce7';
+        const avatarColor = c.genre==='Homme'?'#1d4ed8':c.genre==='Femme'?'#be185d':'#15803d';
+        const statutColors2 = {confirmee:{bg:'#dcfce7',color:'#16a34a',label:'Confirmée'},attente:{bg:'#fef9c3',color:'#ca8a04',label:'En attente'},venue:{bg:'#d1fae5',color:'#059669',label:'Venue'},absente:{bg:'#fee2e2',color:'#dc2626',label:'No-show'},annulee:{bg:'#f3f4f6',color:'#6b7280',label:'Annulée'}};
+        const joursSemaine2=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+        const joursAbr=['DIM','LUN','MAR','MER','JEU','VEN','SAM'];
+        const il6MoisStr2 = new Date(Date.now()-180*24*60*60*1000).toISOString().split('T')[0];
+        const resasFav = resasData.filter(r => r.client_id===c.id && (r.statut==='confirmee'||r.statut==='venue') && r.date>=il6MoisStr2);
+        const compteJoursFav = {};
+        resasFav.forEach(r => { const j = joursSemaine2[new Date(r.date+'T12:00:00').getDay()]; compteJoursFav[j]=(compteJoursFav[j]||0)+1; });
+        const top3Jours = Object.entries(compteJoursFav).sort((a,b)=>b[1]-a[1]).slice(0,3);
+
         return (
-          <Modal title={nomAffiche} onClose={fermerFiche} maxW={440} zIndex={6000}
-            footer={ficheFooter}>
-            {ficheBody}
-          </Modal>
+          <div style={{ position:'fixed', inset:0, background:'#f5f5f5', zIndex:500, overflowY:'auto', marginLeft:120 }}>
+            <div style={{ maxWidth:1100, margin:'0 auto', padding:'32px 32px' }}>
+
+              <button onClick={fermerFiche} style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', cursor:'pointer', fontSize:14, color:'#666', marginBottom:20, padding:0 }}>
+                <ArrowLeft size={18} strokeWidth={2} color="#666" /> Retour
+              </button>
+
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:24 }}>
+                <h1 style={{ margin:0, fontSize:32, fontWeight:900, color:'#111' }}>{nomAffiche}</h1>
+              </div>
+
+              {/* Infos + actions */}
+              <div style={{ background:'#fff', borderRadius:16, padding:24, marginBottom:20, display:'flex', alignItems:'center', gap:24, flexWrap:'wrap' }}>
+                <div style={{ width:72, height:72, borderRadius:'50%', flexShrink:0, background:avatarBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, fontWeight:900, color:avatarColor }}>
+                  {(((c.prenom||c.entreprise||'?')[0])+(c.nom||'')[0]||'').toUpperCase()}
+                </div>
+                <div style={{ flex:1, display:'flex', flexDirection:'column', gap:6 }}>
+                  {c.tel && <div style={{ display:'flex', alignItems:'center', gap:10 }}><Phone size={16} strokeWidth={2} color="#666" /><span style={{ fontSize:16, fontWeight:600, color:'#111' }}>{c.tel}</span></div>}
+                  {c.mail && <div style={{ display:'flex', alignItems:'center', gap:10 }}><Mail size={16} strokeWidth={2} color="#666" /><span style={{ fontSize:15, color:'#3b82f6' }}>{c.mail}</span></div>}
+                  {createdAtLabel && <div style={{ display:'flex', alignItems:'center', gap:10 }}><User size={16} strokeWidth={2} color="#666" /><span style={{ fontSize:14, color:'#999' }}>Client depuis le {createdAtLabel}</span></div>}
+                </div>
+                <div style={{ display:'flex', gap:12 }}>
+                  {c.tel && <a href={`tel:${c.tel}`} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'14px 20px', borderRadius:12, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', minWidth:80, color:'#111', textDecoration:'none' }}><Phone size={20} strokeWidth={2}/><span style={{ fontSize:13, fontWeight:600 }}>Appeler</span></a>}
+                  {c.tel && <a href={`sms:${c.tel}`} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'14px 20px', borderRadius:12, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', minWidth:80, color:'#111', textDecoration:'none' }}><MessageSquare size={20} strokeWidth={2}/><span style={{ fontSize:13, fontWeight:600 }}>SMS</span></a>}
+                  {!ficheClientReadOnly && <button onClick={()=>{ fermerFiche(); setModalEdit(c); }} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'14px 20px', borderRadius:12, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', minWidth:80, color:'#111' }}><Pencil size={20} strokeWidth={2}/><span style={{ fontSize:13, fontWeight:600 }}>Modifier</span></button>}
+                </div>
+              </div>
+
+              {/* 4 blocs stats */}
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16, marginBottom:20 }}>
+                {[
+                  { icon:<CalendarDays size={24} strokeWidth={2} color="#E8C547"/>, bg:'#fffbea', label:'RÉSERVATIONS TOTALES', value:totalResas, sub:createdAtLabel?`Depuis le ${createdAtLabel}`:'' },
+                  { icon:<UserX size={24} strokeWidth={2} color="#ef4444"/>, bg:'#fef2f2', label:'NO-SHOW', value:noshowResas, sub:`${pct}% des réservations` },
+                  { icon:<Clock size={24} strokeWidth={2} color="#3b82f6"/>, bg:'#eff6ff', label:'DERNIÈRE VISITE', value:derniereVisite?new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'Jamais', sub:derniereVisiteIlYA!==null?`Il y a ${derniereVisiteIlYA} jour${derniereVisiteIlYA>1?'s':''}`:'' },
+                  { icon:<CalendarDays size={24} strokeWidth={2} color="#22c55e"/>, bg:'#f0fdf4', label:'PROCHAINE RÉSERVATION', value:prochaineResa?new Date(prochaineResa.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'Aucune', sub:prochaineResa?`Dans ${Math.ceil((new Date(prochaineResa.date+'T12:00:00')-new Date())/(1000*60*60*24))} jours à ${prochaineResa.heure}`:'' }
+                ].map((stat,i)=>(
+                  <div key={i} style={{ background:'#fff', borderRadius:14, padding:20 }}>
+                    <div style={{ width:44, height:44, borderRadius:10, background:stat.bg, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:12 }}>{stat.icon}</div>
+                    <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 4px' }}>{stat.label}</p>
+                    <p style={{ fontSize:22, fontWeight:900, color:'#111', margin:'0 0 4px' }}>{stat.value}</p>
+                    <p style={{ fontSize:12, color:'#999', margin:0 }}>{stat.sub}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Grille historique + jours favoris */}
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 320px', gap:20 }}>
+                <div style={{ background:'#fff', borderRadius:14, padding:24 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:20 }}>
+                    <CalendarDays size={20} strokeWidth={2} color="#111" />
+                    <h3 style={{ margin:0, fontSize:16, fontWeight:800, color:'#111' }}>Historique des réservations</h3>
+                  </div>
+                  <table style={{ width:'100%', borderCollapse:'collapse' }}>
+                    <thead><tr>{['DATE','SERVICE','COUVERTS','STATUT'].map(h=><th key={h} style={{ padding:'8px 12px', textAlign:'left', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, borderBottom:'1px solid #f0f0f0' }}>{h}</th>)}</tr></thead>
+                    <tbody>
+                      {resasData.filter(r=>r.client_id===c.id).sort((a,b)=>b.date.localeCompare(a.date)).slice(0, showToutesResas?undefined:5).map(r=>{
+                        const sc = statutColors2[r.statut] || statutColors2.confirmee;
+                        return (
+                          <tr key={r.id} style={{ borderBottom:'1px solid #f5f5f5' }}>
+                            <td style={{ padding:'12px 12px' }}>
+                              <div style={{ fontWeight:600, fontSize:14, color:'#111' }}>{new Date(r.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</div>
+                              <div style={{ fontSize:12, color:'#999' }}>{r.heure}</div>
+                            </td>
+                            <td style={{ padding:'12px 12px' }}><span style={{ display:'flex', alignItems:'center', gap:6, fontSize:14, color:'#444' }}>{r.service==='midi'?<Sun size={14} strokeWidth={2} color="#E8C547"/>:<Moon size={14} strokeWidth={2} color="#666"/>}{r.service==='midi'?'Midi':'Soir'}</span></td>
+                            <td style={{ padding:'12px 12px', fontSize:14, color:'#444' }}>{r.nb_personnes} pers.</td>
+                            <td style={{ padding:'12px 12px' }}><span style={{ background:sc.bg, color:sc.color, borderRadius:20, padding:'3px 10px', fontSize:12, fontWeight:700 }}>{sc.label}</span></td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  {resasData.filter(r=>r.client_id===c.id).length > 5 && (
+                    <button onClick={()=>setShowToutesResas(!showToutesResas)} style={{ width:'100%', padding:'12px', marginTop:12, border:'1.5px solid #eee', borderRadius:10, background:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', color:'#666', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                      {showToutesResas?'Voir moins':'Voir toutes les réservations'} <ChevronRight size={16}/>
+                    </button>
+                  )}
+                </div>
+
+                <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+                  <div style={{ background:'#fff', borderRadius:14, padding:24 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
+                      <Star size={18} strokeWidth={2} color="#111" />
+                      <div>
+                        <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#111' }}>Jours favoris</h3>
+                        <p style={{ margin:0, fontSize:12, color:'#999' }}>Basé sur les 6 derniers mois</p>
+                      </div>
+                    </div>
+                    {top3Jours.length > 0 ? top3Jours.map(([jour,count],i)=>(
+                      <div key={jour} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 0', borderBottom:i<top3Jours.length-1?'1px solid #f5f5f5':'none' }}>
+                        <div style={{ width:44, height:44, borderRadius:8, background:['#fffbea','#fff7ed','#f0fdf4'][i], display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:900, color:['#E8C547','#f97316','#22c55e'][i], flexShrink:0 }}>
+                          {joursAbr[joursSemaine2.indexOf(jour)]}
+                        </div>
+                        <div style={{ flex:1 }}>
+                          <div style={{ fontWeight:700, fontSize:14, color:'#111' }}>{jour}</div>
+                          <div style={{ fontSize:12, color:'#999' }}>{count} réservation{count>1?'s':''}</div>
+                        </div>
+                      </div>
+                    )) : <p style={{ fontSize:13, color:'#bbb', margin:0 }}>Pas encore de données</p>}
+                  </div>
+
+                  {!ficheClientReadOnly && (
+                    <button onClick={()=>{ fermerFiche(); setModalDelete(c); }} style={{ width:'100%', padding:'14px', borderRadius:12, border:'1.5px solid #fca5a5', background:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', color:'#dc2626', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}
+                      onMouseEnter={e=>e.currentTarget.style.background='#fef2f2'}
+                      onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
+                      <Trash2 size={16} strokeWidth={2} color="#dc2626" /> Supprimer le client
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         );
       })()}
       {showConfirmDeconnexion && (
