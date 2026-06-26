@@ -97,23 +97,27 @@ async function sendBrevoEmail(toEmail, toName, subject, htmlContent) {
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 function Toast({ msg, type, onClose }) {
-  useEffect(() => { const t = setTimeout(onClose, 1500); return () => clearTimeout(t); }, [onClose]);
+  const isMob = window.innerWidth < 768;
+  useEffect(() => { const t = setTimeout(onClose, 2000); return () => clearTimeout(t); }, [onClose]);
   return (
-    <>
-      <style>{`
-        @keyframes popIn { 0% { opacity:0; transform:scale(0.6); } 70% { transform:scale(1.05); } 100% { opacity:1; transform:scale(1); } }
-        @keyframes checkIn { 0% { transform:scale(0) rotate(-90deg); opacity:0; } 60% { transform:scale(1.2) rotate(10deg); } 100% { transform:scale(1) rotate(0deg); opacity:1; } }
-        @keyframes fadeOverlay { 0% { opacity:0; } 100% { opacity:1; } }
-      `}</style>
-      <div style={{ position:"fixed", inset:0, zIndex:99999, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.35)", pointerEvents:"none", animation:"fadeOverlay 0.15s ease" }}>
-        <div style={{ background:"#fff", borderRadius:24, padding:"32px 44px", display:"flex", flexDirection:"column", alignItems:"center", gap:16, boxShadow:"0 24px 80px rgba(0,0,0,0.25)", animation:"popIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)", minWidth:220, maxWidth:300, textAlign:"center" }}>
-          <div style={{ width:72, height:72, borderRadius:"50%", background: type==="error" ? "#fef2f2" : "#f0fdf4", border:`4px solid ${type==="error" ? "#dc2626" : "#22c55e"}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:38, color: type==="error" ? "#dc2626" : "#22c55e", fontWeight:700, animation:"checkIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both" }}>
-            {type === "error" ? "✕" : "✓"}
-          </div>
-          <p style={{ color: type==="error" ? "#dc2626" : "#16a34a", fontWeight:700, fontSize:17, margin:0, lineHeight:1.4 }}>{msg}</p>
-        </div>
-      </div>
-    </>
+    <div style={{
+      position:'fixed', top:16,
+      right: isMob ? 'auto' : 16,
+      left: isMob ? '50%' : 'auto',
+      transform: isMob ? 'translateX(-50%)' : 'none',
+      zIndex:99999, pointerEvents:'none',
+      background:'#fff',
+      border: `1.5px solid ${type==='error' ? '#dc2626' : '#22c55e'}`,
+      borderRadius:12, padding:'10px 16px',
+      boxShadow:'0 4px 20px rgba(0,0,0,0.12)',
+      display:'flex', alignItems:'center', gap:8,
+      fontSize:14, fontWeight:600, color:'#111',
+      maxWidth:280, whiteSpace:'nowrap',
+      animation:'slideDownFade 0.25s cubic-bezier(0.34,1.56,0.64,1)'
+    }}>
+      <span style={{ color: type==='error' ? '#dc2626' : '#22c55e', fontWeight:800, fontSize:16 }}>{type==='error' ? '✕' : '✓'}</span>
+      {msg}
+    </div>
   );
 }
 
