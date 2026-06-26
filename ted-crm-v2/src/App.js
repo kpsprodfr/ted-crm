@@ -982,7 +982,7 @@ function RefusModal({ onConfirm, onCancel }) {
     onConfirm(raison);
   }
   return (
-    <Modal title="Refuser la réservation" onClose={onCancel} maxW={400} zIndex={3000}
+    <Modal title="Refuser la réservation" onClose={onCancel} maxW={400} zIndex={4000}
       footer={[
         <button key="c" type="button" onClick={onCancel} style={{...btnSecondary}}>Annuler</button>,
         <button key="o" type="button" onClick={confirm} style={{...btnDanger}}>Refuser</button>
@@ -1006,7 +1006,7 @@ function AccepterModal({ resa, onConfirm, onCancel }) {
   const c = resa.clients || {};
   const nom = c.entreprise ? c.entreprise : `${c.prenom || ''} ${c.nom || ''}`.trim();
   return (
-    <Modal title="✓ Confirmer la réservation" onClose={onCancel} maxW={420} zIndex={3000}
+    <Modal title="✓ Confirmer la réservation" onClose={onCancel} maxW={420} zIndex={4000}
       footer={[
         <button key="c" type="button" onClick={onCancel} style={{...btnSecondary}}>Annuler</button>,
         <button key="o" type="button" onClick={onConfirm} style={{ background:'#16a34a', color:'#fff', border:'none', borderRadius:8, padding:'0 20px', height:40, fontWeight:700, fontSize:14, cursor:'pointer' }}>✓ Confirmer</button>
