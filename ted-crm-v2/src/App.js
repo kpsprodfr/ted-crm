@@ -552,7 +552,7 @@ function buildDateOptions() {
   return opts;
 }
 
-function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
+function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewClient }) {
   const DATE_OPTS = useMemo(() => buildDateOptions(), []);
   const isEdit = !!initialResa?.id;
   const initClient = initialResa?.clients || {};
@@ -577,6 +577,8 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
   const [showCalPicker, setShowCalPicker] = useState(false);
   const [dateFlash, setDateFlash] = useState(null);
   const [calFermeture, setCalFermeture] = useState(false);
+  const [showEditClientInline, setShowEditClientInline] = useState(false);
+  const [editClientForm, setEditClientForm] = useState({});
   const [calPickerDate, setCalPickerDate] = useState(() => {
     if (initialResa?.date) {
       const d = new Date(initialResa.date + 'T12:00:00');
@@ -849,13 +851,37 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
             <div style={{ marginTop:8 }}>
               <div style={{ background:'#f0fdf4', border:'1.5px solid #22c55e', borderRadius:10, padding:'10px 14px', display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
                 <span style={{ fontSize:14 }}>✅</span>
-                <span style={{ fontSize:14, fontWeight:800, color:'#111', flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{clientFound.prenom} {clientFound.nom}</span>
+                <span onClick={()=>{ if (onViewClient) { onViewClient(clientFound); onClose(); } }} style={{ fontSize:14, fontWeight:800, color:'#111', flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', cursor: onViewClient ? 'pointer' : 'default', textDecoration: onViewClient ? 'underline' : 'none', textDecorationColor:'#E8C547' }}>{clientFound.prenom} {clientFound.nom}</span>
                 {statsClient && <>
                   <span style={{ fontSize:12, color:'#555', whiteSpace:'nowrap' }}>·&nbsp;{statsClient.total} résa</span>
                   {statsClient.noshow > 0 && <span style={{ fontSize:12, color:'#dc2626', whiteSpace:'nowrap' }}>·&nbsp;{statsClient.noshow} no-show</span>}
                 </>}
               </div>
-              <button onClick={()=>{ setClientFound(null); setPrenom(''); setNom(''); setEmail(''); setGenre(''); setEntreprise(''); }} style={{ background:'none', border:'none', color:'#888', fontSize:12, cursor:'pointer', padding:'6px 2px', textDecoration:'underline' }}>Modifier les infos client ›</button>
+              <button onClick={()=>{ setEditClientForm({ prenom: clientFound.prenom||'', nom: clientFound.nom||'', mail: clientFound.mail||'', genre: clientFound.genre||'', entreprise: clientFound.entreprise||'' }); setShowEditClientInline(v=>!v); }} style={{ background:'none', border:'none', color:'#888', fontSize:12, cursor:'pointer', padding:'6px 2px', textDecoration:'underline' }}>Modifier les infos client ›</button>
+              {showEditClientInline && (
+                <div style={{ background:'#f9f9f9', borderRadius:10, padding:14, marginTop:8, border:'1.5px solid #eee' }}>
+                  <p style={{ fontSize:12, fontWeight:700, color:'#999', marginBottom:10, textTransform:'uppercase', letterSpacing:0.5 }}>Modifier les infos client</p>
+                  <div style={{ display:'flex', gap:8, marginBottom:10 }}>
+                    {['Homme','Femme','Entreprise'].map(g => {
+                      const sel = editClientForm.genre === g;
+                      const s = GENRE_STYLES[g] || {};
+                      return <button key={g} onClick={()=>setEditClientForm(f=>({...f,genre:g}))} style={{ flex:1, height:38, borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:700, border: sel?`2px solid ${s.border}`:'1.5px solid #ddd', background: sel?s.bg:'#fff', color: sel?s.color:'#666', transition:'all 0.15s' }}>{g}</button>;
+                    })}
+                  </div>
+                  {editClientForm.genre === 'Entreprise' && (
+                    <input value={editClientForm.entreprise||''} onChange={e=>setEditClientForm(f=>({...f,entreprise:e.target.value}))} placeholder="Nom de l'entreprise" style={{ ...inp(false), marginBottom:8 }} />
+                  )}
+                  <div style={{ display:'flex', gap:8, marginBottom:8 }}>
+                    <input value={editClientForm.prenom||''} onChange={e=>setEditClientForm(f=>({...f,prenom:e.target.value}))} placeholder="Prénom" style={{ ...inp(false), flex:1 }} />
+                    <input value={editClientForm.nom||''} onChange={e=>setEditClientForm(f=>({...f,nom:e.target.value}))} placeholder="Nom" style={{ ...inp(false), flex:1 }} />
+                  </div>
+                  <input value={editClientForm.mail||''} onChange={e=>setEditClientForm(f=>({...f,mail:e.target.value}))} placeholder="Email" type="email" style={{ ...inp(false), marginBottom:12 }} />
+                  <div style={{ display:'flex', gap:8 }}>
+                    <button onClick={()=>setShowEditClientInline(false)} style={{ flex:1, height:40, border:'1.5px solid #ddd', borderRadius:8, background:'#fff', fontSize:13, cursor:'pointer', color:'#666' }}>Annuler</button>
+                    <button onClick={async()=>{ await supabase.from('clients').update(editClientForm).eq('id', clientFound.id); setClientFound(prev=>({...prev,...editClientForm})); setShowEditClientInline(false); showToast('✅ Infos client mises à jour'); }} style={{ flex:2, height:40, background:'#E8C547', border:'none', borderRadius:8, fontSize:13, fontWeight:800, cursor:'pointer', color:'#111' }}>Enregistrer</button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           {showNouveauClient && (
@@ -3418,7 +3444,7 @@ function CRMApp({ user, onLogout }) {
 
 
       {/* Modals */}
-      {showAddResa && <AddResaModal onClose={()=>setShowAddResa(false)} onSaved={()=>{ loadResaCount(); loadClients(); }} showToast={showToast} user={user} />}
+      {showAddResa && <AddResaModal onClose={()=>setShowAddResa(false)} onSaved={()=>{ loadResaCount(); loadClients(); }} showToast={showToast} user={user} onViewClient={(c)=>{ setModalDetailClient(c); }} />}
       {modalDetailClient && (() => {
         const c = modalDetailClient;
         const s = statsClients[c.id] || { total:0, noshow:0, derniereVisite:null };
