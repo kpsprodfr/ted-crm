@@ -2195,8 +2195,8 @@ function CRMApp({ user, onLogout }) {
       const matchSearch = !q || normalizeStr(c.nom).includes(normalizeStr(q)) || normalizeStr(c.prenom).includes(normalizeStr(q)) || (c.mail||'').toLowerCase().includes(q);
       if (!matchFilter || !matchSearch) return false;
       if (filtreAbsentsActif) {
-        const s = statsClients[c.id] || {};
-        if (s.derniereVisite && s.derniereVisite >= limiteCommDate) return false;
+        const derniereResa = resasData.filter(r => r.client_id === c.id && (r.statut === 'venue' || r.statut === 'confirmee')).sort((a,b) => b.date.localeCompare(a.date))[0];
+        if (derniereResa && derniereResa.date >= limiteCommDate) return false;
       }
       if (filtreJours.size > 0 && filtreServices.size > 0) {
         const resasC = resasData.filter(r => r.client_id === c.id && (r.statut === 'confirmee' || r.statut === 'venue') && r.date >= il6MoisComm);
@@ -2336,14 +2336,14 @@ function CRMApp({ user, onLogout }) {
                   ))}
                 </div>
                 <div style={{display:'flex', gap:8, marginBottom:8}}>
-                  <button onClick={()=>toggleFiltreService('midi')} style={{ flex:1, padding:8, borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', border: filtreServices.has('midi')?'2px solid #E8C547':'1.5px solid #ddd', background: filtreServices.has('midi')?'#fffbea':'#fff', color: filtreServices.has('midi')?'#111':'#666', transition:'all 0.15s' }}>☀️ Midi</button>
+                  <button onClick={()=>toggleFiltreService('midi')} style={{ flex:1, padding:8, borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', border: filtreServices.has('midi')?'2px solid #111':'1.5px solid #ddd', background: filtreServices.has('midi')?'#111':'#fff', color: filtreServices.has('midi')?'#E8C547':'#666', transition:'all 0.15s' }}>☀️ Midi</button>
                   <button onClick={()=>toggleFiltreService('soir')} style={{ flex:1, padding:8, borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', border: filtreServices.has('soir')?'2px solid #111':'1.5px solid #ddd', background: filtreServices.has('soir')?'#111':'#fff', color: filtreServices.has('soir')?'#E8C547':'#666', transition:'all 0.15s' }}>🌙 Soir</button>
                 </div>
                 {filtreJours.size > 0 && filtreServices.size > 0 && <p style={{fontSize:12, color:'#666', margin:'0 0 8px', fontStyle:'italic'}}>Clients dont <strong>{[...filtreJours].join(', ')} {[...filtreServices].map(s=>s==='midi'?'Midi':'Soir').join(' ou ')}</strong> est dans leur top 3</p>}
                 <div style={{borderTop:'1px solid #eee', paddingTop:10, marginTop:4}}>
                   <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px'}}>😴 Clients absents</p>
                   <div style={{display:'flex', alignItems:'center', gap:8}}>
-                    <button onClick={()=>setFiltreAbsentsActif(v=>!v)} style={{ padding:'6px 12px', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer', border: filtreAbsentsActif?'2px solid #111':'1.5px solid #ddd', background: filtreAbsentsActif?'#111':'#fff', color: filtreAbsentsActif?'#fff':'#666', transition:'all 0.15s' }}>Pas venus depuis</button>
+                    <button onClick={()=>setFiltreAbsentsActif(v=>!v)} style={{ padding:'6px 12px', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer', border: filtreAbsentsActif?'2px solid #111':'1.5px solid #ddd', background: filtreAbsentsActif?'#111':'#fff', color: filtreAbsentsActif?'#E8C547':'#666', transition:'all 0.15s' }}>Pas venus depuis</button>
                     <input type="number" min={1} max={24} value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{width:48, height:28, border:'1.5px solid #ddd', borderRadius:6, textAlign:'center', fontSize:13}} />
                     <span style={{fontSize:13, color:'#666'}}>mois</span>
                   </div>
@@ -2359,7 +2359,7 @@ function CRMApp({ user, onLogout }) {
             {/* Tout sélectionner */}
             <div style={{padding:'8px 16px', borderBottom:'1px solid #f0f0f0'}}>
               <button onClick={toggleAll} style={{background:'none', border:'none', fontSize:12, color:'#4f46e5', fontWeight:600, cursor:'pointer', padding:0}}>
-                {allSelected ? '☐ Tout désélectionner' : '☑ Tout sélectionner'} <span style={{color:'#bbb', fontWeight:400}}>({withEmail.length})</span>
+                {allSelected ? '☑ Tout désélectionner' : 'Tout sélectionner'} <span style={{color:'#bbb', fontWeight:400}}>({withEmail.length})</span>
               </button>
             </div>
 
@@ -2573,8 +2573,8 @@ function CRMApp({ user, onLogout }) {
               if (!(c.nom||'').toLowerCase().includes(sq) && !(c.prenom||'').toLowerCase().includes(sq) && !(c.tel||'').includes(sq)) return false;
             }
             if (filtreAbsentsActif) {
-              const st = statsClients[c.id] || {};
-              if (st.derniereVisite && st.derniereVisite >= limiteSmsDate) return false;
+              const derniereResaSms = resasData.filter(r => r.client_id === c.id && (r.statut === 'venue' || r.statut === 'confirmee')).sort((a,b) => b.date.localeCompare(a.date))[0];
+              if (derniereResaSms && derniereResaSms.date >= limiteSmsDate) return false;
             }
             if (filtreJours.size > 0 && filtreServices.size > 0) {
               const resasC = resasData.filter(r => r.client_id === c.id && (r.statut === 'confirmee' || r.statut === 'venue') && r.date >= il6MoisSms);
@@ -2698,14 +2698,14 @@ function CRMApp({ user, onLogout }) {
                         ))}
                       </div>
                       <div style={{display:'flex', gap:8, marginBottom:8}}>
-                        <button onClick={()=>toggleFiltreService('midi')} style={{ flex:1, padding:8, borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', border: filtreServices.has('midi')?'2px solid #E8C547':'1.5px solid #ddd', background: filtreServices.has('midi')?'#fffbea':'#fff', color: filtreServices.has('midi')?'#111':'#666', transition:'all 0.15s' }}>☀️ Midi</button>
+                        <button onClick={()=>toggleFiltreService('midi')} style={{ flex:1, padding:8, borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', border: filtreServices.has('midi')?'2px solid #111':'1.5px solid #ddd', background: filtreServices.has('midi')?'#111':'#fff', color: filtreServices.has('midi')?'#E8C547':'#666', transition:'all 0.15s' }}>☀️ Midi</button>
                         <button onClick={()=>toggleFiltreService('soir')} style={{ flex:1, padding:8, borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', border: filtreServices.has('soir')?'2px solid #111':'1.5px solid #ddd', background: filtreServices.has('soir')?'#111':'#fff', color: filtreServices.has('soir')?'#E8C547':'#666', transition:'all 0.15s' }}>🌙 Soir</button>
                       </div>
                       {filtreJours.size > 0 && filtreServices.size > 0 && <p style={{fontSize:12, color:'#666', margin:'0 0 8px', fontStyle:'italic'}}>Clients dont <strong>{[...filtreJours].join(', ')} {[...filtreServices].map(s=>s==='midi'?'Midi':'Soir').join(' ou ')}</strong> est dans leur top 3</p>}
                       <div style={{borderTop:'1px solid #eee', paddingTop:10, marginTop:4}}>
                         <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px'}}>😴 Clients absents</p>
                         <div style={{display:'flex', alignItems:'center', gap:8}}>
-                          <button onClick={()=>setFiltreAbsentsActif(v=>!v)} style={{ padding:'6px 12px', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer', border: filtreAbsentsActif?'2px solid #111':'1.5px solid #ddd', background: filtreAbsentsActif?'#111':'#fff', color: filtreAbsentsActif?'#fff':'#666', transition:'all 0.15s' }}>Pas venus depuis</button>
+                          <button onClick={()=>setFiltreAbsentsActif(v=>!v)} style={{ padding:'6px 12px', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer', border: filtreAbsentsActif?'2px solid #111':'1.5px solid #ddd', background: filtreAbsentsActif?'#111':'#fff', color: filtreAbsentsActif?'#E8C547':'#666', transition:'all 0.15s' }}>Pas venus depuis</button>
                           <input type="number" min={1} max={24} value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{width:48, height:28, border:'1.5px solid #ddd', borderRadius:6, textAlign:'center', fontSize:13}} />
                           <span style={{fontSize:13, color:'#666'}}>mois</span>
                         </div>
@@ -2719,7 +2719,7 @@ function CRMApp({ user, onLogout }) {
                   {/* Tout sélectionner */}
                   <div style={{padding:'8px 16px', borderBottom:'1px solid #f0f0f0'}}>
                     <button onClick={toggleAllSms} style={{background:'none', border:'none', fontSize:12, color:'#4f46e5', fontWeight:600, cursor:'pointer', padding:0}}>
-                      {allSmsSelected ? '☐ Tout désélectionner' : '☑ Tout sélectionner'} <span style={{color:'#bbb', fontWeight:400}}>({idsMobiles.length})</span>
+                      {allSmsSelected ? '☑ Tout désélectionner' : 'Tout sélectionner'} <span style={{color:'#bbb', fontWeight:400}}>({idsMobiles.length})</span>
                     </button>
                   </div>
                   <div style={{maxHeight:'calc(100vh - 340px)', overflowY:'auto'}}>
