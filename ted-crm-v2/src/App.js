@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2 } from 'lucide-react';
+import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList } from 'lucide-react';
 import { supabase } from "./supabase";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -1726,7 +1726,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           const nbAttente = resaList.filter(r => r.statut === 'attente').length;
           return (
             <div onClick={()=>setShowDemandesAttente(true)} className={nbAttente > 0 ? 'alarm-blink' : ''} style={{ background: nbAttente > 0 ? '#dc2626' : '#fff', border: nbAttente > 0 ? 'none' : '1.5px solid #f0f0f0', borderRadius:12, padding:'14px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', flexShrink:0, transition:'background 0.1s' }}>
-              <span style={{ fontSize:15, fontWeight:800, color: nbAttente > 0 ? '#fff' : '#111' }}>📋 Demandes de réservation en attente</span>
+              <span style={{ fontSize:15, fontWeight:800, color: nbAttente > 0 ? '#fff' : '#111', display:'flex', alignItems:'center', gap:8 }}><ClipboardList size={16} strokeWidth={2} color={nbAttente > 0 ? '#fff' : '#666'} /> Demandes de réservation en attente</span>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                 {nbAttente > 0 ? (
                   <span style={{ background:'#fff', color:'#dc2626', borderRadius:'50%', width:26, height:26, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800 }}>{nbAttente}</span>
@@ -2058,9 +2058,9 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
               </div>
               {calJourSelectionne && calServiceSelectionne && (
                 <div style={{ display:'flex', gap:16, marginBottom:12, fontSize:13, color:'#666', alignItems:'center' }}>
-                  <span style={{ display:'flex', alignItems:'center', gap:5 }}><Users size={14} strokeWidth={2} color="#666" /> {resasDuJour.length} réservation{resasDuJour.length > 1 ? 's' : ''}</span>
+                  <span style={{ display:'flex', alignItems:'center', gap:5 }}><Users size={14} strokeWidth={2} color="#666" /> {resasDuJour.filter(r=>r.statut==='confirmee').length} réservation{resasDuJour.filter(r=>r.statut==='confirmee').length > 1 ? 's' : ''}</span>
                   <span>·</span>
-                  <span style={{ display:'flex', alignItems:'center', gap:5 }}><UtensilsCrossed size={14} strokeWidth={2} color="#666" /> {resasDuJour.reduce((s,r) => s + (r.nb_personnes||0), 0)} couverts</span>
+                  <span style={{ display:'flex', alignItems:'center', gap:5 }}><UtensilsCrossed size={14} strokeWidth={2} color="#666" /> {resasDuJour.filter(r=>r.statut==='confirmee').reduce((s,r) => s + (r.nb_personnes||0), 0)} couverts</span>
                 </div>
               )}
               <input value={resaSearchPanel} onChange={e=>setResaSearchPanel(e.target.value)} placeholder="Rechercher une réservation..." style={{ width:'100%', height:38, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:13, outline:'none', boxSizing:'border-box' }} />
