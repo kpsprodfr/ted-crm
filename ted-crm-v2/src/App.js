@@ -1569,7 +1569,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
               <div style={{ display:'flex', gap:8, marginBottom:12, overflowX:'auto' }}>
                 {sept7Jours.map(dateStr => {
                   const d = new Date(dateStr+'T12:00:00');
-                  const totalResas = resaList.filter(r => r.date === dateStr && r.statut === 'confirmee').length;
+                  const totalCouverts = resaList.filter(r => r.date === dateStr && r.statut === 'confirmee').reduce((sum, r) => sum + (r.nb_personnes || 0), 0);
                   const estSelectionne = calJourSelectionne === dateStr;
                   const estAujourdhui = dateStr === todayStr;
                   return (
@@ -1584,10 +1584,10 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                       </div>
                       <div style={{ fontSize:18, fontWeight:800, color:'#111', margin:'4px 0' }}>{d.getDate()}</div>
                       <div style={{ fontSize:11, color:'#999', marginBottom:4 }}>{moisCourt[d.getMonth()]}</div>
-                      <div style={{ fontSize:13, fontWeight:800, color: totalResas > 0 ? '#111' : '#ccc' }}>
-                        {totalResas > 0 ? totalResas : '—'}
+                      <div style={{ fontSize:13, fontWeight:800, color: totalCouverts > 0 ? '#111' : '#ccc' }}>
+                        {totalCouverts > 0 ? totalCouverts : '—'}
                       </div>
-                      {totalResas > 0 && <div style={{ fontSize:10, color:'#999' }}>résa</div>}
+                      {totalCouverts > 0 && <div style={{ fontSize:10, color:'#999' }}>cvts</div>}
                     </div>
                   );
                 })}
