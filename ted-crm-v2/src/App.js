@@ -576,6 +576,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
   const [heureError, setHeureError] = useState(false);
   const [showCalPicker, setShowCalPicker] = useState(false);
   const [dateFlash, setDateFlash] = useState(null);
+  const [calFermeture, setCalFermeture] = useState(false);
   const [calPickerDate, setCalPickerDate] = useState(() => {
     if (initialResa?.date) {
       const d = new Date(initialResa.date + 'T12:00:00');
@@ -886,7 +887,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
             const casesP = Array(premierJourSemaine - 1).fill(null).concat(Array.from({length: nbJours}, (_, i) => i + 1));
             const todayIso = new Date().toISOString().split('T')[0];
             return (
-              <div ref={calPickerRef} style={{ marginTop:8, background:'#fff', borderRadius:12, border:'1.5px solid #eee', boxShadow:'0 4px 16px rgba(0,0,0,0.08)', overflow:'hidden' }}>
+              <div ref={calPickerRef} className={calFermeture ? 'cal-fermeture' : ''} style={{ marginTop:8, background:'#fff', borderRadius:12, border:'1.5px solid #eee', boxShadow:'0 4px 16px rgba(0,0,0,0.08)', overflow:'hidden' }}>
                 {/* Header navigation mois */}
                 <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 12px', borderBottom:'1px solid #eee', background:'#fff' }}>
                   <button onPointerDown={()=>setCalPickerDate(new Date(anneeP, moisP-1))}
@@ -913,7 +914,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
                     const aujourd2 = new Date(); aujourd2.setHours(0,0,0,0);
                     const estPasse = new Date(anneeP, moisP, jour) < aujourd2;
                     return (
-                      <button key={i} disabled={estPasse} onPointerDown={()=>{ if (estPasse) return; setDateFlash(iso); setDateIso(iso); setTimeout(()=>{ setShowCalPicker(false); setDateFlash(null); }, 400); }} style={{
+                      <button key={i} disabled={estPasse} onPointerDown={()=>{ if (estPasse) return; setDateFlash(iso); setDateIso(iso); setTimeout(()=>{ setCalFermeture(true); setTimeout(()=>{ setShowCalPicker(false); setCalFermeture(false); setDateFlash(null); }, 250); }, 200); }} style={{
                         height:44, borderRadius:10,
                         border: estAujourdhui && !estSelectionne ? '2px solid #E8C547' : '1.5px solid transparent',
                         background: dateFlash === iso ? '#111' : estSelectionne ? '#E8C547' : 'transparent',
