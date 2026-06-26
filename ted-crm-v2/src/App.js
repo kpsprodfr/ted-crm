@@ -1593,14 +1593,12 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                 })}
               </div>
               {/* 2. Bouton toggle calendrier */}
-              {!isMobile && (
-                <button onClick={()=>setCalMensuelOuvert(v=>!v)} style={{ width:'100%', padding:'10px 16px', background:'#f8f8f8', border:'1.5px solid #eee', borderRadius:10, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: calMensuelOuvert ? 12 : 0 }}>
-                  <span style={{ fontSize:13, fontWeight:700, color:'#555' }}>📅 Calendrier complet</span>
-                  <span style={{ fontSize:12, color:'#999' }}>{calMensuelOuvert ? '▲ Réduire' : '▼ Afficher'}</span>
-                </button>
-              )}
+              <button onClick={()=>setCalMensuelOuvert(v=>!v)} style={{ width:'100%', padding:'10px 16px', background:'#f8f8f8', border:'1.5px solid #eee', borderRadius:10, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: calMensuelOuvert ? 12 : 0 }}>
+                <span style={{ fontSize:13, fontWeight:700, color:'#555' }}>📅 Calendrier complet</span>
+                <span style={{ fontSize:12, color:'#999' }}>{calMensuelOuvert ? '▲ Réduire' : '▼ Afficher'}</span>
+              </button>
               {/* 3. Grand calendrier mensuel */}
-              {!isMobile && calMensuelOuvert && (
+              {calMensuelOuvert && (
                 <div style={{ marginBottom:12 }}>
                   <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
                     <button onClick={() => setCalDate(new Date(annee, mois - 1, 1))} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, fontSize:16, cursor:'pointer', fontWeight:700 }}>‹</button>
