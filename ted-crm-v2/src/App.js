@@ -3291,6 +3291,9 @@ function CRMApp({ user, onLogout }) {
           )}
           {pageClients.map((c,i) => {
             const s = statsClients[c.id] || { total:0, noshow:0, derniereVisite:null };
+            const aujourd = new Date().toISOString().split('T')[0];
+            const derniereVisite = resasData.filter(r => r.client_id===c.id && r.date<=aujourd && (r.statut==='venue'||r.statut==='confirmee')).sort((a,b)=>b.date.localeCompare(a.date))[0];
+            const prochaineResa = resasData.filter(r => r.client_id===c.id && r.date>aujourd && (r.statut==='confirmee'||r.statut==='attente')).sort((a,b)=>a.date.localeCompare(b.date))[0];
             return (
             <div key={c.id} onClick={()=>setModalDetailClient(c)} style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:'12px', marginBottom:8, boxShadow:'0 2px 8px rgba(0,0,0,0.05)', animation:'slideUpFade 0.25s ease both', animationDelay:`${i*0.04}s`, cursor:'pointer' }}>
               <div style={{ display:'flex', alignItems:'flex-start', gap:8 }}>
@@ -3303,10 +3306,11 @@ function CRMApp({ user, onLogout }) {
                   </div>
                   {c.mail && <p style={{ fontSize:11, color:'#3b82f6', margin:'2px 0', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.mail}</p>}
                   {c.tel && <p style={{ fontSize:12, color:'#555', fontWeight:600, margin:'2px 0' }}>{c.tel}</p>}
-                  <div style={{ display:'flex', gap:12, fontSize:11, color:'#999', marginTop:4 }}>
+                  <div style={{ fontSize:11, color:'#999', marginTop:4, display:'flex', gap:8, flexWrap:'wrap' }}>
                     <span>📅 {s.total} résa</span>
                     {s.noshow > 0 && <span style={{ color:'#dc2626' }}>❌ {s.noshow} no-show</span>}
-                    <span>🕐 {s.derniereVisite ? new Date(s.derniereVisite+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}) : 'Jamais'}</span>
+                    {derniereVisite && <span>🕐 Vu le {new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span>}
+                    {prochaineResa && <span style={{ color:'#16a34a', fontWeight:600 }}>📆 Prochaine : {new Date(prochaineResa.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span>}
                   </div>
                 </div>
                 <span style={{ color:'#ccc', fontSize:20, alignSelf:'center' }}>›</span>
