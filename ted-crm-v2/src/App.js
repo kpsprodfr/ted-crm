@@ -2215,13 +2215,19 @@ function CRMApp({ user, onLogout }) {
         const derniereResa = resasC.filter(r => r.date <= aujourd && (r.statut === 'venue' || r.statut === 'confirmee')).sort((a,b) => b.date.localeCompare(a.date))[0];
         if (derniereResa && derniereResa.date >= limiteCommDate) return false;
       }
-      if (filtreJours.size > 0 && filtreServices.size > 0) {
+      if (filtreJours.size > 0 || filtreServices.size > 0) {
         const resasC = resasData.filter(r => r.client_id === c.id && (r.statut === 'confirmee' || r.statut === 'venue') && r.date >= il6MoisComm);
         const compteJ = {};
         resasC.forEach(r => { const key = `${joursSem[new Date(r.date+'T12:00:00').getDay()]}_${r.service}`; compteJ[key] = (compteJ[key]||0)+1; });
         const top3 = Object.entries(compteJ).sort((a,b)=>b[1]-a[1]).slice(0,3).map(e=>e[0]);
         let match = false;
-        for (const jour of filtreJours) { for (const srv of filtreServices) { if (top3.includes(`${jour}_${srv}`)) { match = true; break; } } if (match) break; }
+        if (filtreJours.size > 0 && filtreServices.size > 0) {
+          for (const jour of filtreJours) { for (const srv of filtreServices) { if (top3.includes(`${jour}_${srv}`)) { match = true; break; } } if (match) break; }
+        } else if (filtreJours.size > 0) {
+          for (const jour of filtreJours) { if (top3.some(k => k.startsWith(jour+'_'))) { match = true; break; } }
+        } else {
+          for (const srv of filtreServices) { if (top3.some(k => k.endsWith('_'+srv))) { match = true; break; } }
+        }
         if (!match) return false;
       }
       return true;
@@ -2356,7 +2362,7 @@ function CRMApp({ user, onLogout }) {
                   <button onClick={()=>toggleFiltreService('midi')} style={{ flex:1, padding:8, borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', border: filtreServices.has('midi')?'2px solid #111':'1.5px solid #ddd', background: filtreServices.has('midi')?'#111':'#fff', color: filtreServices.has('midi')?'#E8C547':'#666', transition:'all 0.15s' }}>☀️ Midi</button>
                   <button onClick={()=>toggleFiltreService('soir')} style={{ flex:1, padding:8, borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', border: filtreServices.has('soir')?'2px solid #111':'1.5px solid #ddd', background: filtreServices.has('soir')?'#111':'#fff', color: filtreServices.has('soir')?'#E8C547':'#666', transition:'all 0.15s' }}>🌙 Soir</button>
                 </div>
-                {filtreJours.size > 0 && filtreServices.size > 0 && <p style={{fontSize:12, color:'#666', margin:'0 0 8px', fontStyle:'italic'}}>Clients dont <strong>{[...filtreJours].join(', ')} {[...filtreServices].map(s=>s==='midi'?'Midi':'Soir').join(' ou ')}</strong> est dans leur top 3</p>}
+                {(filtreJours.size > 0 || filtreServices.size > 0) && <p style={{fontSize:12, color:'#666', margin:'0 0 8px', fontStyle:'italic'}}>{filtreJours.size > 0 && filtreServices.size > 0 ? `Clients : ${[...filtreJours].join(', ')} ${[...filtreServices].map(s=>s==='midi'?'Midi':'Soir').join(' ou ')} dans leur top 3` : filtreJours.size > 0 ? `Clients dont ${[...filtreJours].join(', ')} est dans leur top 3 (midi ou soir)` : `Clients dont le ${[...filtreServices].map(s=>s==='midi'?'Midi':'Soir').join(' ou ')} est dans leur top 3 (tous jours)`}</p>}
                 <div style={{borderTop:'1px solid #eee', paddingTop:10, marginTop:4}}>
                   <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px'}}>😴 Clients absents</p>
                   <div style={{display:'flex', alignItems:'center', gap:8}}>
@@ -2597,13 +2603,19 @@ function CRMApp({ user, onLogout }) {
               const derniereResaSms = resasSms.filter(r => r.date <= aujourd && (r.statut === 'venue' || r.statut === 'confirmee')).sort((a,b) => b.date.localeCompare(a.date))[0];
               if (derniereResaSms && derniereResaSms.date >= limiteSmsDate) return false;
             }
-            if (filtreJours.size > 0 && filtreServices.size > 0) {
+            if (filtreJours.size > 0 || filtreServices.size > 0) {
               const resasC = resasData.filter(r => r.client_id === c.id && (r.statut === 'confirmee' || r.statut === 'venue') && r.date >= il6MoisSms);
               const compteJ = {};
               resasC.forEach(r => { const key = `${joursSemSms[new Date(r.date+'T12:00:00').getDay()]}_${r.service}`; compteJ[key] = (compteJ[key]||0)+1; });
               const top3 = Object.entries(compteJ).sort((a,b)=>b[1]-a[1]).slice(0,3).map(e=>e[0]);
               let match = false;
-              for (const jour of filtreJours) { for (const srv of filtreServices) { if (top3.includes(`${jour}_${srv}`)) { match = true; break; } } if (match) break; }
+              if (filtreJours.size > 0 && filtreServices.size > 0) {
+                for (const jour of filtreJours) { for (const srv of filtreServices) { if (top3.includes(`${jour}_${srv}`)) { match = true; break; } } if (match) break; }
+              } else if (filtreJours.size > 0) {
+                for (const jour of filtreJours) { if (top3.some(k => k.startsWith(jour+'_'))) { match = true; break; } }
+              } else {
+                for (const srv of filtreServices) { if (top3.some(k => k.endsWith('_'+srv))) { match = true; break; } }
+              }
               if (!match) return false;
             }
             return true;
@@ -2722,7 +2734,7 @@ function CRMApp({ user, onLogout }) {
                         <button onClick={()=>toggleFiltreService('midi')} style={{ flex:1, padding:8, borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', border: filtreServices.has('midi')?'2px solid #111':'1.5px solid #ddd', background: filtreServices.has('midi')?'#111':'#fff', color: filtreServices.has('midi')?'#E8C547':'#666', transition:'all 0.15s' }}>☀️ Midi</button>
                         <button onClick={()=>toggleFiltreService('soir')} style={{ flex:1, padding:8, borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', border: filtreServices.has('soir')?'2px solid #111':'1.5px solid #ddd', background: filtreServices.has('soir')?'#111':'#fff', color: filtreServices.has('soir')?'#E8C547':'#666', transition:'all 0.15s' }}>🌙 Soir</button>
                       </div>
-                      {filtreJours.size > 0 && filtreServices.size > 0 && <p style={{fontSize:12, color:'#666', margin:'0 0 8px', fontStyle:'italic'}}>Clients dont <strong>{[...filtreJours].join(', ')} {[...filtreServices].map(s=>s==='midi'?'Midi':'Soir').join(' ou ')}</strong> est dans leur top 3</p>}
+                      {(filtreJours.size > 0 || filtreServices.size > 0) && <p style={{fontSize:12, color:'#666', margin:'0 0 8px', fontStyle:'italic'}}>{filtreJours.size > 0 && filtreServices.size > 0 ? `Clients : ${[...filtreJours].join(', ')} ${[...filtreServices].map(s=>s==='midi'?'Midi':'Soir').join(' ou ')} dans leur top 3` : filtreJours.size > 0 ? `Clients dont ${[...filtreJours].join(', ')} est dans leur top 3 (midi ou soir)` : `Clients dont le ${[...filtreServices].map(s=>s==='midi'?'Midi':'Soir').join(' ou ')} est dans leur top 3 (tous jours)`}</p>}
                       <div style={{borderTop:'1px solid #eee', paddingTop:10, marginTop:4}}>
                         <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px'}}>😴 Clients absents</p>
                         <div style={{display:'flex', alignItems:'center', gap:8}}>
