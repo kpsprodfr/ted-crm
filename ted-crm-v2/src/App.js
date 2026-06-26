@@ -1996,6 +1996,9 @@ function CRMApp({ user, onLogout }) {
   const [modalDetailClient, setModalDetailClient] = useState(null);
   const [ficheClientReadOnly, setFicheClientReadOnly] = useState(false);
   const [showTop300, setShowTop300] = useState(false);
+  const [triColonne, setTriColonne] = useState('nom');
+  const [triSens, setTriSens] = useState('asc');
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const [statsClients, setStatsClients] = useState({});
   const [topJours, setTopJours] = useState([]);
   const [resasData, setResasData] = useState([]);
@@ -3324,22 +3327,13 @@ function CRMApp({ user, onLogout }) {
       {/* ═══ DESKTOP MAIN ═══ */}
       {!isMobile && (
         <main style={{ maxWidth:1400, margin:"0 auto", padding:"20px 16px" }}>
-          {/* Dashboard */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))", gap:14, marginBottom:20 }}>
-            <div style={{ background:"#fff", borderRadius:10, border:"1.5px solid #e5e5e5", padding:"14px 18px", textAlign:"center" }}>
-              <div style={{ fontSize:11, fontWeight:700, letterSpacing:1, color:"#888", textTransform:"uppercase", marginBottom:4 }}>Total</div>
-              <div style={{ fontSize:36, fontWeight:700, color:"#111" }}>{clients.length}</div>
-              <div style={{ fontSize:12, color:"#bbb", marginTop:3 }}>dans la base</div>
-            </div>
-            <div style={{ background:"#fff", borderRadius:10, border:"1.5px solid #e5e5e5", padding:"14px 18px", textAlign:"center" }}>
-              <div style={{ fontSize:11, fontWeight:700, letterSpacing:1, color:"#888", textTransform:"uppercase", marginBottom:4 }}>Aujourd'hui</div>
-              <div style={{ fontSize:22, fontWeight:700, color:"#111", paddingTop:7 }}>{new Date().toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"numeric"})}</div>
-            </div>
-            <div style={{ background:"#fff", borderRadius:10, border:"1.5px solid #e5e5e5", padding:"14px 18px", textAlign:"center" }}>
-              <div style={{ fontSize:11, fontWeight:700, letterSpacing:1, color:"#888", textTransform:"uppercase", marginBottom:4 }}>{`Nouveaux — ${getCurrentMonthName().toUpperCase()}`}</div>
-              <div style={{ fontSize:36, fontWeight:700, color:G }}>{newMonth}</div>
-              <div style={{ fontSize:12, color:"#bbb", marginTop:3 }}>ce mois-ci</div>
-            </div>
+          {/* Dashboard compact */}
+          <div style={{ background:"#fff", borderRadius:10, border:"1.5px solid #e5e5e5", padding:"10px 18px", marginBottom:16, display:"flex", alignItems:"center", gap:24, flexWrap:"wrap" }}>
+            <span style={{ fontSize:14, fontWeight:700, color:"#111" }}><span style={{ color:"#888", fontWeight:500 }}>Clients :</span> {clients.length}</span>
+            <span style={{ color:"#e5e5e5" }}>|</span>
+            <span style={{ fontSize:14, color:"#111" }}><span style={{ color:"#888", fontWeight:500 }}>Nouveaux ce mois :</span> <span style={{ color:G, fontWeight:700 }}>{newMonth}</span></span>
+            <span style={{ color:"#e5e5e5" }}>|</span>
+            <span style={{ fontSize:12, color:"#bbb" }}>Mise à jour : {new Date().toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"numeric"})}</span>
           </div>
 
           {/* Top 300 clients */}
@@ -3361,29 +3355,44 @@ function CRMApp({ user, onLogout }) {
                   </div>
                 </div>
                 {showTop300 && (
-                  <div style={{maxHeight:400, overflowY:'auto', borderTop:'1px solid #f0f0f0'}}>
-                    {top300.map((c, i) => (
-                      <div key={c.id} onClick={()=>setModalDetailClient(c)}
-                        style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 16px', borderBottom:'1px solid #f8f8f8', cursor:'pointer', background:'#fff' }}
-                        onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'}
-                        onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
-                        <span style={{fontSize:13, fontWeight:800, color:'#999', minWidth:24}}>#{i+1}</span>
-                        <div style={{ width:32, height:32, borderRadius:'50%', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700,
-                          background: c.genre==='Homme' ? '#dbeafe' : c.genre==='Femme' ? '#fce7f3' : '#dcfce7',
-                          color: c.genre==='Homme' ? '#1d4ed8' : c.genre==='Femme' ? '#be185d' : '#15803d' }}>
-                          {(c.prenom||c.nom||'?')[0]?.toUpperCase()}
-                        </div>
-                        <div style={{flex:1, minWidth:0}}>
-                          <div style={{fontWeight:700, fontSize:13, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
-                            {c.genre==='Entreprise' ? (c.entreprise||c.nom) : `${c.prenom||''} ${c.nom||''}`.trim()}
-                          </div>
-                          <div style={{fontSize:11, color:'#999'}}>
-                            {c.derniereVisite ? new Date(c.derniereVisite+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}) : 'Jamais'}
-                          </div>
-                        </div>
-                        <span style={{ background:'#E8C547', color:'#111', borderRadius:20, padding:'3px 10px', fontSize:12, fontWeight:800, flexShrink:0 }}>{c.totalResas} résa</span>
+                  <div style={{borderTop:'1px solid #f0f0f0'}}>
+                    <table style={{width:'100%', borderCollapse:'collapse', fontSize:13}}>
+                      <thead>
+                        <tr style={{background:'#f8f8f8'}}>
+                          <th style={{padding:'8px 12px', textAlign:'left', fontWeight:700, color:'#888', fontSize:11, width:40}}>#</th>
+                          <th style={{padding:'8px 12px', textAlign:'left', fontWeight:700, color:'#888', fontSize:11}}>Client</th>
+                          <th style={{padding:'8px 12px', textAlign:'center', fontWeight:700, color:'#888', fontSize:11}}>Réservations</th>
+                          <th style={{padding:'8px 12px', textAlign:'left', fontWeight:700, color:'#888', fontSize:11}}>Dernière visite</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(showTop300 === 'all' ? top300 : top300.slice(0,3)).map((c, i) => (
+                          <tr key={c.id} onClick={()=>setModalDetailClient(c)} style={{cursor:'pointer', borderTop:'1px solid #f5f5f5'}}
+                            onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'}
+                            onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                            <td style={{padding:'10px 12px', color:'#bbb', fontWeight:700}}>#{i+1}</td>
+                            <td style={{padding:'10px 12px'}}>
+                              <div style={{fontWeight:700, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:200}}>
+                                {c.genre==='Entreprise' ? (c.entreprise||c.nom) : `${c.prenom||''} ${c.nom||''}`.trim()}
+                              </div>
+                            </td>
+                            <td style={{padding:'10px 12px', textAlign:'center'}}>
+                              <span style={{background:G, color:'#111', borderRadius:20, padding:'2px 10px', fontSize:12, fontWeight:800}}>{c.totalResas}</span>
+                            </td>
+                            <td style={{padding:'10px 12px', color:'#999', fontSize:12}}>
+                              {c.derniereVisite ? new Date(c.derniereVisite+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}) : 'Jamais'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {top300.length > 3 && (
+                      <div style={{padding:'10px 16px', borderTop:'1px solid #f5f5f5', textAlign:'center'}}>
+                        <button onClick={()=>setShowTop300(showTop300==='all'?true:'all')} style={{border:'none', background:'none', color:G, fontWeight:700, fontSize:13, cursor:'pointer'}}>
+                          {showTop300==='all' ? '▲ Réduire' : `▼ Voir tout (${top300.length} clients)`}
+                        </button>
                       </div>
-                    ))}
+                    )}
                   </div>
                 )}
               </div>
@@ -3416,7 +3425,7 @@ function CRMApp({ user, onLogout }) {
               <input style={{ width:"100%", height:40, border:"1.5px solid #ddd", borderRadius:8, padding:"0 36px 0 40px", fontSize:13, background:"#fff", outline:"none", boxSizing:"border-box" }} value={search} onChange={e=>{setSearch(e.target.value);setPage(1)}} placeholder="Rechercher par nom, prénom, téléphone, mail, date, mois, genre ou commentaire…" />
               {search && <button onClick={()=>{setSearch("");setPage(1)}} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:"#aaa", fontSize:16, padding:2 }}>✕</button>}
             </div>
-            <button onClick={()=>setModalAdd(true)} style={btnPrimary}>+ Ajouter un client</button>
+            <button onClick={()=>setModalAdd(true)} style={btnPrimary}>+ Nouveau client</button>
           </div>
 
           {/* Filters desktop */}
@@ -3425,41 +3434,82 @@ function CRMApp({ user, onLogout }) {
             <select style={sel} value={filterMonth} onChange={e=>{setFilterMonth(e.target.value);setPage(1)}}><option value="">Tous les mois</option>{MONTHS_FR.map((m,i)=><option key={i+1} value={i+1}>{m}</option>)}</select>
             <select style={sel} value={pageSize} onChange={e=>{setPageSize(Number(e.target.value));setPage(1)}}>{PAGE_SIZES.map(n=><option key={n} value={n}>{n} par page</option>)}</select>
             {(filterGenre||filterMonth||search) && <button onClick={()=>{setFilterGenre("");setFilterMonth("");setSearch("");setPage(1)}} style={{ ...btnSecondary, fontSize:12 }}>✕ Réinitialiser</button>}
-            <div style={{ marginLeft:"auto", display:"flex", gap:8 }}>
-              <button onClick={()=>exportToCSV(filtered)} style={btnSecondary}>⬇ CSV</button>
-              <button onClick={()=>exportToXLSX(filtered)} style={btnSecondary}>⬇ Excel</button>
-              <button onClick={()=>setModalImport(true)} style={btnSecondary}>⬆ Importer</button>
+            <div style={{ marginLeft:"auto", position:"relative" }}>
+              <button onClick={()=>setShowExportMenu(v=>!v)} style={btnSecondary}>📥 Importer / Exporter ▾</button>
+              {showExportMenu && (
+                <div style={{ position:"absolute", right:0, top:"calc(100% + 4px)", background:"#fff", border:"1.5px solid #e5e5e5", borderRadius:10, boxShadow:"0 8px 24px rgba(0,0,0,0.1)", zIndex:200, minWidth:180, overflow:"hidden" }}>
+                  <button onClick={()=>{ exportToCSV(filtered); setShowExportMenu(false); }} style={{ display:"block", width:"100%", textAlign:"left", padding:"10px 16px", border:"none", background:"none", cursor:"pointer", fontSize:13, borderBottom:"1px solid #f5f5f5" }} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>⬇ Exporter CSV</button>
+                  <button onClick={()=>{ exportToXLSX(filtered); setShowExportMenu(false); }} style={{ display:"block", width:"100%", textAlign:"left", padding:"10px 16px", border:"none", background:"none", cursor:"pointer", fontSize:13, borderBottom:"1px solid #f5f5f5" }} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>⬇ Exporter Excel</button>
+                  <button onClick={()=>{ setModalImport(true); setShowExportMenu(false); }} style={{ display:"block", width:"100%", textAlign:"left", padding:"10px 16px", border:"none", background:"none", cursor:"pointer", fontSize:13 }} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>⬆ Importer clients</button>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Liste clients compacte */}
+          {/* Tableau clients desktop */}
+          {(() => {
+            const trierPar = (col) => {
+              if (triColonne === col) setTriSens(s => s==='asc'?'desc':'asc');
+              else { setTriColonne(col); setTriSens('asc'); }
+              setPage(1);
+            };
+            const thStyle = (col) => ({ padding:'10px 14px', textAlign:'left', fontWeight:700, fontSize:12, color: triColonne===col?'#111':'#888', background:'#f8f8f8', cursor:'pointer', userSelect:'none', whiteSpace:'nowrap', borderBottom:'2px solid #e5e5e5' });
+            const sortIndicator = (col) => triColonne===col ? (triSens==='asc'?' ▲':' ▼') : '';
+            const sortedPageClients = [...pageClients].sort((a,b) => {
+              let va='', vb='';
+              if (triColonne==='nom') { va=(a.genre==='Entreprise'?a.entreprise:`${a.prenom||''} ${a.nom||''}`).toLowerCase(); vb=(b.genre==='Entreprise'?b.entreprise:`${b.prenom||''} ${b.nom||''}`).toLowerCase(); }
+              else if (triColonne==='tel') { va=a.tel||''; vb=b.tel||''; }
+              else if (triColonne==='mail') { va=a.mail||''; vb=b.mail||''; }
+              else if (triColonne==='resas') { va=statsClients[a.id]?.total||0; vb=statsClients[b.id]?.total||0; return triSens==='asc'?va-vb:vb-va; }
+              else if (triColonne==='derniere') { va=statsClients[a.id]?.derniereVisite||''; vb=statsClients[b.id]?.derniereVisite||''; }
+              return triSens==='asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+            });
+            return (
           <div style={{ background:"#fff", borderRadius:10, border:"1.5px solid #e5e5e5", overflow:"hidden" }}>
-            {pageClients.length === 0 && (
+            {pageClients.length === 0 ? (
               <div style={{ textAlign:"center", padding:"3rem", color:"#bbb", fontSize:14 }}>{(search||filterGenre||filterMonth)?"Aucun client trouvé":"Aucun client dans la base"}</div>
+            ) : (
+              <table style={{width:'100%', borderCollapse:'collapse'}}>
+                <thead>
+                  <tr>
+                    <th style={thStyle('nom')} onClick={()=>trierPar('nom')}>Client{sortIndicator('nom')}</th>
+                    <th style={thStyle('tel')} onClick={()=>trierPar('tel')}>Téléphone{sortIndicator('tel')}</th>
+                    <th style={thStyle('mail')} onClick={()=>trierPar('mail')}>Email{sortIndicator('mail')}</th>
+                    <th style={{...thStyle('resas'), textAlign:'center'}} onClick={()=>trierPar('resas')}>Résa{sortIndicator('resas')}</th>
+                    <th style={thStyle('derniere')} onClick={()=>trierPar('derniere')}>Dernière visite{sortIndicator('derniere')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedPageClients.map((c) => {
+                    const s = statsClients[c.id] || { total:0, derniereVisite:null };
+                    return (
+                      <tr key={c.id} onClick={()=>setModalDetailClient(c)} style={{cursor:'pointer', borderTop:'1px solid #f5f5f5'}}
+                        onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'}
+                        onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                        <td style={{padding:'10px 14px'}}>
+                          <div style={{display:'flex', alignItems:'center', gap:10}}>
+                            <div style={{width:32, height:32, borderRadius:'50%', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, background:c.genre==='Homme'?'#dbeafe':c.genre==='Femme'?'#fce7f3':'#dcfce7', color:c.genre==='Homme'?'#1d4ed8':c.genre==='Femme'?'#be185d':'#15803d'}}>
+                              {(c.prenom||c.entreprise||'?')[0]?.toUpperCase()}
+                            </div>
+                            <span style={{fontWeight:700, fontSize:13, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:200}}>
+                              {c.genre==='Entreprise' ? (c.entreprise||c.nom||'—') : `${c.prenom||''} ${c.nom||''}`.trim()}
+                            </span>
+                          </div>
+                        </td>
+                        <td style={{padding:'10px 14px', fontSize:13, color:'#555'}}>{c.tel||'—'}</td>
+                        <td style={{padding:'10px 14px', fontSize:12, color:'#3b82f6', maxWidth:180, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.mail||'—'}</td>
+                        <td style={{padding:'10px 14px', textAlign:'center'}}>
+                          {s.total > 0 ? <span style={{background:G, color:'#111', borderRadius:20, padding:'2px 10px', fontSize:12, fontWeight:800}}>{s.total}</span> : <span style={{color:'#ddd'}}>—</span>}
+                        </td>
+                        <td style={{padding:'10px 14px', fontSize:12, color:'#999'}}>
+                          {s.derniereVisite ? new Date(s.derniereVisite+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}) : <span style={{color:'#ddd'}}>Jamais</span>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             )}
-            {pageClients.map((c) => (
-              <div key={c.id} onClick={()=>setModalDetailClient(c)} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 16px', borderBottom:'1px solid #f5f5f5', cursor:'pointer', background:'#fff' }}
-                onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'}
-                onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
-                <div style={{ width:36, height:36, borderRadius:'50%', flexShrink:0, background: c.genre==='Homme'?'#dbeafe':c.genre==='Femme'?'#fce7f3':'#dcfce7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:700, color: c.genre==='Homme'?'#1d4ed8':c.genre==='Femme'?'#be185d':'#15803d' }}>
-                  {(c.prenom||c.entreprise||'?')[0]?.toUpperCase()}
-                </div>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontWeight:700, fontSize:14, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                    {c.genre==='Entreprise' ? c.entreprise : `${c.prenom||''} ${c.nom||''}`.trim()}
-                  </div>
-                  <div style={{ fontSize:12, color:'#999', display:'flex', gap:8, marginTop:2 }}>
-                    <span>{c.tel}</span>
-                    <span>·</span>
-                    <span>{statsClients[c.id]?.total || 0} résa</span>
-                    {statsClients[c.id]?.derniereVisite && (
-                      <><span>·</span><span>Vu le {new Date(statsClients[c.id].derniereVisite+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span></>
-                    )}
-                  </div>
-                </div>
-                <span style={{ color:'#ddd', fontSize:18 }}>›</span>
-              </div>
-            ))}
             {/* Pagination desktop */}
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", borderTop:"1px solid #eee", flexWrap:"wrap", gap:8 }}>
               <span style={{ fontSize:12, color:"#999" }}>{filtered.length===0?"0 résultat":`${(safePage-1)*pageSize+1}–${Math.min(safePage*pageSize,filtered.length)} sur ${filtered.length} client(s)`}</span>
@@ -3470,6 +3520,8 @@ function CRMApp({ user, onLogout }) {
               </div>
             </div>
           </div>
+            );
+          })()}
         </main>
       )}
 
