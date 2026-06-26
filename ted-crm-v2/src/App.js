@@ -575,15 +575,27 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
   const [saving, setSaving] = useState(false);
   const [heureError, setHeureError] = useState(false);
   const [showCalPicker, setShowCalPicker] = useState(false);
-  const [calPickerDate, setCalPickerDate] = useState(new Date());
+  const [calPickerDate, setCalPickerDate] = useState(() => {
+    if (initialResa?.date) {
+      const d = new Date(initialResa.date + 'T12:00:00');
+      return isNaN(d.getTime()) ? new Date() : d;
+    }
+    return new Date();
+  });
   const isMobile = useIsMobile();
   const calPickerRef = useRef(null);
 
   useEffect(() => {
-    if (showCalPicker && calPickerRef.current) {
-      setTimeout(() => {
-        calPickerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
+    if (showCalPicker) {
+      if (dateIso) {
+        const d = new Date(dateIso + 'T12:00:00');
+        if (!isNaN(d.getTime())) setCalPickerDate(d);
+      }
+      if (calPickerRef.current) {
+        setTimeout(() => {
+          calPickerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
     }
   }, [showCalPicker]);
 
