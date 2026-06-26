@@ -1470,15 +1470,15 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
         {(() => {
           const nbAttente = resaList.filter(r => r.statut === 'attente').length;
           return (
-            <div onClick={()=>setShowDemandesAttente(true)} style={{ background:'#E8C547', borderRadius:12, padding:'14px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', marginBottom:16 }}>
-              <span style={{ fontSize:15, fontWeight:800, color:'#111' }}>📋 Demandes de réservation en attente</span>
+            <div onClick={()=>setShowDemandesAttente(true)} className={nbAttente > 0 ? 'alarm-blink' : ''} style={{ background: nbAttente > 0 ? '#dc2626' : '#fff', border: nbAttente > 0 ? 'none' : '1.5px solid #f0f0f0', borderRadius:12, padding:'14px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', marginBottom:16, transition:'background 0.1s' }}>
+              <span style={{ fontSize:15, fontWeight:800, color: nbAttente > 0 ? '#fff' : '#111' }}>📋 Demandes de réservation en attente</span>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                 {nbAttente > 0 ? (
-                  <span style={{ background:'#dc2626', color:'#fff', borderRadius:'50%', width:26, height:26, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800 }}>{nbAttente}</span>
+                  <span style={{ background:'#fff', color:'#dc2626', borderRadius:'50%', width:26, height:26, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800 }}>{nbAttente}</span>
                 ) : (
-                  <span style={{ fontSize:13, color:'#333', fontWeight:600 }}>Aucune</span>
+                  <span style={{ fontSize:13, color:'#999', fontWeight:600 }}>Aucune</span>
                 )}
-                <span style={{ color:'#333', fontSize:18 }}>›</span>
+                <span style={{ color: nbAttente > 0 ? '#fff' : '#ccc', fontSize:18 }}>›</span>
               </div>
             </div>
           );
