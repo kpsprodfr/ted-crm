@@ -2672,82 +2672,81 @@ function CRMApp({ user, onLogout }) {
     };
 
     return (
-      <div style={{minHeight:'100vh', background:'#f5f5f5', fontFamily:"'Inter','Segoe UI',Arial,sans-serif", display:'flex'}}>
+      <div style={{height:'100vh', background:'#f5f5f5', fontFamily:"'Inter','Segoe UI',Arial,sans-serif", display:'flex', overflow:'hidden'}}>
         {sidebarDesktop}
-        <div style={{marginLeft:120, flex:1}}>
+        <div style={{marginLeft:120, flex:1, display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden'}}>
 
         {/* Switcher Email / SMS */}
-        <div style={{padding:'16px 20px 0', maxWidth:1300, margin:'0 auto'}}>
-          <div style={{display:'flex', background:'#f0f0f0', borderRadius:12, padding:4, width:'fit-content'}}>
-            <button onClick={()=>{ setCommMode('email'); setFiltreJours(new Set()); setFiltreServices(new Set()); }} style={{background:commMode==='email'?'#111':'transparent', color:commMode==='email'?'#fff':'#666', border:'none', borderRadius:8, padding:'10px 28px', fontSize:14, fontWeight:700, cursor:'pointer', transition:'all 0.2s'}}>📧 Email</button>
-            <button onClick={()=>{ setCommMode('sms'); setFiltreJours(new Set()); setFiltreServices(new Set()); }} style={{background:commMode==='sms'?'#111':'transparent', color:commMode==='sms'?'#fff':'#666', border:'none', borderRadius:8, padding:'10px 28px', fontSize:14, fontWeight:700, cursor:'pointer', transition:'all 0.2s'}}>📱 SMS</button>
+        <div style={{padding:'16px 24px 0', flexShrink:0}}>
+          <div style={{display:'flex', background:'#e8e8e8', borderRadius:10, padding:3, width:'fit-content'}}>
+            <button onClick={()=>{ setCommMode('email'); setFiltreJours(new Set()); setFiltreServices(new Set()); }} style={{background:commMode==='email'?'#111':'transparent', color:commMode==='email'?'#fff':'#666', border:'none', borderRadius:8, padding:'8px 22px', fontSize:13, fontWeight:700, cursor:'pointer', transition:'all 0.2s'}}>📧 Email</button>
+            <button onClick={()=>{ setCommMode('sms'); setFiltreJours(new Set()); setFiltreServices(new Set()); }} style={{background:commMode==='sms'?'#111':'transparent', color:commMode==='sms'?'#fff':'#666', border:'none', borderRadius:8, padding:'8px 22px', fontSize:13, fontWeight:700, cursor:'pointer', transition:'all 0.2s'}}>📱 SMS</button>
           </div>
         </div>
 
         {commMode === 'email' && (<>
-        <div style={{display:'grid', gridTemplateColumns:'320px 1fr', gap:20, padding:20, maxWidth:1300, margin:'0 auto', alignItems:'start'}}>
+        <div style={{flex:1, display:'grid', gridTemplateColumns:'240px 260px 1fr', gap:14, padding:'14px 24px 20px', minHeight:0}}>
 
-          {/* Colonne gauche — Destinataires */}
-          <div style={{background:'#fff', borderRadius:12, boxShadow:'0 1px 4px rgba(0,0,0,0.08)', overflow:'hidden'}}>
-            <div style={{padding:'14px 16px', borderBottom:'1px solid #f0f0f0', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
-              <span style={{fontSize:13, fontWeight:700, color:'#555', textTransform:'uppercase', letterSpacing:0.5}}>À :</span>
-              <span style={{fontSize:12, color:'#aaa'}}>{selectedClients.length} sélectionné(s)</span>
+          {/* Colonne 1 — Ciblage */}
+          <div style={{background:'#fff', borderRadius:12, boxShadow:'0 1px 4px rgba(0,0,0,0.07)', display:'flex', flexDirection:'column', overflow:'hidden'}}>
+            <div style={{padding:'12px 14px', borderBottom:'1px solid #f0f0f0', flexShrink:0}}>
+              <span style={{fontSize:11, fontWeight:800, color:'#999', textTransform:'uppercase', letterSpacing:1}}>🎯 Ciblage</span>
             </div>
-
-            {/* Filtres */}
-            <div style={{padding:'10px 12px', borderBottom:'1px solid #f0f0f0', display:'flex', gap:4, flexWrap:'wrap'}}>
-              {[['tous','Tous'],['hommes','Hommes'],['femmes','Femmes'],['entreprises','Entreprises']].map(([val,label]) => (
-                <button key={val} onClick={()=>setCommFilter(val)} style={{background:commFilter===val?'#111':'#f0f0f0', color:commFilter===val?'#fff':'#666', border:'none', borderRadius:99, padding:'4px 10px', fontSize:11, fontWeight:600, cursor:'pointer'}}>{label}</button>
-              ))}
-            </div>
-
-            {/* Filtres avancés */}
-            <div style={{padding:'8px 12px', borderBottom:'1px solid #f0f0f0'}}>
-              <div style={{background:'#f9f9f9', borderRadius:12, padding:14}}>
-                <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 10px'}}>🎯 Cibler par jour favori</p>
-                <div style={{display:'flex', flexWrap:'wrap', gap:6, marginBottom:10}}>
-                  {['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'].map(j => (
-                    <button key={j} onClick={()=>toggleFiltreJour(j)} style={{ padding:'6px 12px', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer', border: filtreJours.has(j)?'2px solid #111':'1.5px solid #ddd', background: filtreJours.has(j)?'#111':'#fff', color: filtreJours.has(j)?'#E8C547':'#666', transition:'all 0.15s' }}>{j}</button>
-                  ))}
-                </div>
-                <div style={{display:'flex', gap:8, marginBottom:8}}>
-                  <button onClick={()=>toggleFiltreService('midi')} style={{ flex:1, padding:8, borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', border: filtreServices.has('midi')?'2px solid #111':'1.5px solid #ddd', background: filtreServices.has('midi')?'#111':'#fff', color: filtreServices.has('midi')?'#E8C547':'#666', transition:'all 0.15s' }}>☀️ Midi</button>
-                  <button onClick={()=>toggleFiltreService('soir')} style={{ flex:1, padding:8, borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', border: filtreServices.has('soir')?'2px solid #111':'1.5px solid #ddd', background: filtreServices.has('soir')?'#111':'#fff', color: filtreServices.has('soir')?'#E8C547':'#666', transition:'all 0.15s' }}>🌙 Soir</button>
-                </div>
-                {(filtreJours.size > 0 || filtreServices.size > 0) && <p style={{fontSize:12, color:'#666', margin:'0 0 8px', fontStyle:'italic'}}>{filtreJours.size > 0 && filtreServices.size > 0 ? `Clients : ${[...filtreJours].join(', ')} ${[...filtreServices].map(s=>s==='midi'?'Midi':'Soir').join(' ou ')} dans leur top 3` : filtreJours.size > 0 ? `Clients dont ${[...filtreJours].join(', ')} est dans leur top 3 (midi ou soir)` : `Clients dont le ${[...filtreServices].map(s=>s==='midi'?'Midi':'Soir').join(' ou ')} est dans leur top 3 (tous jours)`}</p>}
-                <div style={{borderTop:'1px solid #eee', paddingTop:10, marginTop:4}}>
-                  <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px'}}>😴 Clients absents</p>
-                  <div style={{display:'flex', alignItems:'center', gap:8}}>
-                    <button onClick={()=>setFiltreAbsentsActif(v=>!v)} style={{ padding:'6px 12px', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer', border: filtreAbsentsActif?'2px solid #111':'1.5px solid #ddd', background: filtreAbsentsActif?'#111':'#fff', color: filtreAbsentsActif?'#E8C547':'#666', transition:'all 0.15s' }}>Pas venus depuis</button>
-                    <input type="number" min={1} max={24} value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{width:48, height:28, border:'1.5px solid #ddd', borderRadius:6, textAlign:'center', fontSize:13}} />
-                    <span style={{fontSize:13, color:'#666'}}>mois</span>
-                  </div>
+            <div style={{flex:1, overflowY:'auto', padding:12}}>
+              {/* Genre */}
+              <p style={{fontSize:11, fontWeight:700, color:'#bbb', textTransform:'uppercase', letterSpacing:0.8, margin:'0 0 8px'}}>Genre</p>
+              <div style={{display:'flex', flexWrap:'wrap', gap:4, marginBottom:16}}>
+                {[['tous','Tous'],['hommes','Hommes'],['femmes','Femmes'],['entreprises','Entreprises']].map(([val,label]) => (
+                  <button key={val} onClick={()=>setCommFilter(val)} style={{background:commFilter===val?'#111':'#f0f0f0', color:commFilter===val?'#fff':'#666', border:'none', borderRadius:99, padding:'5px 12px', fontSize:11, fontWeight:600, cursor:'pointer'}}>{label}</button>
+                ))}
+              </div>
+              {/* Jours favoris */}
+              <p style={{fontSize:11, fontWeight:700, color:'#bbb', textTransform:'uppercase', letterSpacing:0.8, margin:'0 0 8px'}}>Jour favori</p>
+              <div style={{display:'flex', flexWrap:'wrap', gap:5, marginBottom:10}}>
+                {['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'].map(j => (
+                  <button key={j} onClick={()=>toggleFiltreJour(j)} style={{ padding:'5px 10px', borderRadius:20, fontSize:11, fontWeight:700, cursor:'pointer', border: filtreJours.has(j)?'2px solid #111':'1.5px solid #ddd', background: filtreJours.has(j)?'#111':'#fff', color: filtreJours.has(j)?'#E8C547':'#666', transition:'all 0.15s' }}>{j}</button>
+                ))}
+              </div>
+              <div style={{display:'flex', gap:6, marginBottom:12}}>
+                <button onClick={()=>toggleFiltreService('midi')} style={{ flex:1, padding:'7px 0', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', border: filtreServices.has('midi')?'2px solid #111':'1.5px solid #ddd', background: filtreServices.has('midi')?'#111':'#fff', color: filtreServices.has('midi')?'#E8C547':'#666', transition:'all 0.15s' }}>☀️ Midi</button>
+                <button onClick={()=>toggleFiltreService('soir')} style={{ flex:1, padding:'7px 0', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', border: filtreServices.has('soir')?'2px solid #111':'1.5px solid #ddd', background: filtreServices.has('soir')?'#111':'#fff', color: filtreServices.has('soir')?'#E8C547':'#666', transition:'all 0.15s' }}>🌙 Soir</button>
+              </div>
+              {(filtreJours.size > 0 || filtreServices.size > 0) && <p style={{fontSize:11, color:'#666', margin:'0 0 12px', fontStyle:'italic', background:'#f9f9f9', borderRadius:8, padding:'8px 10px'}}>{filtreJours.size > 0 && filtreServices.size > 0 ? `${[...filtreJours].join(', ')} · ${[...filtreServices].map(s=>s==='midi'?'Midi':'Soir').join('/')} dans top 3` : filtreJours.size > 0 ? `${[...filtreJours].join(', ')} dans top 3` : `${[...filtreServices].map(s=>s==='midi'?'Midi':'Soir').join('/')} dans top 3`}</p>}
+              {/* Absents */}
+              <div style={{borderTop:'1px solid #f0f0f0', paddingTop:12}}>
+                <p style={{fontSize:11, fontWeight:700, color:'#bbb', textTransform:'uppercase', letterSpacing:0.8, margin:'0 0 8px'}}>Clients absents</p>
+                <div style={{display:'flex', alignItems:'center', gap:8, flexWrap:'wrap'}}>
+                  <button onClick={()=>setFiltreAbsentsActif(v=>!v)} style={{ padding:'5px 12px', borderRadius:20, fontSize:11, fontWeight:700, cursor:'pointer', border: filtreAbsentsActif?'2px solid #111':'1.5px solid #ddd', background: filtreAbsentsActif?'#111':'#fff', color: filtreAbsentsActif?'#E8C547':'#666', transition:'all 0.15s' }}>Pas venus depuis</button>
+                  <input type="number" min={1} max={24} value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{width:44, height:28, border:'1.5px solid #ddd', borderRadius:6, textAlign:'center', fontSize:13}} />
+                  <span style={{fontSize:12, color:'#666'}}>mois</span>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Recherche */}
-            <div style={{padding:'8px 12px', borderBottom:'1px solid #f0f0f0'}}>
+          {/* Colonne 2 — Destinataires */}
+          <div style={{background:'#fff', borderRadius:12, boxShadow:'0 1px 4px rgba(0,0,0,0.07)', display:'flex', flexDirection:'column', overflow:'hidden'}}>
+            <div style={{padding:'12px 14px', borderBottom:'1px solid #f0f0f0', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0}}>
+              <span style={{fontSize:11, fontWeight:800, color:'#999', textTransform:'uppercase', letterSpacing:1}}>Destinataires</span>
+              <span style={{fontSize:12, color:'#aaa', fontWeight:600}}>{selectedClients.length} sél.</span>
+            </div>
+            <div style={{padding:'8px 12px', borderBottom:'1px solid #f0f0f0', flexShrink:0}}>
               <input value={commSearch} onChange={e=>setCommSearch(e.target.value)} placeholder="Rechercher…" style={{width:'100%', border:'1px solid #e8e8e8', borderRadius:7, padding:'7px 10px', fontSize:13, outline:'none', boxSizing:'border-box', background:'#fafafa'}} />
             </div>
-
-            {/* Tout sélectionner */}
-            <div style={{padding:'8px 16px', borderBottom:'1px solid #f0f0f0'}}>
+            <div style={{padding:'6px 14px', borderBottom:'1px solid #f0f0f0', flexShrink:0}}>
               <button onClick={toggleAll} style={{background:'none', border:'none', fontSize:12, color:'#4f46e5', fontWeight:600, cursor:'pointer', padding:0}}>
                 {allSelected ? '☑ Tout désélectionner' : 'Tout sélectionner'} <span style={{color:'#bbb', fontWeight:400}}>({withEmail.length})</span>
               </button>
             </div>
-
-            {/* Liste */}
-            <div style={{maxHeight:'calc(100vh - 280px)', overflowY:'auto'}}>
+            <div style={{flex:1, overflowY:'auto'}}>
               {commClients.map(c => {
                 const hasEmail = !!c.mail;
                 const checked = commSelected.includes(c.id);
                 const initial = ((c.prenom||'')[0]||(c.nom||'')[0]||'?').toUpperCase();
                 return (
-                  <label key={c.id} style={{display:'flex', alignItems:'center', gap:10, padding:'10px 16px', cursor:hasEmail?'pointer':'default', opacity:hasEmail?1:0.4, background:checked?'#fefce8':'#fff', borderBottom:'1px solid #f8f8f8', transition:'background 0.1s'}}>
+                  <label key={c.id} style={{display:'flex', alignItems:'center', gap:10, padding:'9px 14px', cursor:hasEmail?'pointer':'default', opacity:hasEmail?1:0.4, background:checked?'#fefce8':'#fff', borderBottom:'1px solid #f8f8f8', transition:'background 0.1s'}}>
                     <input type="checkbox" checked={checked} disabled={!hasEmail} onChange={()=>toggleOne(c.id)} style={{width:15, height:15, accentColor:'#E8C547', flexShrink:0}} />
-                    <div style={{width:34, height:34, borderRadius:'50%', background:avatarColor(c), color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:13, flexShrink:0}}>{initial}</div>
+                    <div style={{width:32, height:32, borderRadius:'50%', background:avatarColor(c), color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:12, flexShrink:0}}>{initial}</div>
                     <div style={{flex:1, minWidth:0}}>
                       <div style={{display:'flex', alignItems:'center', gap:6, flexWrap:'wrap'}}>
                         <span style={{fontWeight:600, fontSize:13, color:'#111'}}>
@@ -2766,127 +2765,115 @@ function CRMApp({ user, onLogout }) {
             </div>
           </div>
 
-          {/* Colonne droite — Composer style email */}
-          <div style={{background:'#fff', borderRadius:12, boxShadow:'0 1px 4px rgba(0,0,0,0.08)', display:'flex', flexDirection:'column'}}>
-            {/* De : */}
-            <div style={{padding:'12px 20px', borderBottom:'1px solid #f0f0f0', display:'flex', alignItems:'center', gap:8}}>
-              <span style={{fontSize:12, color:'#aaa', fontWeight:600, width:40, flexShrink:0}}>De :</span>
-              <span style={{fontSize:13, color:'#888'}}>Le TED &lt;com.astegal@gmail.com&gt;</span>
-            </div>
+          {/* Colonne 3 — Message + Historique */}
+          <div style={{display:'flex', flexDirection:'column', gap:12, minHeight:0, overflow:'hidden'}}>
 
-            {/* Objet */}
-            <div style={{padding:'12px 20px', borderBottom:'1px solid #f0f0f0', display:'flex', alignItems:'center', gap:8}}>
-              <span style={{fontSize:12, color:'#aaa', fontWeight:600, width:40, flexShrink:0}}>Objet :</span>
-              <input value={commObjet} onChange={e=>setCommObjet(e.target.value)} placeholder="Objet de l'email…" style={{flex:1, border:'none', outline:'none', fontSize:14, color:'#111', background:'transparent'}} />
-            </div>
-
-            {/* Zone message */}
-            <div style={{padding:'16px 20px', borderBottom:'1px solid #f0f0f0', display:'flex', flexDirection:'column', gap:0}}>
-              <textarea
-                ref={commTextareaRef}
-                value={commMessage}
-                onChange={e=>setCommMessage(e.target.value)}
-                placeholder="Écrivez votre message ici..."
-                style={{width:'100%', border:'none', outline:'none', resize:'none', minHeight:220, fontSize:14, lineHeight:1.7, color:'#222', fontFamily:'inherit', background:'transparent'}}
-              />
-              {/* Variables + Emoji picker */}
-              <div style={{display:'flex', gap:6, flexWrap:'wrap', alignItems:'center', marginTop:8, paddingTop:8, borderTop:'1px solid #f5f5f5'}}>
-                <span style={{fontSize:11, color:'#bbb', alignSelf:'center'}}>Insérer :</span>
-                {['{prenom}','{nom}','{tel}','{entreprise}'].map(v => (
-                  <button key={v} onClick={()=>{
+            {/* Composer */}
+            <div style={{background:'#fff', borderRadius:12, boxShadow:'0 1px 4px rgba(0,0,0,0.07)', display:'flex', flexDirection:'column', flexShrink:0}}>
+              <div style={{padding:'10px 18px', borderBottom:'1px solid #f0f0f0', display:'flex', alignItems:'center', gap:8}}>
+                <span style={{fontSize:12, color:'#aaa', fontWeight:600, width:40, flexShrink:0}}>De :</span>
+                <span style={{fontSize:13, color:'#888'}}>Le TED &lt;com.astegal@gmail.com&gt;</span>
+              </div>
+              <div style={{padding:'10px 18px', borderBottom:'1px solid #f0f0f0', display:'flex', alignItems:'center', gap:8}}>
+                <span style={{fontSize:12, color:'#aaa', fontWeight:600, width:40, flexShrink:0}}>Objet :</span>
+                <input value={commObjet} onChange={e=>setCommObjet(e.target.value)} placeholder="Objet de l'email…" style={{flex:1, border:'none', outline:'none', fontSize:14, color:'#111', background:'transparent'}} />
+              </div>
+              <div style={{padding:'14px 18px', borderBottom:'1px solid #f0f0f0', display:'flex', flexDirection:'column', gap:0}}>
+                <textarea
+                  ref={commTextareaRef}
+                  value={commMessage}
+                  onChange={e=>setCommMessage(e.target.value)}
+                  placeholder="Écrivez votre message ici..."
+                  style={{width:'100%', border:'none', outline:'none', resize:'none', minHeight:160, fontSize:14, lineHeight:1.7, color:'#222', fontFamily:'inherit', background:'transparent'}}
+                />
+                <div style={{display:'flex', gap:6, flexWrap:'wrap', alignItems:'center', marginTop:8, paddingTop:8, borderTop:'1px solid #f5f5f5'}}>
+                  <span style={{fontSize:11, color:'#bbb', alignSelf:'center'}}>Insérer :</span>
+                  {['{prenom}','{nom}','{tel}','{entreprise}'].map(v => (
+                    <button key={v} onClick={()=>{
+                      const ta = commTextareaRef.current;
+                      if (!ta) return;
+                      const start = ta.selectionStart;
+                      const end = ta.selectionEnd;
+                      const newVal = commMessage.substring(0, start) + v + commMessage.substring(end);
+                      setCommMessage(newVal);
+                      setTimeout(()=>{ ta.focus(); ta.setSelectionRange(start + v.length, start + v.length); }, 0);
+                    }} style={{background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:6, padding:'4px 10px', fontSize:12, fontWeight:600, cursor:'pointer', color:'#111'}}>{v}</button>
+                  ))}
+                  <button onClick={()=>{
                     const ta = commTextareaRef.current;
                     if (!ta) return;
                     const start = ta.selectionStart;
-                    const end = ta.selectionEnd;
-                    const newVal = commMessage.substring(0, start) + v + commMessage.substring(end);
+                    const lien = 'https://ted-crm.pages.dev/reserver';
+                    const newVal = commMessage.substring(0, start) + lien + commMessage.substring(start);
                     setCommMessage(newVal);
-                    setTimeout(()=>{ ta.focus(); ta.setSelectionRange(start + v.length, start + v.length); }, 0);
-                  }} style={{background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:6, padding:'4px 10px', fontSize:12, fontWeight:600, cursor:'pointer', color:'#111'}}>{v}</button>
-                ))}
-                {/* Bouton lien résa email */}
-                <button onClick={()=>{
-                  const ta = commTextareaRef.current;
-                  if (!ta) return;
-                  const start = ta.selectionStart;
-                  const lien = 'https://ted-crm.pages.dev/reserver';
-                  const newVal = commMessage.substring(0, start) + lien + commMessage.substring(start);
-                  setCommMessage(newVal);
-                  setTimeout(()=>{ ta.focus(); ta.setSelectionRange(start + lien.length, start + lien.length); }, 0);
-                }} style={{background:'#f0f8ff', border:'1.5px solid #3b82f6', borderRadius:6, padding:'4px 10px', fontSize:12, fontWeight:600, color:'#3b82f6', cursor:'pointer', marginRight:6, marginBottom:6}}>
-                  🔗 Lien résa
-                </button>
-                {/* Bouton emoji */}
-                <div style={{position:'relative', marginLeft:4}}>
-                  <button onClick={()=>setShowEmojiPicker(p=>!p)} style={{background:'#f5f5f5', border:'1px solid #eee', borderRadius:6, padding:'4px 10px', fontSize:16, cursor:'pointer', lineHeight:1}}>😊</button>
-                  {showEmojiPicker && (
-                    <>
-                      <div onClick={()=>setShowEmojiPicker(false)} style={{position:'fixed', inset:0, zIndex:100}} />
-                      <div style={{position:'absolute', bottom:'calc(100% + 8px)', left:0, background:'#fff', border:'1.5px solid #eee', borderRadius:12, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', padding:12, zIndex:101, width:280}}>
-                        {[
-                          {label:'Fêtes', emojis:['🎉','🎊','🥳','🎂','🎁','🎈','🥂','🍾']},
-                          {label:'Restaurant', emojis:['🍽️','🥩','🍷','🍸','🥗','🍕','👨‍🍳','⭐']},
-                          {label:'Communication', emojis:['👋','❤️','🔥','✨','💫','👀','📣','💌']},
-                          {label:'Temps', emojis:['📅','🕐','⏰','🌙','🌟','☀️','🌴']},
-                          {label:'Divers', emojis:['✅','⚠️','💡','🎯','🚀','💎','🏆','👑']},
-                        ].map(group => (
-                          <div key={group.label} style={{marginBottom:8}}>
-                            <div style={{fontSize:10, color:'#bbb', fontWeight:700, textTransform:'uppercase', letterSpacing:0.5, marginBottom:4}}>{group.label}</div>
-                            <div style={{display:'grid', gridTemplateColumns:'repeat(8,1fr)', gap:2}}>
-                              {group.emojis.map(emoji => (
-                                <button key={emoji} onClick={()=>{
-                                  const ta = commTextareaRef.current;
-                                  if (!ta) return;
-                                  const start = ta.selectionStart;
-                                  const end = ta.selectionEnd;
-                                  const newVal = commMessage.substring(0, start) + emoji + commMessage.substring(end);
-                                  setCommMessage(newVal);
-                                  setShowEmojiPicker(false);
-                                  setTimeout(()=>{ ta.focus(); ta.setSelectionRange(start + emoji.length, start + emoji.length); }, 0);
-                                }} style={{background:'none', border:'none', borderRadius:4, fontSize:18, cursor:'pointer', padding:'2px', lineHeight:1, textAlign:'center'}}
-                                  onMouseEnter={e=>e.currentTarget.style.background='#fffbea'}
-                                  onMouseLeave={e=>e.currentTarget.style.background='none'}
-                                >{emoji}</button>
-                              ))}
+                    setTimeout(()=>{ ta.focus(); ta.setSelectionRange(start + lien.length, start + lien.length); }, 0);
+                  }} style={{background:'#f0f8ff', border:'1.5px solid #3b82f6', borderRadius:6, padding:'4px 10px', fontSize:12, fontWeight:600, color:'#3b82f6', cursor:'pointer'}}>
+                    🔗 Lien résa
+                  </button>
+                  <div style={{position:'relative', marginLeft:4}}>
+                    <button onClick={()=>setShowEmojiPicker(p=>!p)} style={{background:'#f5f5f5', border:'1px solid #eee', borderRadius:6, padding:'4px 10px', fontSize:16, cursor:'pointer', lineHeight:1}}>😊</button>
+                    {showEmojiPicker && (
+                      <>
+                        <div onClick={()=>setShowEmojiPicker(false)} style={{position:'fixed', inset:0, zIndex:100}} />
+                        <div style={{position:'absolute', bottom:'calc(100% + 8px)', left:0, background:'#fff', border:'1.5px solid #eee', borderRadius:12, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', padding:12, zIndex:101, width:280}}>
+                          {[
+                            {label:'Fêtes', emojis:['🎉','🎊','🥳','🎂','🎁','🎈','🥂','🍾']},
+                            {label:'Restaurant', emojis:['🍽️','🥩','🍷','🍸','🥗','🍕','👨‍🍳','⭐']},
+                            {label:'Communication', emojis:['👋','❤️','🔥','✨','💫','👀','📣','💌']},
+                            {label:'Temps', emojis:['📅','🕐','⏰','🌙','🌟','☀️','🌴']},
+                            {label:'Divers', emojis:['✅','⚠️','💡','🎯','🚀','💎','🏆','👑']},
+                          ].map(group => (
+                            <div key={group.label} style={{marginBottom:8}}>
+                              <div style={{fontSize:10, color:'#bbb', fontWeight:700, textTransform:'uppercase', letterSpacing:0.5, marginBottom:4}}>{group.label}</div>
+                              <div style={{display:'grid', gridTemplateColumns:'repeat(8,1fr)', gap:2}}>
+                                {group.emojis.map(emoji => (
+                                  <button key={emoji} onClick={()=>{
+                                    const ta = commTextareaRef.current;
+                                    if (!ta) return;
+                                    const start = ta.selectionStart;
+                                    const end = ta.selectionEnd;
+                                    const newVal = commMessage.substring(0, start) + emoji + commMessage.substring(end);
+                                    setCommMessage(newVal);
+                                    setShowEmojiPicker(false);
+                                    setTimeout(()=>{ ta.focus(); ta.setSelectionRange(start + emoji.length, start + emoji.length); }, 0);
+                                  }} style={{background:'none', border:'none', borderRadius:4, fontSize:18, cursor:'pointer', padding:'2px', lineHeight:1, textAlign:'center'}}
+                                    onMouseEnter={e=>e.currentTarget.style.background='#fffbea'}
+                                    onMouseLeave={e=>e.currentTarget.style.background='none'}
+                                  >{emoji}</button>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  )}
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div style={{color:'#aaa', fontSize:12, marginTop:12, paddingTop:12, borderTop:'1px solid #eee'}}>
+                  <img src="https://ted-crm.pages.dev/favicon.png" style={{height:18, verticalAlign:'middle', marginRight:6}} alt="" />
+                  <strong style={{color:'#888'}}>Le TED — Restaurant &amp; Club</strong> · 📍 Chassieu · 📞 04 78 90 67 80
                 </div>
               </div>
-              {/* Footer non modifiable */}
-              <div style={{color:'#aaa', fontSize:12, marginTop:16, paddingTop:12, borderTop:'1px solid #eee'}}>
-                <img src="https://ted-crm.pages.dev/favicon.png" style={{height:20, verticalAlign:'middle', marginRight:6}} alt="" />
-                <strong style={{color:'#888'}}>Le TED — Restaurant &amp; Club</strong><br/>
-                📍 28 Av. des Frères Montgolfier, 69680 Chassieu<br/>
-                📞 04 78 90 67 80<br/>
-                🌐 leted.fr
+              <div style={{padding:'10px 18px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+                <button onClick={handleSendAll} disabled={!canSend} style={{background:canSend?'#E8C547':'#f0f0f0', color:canSend?'#111':'#aaa', border:'none', borderRadius:9, padding:'10px 24px', fontSize:14, fontWeight:800, cursor:canSend?'pointer':'not-allowed', display:'flex', alignItems:'center', gap:8}}>
+                  {commSending ? 'Envoi en cours…' : '📤 Envoyer'}
+                </button>
+                <span style={{fontSize:13, color:'#888'}}>
+                  {selectedClients.length > 0 ? <><strong style={{color:'#111'}}>{selectedClients.length}</strong> destinataire(s)</> : <span style={{color:'#ccc'}}>Aucun destinataire</span>}
+                </span>
               </div>
             </div>
 
-            {/* Barre d'actions */}
-            <div style={{padding:'12px 20px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
-              <button onClick={handleSendAll} disabled={!canSend} style={{background:canSend?'#E8C547':'#f0f0f0', color:canSend?'#111':'#aaa', border:'none', borderRadius:9, padding:'10px 24px', fontSize:14, fontWeight:800, cursor:canSend?'pointer':'not-allowed', display:'flex', alignItems:'center', gap:8}}>
-                {commSending ? 'Envoi en cours…' : '📤 Envoyer'}
-              </button>
-              <span style={{fontSize:13, color:'#888'}}>
-                {selectedClients.length > 0 ? <><strong style={{color:'#111'}}>{selectedClients.length}</strong> destinataire(s)</> : <span style={{color:'#ccc'}}>Aucun destinataire</span>}
-              </span>
-            </div>
-          </div>
-        </div>
-        {/* ─── Historique des envois email ─── */}
-        <div style={{maxWidth:1300, margin:'0 auto', padding:'0 20px 32px'}}>
-          <div style={{marginTop:32}}>
-            <h3 style={{fontSize:16, fontWeight:800, color:'#111', margin:'0 0 16px', display:'flex', alignItems:'center', gap:8}}>
-              📋 Historique des envois
-              <span style={{background:'#f0f0f0', borderRadius:99, padding:'2px 10px', fontSize:12, fontWeight:600, color:'#666'}}>{emailsHistorique.length}</span>
-            </h3>
-
+            {/* Historique email — scrollable */}
+            <div style={{flex:1, background:'#fff', borderRadius:12, boxShadow:'0 1px 4px rgba(0,0,0,0.07)', display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0}}>
+              <div style={{padding:'12px 16px', borderBottom:'1px solid #f0f0f0', flexShrink:0, display:'flex', alignItems:'center', gap:8}}>
+                <span style={{fontSize:13, fontWeight:800, color:'#111'}}>📋 Historique des envois</span>
+                <span style={{background:'#f0f0f0', borderRadius:99, padding:'2px 10px', fontSize:12, fontWeight:600, color:'#666'}}>{emailsHistorique.length}</span>
+              </div>
+              <div style={{flex:1, overflowY:'auto', padding:'8px 12px'}}>
             {emailsHistorique.length === 0 && (
-              <div style={{textAlign:'center', padding:'3rem', color:'#bbb'}}>
-                <div style={{fontSize:40, marginBottom:8}}>📭</div>
+              <div style={{textAlign:'center', padding:'2rem', color:'#bbb'}}>
+                <div style={{fontSize:36, marginBottom:8}}>📭</div>
                 <p style={{fontSize:14}}>Aucun email envoyé pour l'instant</p>
               </div>
             )}
@@ -2927,6 +2914,8 @@ function CRMApp({ user, onLogout }) {
                 )}
               </div>
             ))}
+              </div>
+            </div>
           </div>
         </div>
         </>)} {/* fin commMode === 'email' */}
@@ -3059,63 +3048,65 @@ function CRMApp({ user, onLogout }) {
 
           return (
             <>
-              <div style={{display:'grid', gridTemplateColumns:'320px 1fr', gap:20, padding:20, maxWidth:1300, margin:'0 auto', alignItems:'start'}}>
+              <div style={{flex:1, display:'grid', gridTemplateColumns:'240px 260px 1fr', gap:14, padding:'14px 24px 20px', minHeight:0}}>
 
-                {/* Colonne gauche — Destinataires SMS */}
-                <div style={{background:'#fff', borderRadius:12, boxShadow:'0 1px 4px rgba(0,0,0,0.08)', overflow:'hidden'}}>
-                  <div style={{padding:'14px 16px', borderBottom:'1px solid #f0f0f0', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
-                    <span style={{fontSize:13, fontWeight:700, color:'#555', textTransform:'uppercase', letterSpacing:0.5}}>À :</span>
-                    <span style={{fontSize:12, color:'#aaa'}}>{smsSelected.length} sélectionné(s)</span>
+                {/* Colonne 1 — Ciblage SMS */}
+                <div style={{background:'#fff', borderRadius:12, boxShadow:'0 1px 4px rgba(0,0,0,0.07)', display:'flex', flexDirection:'column', overflow:'hidden'}}>
+                  <div style={{padding:'12px 14px', borderBottom:'1px solid #f0f0f0', flexShrink:0}}>
+                    <span style={{fontSize:11, fontWeight:800, color:'#999', textTransform:'uppercase', letterSpacing:1}}>🎯 Ciblage</span>
                   </div>
-                  {/* Filtres */}
-                  <div style={{padding:'10px 12px', borderBottom:'1px solid #f0f0f0', display:'flex', gap:4, flexWrap:'wrap'}}>
-                    {[['tous','Tous'],['hommes','Hommes'],['femmes','Femmes'],['entreprises','Entreprises']].map(([val,label]) => (
-                      <button key={val} onClick={()=>setSmsFilter(val)} style={{background:smsFilter===val?'#111':'#f0f0f0', color:smsFilter===val?'#fff':'#666', border:'none', borderRadius:99, padding:'4px 10px', fontSize:11, fontWeight:600, cursor:'pointer'}}>{label}</button>
-                    ))}
-                  </div>
-                  {/* Filtres avancés SMS */}
-                  <div style={{padding:'8px 12px', borderBottom:'1px solid #f0f0f0'}}>
-                    <div style={{background:'#f9f9f9', borderRadius:12, padding:14}}>
-                      <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 10px'}}>🎯 Cibler par jour favori</p>
-                      <div style={{display:'flex', flexWrap:'wrap', gap:6, marginBottom:10}}>
-                        {['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'].map(j => (
-                          <button key={j} onClick={()=>toggleFiltreJour(j)} style={{ padding:'6px 12px', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer', border: filtreJours.has(j)?'2px solid #111':'1.5px solid #ddd', background: filtreJours.has(j)?'#111':'#fff', color: filtreJours.has(j)?'#E8C547':'#666', transition:'all 0.15s' }}>{j}</button>
-                        ))}
-                      </div>
-                      <div style={{display:'flex', gap:8, marginBottom:8}}>
-                        <button onClick={()=>toggleFiltreService('midi')} style={{ flex:1, padding:8, borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', border: filtreServices.has('midi')?'2px solid #111':'1.5px solid #ddd', background: filtreServices.has('midi')?'#111':'#fff', color: filtreServices.has('midi')?'#E8C547':'#666', transition:'all 0.15s' }}>☀️ Midi</button>
-                        <button onClick={()=>toggleFiltreService('soir')} style={{ flex:1, padding:8, borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', border: filtreServices.has('soir')?'2px solid #111':'1.5px solid #ddd', background: filtreServices.has('soir')?'#111':'#fff', color: filtreServices.has('soir')?'#E8C547':'#666', transition:'all 0.15s' }}>🌙 Soir</button>
-                      </div>
-                      {(filtreJours.size > 0 || filtreServices.size > 0) && <p style={{fontSize:12, color:'#666', margin:'0 0 8px', fontStyle:'italic'}}>{filtreJours.size > 0 && filtreServices.size > 0 ? `Clients : ${[...filtreJours].join(', ')} ${[...filtreServices].map(s=>s==='midi'?'Midi':'Soir').join(' ou ')} dans leur top 3` : filtreJours.size > 0 ? `Clients dont ${[...filtreJours].join(', ')} est dans leur top 3 (midi ou soir)` : `Clients dont le ${[...filtreServices].map(s=>s==='midi'?'Midi':'Soir').join(' ou ')} est dans leur top 3 (tous jours)`}</p>}
-                      <div style={{borderTop:'1px solid #eee', paddingTop:10, marginTop:4}}>
-                        <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px'}}>😴 Clients absents</p>
-                        <div style={{display:'flex', alignItems:'center', gap:8}}>
-                          <button onClick={()=>setFiltreAbsentsActif(v=>!v)} style={{ padding:'6px 12px', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer', border: filtreAbsentsActif?'2px solid #111':'1.5px solid #ddd', background: filtreAbsentsActif?'#111':'#fff', color: filtreAbsentsActif?'#E8C547':'#666', transition:'all 0.15s' }}>Pas venus depuis</button>
-                          <input type="number" min={1} max={24} value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{width:48, height:28, border:'1.5px solid #ddd', borderRadius:6, textAlign:'center', fontSize:13}} />
-                          <span style={{fontSize:13, color:'#666'}}>mois</span>
-                        </div>
+                  <div style={{flex:1, overflowY:'auto', padding:12}}>
+                    <p style={{fontSize:11, fontWeight:700, color:'#bbb', textTransform:'uppercase', letterSpacing:0.8, margin:'0 0 8px'}}>Genre</p>
+                    <div style={{display:'flex', flexWrap:'wrap', gap:4, marginBottom:16}}>
+                      {[['tous','Tous'],['hommes','Hommes'],['femmes','Femmes'],['entreprises','Entreprises']].map(([val,label]) => (
+                        <button key={val} onClick={()=>setSmsFilter(val)} style={{background:smsFilter===val?'#111':'#f0f0f0', color:smsFilter===val?'#fff':'#666', border:'none', borderRadius:99, padding:'5px 12px', fontSize:11, fontWeight:600, cursor:'pointer'}}>{label}</button>
+                      ))}
+                    </div>
+                    <p style={{fontSize:11, fontWeight:700, color:'#bbb', textTransform:'uppercase', letterSpacing:0.8, margin:'0 0 8px'}}>Jour favori</p>
+                    <div style={{display:'flex', flexWrap:'wrap', gap:5, marginBottom:10}}>
+                      {['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'].map(j => (
+                        <button key={j} onClick={()=>toggleFiltreJour(j)} style={{ padding:'5px 10px', borderRadius:20, fontSize:11, fontWeight:700, cursor:'pointer', border: filtreJours.has(j)?'2px solid #111':'1.5px solid #ddd', background: filtreJours.has(j)?'#111':'#fff', color: filtreJours.has(j)?'#E8C547':'#666', transition:'all 0.15s' }}>{j}</button>
+                      ))}
+                    </div>
+                    <div style={{display:'flex', gap:6, marginBottom:12}}>
+                      <button onClick={()=>toggleFiltreService('midi')} style={{ flex:1, padding:'7px 0', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', border: filtreServices.has('midi')?'2px solid #111':'1.5px solid #ddd', background: filtreServices.has('midi')?'#111':'#fff', color: filtreServices.has('midi')?'#E8C547':'#666', transition:'all 0.15s' }}>☀️ Midi</button>
+                      <button onClick={()=>toggleFiltreService('soir')} style={{ flex:1, padding:'7px 0', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', border: filtreServices.has('soir')?'2px solid #111':'1.5px solid #ddd', background: filtreServices.has('soir')?'#111':'#fff', color: filtreServices.has('soir')?'#E8C547':'#666', transition:'all 0.15s' }}>🌙 Soir</button>
+                    </div>
+                      {(filtreJours.size > 0 || filtreServices.size > 0) && <p style={{fontSize:11, color:'#666', margin:'0 0 12px', fontStyle:'italic', background:'#f9f9f9', borderRadius:8, padding:'8px 10px'}}>{filtreJours.size > 0 && filtreServices.size > 0 ? `${[...filtreJours].join(', ')} · ${[...filtreServices].map(s=>s==='midi'?'Midi':'Soir').join('/')} dans top 3` : filtreJours.size > 0 ? `${[...filtreJours].join(', ')} dans top 3` : `${[...filtreServices].map(s=>s==='midi'?'Midi':'Soir').join('/')} dans top 3`}</p>}
+                    <div style={{borderTop:'1px solid #f0f0f0', paddingTop:12}}>
+                      <p style={{fontSize:11, fontWeight:700, color:'#bbb', textTransform:'uppercase', letterSpacing:0.8, margin:'0 0 8px'}}>Clients absents</p>
+                      <div style={{display:'flex', alignItems:'center', gap:8, flexWrap:'wrap'}}>
+                        <button onClick={()=>setFiltreAbsentsActif(v=>!v)} style={{ padding:'5px 12px', borderRadius:20, fontSize:11, fontWeight:700, cursor:'pointer', border: filtreAbsentsActif?'2px solid #111':'1.5px solid #ddd', background: filtreAbsentsActif?'#111':'#fff', color: filtreAbsentsActif?'#E8C547':'#666', transition:'all 0.15s' }}>Pas venus depuis</button>
+                        <input type="number" min={1} max={24} value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{width:44, height:28, border:'1.5px solid #ddd', borderRadius:6, textAlign:'center', fontSize:13}} />
+                        <span style={{fontSize:12, color:'#666'}}>mois</span>
                       </div>
                     </div>
                   </div>
-                  {/* Recherche */}
-                  <div style={{padding:'8px 12px', borderBottom:'1px solid #f0f0f0'}}>
+                </div>
+
+                {/* Colonne 2 — Destinataires SMS */}
+                <div style={{background:'#fff', borderRadius:12, boxShadow:'0 1px 4px rgba(0,0,0,0.07)', display:'flex', flexDirection:'column', overflow:'hidden'}}>
+                  <div style={{padding:'12px 14px', borderBottom:'1px solid #f0f0f0', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0}}>
+                    <span style={{fontSize:11, fontWeight:800, color:'#999', textTransform:'uppercase', letterSpacing:1}}>Destinataires</span>
+                    <span style={{fontSize:12, color:'#aaa', fontWeight:600}}>{smsSelected.length} sél.</span>
+                  </div>
+                  <div style={{padding:'8px 12px', borderBottom:'1px solid #f0f0f0', flexShrink:0}}>
                     <input value={smsSearch} onChange={e=>setSmsSearch(e.target.value)} placeholder="Rechercher nom, prénom, tél…" style={{width:'100%', border:'1px solid #e8e8e8', borderRadius:7, padding:'7px 10px', fontSize:13, outline:'none', boxSizing:'border-box', background:'#fafafa'}} />
                   </div>
-                  {/* Tout sélectionner */}
-                  <div style={{padding:'8px 16px', borderBottom:'1px solid #f0f0f0'}}>
+                  <div style={{padding:'6px 14px', borderBottom:'1px solid #f0f0f0', flexShrink:0}}>
                     <button onClick={toggleAllSms} style={{background:'none', border:'none', fontSize:12, color:'#4f46e5', fontWeight:600, cursor:'pointer', padding:0}}>
                       {allSmsSelected ? '☑ Tout désélectionner' : 'Tout sélectionner'} <span style={{color:'#bbb', fontWeight:400}}>({idsMobiles.length})</span>
                     </button>
                   </div>
-                  <div style={{maxHeight:'calc(100vh - 340px)', overflowY:'auto'}}>
+                  <div style={{flex:1, overflowY:'auto'}}>
                     {clientsSms.map(c => {
                       const checked = smsSelected.includes(c.id);
                       const initial = ((c.prenom||'')[0]||(c.nom||'')[0]||'?').toUpperCase();
                       const mobile = isNumeroMobile(c.tel);
                       return (
-                        <label key={c.id} style={{display:'flex', alignItems:'center', gap:10, padding:'10px 16px', cursor:mobile?'pointer':'not-allowed', background:checked?'#fefce8': mobile?'#fff':'#fafafa', borderBottom:'1px solid #f8f8f8', transition:'background 0.1s', opacity:mobile?1:0.4, pointerEvents:mobile?'auto':'none'}}>
+                        <label key={c.id} style={{display:'flex', alignItems:'center', gap:10, padding:'9px 14px', cursor:mobile?'pointer':'not-allowed', background:checked?'#fefce8': mobile?'#fff':'#fafafa', borderBottom:'1px solid #f8f8f8', transition:'background 0.1s', opacity:mobile?1:0.4, pointerEvents:mobile?'auto':'none'}}>
                           <input type="checkbox" checked={checked} onChange={()=>toggleOneSms(c.id)} style={{width:15, height:15, accentColor:'#E8C547', flexShrink:0}} />
-                          <div style={{width:34, height:34, borderRadius:'50%', background:smsAvatarColor(c), color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:13, flexShrink:0}}>{initial}</div>
+                          <div style={{width:32, height:32, borderRadius:'50%', background:smsAvatarColor(c), color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:12, flexShrink:0}}>{initial}</div>
                           <div style={{flex:1, minWidth:0}}>
                             <div style={{display:'flex', alignItems:'center', gap:6, flexWrap:'wrap'}}>
                               <span style={{fontWeight:600, fontSize:13, color:'#111', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>
@@ -3138,9 +3129,10 @@ function CRMApp({ user, onLogout }) {
                   </div>
                 </div>
 
-                {/* Colonne droite — Composer SMS */}
-                <div style={{background:'#fff', borderRadius:12, border:'1.5px solid #f0f0f0', padding:24, boxShadow:'0 2px 8px rgba(0,0,0,0.06)'}}>
-                  <div style={{background:'#f8f8f8', borderRadius:8, padding:'8px 12px', marginBottom:16, fontSize:13, color:'#888'}}>
+                {/* Colonne 3 — Composer SMS + Historique */}
+                <div style={{display:'flex', flexDirection:'column', gap:12, minHeight:0, overflow:'hidden'}}>
+                <div style={{background:'#fff', borderRadius:12, boxShadow:'0 1px 4px rgba(0,0,0,0.07)', padding:20, flexShrink:0}}>
+                  <div style={{background:'#f8f8f8', borderRadius:8, padding:'8px 12px', marginBottom:14, fontSize:13, color:'#888'}}>
                     De : <strong style={{color:'#111'}}>Le TED</strong>
                   </div>
                   <textarea
@@ -3148,18 +3140,18 @@ function CRMApp({ user, onLogout }) {
                     value={smsMessage}
                     onChange={e=>setSmsMessage(e.target.value.slice(0,smsLimit))}
                     placeholder="Votre message SMS (160 caractères max)..."
-                    style={{width:'100%', minHeight:140, border:'1.5px solid #eee', borderRadius:8, padding:12, fontSize:14, resize:'none', outline:'none', boxSizing:'border-box', lineHeight:1.6, fontFamily:'inherit'}}
+                    style={{width:'100%', minHeight:120, border:'1.5px solid #eee', borderRadius:8, padding:12, fontSize:14, resize:'none', outline:'none', boxSizing:'border-box', lineHeight:1.6, fontFamily:'inherit'}}
                   />
-                  <div style={{display:'flex', justifyContent:'space-between', marginBottom:12}}>
+                  <div style={{display:'flex', justifyContent:'space-between', marginBottom:10}}>
                     <span style={{fontSize:12, color:smsMessage.length > smsLimit * 0.9 ?'#dc2626':'#999', fontWeight:smsMessage.length > smsLimit * 0.9 ?700:400}}>
-                      {smsMessage.length}/{smsLimit} caractères
-                      {containsEmoji(smsMessage) && <span style={{color:'#E8C547', marginLeft:6}}>⚠️ Emojis = limite 70 car.</span>}
+                      {smsMessage.length}/{smsLimit} car.
+                      {containsEmoji(smsMessage) && <span style={{color:'#E8C547', marginLeft:6}}>⚠️ 70 max</span>}
                     </span>
                     <span style={{fontSize:12, color:'#999'}}>
                       ~{smsSelected.length} SMS · ~{(smsSelected.length * 0.045).toFixed(2)}€
                     </span>
                   </div>
-                  <div style={{display:'flex', gap:6, flexWrap:'wrap', alignItems:'center', marginBottom:16}}>
+                  <div style={{display:'flex', gap:6, flexWrap:'wrap', alignItems:'center', marginBottom:14}}>
                     <span style={{fontSize:11, color:'#bbb', alignSelf:'center'}}>Insérer :</span>
                     {['{prenom}','{nom}','{tel}','{entreprise}'].map(v => (
                       <button key={v} onClick={()=>{
@@ -3169,7 +3161,7 @@ function CRMApp({ user, onLogout }) {
                         const newVal = (smsMessage.substring(0, start) + v + smsMessage.substring(start)).slice(0, smsLimit);
                         setSmsMessage(newVal);
                         setTimeout(()=>{ ta.focus(); ta.setSelectionRange(start + v.length, start + v.length); }, 0);
-                      }} style={{background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:6, padding:'4px 10px', fontSize:12, fontWeight:600, color:'#111', cursor:'pointer', marginRight:6, marginBottom:6}}>
+                      }} style={{background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:6, padding:'4px 10px', fontSize:12, fontWeight:600, color:'#111', cursor:'pointer'}}>
                         {v}
                       </button>
                     ))}
@@ -3228,51 +3220,42 @@ function CRMApp({ user, onLogout }) {
                   <button
                     disabled={!canSendSms}
                     onClick={()=>setShowConfirmSms(true)}
-                    style={{width:'100%', height:48, background:canSendSms?'#E8C547':'#f0f0f0', color:canSendSms?'#111':'#bbb', border:'none', borderRadius:10, fontSize:15, fontWeight:800, cursor:canSendSms?'pointer':'not-allowed'}}>
+                    style={{width:'100%', height:46, background:canSendSms?'#E8C547':'#f0f0f0', color:canSendSms?'#111':'#bbb', border:'none', borderRadius:10, fontSize:15, fontWeight:800, cursor:canSendSms?'pointer':'not-allowed'}}>
                     📱 Envoyer à {smsSelected.length} destinataire(s)
                   </button>
                 </div>
-              </div>
 
-              {/* ─── Historique SMS ─── */}
-              <div style={{maxWidth:1300, margin:'0 auto', padding:'0 20px 32px'}}>
-                <div style={{marginTop:32}}>
-                  <h3 style={{fontSize:16, fontWeight:800, color:'#111', margin:'0 0 16px', display:'flex', alignItems:'center', gap:8}}>
-                    📋 Historique SMS
+                {/* Historique SMS — scrollable */}
+                <div style={{flex:1, background:'#fff', borderRadius:12, boxShadow:'0 1px 4px rgba(0,0,0,0.07)', display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0}}>
+                  <div style={{padding:'12px 16px', borderBottom:'1px solid #f0f0f0', flexShrink:0, display:'flex', alignItems:'center', gap:8}}>
+                    <span style={{fontSize:13, fontWeight:800, color:'#111'}}>📋 Historique SMS</span>
                     <span style={{background:'#f0f0f0', borderRadius:99, padding:'2px 10px', fontSize:12, fontWeight:600, color:'#666'}}>{smsHistorique.length}</span>
-                  </h3>
-
+                  </div>
+                  <div style={{flex:1, overflowY:'auto', padding:'8px 12px'}}>
                   {smsHistorique.length === 0 && (
-                    <div style={{textAlign:'center', padding:'3rem', color:'#bbb'}}>
-                      <div style={{fontSize:40, marginBottom:8}}>📭</div>
+                    <div style={{textAlign:'center', padding:'2rem', color:'#bbb'}}>
+                      <div style={{fontSize:36, marginBottom:8}}>📭</div>
                       <p style={{fontSize:14}}>Aucun SMS envoyé pour l'instant</p>
                     </div>
                   )}
-
                   {smsHistorique.map(sms => (
-                    <div key={sms.id} style={{background:'#fff', borderRadius:12, border:'1.5px solid #f0f0f0', marginBottom:10, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.04)'}}>
-                      <div onClick={()=>toggleSmsExpanded(sms.id)} style={{padding:'14px 16px', cursor:'pointer', display:'flex', alignItems:'center', gap:12, background:smsExpanded[sms.id]?'#fffbea':'#fff'}}>
-                        <div style={{width:40, height:40, borderRadius:10, background:'#111', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0}}>📱</div>
+                    <div key={sms.id} style={{background:'#f9f9f9', borderRadius:10, border:'1.5px solid #f0f0f0', marginBottom:8, overflow:'hidden'}}>
+                      <div onClick={()=>toggleSmsExpanded(sms.id)} style={{padding:'12px 14px', cursor:'pointer', display:'flex', alignItems:'center', gap:10, background:smsExpanded[sms.id]?'#fffbea':'transparent'}}>
                         <div style={{flex:1, minWidth:0}}>
-                          <p style={{margin:0, fontWeight:700, fontSize:14, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{sms.message}</p>
-                          <p style={{margin:'3px 0 0', fontSize:12, color:'#999'}}>
-                            {new Date(sms.created_at).toLocaleDateString('fr-FR', {day:'2-digit', month:'long', year:'numeric'})} à {new Date(sms.created_at).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})}
+                          <p style={{margin:0, fontWeight:700, fontSize:13, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{sms.message}</p>
+                          <p style={{margin:'2px 0 0', fontSize:11, color:'#999'}}>
+                            {new Date(sms.created_at).toLocaleDateString('fr-FR', {day:'2-digit', month:'short', year:'numeric'})} · {sms.nb_destinataires} envoi(s)
                           </p>
                         </div>
-                        <div style={{display:'flex', alignItems:'center', gap:8, flexShrink:0}}>
-                          <span style={{background:'#f0f0f0', borderRadius:99, padding:'3px 10px', fontSize:12, fontWeight:600, color:'#555'}}>{sms.nb_destinataires} envoi(s)</span>
-                          <span style={{fontSize:16, color:'#bbb', transform:smsExpanded[sms.id]?'rotate(90deg)':'rotate(0)', transition:'transform 0.2s'}}>›</span>
-                        </div>
+                        <span style={{fontSize:16, color:'#bbb', transform:smsExpanded[sms.id]?'rotate(90deg)':'rotate(0)', transition:'transform 0.2s', flexShrink:0}}>›</span>
                       </div>
-
                       {smsExpanded[sms.id] && (
-                        <div style={{padding:'0 16px 16px', borderTop:'1px solid #f5f5f5'}}>
-                          <p style={{fontSize:13, color:'#666', fontStyle:'italic', background:'#f9f9f9', borderRadius:8, padding:'10px 12px', margin:'12px 0', lineHeight:1.6, whiteSpace:'pre-wrap'}}>{sms.message}</p>
-                          <p style={{fontSize:12, fontWeight:700, color:'#888', margin:'0 0 8px', textTransform:'uppercase', letterSpacing:0.5}}>Destinataires</p>
-                          <div style={{display:'flex', flexWrap:'wrap', gap:6}}>
+                        <div style={{padding:'0 14px 12px', borderTop:'1px solid #eee'}}>
+                          <p style={{fontSize:13, color:'#666', fontStyle:'italic', background:'#fff', borderRadius:8, padding:'8px 10px', margin:'10px 0 8px', lineHeight:1.6, whiteSpace:'pre-wrap'}}>{sms.message}</p>
+                          <div style={{display:'flex', flexWrap:'wrap', gap:5}}>
                             {(sms.destinataires||[]).map((d, i) => (
-                              <div key={i} style={{display:'flex', alignItems:'center', gap:6, background:'#f5f5f5', borderRadius:8, padding:'5px 10px', fontSize:12}}>
-                                <div style={{width:24, height:24, borderRadius:'50%', background:'#E8C547', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:700, color:'#111'}}>
+                              <div key={i} style={{display:'flex', alignItems:'center', gap:5, background:'#fff', borderRadius:6, padding:'4px 8px', fontSize:11}}>
+                                <div style={{width:20, height:20, borderRadius:'50%', background:'#E8C547', display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, fontWeight:700, color:'#111'}}>
                                   {(d.prenom||d.nom||'?')[0]?.toUpperCase()}
                                 </div>
                                 <span style={{fontWeight:600, color:'#333'}}>{d.prenom} {d.nom}</span>
@@ -3280,11 +3263,13 @@ function CRMApp({ user, onLogout }) {
                               </div>
                             ))}
                           </div>
-                          <p style={{fontSize:11, color:'#bbb', margin:'10px 0 0', textAlign:'right'}}>Envoyé par {sms.envoye_par}</p>
+                          <p style={{fontSize:11, color:'#bbb', margin:'8px 0 0', textAlign:'right'}}>Envoyé par {sms.envoye_par}</p>
                         </div>
                       )}
                     </div>
                   ))}
+                  </div>
+                </div>
                 </div>
               </div>
 
