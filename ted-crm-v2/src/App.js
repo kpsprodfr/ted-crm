@@ -157,45 +157,99 @@ function ConfirmModal({ title, msg, onOk, onCancel, okLabel="Confirmer", danger=
 
 // ─── Login Page ───────────────────────────────────────────────────────────────
 function LoginPage({ onLogin }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const isMob = window.innerWidth < 768;
 
-  async function handleLogin(e) {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) { setError("Email ou mot de passe incorrect."); setLoading(false); return; }
+  async function handleLogin() {
+    setLoginLoading(true);
+    setLoginError("");
+    const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
+    if (error) { setLoginError("Email ou mot de passe incorrect."); setLoginLoading(false); return; }
     onLogin();
   }
 
-  return (
-    <div style={{ minHeight:"100vh", background:"#f8f8f8", display:"flex", alignItems:"center", justifyContent:"center", padding:"1rem" }}>
-      <div style={{ background:"#fff", borderRadius:14, border:"1.5px solid #e5e5e5", padding:"2.5rem 2rem", width:"100%", maxWidth:380, boxShadow:"0 4px 30px rgba(0,0,0,0.08)" }}>
-        <div style={{ textAlign:"center", marginBottom:"2rem" }}>
-          <div style={{ background:"#111", borderRadius:10, display:"inline-block", padding:"10px 20px", marginBottom:16 }}>
-            <span style={{ color:G, fontWeight:700, fontSize:20, letterSpacing:2 }}>TED</span>
-          </div>
-          <h1 style={{ fontSize:18, fontWeight:700, color:"#111", margin:0 }}>Fichier Clients</h1>
-          <p style={{ fontSize:13, color:"#999", marginTop:6 }}>Connectez-vous pour accéder au CRM</p>
+  const formPanel = (
+    <div style={{ width: isMob ? '100%' : 480, background:'#fff', borderRadius: isMob ? 0 : '24px 0 0 24px', padding: isMob ? '48px 24px' : '60px 48px', display:'flex', flexDirection:'column', justifyContent:'center', gap:20, minHeight: isMob ? '100vh' : undefined }}>
+      {isMob && (
+        <div style={{ textAlign:'center', marginBottom:8 }}>
+          <img src="/favicon.png" style={{ width:48, height:48, marginBottom:8 }} alt="TED" />
+          <div style={{ fontSize:22, fontWeight:900, color:'#111', letterSpacing:1 }}>TED <span style={{ color:'#E8C547' }}>CRM</span></div>
         </div>
-        <form onSubmit={handleLogin}>
-          <div style={fg}>
-            <label style={lbl}>Adresse email</label>
-            <input style={inp(false)} type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="votre@email.fr" required />
-          </div>
-          <div style={fg}>
-            <label style={lbl}>Mot de passe</label>
-            <input style={inp(false)} type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" required />
-          </div>
-          {error && <p style={{ fontSize:12, color:"#dc2626", marginBottom:12, textAlign:"center" }}>{error}</p>}
-          <button type="submit" style={{ ...btnPrimary, width:"100%", height:44, fontSize:15 }} disabled={loading}>
-            {loading ? "Connexion..." : "Se connecter"}
-          </button>
-        </form>
+      )}
+      <div>
+        <h2 style={{ fontSize: isMob ? 24 : 28, fontWeight:900, color:'#111', margin:'0 0 4px' }}>Connexion</h2>
+        <p style={{ fontSize:14, color:'#999', margin:0 }}>Accédez à votre espace TED CRM</p>
       </div>
+      <div>
+        <label style={{ fontSize:15, fontWeight:700, color:'#111', display:'block', marginBottom:8 }}>Email</label>
+        <div style={{ position:'relative' }}>
+          <span style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', fontSize:16, pointerEvents:'none' }}>✉️</span>
+          <input type="email" placeholder="votre@email.com" value={loginEmail} onChange={e=>setLoginEmail(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleLogin()} style={{ width:'100%', height:52, border:'1.5px solid #eee', borderRadius:10, padding:'0 14px 0 42px', fontSize:15, outline:'none', boxSizing:'border-box', background:'#f9f9f9' }} />
+        </div>
+      </div>
+      <div>
+        <label style={{ fontSize:15, fontWeight:700, color:'#111', display:'block', marginBottom:8 }}>Mot de passe</label>
+        <div style={{ position:'relative' }}>
+          <span style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', fontSize:16, pointerEvents:'none' }}>🔒</span>
+          <input type={showPassword ? 'text' : 'password'} placeholder="Votre mot de passe" value={loginPassword} onChange={e=>setLoginPassword(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleLogin()} style={{ width:'100%', height:52, border:'1.5px solid #eee', borderRadius:10, padding:'0 44px 0 42px', fontSize:15, outline:'none', boxSizing:'border-box', background:'#f9f9f9' }} />
+          <button onClick={()=>setShowPassword(v=>!v)} style={{ position:'absolute', right:14, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', fontSize:16, color:'#999', padding:0 }}>{showPassword ? '🙈' : '👁️'}</button>
+        </div>
+      </div>
+      <button onClick={handleLogin} disabled={loginLoading} style={{ width:'100%', height:56, background:'#E8C547', border:'none', borderRadius:12, fontSize:17, fontWeight:800, cursor: loginLoading ? 'not-allowed' : 'pointer', color:'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:8, marginTop:8, opacity: loginLoading ? 0.7 : 1 }}>
+        {loginLoading ? 'Connexion...' : 'Se connecter →'}
+      </button>
+      {loginError && <p style={{ color:'#dc2626', fontSize:13, textAlign:'center', margin:0 }}>{loginError}</p>}
+      <div style={{ borderTop:'1px solid #eee', paddingTop:16, display:'flex', justifyContent:'space-between', gap:16 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+          <span style={{ fontSize:14 }}>🔒</span>
+          <div>
+            <div style={{ fontSize:12, fontWeight:700, color:'#111' }}>Vos données sont protégées.</div>
+            <div style={{ fontSize:11, color:'#999' }}>Confidentialité garantie.</div>
+          </div>
+        </div>
+        <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+          <span style={{ fontSize:14 }}>🎧</span>
+          <div>
+            <div style={{ fontSize:12, fontWeight:700, color:'#111' }}>Besoin d'aide ?</div>
+            <div style={{ fontSize:11, color:'#999' }}>Contactez votre responsable.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (isMob) return formPanel;
+
+  return (
+    <div style={{ minHeight:'100vh', background:'#111', display:'flex', alignItems:'stretch', position:'relative', overflow:'hidden' }}>
+      <div style={{ flex:1, display:'flex', flexDirection:'column', justifyContent:'space-between', padding:'40px', position:'relative' }}>
+        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+          <img src="/favicon.png" style={{ width:48, height:48 }} alt="TED" />
+          <span style={{ fontSize:28, fontWeight:900, color:'#fff', letterSpacing:1 }}>TED <span style={{ color:'#E8C547' }}>CRM</span></span>
+        </div>
+        <div>
+          <h1 style={{ fontSize:56, fontWeight:900, color:'#fff', margin:'0 0 12px', lineHeight:1.1 }}>Connexion</h1>
+          <p style={{ fontSize:18, color:'#888', margin:0 }}>Accédez à votre espace TED CRM</p>
+        </div>
+        <div style={{ display:'flex', gap:32 }}>
+          {[
+            { icon:'🔄', title:'Synchronisé', sub:'en temps réel' },
+            { icon:'🛡️', title:'Sécurisé', sub:'et fiable' },
+            { icon:'📱', title:'iPad / PC / Mobile', sub:'Partout avec vous' },
+          ].map((f,i) => (
+            <div key={i} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
+              <span style={{ fontSize:28, color:'#E8C547' }}>{f.icon}</span>
+              <span style={{ fontSize:13, fontWeight:700, color:'#fff' }}>{f.title}</span>
+              <span style={{ fontSize:12, color:'#666' }}>{f.sub}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      {formPanel}
     </div>
   );
 }
