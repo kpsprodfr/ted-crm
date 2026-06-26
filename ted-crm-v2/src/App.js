@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download } from 'lucide-react';
+import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut } from 'lucide-react';
 import { supabase } from "./supabase";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -2509,20 +2509,21 @@ function CRMApp({ user, onLogout }) {
 
   const sidebarDesktop = !isMobile ? (
     <div style={{ position:'fixed', top:0, left:0, bottom:0, width:120, background:'#111', display:'flex', flexDirection:'column', alignItems:'center', padding:'20px 0', zIndex:100, borderRight:'1px solid #222' }}>
-      <img src="/favicon.png" style={{ width:40, height:40, marginBottom:32 }} alt="TED" />
+      <img src="/favicon.png" style={{ width:44, height:44 }} alt="TED" />
+      <span style={{ fontSize:10, fontWeight:800, color:'#E8C547', letterSpacing:2, marginTop:4, marginBottom:28 }}>LE TED</span>
       {[
-        { id:'reservations', label:'Réservations', icon:'📅' },
-        { id:'clients', label:'Clients', icon:'👥' },
-        { id:'communications', label:'Communications', icon:'📣' },
+        { id:'reservations', label:'Réservations', icon:<CalendarDays size={24} strokeWidth={1.8} /> },
+        { id:'clients', label:'Clients', icon:<Users size={24} strokeWidth={1.8} /> },
+        { id:'communications', label:'Communications', icon:<Megaphone size={24} strokeWidth={1.8} /> },
       ].map(item => (
-        <button key={item.id} onClick={()=>setActiveView(item.id)} style={{ width:'100%', padding:'12px 8px', border:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer', marginBottom:4, borderLeft: activeView===item.id ? '3px solid #E8C547' : '3px solid transparent', background: activeView===item.id ? 'rgba(232,197,71,0.1)' : 'transparent', color: activeView===item.id ? '#E8C547' : '#888' }}>
-          <span style={{ fontSize:22 }}>{item.icon}</span>
+        <button key={item.id} onClick={()=>setActiveView(item.id)} style={{ width:'100%', padding:'12px 8px', border:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer', marginBottom:4, borderLeft: activeView===item.id ? '3px solid #E8C547' : '3px solid transparent', background: activeView===item.id ? 'rgba(232,197,71,0.1)' : 'transparent', color: activeView===item.id ? '#E8C547' : '#555' }}>
+          {item.icon}
           <span style={{ fontSize:10, fontWeight:600, textAlign:'center', lineHeight:1.2 }}>{item.label}</span>
         </button>
       ))}
       <div style={{ position:'relative' }}>
-        <button onClick={()=>setShowFormulaireDropdown(v=>!v)} style={{ width:'100%', padding:'12px 8px', border:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer', marginBottom:4, borderLeft: showFormulaireDropdown ? '3px solid #E8C547' : '3px solid transparent', background: showFormulaireDropdown ? 'rgba(232,197,71,0.1)' : 'transparent', color: showFormulaireDropdown ? '#E8C547' : '#888' }}>
-          <span style={{ fontSize:22 }}>🔗</span>
+        <button onClick={()=>setShowFormulaireDropdown(v=>!v)} style={{ width:'100%', padding:'12px 8px', border:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer', marginBottom:4, borderLeft: showFormulaireDropdown ? '3px solid #E8C547' : '3px solid transparent', background: showFormulaireDropdown ? 'rgba(232,197,71,0.1)' : 'transparent', color: showFormulaireDropdown ? '#E8C547' : '#555' }}>
+          <Link size={24} strokeWidth={1.8} />
           <span style={{ fontSize:10, fontWeight:600, textAlign:'center', lineHeight:1.2 }}>Formulaire</span>
         </button>
         {showFormulaireDropdown && (
@@ -2535,7 +2536,7 @@ function CRMApp({ user, onLogout }) {
       </div>
       <div style={{ flex:1 }} />
       <button onClick={()=>setShowConfirmDeconnexion(true)} style={{ width:'100%', padding:'12px 8px', border:'none', background:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer', color:'#555' }}>
-        <span style={{ fontSize:22 }}>🔓</span>
+        <LogOut size={22} strokeWidth={1.8} />
         <span style={{ fontSize:10, fontWeight:600 }}>Déconnexion</span>
       </button>
       {showConfirmDeconnexion && (
