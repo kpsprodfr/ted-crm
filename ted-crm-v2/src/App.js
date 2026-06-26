@@ -580,7 +580,6 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
   const [showEditClientInline, setShowEditClientInline] = useState(false);
   const [editClientForm, setEditClientForm] = useState({});
   const [resaCree, setResaCree] = useState(null);
-  const [showFicheClientInline, setShowFicheClientInline] = useState(false);
   const [calPickerDate, setCalPickerDate] = useState(() => {
     if (initialResa?.date) {
       const d = new Date(initialResa.date + 'T12:00:00');
@@ -904,7 +903,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
             <div style={{ marginTop:8 }}>
               <div style={{ background:'#f0fdf4', border:'1.5px solid #22c55e', borderRadius:10, padding:'10px 14px', display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
                 <span style={{ fontSize:14 }}>✅</span>
-                <span onClick={()=>setShowFicheClientInline(true)} style={{ fontSize:14, fontWeight:800, color:'#111', flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', cursor:'pointer', textDecoration:'underline', textDecorationColor:'#E8C547' }}>{clientFound.prenom} {clientFound.nom}</span>
+                <span onClick={()=>{ if(onViewClient) onViewClient(clientFound); }} style={{ fontSize:14, fontWeight:800, color:'#111', flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', cursor: onViewClient ? 'pointer' : 'default', textDecoration: onViewClient ? 'underline' : 'none', textDecorationColor:'#E8C547' }}>{clientFound.prenom} {clientFound.nom}</span>
                 {statsClient && <>
                   <span style={{ fontSize:12, color:'#555', whiteSpace:'nowrap' }}>·&nbsp;{statsClient.total} résa</span>
                   {statsClient.noshow > 0 && <span style={{ fontSize:12, color:'#dc2626', whiteSpace:'nowrap' }}>·&nbsp;{statsClient.noshow} no-show</span>}
@@ -1040,64 +1039,6 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
       </Modal>
     )}
 
-    {showFicheClientInline && clientFound && (
-      <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:5000, display:'flex', alignItems:'flex-end' }} onClick={()=>setShowFicheClientInline(false)}>
-        <div style={{ background:'#fff', borderRadius:'20px 20px 0 0', width:'100%', maxHeight:'80vh', overflowY:'auto', padding:'20px 20px calc(20px + env(safe-area-inset-bottom))' }} onClick={e=>e.stopPropagation()}>
-
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
-            <h3 style={{ margin:0, fontSize:18, fontWeight:800, color:'#111' }}>
-              {clientFound.genre==='Entreprise' ? clientFound.entreprise : `${clientFound.prenom} ${clientFound.nom}`}
-            </h3>
-            <button onClick={()=>setShowFicheClientInline(false)} style={{ background:'#f0f0f0', border:'none', borderRadius:'50%', width:32, height:32, cursor:'pointer', fontSize:16 }}>✕</button>
-          </div>
-
-          <div style={{ marginBottom:12 }}>
-            <span style={{ padding:'3px 10px', borderRadius:20, fontSize:12, fontWeight:700, background: clientFound.genre==='Homme' ? '#dbeafe' : clientFound.genre==='Femme' ? '#fce7f3' : '#dcfce7', color: clientFound.genre==='Homme' ? '#1d4ed8' : clientFound.genre==='Femme' ? '#be185d' : '#15803d' }}>{clientFound.genre}</span>
-            {clientFound.genre==='Entreprise' && <span style={{ marginLeft:8, fontSize:13, color:'#666' }}>Contact : {clientFound.prenom} {clientFound.nom}</span>}
-          </div>
-
-          <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:16 }}>
-            {clientFound.tel && (
-              <a href={`tel:${clientFound.tel}`} style={{ display:'flex', alignItems:'center', gap:10, background:'#E8C547', borderRadius:10, padding:'12px 16px', textDecoration:'none', color:'#111', fontWeight:700, fontSize:15 }}>
-                📞 {clientFound.tel}
-              </a>
-            )}
-            {clientFound.mail && (
-              <a href={`mailto:${clientFound.mail}`} style={{ fontSize:14, color:'#3b82f6', textDecoration:'none' }}>{clientFound.mail}</a>
-            )}
-          </div>
-
-          {(() => {
-            const resasClient = reservations.filter(r => r.client_id === clientFound.id);
-            const total = resasClient.length;
-            const noshow = resasClient.filter(r => r.statut === 'absente').length;
-            const aujourd = new Date().toISOString().split('T')[0];
-            const derniereVisite = resasClient.filter(r => (r.statut==='venue'||r.statut==='confirmee') && r.date <= aujourd).sort((a,b)=>b.date.localeCompare(a.date))[0];
-            const prochaineResa = resasClient.filter(r => r.date > aujourd && (r.statut==='confirmee'||r.statut==='attente')).sort((a,b)=>a.date.localeCompare(b.date))[0];
-            return (
-              <div style={{ background:'#f9f9f9', borderRadius:10, padding:14 }}>
-                <div style={{ display:'flex', gap:0, marginBottom:12 }}>
-                  <div style={{ textAlign:'center', flex:1 }}>
-                    <div style={{ fontSize:20, fontWeight:800, color:'#111' }}>{total}</div>
-                    <div style={{ fontSize:10, color:'#999', textTransform:'uppercase' }}>Résa total</div>
-                  </div>
-                  <div style={{ textAlign:'center', flex:1 }}>
-                    <div style={{ fontSize:20, fontWeight:800, color: noshow>0?'#dc2626':'#111' }}>{noshow}</div>
-                    <div style={{ fontSize:10, color:'#999', textTransform:'uppercase' }}>No-show</div>
-                  </div>
-                </div>
-                <div style={{ fontSize:13, color:'#666' }}>
-                  <div style={{ marginBottom:4 }}>🕐 Dernière visite : <strong>{derniereVisite ? new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) : 'Jamais'}</strong></div>
-                  {prochaineResa && <div>📅 Prochaine résa : <strong>{new Date(prochaineResa.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long'})} à {prochaineResa.heure}</strong></div>}
-                </div>
-              </div>
-            );
-          })()}
-
-          <button onClick={()=>setShowFicheClientInline(false)} style={{ width:'100%', height:44, background:'#111', color:'#fff', border:'none', borderRadius:10, fontSize:14, fontWeight:700, cursor:'pointer', marginTop:16 }}>Fermer</button>
-        </div>
-      </div>
-    )}
     </>
   );
 }
@@ -1987,6 +1928,7 @@ function CRMApp({ user, onLogout }) {
   const [page, setPage] = useState(1);
   const [modalAdd, setModalAdd] = useState(false);
   const [modalDetailClient, setModalDetailClient] = useState(null);
+  const [ficheClientReadOnly, setFicheClientReadOnly] = useState(false);
   const [showTop300, setShowTop300] = useState(false);
   const [statsClients, setStatsClients] = useState({});
   const [topJours, setTopJours] = useState([]);
@@ -3566,20 +3508,22 @@ function CRMApp({ user, onLogout }) {
 
 
       {/* Modals */}
-      {showAddResa && <AddResaModal onClose={()=>setShowAddResa(false)} onSaved={()=>{ loadResaCount(); loadClients(); }} showToast={showToast} user={user} onViewClient={(c)=>{ setModalDetailClient(c); }} reservations={resasData} />}
+      {showAddResa && <AddResaModal onClose={()=>setShowAddResa(false)} onSaved={()=>{ loadResaCount(); loadClients(); }} showToast={showToast} user={user} onViewClient={(c)=>{ setFicheClientReadOnly(true); setModalDetailClient(c); }} reservations={resasData} />}
       {modalDetailClient && (() => {
         const c = modalDetailClient;
         const s = statsClients[c.id] || { total:0, noshow:0, derniereVisite:null };
         const nomAffiche = c.genre === 'Entreprise' ? (c.entreprise || c.nom || '—') : `${c.prenom||''} ${c.nom||''}`.trim() || '—';
         return (
-          <Modal title={nomAffiche} onClose={()=>setModalDetailClient(null)} maxW={440}
+          <Modal title={nomAffiche} onClose={()=>{ setModalDetailClient(null); setFicheClientReadOnly(false); }} maxW={440}
             footer={
               <div style={{ display:'flex', flexDirection:'column', gap:8, width:'100%' }}>
-                <div style={{ display:'flex', gap:8 }}>
-                  <button onClick={()=>{ setModalDetailClient(null); setModalDelete(c); }} style={{ flex:1, height:44, border:'1.5px solid #dc2626', borderRadius:10, background:'#fef2f2', color:'#dc2626', fontSize:14, fontWeight:700, cursor:'pointer' }}>🗑️ Supprimer</button>
-                  <button onClick={()=>{ setModalDetailClient(null); setModalEdit(c); }} style={{ flex:2, height:44, border:'none', borderRadius:10, background:'#E8C547', color:'#111', fontSize:14, fontWeight:700, cursor:'pointer' }}>✏️ Modifier</button>
-                </div>
-                <button onClick={()=>setModalDetailClient(null)} style={{ width:'100%', height:44, background:'#fff', border:'1.5px solid #ddd', borderRadius:10, fontSize:14, fontWeight:600, cursor:'pointer', color:'#666' }}>Fermer</button>
+                {!ficheClientReadOnly && (
+                  <div style={{ display:'flex', gap:8 }}>
+                    <button onClick={()=>{ setModalDetailClient(null); setFicheClientReadOnly(false); setModalDelete(c); }} style={{ flex:1, height:44, border:'1.5px solid #dc2626', borderRadius:10, background:'#fef2f2', color:'#dc2626', fontSize:14, fontWeight:700, cursor:'pointer' }}>🗑️ Supprimer</button>
+                    <button onClick={()=>{ setModalDetailClient(null); setFicheClientReadOnly(false); setModalEdit(c); }} style={{ flex:2, height:44, border:'none', borderRadius:10, background:'#E8C547', color:'#111', fontSize:14, fontWeight:700, cursor:'pointer' }}>✏️ Modifier</button>
+                  </div>
+                )}
+                <button onClick={()=>{ setModalDetailClient(null); setFicheClientReadOnly(false); }} style={{ width:'100%', height:44, background:'#fff', border:'1.5px solid #ddd', borderRadius:10, fontSize:14, fontWeight:600, cursor:'pointer', color:'#666' }}>Fermer</button>
               </div>
             }>
             <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
