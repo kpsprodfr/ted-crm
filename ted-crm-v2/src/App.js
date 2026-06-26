@@ -841,21 +841,22 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
     );
   })();
 
-  return (
+  const ctaFooter = !resaCree ? (
+    <div style={{ width:'100%' }}>
+      <button onClick={handleSave} disabled={saving || !resaValide} style={{ width:'100%', height:56, background: resaValide ? '#E8C547' : '#f0f0f0', color: resaValide ? '#111' : '#bbb', border:'none', borderRadius:14, fontSize:17, fontWeight:800, cursor: resaValide ? 'pointer' : 'not-allowed', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity: saving ? 0.6 : 1 }}>
+        {saving ? 'Enregistrement…' : (isEdit ? '✏️ Modifier la réservation' : '📅 Créer la réservation')}
+      </button>
+      {!resaValide && (
+        <p style={{ textAlign:'center', fontSize:12, color:'#999', margin:'6px 0 0' }}>
+          {tel?.replace(/\D/g,'').length < 10 ? 'Entrez un numéro de téléphone' : !dateIso ? 'Choisissez une date' : !service ? 'Choisissez Midi ou Soir' : !heure ? 'Choisissez une heure' : 'Remplissez tous les champs'}
+        </p>
+      )}
+      <button onClick={onClose} style={{ width:'100%', background:'none', border:'none', color:'#999', fontSize:14, cursor:'pointer', padding:'8px', marginTop:4 }}>Annuler</button>
+    </div>
+  ) : null;
+
+  const formContent = (
     <>
-    <Modal title={isEdit ? 'Modifier la réservation' : 'Nouvelle réservation'} onClose={onClose} footer={!resaCree ? (
-      <div style={{ width:'100%' }}>
-        <button onClick={handleSave} disabled={saving || !resaValide} style={{ width:'100%', height:56, background: resaValide ? '#E8C547' : '#f0f0f0', color: resaValide ? '#111' : '#bbb', border:'none', borderRadius:14, fontSize:17, fontWeight:800, cursor: resaValide ? 'pointer' : 'not-allowed', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity: saving ? 0.6 : 1 }}>
-          {saving ? 'Enregistrement…' : (isEdit ? '✏️ Modifier la réservation' : '📅 Créer la réservation')}
-        </button>
-        {!resaValide && (
-          <p style={{ textAlign:'center', fontSize:12, color:'#999', margin:'6px 0 0' }}>
-            {tel?.replace(/\D/g,'').length < 10 ? 'Entrez un numéro de téléphone' : !dateIso ? 'Choisissez une date' : !service ? 'Choisissez Midi ou Soir' : !heure ? 'Choisissez une heure' : 'Remplissez tous les champs'}
-          </p>
-        )}
-        <button onClick={onClose} style={{ width:'100%', background:'none', border:'none', color:'#999', fontSize:14, cursor:'pointer', padding:'8px', marginTop:4 }}>Annuler</button>
-      </div>
-    ) : null}>
       {resaCree && (
         <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:32, textAlign:'center', minHeight:400 }}>
           <div style={{ width:72, height:72, borderRadius:'50%', background:'#f0fdf4', border:'3px solid #22c55e', display:'flex', alignItems:'center', justifyContent:'center', fontSize:32, marginBottom:20 }}>✓</div>
@@ -1017,7 +1018,27 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
       </div>
 
       </>}
-    </Modal>
+    </>
+  );
+
+  return (
+    <>
+    {isMobile ? (
+      <div style={{ position:'fixed', inset:0, background:'#f8f8f8', zIndex:2000, display:'flex', flexDirection:'column' }}>
+        <div style={{ background:'#111', padding:'16px 20px', paddingTop:'calc(16px + env(safe-area-inset-top))', borderBottom:'3px solid #E8C547', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+          <h2 style={{ color:'#fff', margin:0, fontSize:18, fontWeight:800 }}>{isEdit ? 'Modifier la réservation' : 'Nouvelle réservation'}</h2>
+          <button type="button" onClick={onClose} style={{ background:'none', border:'none', color:'#fff', fontSize:20, cursor:'pointer', touchAction:'manipulation' }}>✕</button>
+        </div>
+        <div style={{ flex:1, overflowY:'auto', padding:'16px', WebkitOverflowScrolling:'touch' }}>
+          {formContent}
+        </div>
+        {ctaFooter && <div style={{ background:'#fff', padding:'12px 16px', paddingBottom:'calc(12px + env(safe-area-inset-bottom))', borderTop:'1px solid #eee', flexShrink:0 }}>{ctaFooter}</div>}
+      </div>
+    ) : (
+      <Modal title={isEdit ? 'Modifier la réservation' : 'Nouvelle réservation'} onClose={onClose} footer={ctaFooter}>
+        {formContent}
+      </Modal>
+    )}
 
     {showFicheClientInline && clientFound && (
       <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:5000, display:'flex', alignItems:'flex-end' }} onClick={()=>setShowFicheClientInline(false)}>
