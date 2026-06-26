@@ -2216,8 +2216,8 @@ function CRMApp({ user, onLogout }) {
     const withEmail = commClients.filter(c => c.mail);
     const allSelected = withEmail.length > 0 && withEmail.every(c => commSelected.includes(c.id));
     const toggleAll = () => {
-      if (allSelected) setCommSelected(s => s.filter(id => !withEmail.find(c => c.id === id)));
-      else setCommSelected(s => [...new Set([...s, ...withEmail.map(c => c.id)])]);
+      if (allSelected) setCommSelected([]);
+      else setCommSelected(withEmail.map(c => c.id));
     };
     const toggleOne = (id) => setCommSelected(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
     const selectedClients = clients.filter(c => commSelected.includes(c.id) && c.mail);
@@ -2363,7 +2363,7 @@ function CRMApp({ user, onLogout }) {
             {/* Tout sélectionner */}
             <div style={{padding:'8px 16px', borderBottom:'1px solid #f0f0f0'}}>
               <button onClick={toggleAll} style={{background:'none', border:'none', fontSize:12, color:'#4f46e5', fontWeight:600, cursor:'pointer', padding:0}}>
-                {allSelected ? '☑ Désélectionner tout' : '☐ Tout sélectionner'} <span style={{color:'#bbb', fontWeight:400}}>({withEmail.length})</span>
+                {allSelected ? '☐ Tout désélectionner' : '☑ Tout sélectionner'} <span style={{color:'#bbb', fontWeight:400}}>({withEmail.length})</span>
               </button>
             </div>
 
@@ -2591,10 +2591,11 @@ function CRMApp({ user, onLogout }) {
             }
             return true;
           });
-          const allSmsSelected = clientsSms.length > 0 && clientsSms.every(c => smsSelected.includes(c.id));
+          const idsMobiles = clientsSms.filter(c => isNumeroMobile(c.tel)).map(c => c.id);
+          const allSmsSelected = idsMobiles.length > 0 && idsMobiles.every(id => smsSelected.includes(id));
           const toggleAllSms = () => {
-            if (allSmsSelected) setSmsSelected(s => s.filter(id => !clientsSms.find(c => c.id === id)));
-            else setSmsSelected(s => [...new Set([...s, ...clientsSms.filter(c => isNumeroMobile(c.tel)).map(c => c.id)])]);
+            if (allSmsSelected) setSmsSelected([]);
+            else setSmsSelected(idsMobiles);
           };
           const toggleOneSms = (id) => { const c = clientsSms.find(x => x.id === id); if (c && !isNumeroMobile(c.tel)) return; setSmsSelected(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]); };
           const canSendSms = smsSelected.length > 0 && smsMessage.trim();
@@ -2722,7 +2723,7 @@ function CRMApp({ user, onLogout }) {
                   {/* Tout sélectionner */}
                   <div style={{padding:'8px 16px', borderBottom:'1px solid #f0f0f0'}}>
                     <button onClick={toggleAllSms} style={{background:'none', border:'none', fontSize:12, color:'#4f46e5', fontWeight:600, cursor:'pointer', padding:0}}>
-                      {allSmsSelected ? '☑ Désélectionner tout' : '☐ Tout sélectionner'} <span style={{color:'#bbb', fontWeight:400}}>({clientsSms.length})</span>
+                      {allSmsSelected ? '☐ Tout désélectionner' : '☑ Tout sélectionner'} <span style={{color:'#bbb', fontWeight:400}}>({idsMobiles.length})</span>
                     </button>
                   </div>
                   <div style={{maxHeight:'calc(100vh - 340px)', overflowY:'auto'}}>
