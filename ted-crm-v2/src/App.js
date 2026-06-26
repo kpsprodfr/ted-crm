@@ -579,6 +579,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
   const [calFermeture, setCalFermeture] = useState(false);
   const [showEditClientInline, setShowEditClientInline] = useState(false);
   const [editClientForm, setEditClientForm] = useState({});
+  const [resaCree, setResaCree] = useState(null);
   const [calPickerDate, setCalPickerDate] = useState(() => {
     if (initialResa?.date) {
       const d = new Date(initialResa.date + 'T12:00:00');
@@ -758,9 +759,16 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
     }
     setSaving(false);
     if (error) { showToast(isEdit ? 'Erreur lors de la modification' : 'Erreur lors de la création', 'error'); return; }
-    showToast(isEdit ? 'Réservation modifiée ✓' : 'Réservation créée ✓');
     onSaved();
-    onClose();
+    if (isEdit) {
+      showToast('Réservation modifiée ✓');
+      onClose();
+    } else {
+      setResaCree({
+        client: clientFound || { prenom, nom },
+        date: dateIso, service, heure, nb_personnes: nbPersonnes, occasion
+      });
+    }
   }
 
   const btnSvc = (s) => ({
@@ -834,6 +842,34 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
 
   return (
     <Modal title={isEdit ? 'Modifier la réservation' : 'Nouvelle réservation'} onClose={onClose} footer={null}>
+      {resaCree && (
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:32, textAlign:'center', minHeight:400 }}>
+          <div style={{ width:72, height:72, borderRadius:'50%', background:'#f0fdf4', border:'3px solid #22c55e', display:'flex', alignItems:'center', justifyContent:'center', fontSize:32, marginBottom:20 }}>✓</div>
+          <h2 style={{ fontSize:22, fontWeight:800, color:'#111', margin:'0 0 8px' }}>Réservation créée !</h2>
+          <p style={{ color:'#666', fontSize:15, margin:'0 0 24px' }}>{resaCree.client.prenom} {resaCree.client.nom}</p>
+          <div style={{ background:'#f9f9f9', borderRadius:12, padding:16, width:'100%', marginBottom:24, textAlign:'left' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid #eee' }}>
+              <span style={{ color:'#999', fontSize:14 }}>Date</span>
+              <span style={{ fontWeight:700, fontSize:14 }}>{new Date(resaCree.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</span>
+            </div>
+            <div style={{ display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid #eee' }}>
+              <span style={{ color:'#999', fontSize:14 }}>Service</span>
+              <span style={{ fontWeight:700, fontSize:14 }}>{resaCree.service==='midi'?'☀️ Midi':'🌙 Soir'}</span>
+            </div>
+            <div style={{ display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid #eee' }}>
+              <span style={{ color:'#999', fontSize:14 }}>Heure</span>
+              <span style={{ fontWeight:700, fontSize:14 }}>{resaCree.heure}</span>
+            </div>
+            <div style={{ display:'flex', justifyContent:'space-between', padding:'8px 0' }}>
+              <span style={{ color:'#999', fontSize:14 }}>Personnes</span>
+              <span style={{ fontWeight:700, fontSize:14 }}>{resaCree.nb_personnes} pers.</span>
+            </div>
+          </div>
+          <button onClick={onClose} style={{ width:'100%', height:52, background:'#E8C547', border:'none', borderRadius:14, fontSize:16, fontWeight:800, cursor:'pointer', color:'#111', marginBottom:8 }}>✓ Parfait !</button>
+          <button onClick={()=>{ setResaCree(null); setTel(''); setClientFound(null); setStatsClient(null); setPrenom(''); setNom(''); setEmail(''); setGenre(''); setDateIso(DATE_OPTS[0].iso); setService('soir'); setHeure(''); setNbPersonnes(2); setOccasion(''); setCommentaire(''); }} style={{ width:'100%', background:'none', border:'none', color:'#999', fontSize:14, cursor:'pointer', padding:'8px' }}>+ Ajouter une autre réservation</button>
+        </div>
+      )}
+      {!resaCree && <>
       {/* Subtitle confirmée */}
       {!isEdit && <div style={{ fontSize:12, color:'#16a34a', fontWeight:600, marginBottom:16, display:'flex', alignItems:'center', gap:6 }}>✅ Créée directement en confirmée</div>}
 
@@ -976,6 +1012,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
         )}
         <button onClick={onClose} style={{ width:'100%', background:'none', border:'none', color:'#999', fontSize:14, cursor:'pointer', padding:'8px', marginTop:4 }}>Annuler</button>
       </div>
+      </>}
     </Modal>
   );
 }
