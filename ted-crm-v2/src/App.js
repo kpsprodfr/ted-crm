@@ -3324,25 +3324,34 @@ function CRMApp({ user, onLogout }) {
                 </div>
               </div>
               {(() => {
+                const aujourd2 = new Date();
+                const il6Mois = new Date(); il6Mois.setMonth(il6Mois.getMonth() - 6);
+                const il6MoisStr = il6Mois.toISOString().split('T')[0];
+                const periodeLabel = `${il6Mois.toLocaleDateString('fr-FR',{month:'short',year:'numeric'})} — ${aujourd2.toLocaleDateString('fr-FR',{month:'short',year:'numeric'})}`;
                 const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
                 const compteJours = {};
-                resasData.filter(r => r.client_id === c.id && (r.statut === 'confirmee' || r.statut === 'venue')).forEach(r => {
+                resasData.filter(r => r.client_id === c.id && (r.statut === 'confirmee' || r.statut === 'venue') && r.date >= il6MoisStr).forEach(r => {
                   const jour = jours[new Date(r.date+'T12:00:00').getDay()];
                   const service = r.service === 'midi' ? 'Midi' : 'Soir';
                   const key = `${jour} ${service}`;
                   compteJours[key] = (compteJours[key] || 0) + 1;
                 });
                 const topJoursClient = Object.entries(compteJours).sort((a,b) => b[1]-a[1]).slice(0,3);
-                if (topJoursClient.length === 0) return null;
                 return (
                   <div style={{ background:'#f9f9f9', borderRadius:10, padding:'12px 14px' }}>
-                    <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px' }}>🏆 Jours favoris</p>
-                    {topJoursClient.map(([label, count], i) => (
-                      <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
-                        <span style={{ fontSize:13, color:'#444' }}>{i===0?'🥇':i===1?'🥈':'🥉'} {label}</span>
-                        <span style={{ fontSize:13, fontWeight:700, color:'#111' }}>{count} résa</span>
-                      </div>
-                    ))}
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+                      <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0 }}>🏆 Jours favoris</p>
+                      <span style={{ fontSize:10, color:'#bbb' }}>↻ {periodeLabel}</span>
+                    </div>
+                    {topJoursClient.length === 0
+                      ? <p style={{ fontSize:12, color:'#bbb', margin:0 }}>Pas de données sur cette période</p>
+                      : topJoursClient.map(([label, count], i) => (
+                        <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
+                          <span style={{ fontSize:13, color:'#444' }}>{i===0?'🥇':i===1?'🥈':'🥉'} {label}</span>
+                          <span style={{ fontSize:13, fontWeight:700, color:'#111' }}>{count} résa</span>
+                        </div>
+                      ))
+                    }
                   </div>
                 );
               })()}
