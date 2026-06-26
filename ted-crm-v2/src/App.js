@@ -880,7 +880,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
                     const estAujourdhui = iso === todayIso;
                     const estSelectionne = dateIso === iso;
                     return (
-                      <button key={i} onPointerDown={()=>{ setDateIso(iso); setShowCalPicker(false); }} style={{
+                      <button key={i} onPointerDown={()=>{ setDateIso(iso); }} style={{
                         height:40, borderRadius:8,
                         border: estAujourdhui && !estSelectionne ? '2px solid #E8C547' : '1.5px solid transparent',
                         background: estSelectionne ? '#E8C547' : 'transparent',
