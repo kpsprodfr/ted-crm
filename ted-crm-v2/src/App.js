@@ -914,17 +914,15 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
                     const aujourd2 = new Date(); aujourd2.setHours(0,0,0,0);
                     const estPasse = new Date(anneeP, moisP, jour) < aujourd2;
                     return (
-                      <button key={i} disabled={estPasse} onPointerDown={()=>{ if (estPasse) return; setDateFlash(iso); setDateIso(iso); setTimeout(()=>{ setCalFermeture(true); setTimeout(()=>{ setShowCalPicker(false); setCalFermeture(false); setDateFlash(null); }, 250); }, 200); }} style={{
+                      <button key={i} disabled={estPasse} className={dateFlash === iso ? 'date-flash' : ''} onPointerDown={()=>{ if (estPasse) return; setDateFlash(iso); setDateIso(iso); setTimeout(()=>{ setCalFermeture(true); setTimeout(()=>{ setShowCalPicker(false); setCalFermeture(false); setDateFlash(null); }, 300); }, 200); }} style={{
                         height:44, borderRadius:10,
                         border: estAujourdhui && !estSelectionne ? '2px solid #E8C547' : '1.5px solid transparent',
-                        background: dateFlash === iso ? '#111' : estSelectionne ? '#E8C547' : 'transparent',
+                        background: estSelectionne ? '#E8C547' : 'transparent',
                         fontWeight: estAujourdhui || estSelectionne ? 800 : 400,
                         fontSize:15, cursor: estPasse ? 'not-allowed' : 'pointer',
-                        color: dateFlash === iso ? '#E8C547' : estPasse ? '#ccc' : '#111',
+                        color: estPasse ? '#ccc' : '#111',
                         opacity: estPasse ? 0.4 : 1,
                         pointerEvents: estPasse ? 'none' : 'auto',
-                        transform: dateFlash === iso ? 'scale(0.92)' : 'scale(1)',
-                        transition: 'all 0.15s ease',
                         touchAction:'manipulation', WebkitTapHighlightColor:'transparent'
                       }}>{jour}</button>
                     );
@@ -960,7 +958,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
           <label style={lbl}>Nombre de personnes *</label>
           <div style={{ display:'flex', alignItems:'center', gap:12 }}>
             <button onClick={()=>setNbPersonnes(n=>Math.max(1,n-1))} style={{ width:40, height:40, borderRadius:8, border:'1.5px solid #eee', background:'#f8f8f8', fontSize:20, cursor:'pointer', fontWeight:700 }}>−</button>
-            <input type="number" value={nbPersonnes} min={1} max={50} onChange={e=>setNbPersonnes(Math.max(1,parseInt(e.target.value)||1))} style={{ width:70, height:40, border:'1.5px solid #ddd', borderRadius:8, textAlign:'center', fontSize:16, fontWeight:700, outline:'none' }} />
+            <input type="number" inputMode="numeric" pattern="[0-9]*" value={nbPersonnes} min={1} max={50} onChange={e=>setNbPersonnes(Math.max(1,parseInt(e.target.value)||1))} style={{ width:70, height:40, border:'1.5px solid #ddd', borderRadius:8, textAlign:'center', fontSize:16, fontWeight:700, outline:'none' }} />
             <button onClick={()=>setNbPersonnes(n=>Math.min(50,n+1))} style={{ width:40, height:40, borderRadius:8, border:'1.5px solid #eee', background:'#f8f8f8', fontSize:20, cursor:'pointer', fontWeight:700 }}>+</button>
           </div>
         </div>

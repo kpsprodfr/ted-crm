@@ -40,13 +40,23 @@
       .alarm-blink {
         animation: alarm-blink 0.6s infinite;
       }
-      @keyframes slideUp {
-        from { opacity: 1; transform: translateY(0) scaleY(1); }
-        to { opacity: 0; transform: translateY(-8px) scaleY(0.95); }
+      @keyframes calClose {
+        0% { opacity: 1; transform: translateY(0) scale(1); }
+        30% { opacity: 1; transform: translateY(-2px) scale(1.01); }
+        100% { opacity: 0; transform: translateY(-12px) scale(0.97); }
+      }
+      @keyframes dateFlashPulse {
+        0% { transform: scale(1); }
+        40% { transform: scale(0.88); background: #111; color: #E8C547; }
+        70% { transform: scale(1.05); }
+        100% { transform: scale(1); }
       }
       .cal-fermeture {
-        animation: slideUp 0.25s ease forwards;
+        animation: calClose 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         transform-origin: top center;
+      }
+      .date-flash {
+        animation: dateFlashPulse 0.2s ease forwards;
       }
       @media print {
         body * { visibility: hidden; }
