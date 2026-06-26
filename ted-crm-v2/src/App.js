@@ -1591,6 +1591,8 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                 const dateLabel = new Date(calJourSelectionne + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
                 const nbMidi = resaList.filter(r => r.date === calJourSelectionne && r.service === 'midi' && r.statut === 'confirmee').length;
                 const nbSoir = resaList.filter(r => r.date === calJourSelectionne && r.service === 'soir' && r.statut === 'confirmee').length;
+                const couvertsMidi = resaList.filter(r => r.date === calJourSelectionne && r.service === 'midi' && r.statut === 'confirmee').reduce((sum, r) => sum + (r.nb_personnes || 0), 0);
+                const couvertsSoir = resaList.filter(r => r.date === calJourSelectionne && r.service === 'soir' && r.statut === 'confirmee').reduce((sum, r) => sum + (r.nb_personnes || 0), 0);
                 return (
                   <div style={{ marginTop:16, borderTop:'1px solid #f0f0f0', paddingTop:16 }}>
                     <div style={{ fontSize:13, fontWeight:700, color:'#555', marginBottom:10 }}>{dateLabel}</div>
@@ -1603,7 +1605,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                             borderColor: calServiceSelectionne === 'midi' ? '#111' : '#ddd' }}>
                           ☀️ Midi
                         </button>
-                        <div style={{ textAlign:'center', fontSize:11, color:'#888' }}>{nbMidi} réservation{nbMidi !== 1 ? 's' : ''} confirmée{nbMidi !== 1 ? 's' : ''}</div>
+                        <div style={{ textAlign:'center', fontSize:11, color:'#888' }}>{couvertsMidi} couvert{couvertsMidi > 1 ? 's' : ''}</div>
                       </div>
                       <div style={{ flex:1, display:'flex', flexDirection:'column', gap:4 }}>
                         <button onClick={() => setCalServiceSelectionne(calServiceSelectionne === 'soir' ? null : 'soir')}
@@ -1613,7 +1615,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                             borderColor: calServiceSelectionne === 'soir' ? '#111' : '#ddd' }}>
                           🌙 Soir
                         </button>
-                        <div style={{ textAlign:'center', fontSize:11, color:'#888' }}>{nbSoir} réservation{nbSoir !== 1 ? 's' : ''} confirmée{nbSoir !== 1 ? 's' : ''}</div>
+                        <div style={{ textAlign:'center', fontSize:11, color:'#888' }}>{couvertsSoir} couvert{couvertsSoir > 1 ? 's' : ''}</div>
                       </div>
                     </div>
                   </div>
