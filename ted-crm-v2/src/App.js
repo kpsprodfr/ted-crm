@@ -1090,20 +1090,45 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
         </div>
 
         {/* Panneau SMS */}
-        {showSmsPanel && c.tel && (
-          <div style={{ background:'#f8f8f8', borderRadius:12, padding:14, display:'flex', flexDirection:'column', gap:8 }}>
-            <div style={{ fontSize:12, fontWeight:700, color:'#555', marginBottom:2 }}>Suggestions</div>
-            <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-              {smsSuggestions.map((s, i) => (
-                <button key={i} onClick={()=>setSmsTexte(s)} style={{ textAlign:'left', background: smsTexte === s ? '#E8C547' : '#fff', border:'1.5px solid #eee', borderRadius:8, padding:'8px 10px', fontSize:12, cursor:'pointer', color:'#111', fontWeight: smsTexte === s ? 700 : 400 }}>{s}</button>
-              ))}
+        {showSmsPanel && c.tel && (() => {
+          function containsEmoji(str) {
+            return /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(str||'');
+          }
+          const smsLimit = containsEmoji(smsTexte) ? 70 : 160;
+          return (
+            <div style={{ background:'#f8f8f8', borderRadius:12, padding:14, display:'flex', flexDirection:'column', gap:8 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:'#555', marginBottom:2 }}>Suggestions</div>
+              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                {smsSuggestions.map((s, i) => (
+                  <button key={i} onClick={()=>setSmsTexte(s.slice(0, smsLimit))} style={{ textAlign:'left', background: smsTexte === s ? '#E8C547' : '#fff', border:'1.5px solid #eee', borderRadius:8, padding:'8px 10px', fontSize:12, cursor:'pointer', color:'#111', fontWeight: smsTexte === s ? 700 : 400 }}>{s}</button>
+                ))}
+              </div>
+              <textarea value={smsTexte} onChange={e=>setSmsTexte(e.target.value.slice(0, smsLimit))} rows={3} style={{ width:'100%', border:'1.5px solid #ddd', borderRadius:8, padding:'8px 10px', fontSize:13, resize:'vertical', outline:'none', fontFamily:'inherit' }} placeholder="Rédigez votre message…" />
+              <div style={{ display:'flex', justifyContent:'space-between', marginTop:-4, marginBottom:2 }}>
+                <span style={{ fontSize:12, color: smsTexte.length > smsLimit * 0.9 ? '#dc2626' : '#999', fontWeight: smsTexte.length > smsLimit * 0.9 ? 700 : 400 }}>
+                  {smsTexte.length}/{smsLimit} caractères
+                  {containsEmoji(smsTexte) && <span style={{ color:'#E8C547', marginLeft:6 }}>⚠️ Emoji = 70 max</span>}
+                </span>
+                <span style={{ fontSize:12, color:'#999' }}>~0.04€</span>
+              </div>
+              <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                <span style={{ fontSize:11, color:'#999', alignSelf:'center' }}>Insérer :</span>
+                {[
+                  { label:'{prénom}', val: c.prenom || '{prénom}' },
+                  { label:'{nom}', val: c.nom || '{nom}' },
+                  { label:'{entreprise}', val: c.entreprise || '{entreprise}' },
+                  { label:'{tel}', val: c.tel || '{tel}' },
+                  { label:'🔗 Lien résa', val: 'https://ted-crm.pages.dev/reserver.html' },
+                ].map(v => (
+                  <button key={v.label} onClick={()=>setSmsTexte((smsTexte + v.val).slice(0, smsLimit))} style={{ background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:6, padding:'3px 10px', fontSize:12, fontWeight:600, color:'#111', cursor:'pointer' }}>{v.label}</button>
+                ))}
+              </div>
+              <button onClick={envoyerSms} disabled={!smsTexte.trim()} style={{ background: smsTexte.trim() ? '#111' : '#ddd', color: smsTexte.trim() ? '#fff' : '#999', border:'none', borderRadius:9, height:40, fontSize:14, fontWeight:700, cursor: smsTexte.trim() ? 'pointer' : 'not-allowed' }}>
+                📤 Envoyer le SMS · {c.tel}
+              </button>
             </div>
-            <textarea value={smsTexte} onChange={e=>setSmsTexte(e.target.value)} rows={3} style={{ width:'100%', border:'1.5px solid #ddd', borderRadius:8, padding:'8px 10px', fontSize:13, resize:'vertical', outline:'none', fontFamily:'inherit' }} placeholder="Rédigez votre message…" />
-            <button onClick={envoyerSms} disabled={!smsTexte.trim()} style={{ background: smsTexte.trim() ? '#111' : '#ddd', color: smsTexte.trim() ? '#fff' : '#999', border:'none', borderRadius:9, height:40, fontSize:14, fontWeight:700, cursor: smsTexte.trim() ? 'pointer' : 'not-allowed' }}>
-              📤 Envoyer le SMS · {c.tel}
-            </button>
-          </div>
-        )}
+          );
+        })()}
 
         <div style={{ height:1, background:'#f0f0f0' }} />
 
