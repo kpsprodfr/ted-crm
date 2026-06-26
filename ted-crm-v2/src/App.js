@@ -806,24 +806,25 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
             {lookingUp && <span style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', fontSize:12, color:'#888' }}>Recherche…</span>}
           </div>
           {clientFound && (
-            <div style={{ marginTop:6, background:'#f9f9f9', borderRadius:10, padding:'10px 14px', border:'1.5px solid #f0f0f0' }}>
-              <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom: statsClient ? 8 : 0 }}>
-                <span style={{ fontSize:18 }}>👤</span>
-                <span style={{ fontSize:13, fontWeight:700, color:'#166534' }}>✓ Client trouvé — {clientFound.prenom} {clientFound.nom}</span>
+            <div style={{ marginTop:6, background:'#f0fdf4', borderRadius:10, padding:'12px 14px', border:'1.5px solid #22c55e' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom: statsClient ? 10 : 0 }}>
+                <span style={{ fontSize:16 }}>✅</span>
+                <span style={{ fontSize:13, fontWeight:700, color:'#16a34a' }}>Client trouvé</span>
+                <span style={{ fontSize:16, fontWeight:900, color:'#111', marginLeft:4 }}>{clientFound.prenom} {clientFound.nom}</span>
               </div>
               {statsClient && (
                 <div style={{ display:'flex', gap:0 }}>
                   <div style={{ textAlign:'center', flex:1 }}>
-                    <div style={{ fontSize:18, fontWeight:800, color:'#111' }}>{statsClient.total}</div>
-                    <div style={{ fontSize:10, color:'#999', textTransform:'uppercase' }}>Résa total</div>
+                    <div style={{ fontSize:20, fontWeight:900, color:'#111' }}>{statsClient.total}</div>
+                    <div style={{ fontSize:10, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Résa total</div>
                   </div>
                   <div style={{ textAlign:'center', flex:1 }}>
-                    <div style={{ fontSize:18, fontWeight:800, color: statsClient.noshow > 0 ? '#dc2626' : '#111' }}>{statsClient.noshow}</div>
-                    <div style={{ fontSize:10, color:'#999', textTransform:'uppercase' }}>No-show</div>
+                    <div style={{ fontSize:20, fontWeight:900, color: statsClient.noshow > 0 ? '#dc2626' : '#111' }}>{statsClient.noshow}</div>
+                    <div style={{ fontSize:10, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>No-show</div>
                   </div>
                   <div style={{ textAlign:'center', flex:2 }}>
-                    <div style={{ fontSize:12, fontWeight:700, color:'#111' }}>{statsClient.derniereVisite}</div>
-                    <div style={{ fontSize:10, color:'#999', textTransform:'uppercase' }}>Dernière visite</div>
+                    <div style={{ fontSize:13, fontWeight:700, color:'#111' }}>{statsClient.derniereVisite}</div>
+                    <div style={{ fontSize:10, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Dernière visite</div>
                   </div>
                 </div>
               )}
