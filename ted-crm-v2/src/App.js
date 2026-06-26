@@ -1383,7 +1383,8 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
   const [acceptResa, setAcceptResa] = useState(null);
   const [detailResa, setDetailResa] = useState(null);
   const [editResa, setEditResa] = useState(null);
-const [showAddResa, setShowAddResa] = useState(false);
+  const [showAddResa, setShowAddResa] = useState(false);
+  const [ficheClientRP, setFicheClientRP] = useState(null);
   const [calDate, setCalDate] = useState(new Date());
   const [calMensuelOuvert, setCalMensuelOuvert] = useState(false);
   const [calJourSelectionne, setCalJourSelectionne] = useState(new Date().toISOString().split('T')[0]);
@@ -1931,8 +1932,37 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
       {acceptResa && <AccepterModal resa={acceptResa} onConfirm={()=>accepter(acceptResa)} onCancel={()=>setAcceptResa(null)} />}
       {refusResa && <RefusModal onConfirm={raison=>refuser(refusResa, raison)} onCancel={()=>setRefusResa(null)} />}
       {detailResa && <DetailResaModal resa={detailResa} resaList={resaList} showToast={showToast} onClose={()=>setDetailResa(null)} onEdit={(r)=>setEditResa(r)} onSaved={(newStatut)=>{ setResaList(prev => prev.map(r => r.id === detailResa.id ? {...r, statut: newStatut} : r)); setDetailResa(null); loadResa(); }} />}
-      {showAddResa && <AddResaModal onClose={()=>setShowAddResa(false)} onSaved={()=>{ loadResa(); setShowAddResa(false); }} showToast={showToast} user={user} />}
-      {editResa && <AddResaModal initialResa={editResa} onClose={()=>setEditResa(null)} onSaved={()=>{ loadResa(); setEditResa(null); }} showToast={showToast} user={user} />}
+      {showAddResa && <AddResaModal onClose={()=>setShowAddResa(false)} onSaved={()=>{ loadResa(); setShowAddResa(false); }} showToast={showToast} user={user} onViewClient={(c)=>setFicheClientRP(c)} reservations={resaList} />}
+      {editResa && <AddResaModal initialResa={editResa} onClose={()=>setEditResa(null)} onSaved={()=>{ loadResa(); setEditResa(null); }} showToast={showToast} user={user} onViewClient={(c)=>setFicheClientRP(c)} reservations={resaList} />}
+      {ficheClientRP && (() => {
+        const c = ficheClientRP;
+        const resasC = resaList.filter(r => r.client_id === c.id);
+        const total = resasC.length;
+        const noshow = resasC.filter(r => r.statut === 'absente').length;
+        const aujourd = new Date().toISOString().split('T')[0];
+        const derniereVisite = resasC.filter(r => (r.statut==='venue'||r.statut==='confirmee') && r.date <= aujourd).sort((a,b)=>b.date.localeCompare(a.date))[0];
+        const prochaineResa = resasC.filter(r => r.date > aujourd && (r.statut==='confirmee'||r.statut==='attente')).sort((a,b)=>a.date.localeCompare(b.date))[0];
+        const nomAffiche = c.genre==='Entreprise' ? (c.entreprise||c.nom||'—') : `${c.prenom||''} ${c.nom||''}`.trim()||'—';
+        return (
+          <Modal title={nomAffiche} onClose={()=>setFicheClientRP(null)} maxW={440} zIndex={6000}
+            footer={<button onClick={()=>setFicheClientRP(null)} style={{ width:'100%', height:44, background:'#fff', border:'1.5px solid #ddd', borderRadius:10, fontSize:14, fontWeight:600, cursor:'pointer', color:'#666' }}>Fermer</button>}>
+            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+              {c.tel && <a href={`tel:${c.tel}`} style={{ display:'flex', alignItems:'center', gap:10, background:'#E8C547', borderRadius:10, padding:'12px 16px', textDecoration:'none', color:'#111', fontWeight:700, fontSize:15 }}>📞 {c.tel}</a>}
+              {c.mail && <a href={`mailto:${c.mail}`} style={{ fontSize:14, color:'#3b82f6', textDecoration:'none' }}>{c.mail}</a>}
+              <div style={{ background:'#f9f9f9', borderRadius:10, padding:14 }}>
+                <div style={{ display:'flex', marginBottom:12 }}>
+                  <div style={{ textAlign:'center', flex:1 }}><div style={{ fontSize:20, fontWeight:800 }}>{total}</div><div style={{ fontSize:10, color:'#999', textTransform:'uppercase' }}>Résa total</div></div>
+                  <div style={{ textAlign:'center', flex:1 }}><div style={{ fontSize:20, fontWeight:800, color: noshow>0?'#dc2626':'#111' }}>{noshow}</div><div style={{ fontSize:10, color:'#999', textTransform:'uppercase' }}>No-show</div></div>
+                </div>
+                <div style={{ fontSize:13, color:'#666' }}>
+                  <div style={{ marginBottom:4 }}>🕐 Dernière visite : <strong>{derniereVisite ? new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) : 'Jamais'}</strong></div>
+                  {prochaineResa && <div>📅 Prochaine résa : <strong>{new Date(prochaineResa.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long'})} à {prochaineResa.heure}</strong></div>}
+                </div>
+              </div>
+            </div>
+          </Modal>
+        );
+      })()}
     </div>
   );
 }
