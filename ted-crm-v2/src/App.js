@@ -1831,6 +1831,7 @@ function CRMApp({ user, onLogout }) {
   const [modalAdd, setModalAdd] = useState(false);
   const [modalDetailClient, setModalDetailClient] = useState(null);
   const [statsClients, setStatsClients] = useState({});
+  const [topJours, setTopJours] = useState([]);
   const [modalEdit, setModalEdit] = useState(null);
   const [modalDelete, setModalDelete] = useState(null);
   const [modalImport, setModalImport] = useState(false);
@@ -2001,8 +2002,10 @@ function CRMApp({ user, onLogout }) {
   }
 
   async function chargerToutesStatsClients() {
-    const { data } = await supabase.from('reservations').select('client_id, statut, date');
+    const { data } = await supabase.from('reservations').select('client_id, statut, date, service');
     const stats = {};
+    const joursSemaine = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+    const compteParJourService = {};
     (data||[]).forEach(r => {
       if (!stats[r.client_id]) stats[r.client_id] = { total:0, noshow:0, derniereVisite:null };
       stats[r.client_id].total++;
@@ -2011,8 +2014,15 @@ function CRMApp({ user, onLogout }) {
         if (!stats[r.client_id].derniereVisite || r.date > stats[r.client_id].derniereVisite)
           stats[r.client_id].derniereVisite = r.date;
       }
+      if ((r.statut === 'confirmee' || r.statut === 'venue') && r.date) {
+        const jour = joursSemaine[new Date(r.date+'T12:00:00').getDay()];
+        const service = r.service === 'midi' ? 'Midi' : 'Soir';
+        const key = `${jour} ${service}`;
+        compteParJourService[key] = (compteParJourService[key] || 0) + 1;
+      }
     });
     setStatsClients(stats);
+    setTopJours(Object.entries(compteParJourService).sort((a,b) => b[1]-a[1]).slice(0,3));
   }
 
   // ─── CRUD ─────────────────────────────────────────────────────────────────
@@ -3053,6 +3063,16 @@ function CRMApp({ user, onLogout }) {
               <div style={{ fontSize:11, fontWeight:700, letterSpacing:1, color:"#888", textTransform:"uppercase", marginBottom:4 }}>{`Nouveaux — ${getCurrentMonthName().toUpperCase()}`}</div>
               <div style={{ fontSize:36, fontWeight:700, color:G }}>{newMonth}</div>
               <div style={{ fontSize:12, color:"#bbb", marginTop:3 }}>ce mois-ci</div>
+            </div>
+            <div style={{ background:"#fff", borderRadius:10, border:"1.5px solid #e5e5e5", padding:"14px 18px" }}>
+              <div style={{ fontSize:11, fontWeight:700, letterSpacing:1, color:"#888", textTransform:"uppercase", marginBottom:10 }}>Top jours</div>
+              {topJours.length === 0 && <p style={{ fontSize:12, color:'#bbb' }}>Pas encore de données</p>}
+              {topJours.map(([label, count], i) => (
+                <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
+                  <span style={{ fontSize:13, color:'#444' }}>{i===0?'🥇':i===1?'🥈':'🥉'} {label}</span>
+                  <span style={{ fontSize:13, fontWeight:800, color:'#111' }}>{count}</span>
+                </div>
+              ))}
             </div>
           </div>
 
