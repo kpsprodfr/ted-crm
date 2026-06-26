@@ -770,7 +770,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
     };
   };
 
-  const resaValide = !!(tel && genre && nom && prenom && dateIso && service && heure);
+  const resaValide = !!(tel && genre && nom && prenom && dateIso && service && heure && email);
 
   return (
     <Modal title={isEdit ? "Modifier la réservation" : "Ajouter une réservation"} onClose={onClose} footer={[
@@ -852,8 +852,8 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
 
         {/* 4. Email */}
         <div>
-          <label style={lbl}>Email</label>
-          <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="optionnel" type="email" style={inp(false)} />
+          <label style={lbl}>Email <span style={{color:'#dc2626'}}>*</span></label>
+          <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="client@email.fr" type="email" style={inp(false)} />
         </div>
 
         {/* 5. Date — calendrier visuel */}
