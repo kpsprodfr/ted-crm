@@ -1829,6 +1829,8 @@ function CRMApp({ user, onLogout }) {
   const [pageSize, setPageSize] = useState(25);
   const [page, setPage] = useState(1);
   const [modalAdd, setModalAdd] = useState(false);
+  const [modalDetailClient, setModalDetailClient] = useState(null);
+  const [statsClients, setStatsClients] = useState({});
   const [modalEdit, setModalEdit] = useState(null);
   const [modalDelete, setModalDelete] = useState(null);
   const [modalImport, setModalImport] = useState(false);
@@ -1995,6 +1997,22 @@ function CRMApp({ user, onLogout }) {
     if (error) { showToast("Erreur de chargement", "error"); }
     else { setClients(data || []); }
     setLoading(false);
+    chargerToutesStatsClients();
+  }
+
+  async function chargerToutesStatsClients() {
+    const { data } = await supabase.from('reservations').select('client_id, statut, date');
+    const stats = {};
+    (data||[]).forEach(r => {
+      if (!stats[r.client_id]) stats[r.client_id] = { total:0, noshow:0, derniereVisite:null };
+      stats[r.client_id].total++;
+      if (r.statut === 'absente') stats[r.client_id].noshow++;
+      if (r.statut === 'venue') {
+        if (!stats[r.client_id].derniereVisite || r.date > stats[r.client_id].derniereVisite)
+          stats[r.client_id].derniereVisite = r.date;
+      }
+    });
+    setStatsClients(stats);
   }
 
   // ─── CRUD ─────────────────────────────────────────────────────────────────
@@ -2982,9 +3000,10 @@ function CRMApp({ user, onLogout }) {
               <p style={{ color:'#bbb', fontSize:15 }}>Aucun client trouvé</p>
             </div>
           )}
-          {pageClients.map((c,i) => (
-            <div key={c.id} style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:'12px', marginBottom:8, boxShadow:'0 2px 8px rgba(0,0,0,0.05)', animation:'slideUpFade 0.25s ease both', animationDelay:`${i*0.04}s` }}>
-              {/* Ligne principale : infos + boutons ✏️🗑 */}
+          {pageClients.map((c,i) => {
+            const s = statsClients[c.id] || { total:0, noshow:0, derniereVisite:null };
+            return (
+            <div key={c.id} onClick={()=>setModalDetailClient(c)} style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:'12px', marginBottom:8, boxShadow:'0 2px 8px rgba(0,0,0,0.05)', animation:'slideUpFade 0.25s ease both', animationDelay:`${i*0.04}s`, cursor:'pointer' }}>
               <div style={{ display:'flex', alignItems:'flex-start', gap:8 }}>
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:4 }}>
@@ -2995,22 +3014,17 @@ function CRMApp({ user, onLogout }) {
                   </div>
                   {c.mail && <p style={{ fontSize:11, color:'#3b82f6', margin:'2px 0', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.mail}</p>}
                   {c.tel && <p style={{ fontSize:12, color:'#555', fontWeight:600, margin:'2px 0' }}>{c.tel}</p>}
-                  {c.commentaire && <p style={{ fontSize:11, color:'#aaa', margin:'3px 0 0', fontStyle:'italic', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>"{c.commentaire}"</p>}
+                  <div style={{ display:'flex', gap:12, fontSize:11, color:'#999', marginTop:4 }}>
+                    <span>📅 {s.total} résa</span>
+                    {s.noshow > 0 && <span style={{ color:'#dc2626' }}>❌ {s.noshow} no-show</span>}
+                    <span>🕐 {s.derniereVisite ? new Date(s.derniereVisite+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}) : 'Jamais'}</span>
+                  </div>
                 </div>
-                <div style={{ flexShrink:0 }}>
-                  <button onClick={e=>{ const r=e.currentTarget.getBoundingClientRect(); setMobileAction(mobileAction?.id===c.id ? null : {...c, _rect:r}); }} style={{ background: mobileAction?.id===c.id ? '#111' : '#f5f5f5', border:'none', borderRadius:8, width:34, height:34, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, color: mobileAction?.id===c.id ? '#fff' : '#555', cursor:'pointer', letterSpacing:1 }}>•••</button>
-                </div>
+                <span style={{ color:'#ccc', fontSize:20, alignSelf:'center' }}>›</span>
               </div>
-              {/* Bouton Appeler — séparé en dessous à droite */}
-              {c.tel && (
-                <div style={{ marginTop:10, display:'flex', justifyContent:'flex-end' }}>
-                  <a href={`tel:${c.tel}`} style={{ display:'inline-flex', alignItems:'center', gap:6, background:G, color:'#111', borderRadius:10, padding:'7px 18px', fontSize:14, fontWeight:700, textDecoration:'none', boxShadow:'0 2px 6px rgba(232,197,71,0.35)' }}>
-                    📞 Appeler
-                  </a>
-                </div>
-              )}
             </div>
-          ))}
+            );
+          })}
           {totalPages > 1 && (
             <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:16, padding:'8px 0 16px' }}>
               <button disabled={safePage<=1} onClick={()=>setPage(p=>p-1)} style={{ width:44, height:44, borderRadius:12, border:'1.5px solid #eee', background:'#fff', fontSize:20, cursor:safePage<=1?'not-allowed':'pointer', color:safePage<=1?'#ddd':'#111', display:'flex', alignItems:'center', justifyContent:'center' }}>‹</button>
@@ -3105,8 +3119,7 @@ function CRMApp({ user, onLogout }) {
                     <Th col="tel" label="Téléphone"/>
                     <Th col="mail" label="Mail"/>
                     <Th col="created_at" label="Date d'ajout"/>
-                    <th style={{ background:"#111", color:"#fff", padding:"10px 12px", textAlign:"left", fontWeight:600, fontSize:12 }}>Commentaire</th>
-                    <th style={{ background:"#111", color:"#fff", padding:"10px 12px", textAlign:"left", fontWeight:600, fontSize:12 }}>Actions</th>
+                    <th style={{ background:"#111", color:"#fff", padding:"10px 12px", textAlign:"left", fontWeight:600, fontSize:12 }}>Réservations</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -3117,8 +3130,9 @@ function CRMApp({ user, onLogout }) {
                     const isHov = hoverRow === c.id;
                     const bg = isHov?"#fffbea":i%2===0?"#fff":"#f9f9f9";
                     const td = { padding:"9px 12px", borderBottom:"1px solid #f0f0f0", verticalAlign:"middle", background:bg };
+                    const s = statsClients[c.id] || { total:0, noshow:0, derniereVisite:null };
                     return (
-                      <tr key={c.id} onMouseEnter={()=>setHoverRow(c.id)} onMouseLeave={()=>setHoverRow(null)}>
+                      <tr key={c.id} onClick={()=>setModalDetailClient(c)} onMouseEnter={()=>setHoverRow(c.id)} onMouseLeave={()=>setHoverRow(null)} style={{ cursor:'pointer' }}>
                         <td style={td}><span style={badge(c.genre)}>{c.genre||"—"}</span></td>
                         {activeTab === "entreprises" ? (
                           <>
@@ -3134,10 +3148,12 @@ function CRMApp({ user, onLogout }) {
                         <td style={{...td,fontFamily:"'Courier New',monospace"}}>{c.tel||"—"}</td>
                         <td style={{...td,fontSize:12,color:"#3b82f6",maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.mail||"—"}</td>
                         <td style={{...td,whiteSpace:"nowrap"}}>{formatDate(c.created_at)}</td>
-                        <td style={{...td,maxWidth:140,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",cursor:c.commentaire?"pointer":"default",color:c.commentaire?"#555":"#ccc"}} onClick={()=>c.commentaire&&setModalComment(c)} title={c.commentaire||""}>{c.commentaire||"—"}</td>
-                        <td style={{...td,whiteSpace:"nowrap"}}>
-                          <button onClick={()=>setModalEdit(c)} style={{ background:"none", border:"none", cursor:"pointer", borderRadius:5, padding:"3px 6px", fontSize:16, color:"#3b82f6" }} title="Modifier">✏️</button>
-                          <button onClick={()=>setModalDelete(c)} style={{ background:"none", border:"none", cursor:"pointer", borderRadius:5, padding:"3px 6px", fontSize:16, color:"#dc2626" }} title="Supprimer">🗑</button>
+                        <td style={td}>
+                          <div style={{ display:'flex', gap:10, fontSize:11, color:'#999', flexWrap:'wrap' }}>
+                            <span>📅 {s.total} résa</span>
+                            {s.noshow > 0 && <span style={{ color:'#dc2626' }}>❌ {s.noshow} no-show</span>}
+                            <span>🕐 {s.derniereVisite ? new Date(s.derniereVisite+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}) : 'Jamais'}</span>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -3231,6 +3247,45 @@ function CRMApp({ user, onLogout }) {
 
       {/* Modals */}
       {showAddResa && <AddResaModal onClose={()=>setShowAddResa(false)} onSaved={()=>{ loadResaCount(); loadClients(); }} showToast={showToast} user={user} />}
+      {modalDetailClient && (() => {
+        const c = modalDetailClient;
+        const s = statsClients[c.id] || { total:0, noshow:0, derniereVisite:null };
+        const nomAffiche = c.genre === 'Entreprise' ? (c.entreprise || c.nom || '—') : `${c.prenom||''} ${c.nom||''}`.trim() || '—';
+        return (
+          <Modal title={nomAffiche} onClose={()=>setModalDetailClient(null)} maxW={440}
+            footer={
+              <div style={{ display:'flex', gap:8, width:'100%' }}>
+                <button onClick={()=>{ setModalDetailClient(null); setModalDelete(c); }} style={{ flex:1, height:44, border:'1.5px solid #dc2626', borderRadius:10, background:'#fef2f2', color:'#dc2626', fontSize:14, fontWeight:700, cursor:'pointer' }}>🗑️ Supprimer</button>
+                <button onClick={()=>{ setModalDetailClient(null); setModalEdit(c); }} style={{ flex:2, height:44, border:'none', borderRadius:10, background:'#E8C547', color:'#111', fontSize:14, fontWeight:700, cursor:'pointer' }}>✏️ Modifier</button>
+              </div>
+            }>
+            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+              <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                <span style={badge(c.genre)}>{c.genre}</span>
+                {c.genre === 'Entreprise' && c.nom && <span style={{ fontSize:13, color:'#888' }}>{c.nom} {c.prenom}</span>}
+              </div>
+              {c.tel && <div style={{ fontSize:14, color:'#333' }}>📞 <a href={`tel:${c.tel}`} style={{ color:'#111', textDecoration:'none', fontWeight:600 }}>{c.tel}</a></div>}
+              {c.mail && <div style={{ fontSize:13, color:'#3b82f6' }}>✉️ <a href={`mailto:${c.mail}`} style={{ color:'#3b82f6', textDecoration:'none' }}>{c.mail}</a></div>}
+              {c.created_at && <div style={{ fontSize:12, color:'#999' }}>📋 Client depuis le {formatDate(c.created_at)}</div>}
+              {c.commentaire && <div style={{ fontSize:13, color:'#555', background:'#f9f9f9', borderRadius:8, padding:'10px 12px', fontStyle:'italic' }}>"{c.commentaire}"</div>}
+              <div style={{ background:'#f9f9f9', borderRadius:10, padding:'12px 16px', display:'flex', gap:16 }}>
+                <div style={{ textAlign:'center', flex:1 }}>
+                  <div style={{ fontSize:22, fontWeight:800, color:'#111' }}>{s.total}</div>
+                  <div style={{ fontSize:11, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Résa total</div>
+                </div>
+                <div style={{ textAlign:'center', flex:1 }}>
+                  <div style={{ fontSize:22, fontWeight:800, color: s.noshow > 0 ? '#dc2626' : '#111' }}>{s.noshow}</div>
+                  <div style={{ fontSize:11, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>No-show</div>
+                </div>
+                <div style={{ textAlign:'center', flex:2 }}>
+                  <div style={{ fontSize:13, fontWeight:700, color:'#111' }}>{s.derniereVisite ? new Date(s.derniereVisite+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) : 'Jamais'}</div>
+                  <div style={{ fontSize:11, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Dernière visite</div>
+                </div>
+              </div>
+            </div>
+          </Modal>
+        );
+      })()}
       {modalAdd && <ClientForm existingClients={clients} onSave={addClient} onCancel={()=>setModalAdd(false)} />}
       {modalEdit && <ClientForm initial={modalEdit} existingClients={clients} onSave={editClient} onCancel={()=>setModalEdit(null)} />}
       {modalDelete && <ConfirmModal title="Supprimer ce client ?" msg={`Êtes-vous sûr de vouloir supprimer définitivement ${modalDelete.prenom} ${modalDelete.nom} ? Cette action est irréversible.`} onOk={()=>deleteClient(modalDelete.id)} onCancel={()=>setModalDelete(null)} okLabel="Supprimer définitivement" danger />}
