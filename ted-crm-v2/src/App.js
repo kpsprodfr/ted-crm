@@ -559,6 +559,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
 
   const [tel, setTel] = useState(initClient.tel || '');
   const [clientFound, setClientFound] = useState(isEdit ? initClient : null);
+  const [clientResas, setClientResas] = useState([]);
   const [lookingUp, setLookingUp] = useState(false);
   const [genre, setGenre] = useState(initClient.genre || '');
   const [prenom, setPrenom] = useState(initClient.prenom || '');
@@ -609,6 +610,10 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
       setEmail(data.mail || '');
       setGenre(data.genre || '');
       setEntreprise(data.entreprise || '');
+      const { data: resas } = await supabase.from('reservations').select('id,statut,date').eq('client_id', data.id);
+      setClientResas(resas || []);
+    } else {
+      setClientResas([]);
     }
   }
 
@@ -766,11 +771,36 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
             <input value={tel} onChange={e=>handleTelChange(e.target.value)} placeholder="06 12 34 56 78" type="tel" style={inp(false)} />
             {lookingUp && <span style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', fontSize:12, color:'#888' }}>Recherche…</span>}
           </div>
-          {clientFound && (
-            <div style={{ marginTop:6, background:'#f0fdf4', border:'1.5px solid #22c55e', borderRadius:8, padding:'8px 12px', fontSize:13, color:'#166534', fontWeight:600, display:'flex', alignItems:'center', gap:6 }}>
-              ✓ Client trouvé — {clientFound.prenom} {clientFound.nom}
-            </div>
-          )}
+          {clientFound && (() => {
+            const total = clientResas.length;
+            const noshow = clientResas.filter(r => r.statut === 'absente').length;
+            const derniereVisite = clientResas.filter(r => r.statut === 'venue').sort((a,b) => b.date.localeCompare(a.date))[0];
+            const derniereVisiteFormatee = derniereVisite
+              ? new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR', {day:'numeric', month:'short', year:'numeric'})
+              : 'Jamais';
+            return (
+              <div style={{ marginTop:6, background:'#f9f9f9', borderRadius:10, padding:'10px 14px', border:'1.5px solid #f0f0f0' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:8 }}>
+                  <span style={{ fontSize:18 }}>👤</span>
+                  <span style={{ fontSize:13, fontWeight:700, color:'#166534' }}>✓ Client trouvé — {clientFound.prenom} {clientFound.nom}</span>
+                </div>
+                <div style={{ display:'flex', gap:16 }}>
+                  <div style={{ textAlign:'center', flex:1 }}>
+                    <div style={{ fontSize:16, fontWeight:800, color:'#111' }}>{total}</div>
+                    <div style={{ fontSize:10, color:'#999', textTransform:'uppercase' }}>Résa total</div>
+                  </div>
+                  <div style={{ textAlign:'center', flex:1 }}>
+                    <div style={{ fontSize:16, fontWeight:800, color: noshow > 0 ? '#dc2626' : '#111' }}>{noshow}</div>
+                    <div style={{ fontSize:10, color:'#999', textTransform:'uppercase' }}>No-show</div>
+                  </div>
+                  <div style={{ textAlign:'center', flex:2 }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:'#111' }}>{derniereVisiteFormatee}</div>
+                    <div style={{ fontSize:10, color:'#999', textTransform:'uppercase' }}>Dernière visite</div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* 2. Genre */}
