@@ -1122,7 +1122,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
         {ctaFooter && <div style={{ background:'#fff', padding:'12px 16px', paddingBottom:'calc(12px + env(safe-area-inset-bottom))', borderTop:'1px solid #eee', flexShrink:0 }}>{ctaFooter}</div>}
       </div>
     ) : (
-      <Modal title={isEdit ? 'Modifier la réservation' : 'Nouvelle réservation'} onClose={fermerFormulaireResa} footer={ctaFooter}>
+      <Modal title={isEdit ? 'Modifier la réservation' : 'Nouvelle réservation'} onClose={fermerFormulaireResa} footer={ctaFooter} zIndex={2000}>
         {formContent}
       </Modal>
     )}
