@@ -841,7 +841,19 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
   })();
 
   return (
-    <Modal title={isEdit ? 'Modifier la réservation' : 'Nouvelle réservation'} onClose={onClose} footer={null}>
+    <Modal title={isEdit ? 'Modifier la réservation' : 'Nouvelle réservation'} onClose={onClose} footer={!resaCree ? (
+      <div style={{ width:'100%' }}>
+        <button onClick={handleSave} disabled={saving || !resaValide} style={{ width:'100%', height:56, background: resaValide ? '#E8C547' : '#f0f0f0', color: resaValide ? '#111' : '#bbb', border:'none', borderRadius:14, fontSize:17, fontWeight:800, cursor: resaValide ? 'pointer' : 'not-allowed', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity: saving ? 0.6 : 1 }}>
+          {saving ? 'Enregistrement…' : (isEdit ? '✏️ Modifier la réservation' : '📅 Créer la réservation')}
+        </button>
+        {!resaValide && (
+          <p style={{ textAlign:'center', fontSize:12, color:'#999', margin:'6px 0 0' }}>
+            {tel?.replace(/\D/g,'').length < 10 ? 'Entrez un numéro de téléphone' : !dateIso ? 'Choisissez une date' : !service ? 'Choisissez Midi ou Soir' : !heure ? 'Choisissez une heure' : 'Remplissez tous les champs'}
+          </p>
+        )}
+        <button onClick={onClose} style={{ width:'100%', background:'none', border:'none', color:'#999', fontSize:14, cursor:'pointer', padding:'8px', marginTop:4 }}>Annuler</button>
+      </div>
+    ) : null}>
       {resaCree && (
         <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:32, textAlign:'center', minHeight:400 }}>
           <div style={{ width:72, height:72, borderRadius:'50%', background:'#f0fdf4', border:'3px solid #22c55e', display:'flex', alignItems:'center', justifyContent:'center', fontSize:32, marginBottom:20 }}>✓</div>
@@ -1002,18 +1014,6 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
 
       </div>
 
-      {/* ── Bouton sticky ── */}
-      <div style={{ position:'sticky', bottom:0, background:'#fff', padding:'12px 0', paddingBottom:'calc(12px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #eee', marginTop:8 }}>
-        <button onClick={handleSave} disabled={saving || !resaValide} style={{ width:'100%', height:56, background: resaValide ? '#E8C547' : '#f0f0f0', color: resaValide ? '#111' : '#bbb', border:'none', borderRadius:14, fontSize:17, fontWeight:800, cursor: resaValide ? 'pointer' : 'not-allowed', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity: saving ? 0.6 : 1 }}>
-          {saving ? 'Enregistrement…' : (isEdit ? '✏️ Modifier la réservation' : '📅 Créer la réservation')}
-        </button>
-        {!resaValide && (
-          <p style={{ textAlign:'center', fontSize:12, color:'#999', margin:'6px 0 0' }}>
-            {tel?.replace(/\D/g,'').length < 10 ? 'Entrez un numéro de téléphone' : !dateIso ? 'Choisissez une date' : !service ? 'Choisissez Midi ou Soir' : !heure ? 'Choisissez une heure' : 'Remplissez tous les champs'}
-          </p>
-        )}
-        <button onClick={onClose} style={{ width:'100%', background:'none', border:'none', color:'#999', fontSize:14, cursor:'pointer', padding:'8px', marginTop:4 }}>Annuler</button>
-      </div>
       </>}
     </Modal>
   );
