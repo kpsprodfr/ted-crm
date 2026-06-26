@@ -1817,9 +1817,10 @@ function CRMApp({ user, onLogout }) {
   const [showAddResa, setShowAddResa] = useState(false);
   const [activeView, setActiveView] = useState('crm'); // 'crm' | 'communications'
   const [commFilter, setCommFilter] = useState('tous');
-  const [filtreAvance, setFiltreAvance] = useState('tous');
-  const [filtreVenusNb, setFiltreVenusNb] = useState(3);
+  const [filtreJour, setFiltreJour] = useState(null);
+  const [filtreService, setFiltreService] = useState(null);
   const [filtreAbsentsMois, setFiltreAbsentsMois] = useState(3);
+  const [filtreAbsentsActif, setFiltreAbsentsActif] = useState(false);
   const [commSearch, setCommSearch] = useState('');
   const [commSelected, setCommSelected] = useState([]);
   const [commObjet, setCommObjet] = useState('');
@@ -2122,6 +2123,8 @@ function CRMApp({ user, onLogout }) {
 
   if (activeView === 'communications' && !isMobile) {
     const limiteCommDate = (() => { const d = new Date(); d.setMonth(d.getMonth() - filtreAbsentsMois); return d.toISOString().split('T')[0]; })();
+    const il6MoisComm = new Date(Date.now() - 180*24*60*60*1000).toISOString().split('T')[0];
+    const joursSem = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
     const commClients = clients.filter(c => {
       const matchFilter = commFilter === 'tous' ? true
         : commFilter === 'hommes' ? c.genre === 'Homme'
@@ -2130,14 +2133,16 @@ function CRMApp({ user, onLogout }) {
       const q = commSearch.toLowerCase();
       const matchSearch = !q || normalizeStr(c.nom).includes(normalizeStr(q)) || normalizeStr(c.prenom).includes(normalizeStr(q)) || (c.mail||'').toLowerCase().includes(q);
       if (!matchFilter || !matchSearch) return false;
-      if (filtreAvance === 'venus_x_fois') {
+      if (filtreAbsentsActif) {
         const s = statsClients[c.id] || {};
-        const venues = (s.total || 0) - (s.noshow || 0);
-        return venues >= filtreVenusNb;
+        if (s.derniereVisite && s.derniereVisite >= limiteCommDate) return false;
       }
-      if (filtreAvance === 'absents_x_mois') {
-        const s = statsClients[c.id] || {};
-        return !s.derniereVisite || s.derniereVisite < limiteCommDate;
+      if (filtreJour && filtreService) {
+        const resasC = resasData.filter(r => r.client_id === c.id && (r.statut === 'confirmee' || r.statut === 'venue') && r.date >= il6MoisComm);
+        const compteJ = {};
+        resasC.forEach(r => { const key = `${joursSem[new Date(r.date+'T12:00:00').getDay()]}_${r.service}`; compteJ[key] = (compteJ[key]||0)+1; });
+        const top3 = Object.entries(compteJ).sort((a,b)=>b[1]-a[1]).slice(0,3).map(e=>e[0]);
+        if (!top3.includes(`${filtreJour}_${filtreService}`)) return false;
       }
       return true;
     });
@@ -2260,19 +2265,27 @@ function CRMApp({ user, onLogout }) {
 
             {/* Filtres avancés */}
             <div style={{padding:'8px 12px', borderBottom:'1px solid #f0f0f0'}}>
-              <div style={{background:'#f9f9f9', borderRadius:10, padding:12}}>
-                <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px'}}>Filtres avancés</p>
-                <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:8}}>
-                  <input type="checkbox" checked={filtreAvance==='venus_x_fois'} onChange={e=>setFiltreAvance(e.target.checked?'venus_x_fois':'tous')} />
-                  <span style={{fontSize:13}}>Clients venus au moins</span>
-                  <input type="number" min={1} max={50} value={filtreVenusNb} onChange={e=>setFiltreVenusNb(Number(e.target.value))} style={{width:48, height:28, border:'1.5px solid #ddd', borderRadius:6, textAlign:'center', fontSize:13}} />
-                  <span style={{fontSize:13}}>fois</span>
+              <div style={{background:'#f9f9f9', borderRadius:12, padding:14}}>
+                <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 10px'}}>🎯 Cibler par jour favori</p>
+                <div style={{display:'flex', flexWrap:'wrap', gap:6, marginBottom:10}}>
+                  {['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'].map(j => (
+                    <button key={j} onClick={()=>{ setFiltreJour(filtreJour===j?null:j); setFiltreService(null); }} style={{ padding:'6px 12px', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer', border: filtreJour===j?'2px solid #111':'1.5px solid #ddd', background: filtreJour===j?'#111':'#fff', color: filtreJour===j?'#E8C547':'#666', transition:'all 0.15s' }}>{j}</button>
+                  ))}
                 </div>
-                <div style={{display:'flex', alignItems:'center', gap:8}}>
-                  <input type="checkbox" checked={filtreAvance==='absents_x_mois'} onChange={e=>setFiltreAvance(e.target.checked?'absents_x_mois':'tous')} />
-                  <span style={{fontSize:13}}>Pas venus depuis</span>
-                  <input type="number" min={1} max={24} value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{width:48, height:28, border:'1.5px solid #ddd', borderRadius:6, textAlign:'center', fontSize:13}} />
-                  <span style={{fontSize:13}}>mois</span>
+                {filtreJour && (
+                  <div style={{display:'flex', gap:8, marginBottom:8}}>
+                    <button onClick={()=>setFiltreService(filtreService==='midi'?null:'midi')} style={{ flex:1, padding:8, borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', border: filtreService==='midi'?'2px solid #E8C547':'1.5px solid #ddd', background: filtreService==='midi'?'#fffbea':'#fff', color: filtreService==='midi'?'#111':'#666', transition:'all 0.15s' }}>☀️ Midi</button>
+                    <button onClick={()=>setFiltreService(filtreService==='soir'?null:'soir')} style={{ flex:1, padding:8, borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', border: filtreService==='soir'?'2px solid #111':'1.5px solid #ddd', background: filtreService==='soir'?'#111':'#fff', color: filtreService==='soir'?'#E8C547':'#666', transition:'all 0.15s' }}>🌙 Soir</button>
+                  </div>
+                )}
+                {filtreJour && filtreService && <p style={{fontSize:12, color:'#666', margin:'0 0 8px', fontStyle:'italic'}}>Clients dont <strong>{filtreJour} {filtreService==='midi'?'Midi':'Soir'}</strong> est dans leur top 3</p>}
+                <div style={{borderTop:'1px solid #eee', paddingTop:10, marginTop:4}}>
+                  <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px'}}>😴 Clients absents</p>
+                  <div style={{display:'flex', alignItems:'center', gap:8}}>
+                    <button onClick={()=>setFiltreAbsentsActif(v=>!v)} style={{ padding:'6px 12px', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer', border: filtreAbsentsActif?'2px solid #111':'1.5px solid #ddd', background: filtreAbsentsActif?'#111':'#fff', color: filtreAbsentsActif?'#fff':'#666', transition:'all 0.15s' }}>Pas venus depuis</button>
+                    <input type="number" min={1} max={24} value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{width:48, height:28, border:'1.5px solid #ddd', borderRadius:6, textAlign:'center', fontSize:13}} />
+                    <span style={{fontSize:13, color:'#666'}}>mois</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2487,6 +2500,8 @@ function CRMApp({ user, onLogout }) {
           const isNumeroMobile = (tel) => /^(\+336|\+337|06|07)/.test((tel||'').replace(/\s/g,''));
 
           const limiteSmsDate = (() => { const d = new Date(); d.setMonth(d.getMonth() - filtreAbsentsMois); return d.toISOString().split('T')[0]; })();
+          const il6MoisSms = new Date(Date.now() - 180*24*60*60*1000).toISOString().split('T')[0];
+          const joursSemSms = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
           const clientsSms = clients.filter(c => {
             if (!c.tel) return false;
             if (smsFilter === 'hommes' && c.genre !== 'Homme') return false;
@@ -2496,14 +2511,16 @@ function CRMApp({ user, onLogout }) {
               const sq = smsSearch.toLowerCase();
               if (!(c.nom||'').toLowerCase().includes(sq) && !(c.prenom||'').toLowerCase().includes(sq) && !(c.tel||'').includes(sq)) return false;
             }
-            if (filtreAvance === 'venus_x_fois') {
+            if (filtreAbsentsActif) {
               const st = statsClients[c.id] || {};
-              const venues = (st.total || 0) - (st.noshow || 0);
-              return venues >= filtreVenusNb;
+              if (st.derniereVisite && st.derniereVisite >= limiteSmsDate) return false;
             }
-            if (filtreAvance === 'absents_x_mois') {
-              const st = statsClients[c.id] || {};
-              return !st.derniereVisite || st.derniereVisite < limiteSmsDate;
+            if (filtreJour && filtreService) {
+              const resasC = resasData.filter(r => r.client_id === c.id && (r.statut === 'confirmee' || r.statut === 'venue') && r.date >= il6MoisSms);
+              const compteJ = {};
+              resasC.forEach(r => { const key = `${joursSemSms[new Date(r.date+'T12:00:00').getDay()]}_${r.service}`; compteJ[key] = (compteJ[key]||0)+1; });
+              const top3 = Object.entries(compteJ).sort((a,b)=>b[1]-a[1]).slice(0,3).map(e=>e[0]);
+              if (!top3.includes(`${filtreJour}_${filtreService}`)) return false;
             }
             return true;
           });
@@ -2609,19 +2626,27 @@ function CRMApp({ user, onLogout }) {
                   </div>
                   {/* Filtres avancés SMS */}
                   <div style={{padding:'8px 12px', borderBottom:'1px solid #f0f0f0'}}>
-                    <div style={{background:'#f9f9f9', borderRadius:10, padding:12}}>
-                      <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px'}}>Filtres avancés</p>
-                      <div style={{display:'flex', alignItems:'center', gap:8, marginBottom:8}}>
-                        <input type="checkbox" checked={filtreAvance==='venus_x_fois'} onChange={e=>setFiltreAvance(e.target.checked?'venus_x_fois':'tous')} />
-                        <span style={{fontSize:13}}>Clients venus au moins</span>
-                        <input type="number" min={1} max={50} value={filtreVenusNb} onChange={e=>setFiltreVenusNb(Number(e.target.value))} style={{width:48, height:28, border:'1.5px solid #ddd', borderRadius:6, textAlign:'center', fontSize:13}} />
-                        <span style={{fontSize:13}}>fois</span>
+                    <div style={{background:'#f9f9f9', borderRadius:12, padding:14}}>
+                      <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 10px'}}>🎯 Cibler par jour favori</p>
+                      <div style={{display:'flex', flexWrap:'wrap', gap:6, marginBottom:10}}>
+                        {['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'].map(j => (
+                          <button key={j} onClick={()=>{ setFiltreJour(filtreJour===j?null:j); setFiltreService(null); }} style={{ padding:'6px 12px', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer', border: filtreJour===j?'2px solid #111':'1.5px solid #ddd', background: filtreJour===j?'#111':'#fff', color: filtreJour===j?'#E8C547':'#666', transition:'all 0.15s' }}>{j}</button>
+                        ))}
                       </div>
-                      <div style={{display:'flex', alignItems:'center', gap:8}}>
-                        <input type="checkbox" checked={filtreAvance==='absents_x_mois'} onChange={e=>setFiltreAvance(e.target.checked?'absents_x_mois':'tous')} />
-                        <span style={{fontSize:13}}>Pas venus depuis</span>
-                        <input type="number" min={1} max={24} value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{width:48, height:28, border:'1.5px solid #ddd', borderRadius:6, textAlign:'center', fontSize:13}} />
-                        <span style={{fontSize:13}}>mois</span>
+                      {filtreJour && (
+                        <div style={{display:'flex', gap:8, marginBottom:8}}>
+                          <button onClick={()=>setFiltreService(filtreService==='midi'?null:'midi')} style={{ flex:1, padding:8, borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', border: filtreService==='midi'?'2px solid #E8C547':'1.5px solid #ddd', background: filtreService==='midi'?'#fffbea':'#fff', color: filtreService==='midi'?'#111':'#666', transition:'all 0.15s' }}>☀️ Midi</button>
+                          <button onClick={()=>setFiltreService(filtreService==='soir'?null:'soir')} style={{ flex:1, padding:8, borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', border: filtreService==='soir'?'2px solid #111':'1.5px solid #ddd', background: filtreService==='soir'?'#111':'#fff', color: filtreService==='soir'?'#E8C547':'#666', transition:'all 0.15s' }}>🌙 Soir</button>
+                        </div>
+                      )}
+                      {filtreJour && filtreService && <p style={{fontSize:12, color:'#666', margin:'0 0 8px', fontStyle:'italic'}}>Clients dont <strong>{filtreJour} {filtreService==='midi'?'Midi':'Soir'}</strong> est dans leur top 3</p>}
+                      <div style={{borderTop:'1px solid #eee', paddingTop:10, marginTop:4}}>
+                        <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px'}}>😴 Clients absents</p>
+                        <div style={{display:'flex', alignItems:'center', gap:8}}>
+                          <button onClick={()=>setFiltreAbsentsActif(v=>!v)} style={{ padding:'6px 12px', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer', border: filtreAbsentsActif?'2px solid #111':'1.5px solid #ddd', background: filtreAbsentsActif?'#111':'#fff', color: filtreAbsentsActif?'#fff':'#666', transition:'all 0.15s' }}>Pas venus depuis</button>
+                          <input type="number" min={1} max={24} value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{width:48, height:28, border:'1.5px solid #ddd', borderRadius:6, textAlign:'center', fontSize:13}} />
+                          <span style={{fontSize:13, color:'#666'}}>mois</span>
+                        </div>
                       </div>
                     </div>
                   </div>
