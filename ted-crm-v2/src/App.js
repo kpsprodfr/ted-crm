@@ -1673,7 +1673,8 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
         </header>
       )}
 
-      <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? '1fr 400px' : undefined, gap: !isMobile ? 24 : undefined, padding: !isMobile ? '24px 32px' : undefined, maxWidth: !isMobile ? 1440 : undefined, margin: !isMobile ? '0 auto' : undefined, alignItems: 'start' }}>
+      {!isMobile && <h1 style={{fontSize:28, fontWeight:900, color:'#111', margin:'0 0 20px', padding:'24px 32px 0'}}>Réservations</h1>}
+      <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? '1fr 400px' : undefined, gap: !isMobile ? 24 : undefined, padding: !isMobile ? '0 32px 32px' : undefined, maxWidth: !isMobile ? 1440 : undefined, margin: !isMobile ? '0 auto' : undefined, alignItems: 'start', minHeight: !isMobile ? 'calc(100vh - 120px)' : undefined }}>
       <main style={{ maxWidth: isMobile ? 800 : 'none', margin: isMobile ? '0 auto' : 0, padding: isMobile ? '16px 12px 100px' : '0' }}>
 
 
@@ -2034,10 +2035,17 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           : resasDuJour;
         return (
           <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:20, height:'fit-content', position:'sticky', top:24 }}>
-            <h3 style={{ margin:'0 0 12px', fontSize:15, fontWeight:800, color:'#111' }}>
-              {calJourSelectionne ? new Date(calJourSelectionne+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}) : 'Sélectionner un jour'}
-              {calServiceSelectionne ? ` — ${calServiceSelectionne==='midi'?'☀️ Midi':'🌙 Soir'}` : ''}
-            </h3>
+            <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12}}>
+              <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#111' }}>
+                {calJourSelectionne ? new Date(calJourSelectionne+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}) : 'Sélectionner un jour'}
+                {calServiceSelectionne ? ` — ${calServiceSelectionne==='midi'?'☀️ Midi':'🌙 Soir'}` : ''}
+              </h3>
+              {calJourSelectionne && calServiceSelectionne && (
+                <button onClick={()=>telechargerTableau(calJourSelectionne, calServiceSelectionne, resasDuJour)} style={{ background:'#111', color:'#fff', border:'none', borderRadius:8, padding:'6px 14px', fontSize:12, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+                  📥 Télécharger
+                </button>
+              )}
+            </div>
             <input value={resaSearchPanel} onChange={e=>setResaSearchPanel(e.target.value)} placeholder="Rechercher une réservation..." style={{ width:'100%', height:38, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:13, outline:'none', marginBottom:12, boxSizing:'border-box' }} />
             <div>
               {resasDuJourFiltrees.map(r => (
