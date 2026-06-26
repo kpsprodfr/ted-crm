@@ -2207,7 +2207,7 @@ function CRMApp({ user, onLogout }) {
       const matchSearch = !q || normalizeStr(c.nom).includes(normalizeStr(q)) || normalizeStr(c.prenom).includes(normalizeStr(q)) || (c.mail||'').toLowerCase().includes(q);
       if (!matchFilter || !matchSearch) return false;
       if (filtreAbsentsActif) {
-        const derniereResa = resasData.filter(r => r.client_id === c.id && (r.statut === 'venue' || r.statut === 'confirmee')).sort((a,b) => b.date.localeCompare(a.date))[0];
+        const derniereResa = resasData.filter(r => r.client_id === c.id && r.statut === 'venue').sort((a,b) => b.date.localeCompare(a.date))[0];
         if (derniereResa && derniereResa.date >= limiteCommDate) return false;
       }
       if (filtreJours.size > 0 && filtreServices.size > 0) {
@@ -2585,7 +2585,7 @@ function CRMApp({ user, onLogout }) {
               if (!(c.nom||'').toLowerCase().includes(sq) && !(c.prenom||'').toLowerCase().includes(sq) && !(c.tel||'').includes(sq)) return false;
             }
             if (filtreAbsentsActif) {
-              const derniereResaSms = resasData.filter(r => r.client_id === c.id && (r.statut === 'venue' || r.statut === 'confirmee')).sort((a,b) => b.date.localeCompare(a.date))[0];
+              const derniereResaSms = resasData.filter(r => r.client_id === c.id && r.statut === 'venue').sort((a,b) => b.date.localeCompare(a.date))[0];
               if (derniereResaSms && derniereResaSms.date >= limiteSmsDate) return false;
             }
             if (filtreJours.size > 0 && filtreServices.size > 0) {
