@@ -1190,8 +1190,7 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
   const [acceptResa, setAcceptResa] = useState(null);
   const [detailResa, setDetailResa] = useState(null);
   const [editResa, setEditResa] = useState(null);
-  const [histOpen, setHistOpen] = useState(false);
-  const [showAddResa, setShowAddResa] = useState(false);
+const [showAddResa, setShowAddResa] = useState(false);
   const [calDate, setCalDate] = useState(new Date());
   const [calJourSelectionne, setCalJourSelectionne] = useState(new Date().toISOString().split('T')[0]);
   const [calServiceSelectionne, setCalServiceSelectionne] = useState(new Date().getHours() < 15 ? 'midi' : 'soir');
@@ -1354,7 +1353,6 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
   }
 
   const attente = resaList.filter(r => r.statut === 'attente');
-  const historique = resaList.filter(r => r.statut !== 'attente');
 
   const cardStyle = { background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:16, marginBottom:10, boxShadow:'0 2px 8px rgba(0,0,0,0.04)' };
 
@@ -1688,33 +1686,6 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
           </Modal>
         )}
 
-        {/* ── Historique accordéon ── */}
-        {historique.length > 0 && (
-          <div style={{ marginTop:28 }}>
-            <button onClick={()=>setHistOpen(o=>!o)} style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', background:'#fff', border:'1.5px solid #eee', borderRadius:12, padding:'14px 18px', cursor:'pointer', fontWeight:800, fontSize:16 }}>
-              <span>Historique <span style={{ color:'#bbb', fontWeight:400, fontSize:14 }}>({historique.length})</span></span>
-              <span style={{ fontSize:20, color:'#888', transform: histOpen ? 'rotate(90deg)' : 'none', transition:'transform 0.2s' }}>›</span>
-            </button>
-            {histOpen && (
-              <div style={{ marginTop:8 }}>
-                {historique.map(r => {
-                  const c = r.clients || {};
-                  const nom = c.entreprise ? c.entreprise : `${c.prenom || ''} ${c.nom || ''}`.trim();
-                  return (
-                    <div key={r.id} onClick={()=>setDetailResa(r)} style={{ ...cardStyle, display:'flex', alignItems:'center', gap:12, padding:'12px 14px', cursor:'pointer' }}
-                      onMouseEnter={e=>e.currentTarget.style.background='#fffbeb'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <span style={{ fontWeight:600, fontSize:14 }}>{nom || '—'}</span>
-                        <span style={{ fontSize:12, color:'#888', marginLeft:8 }}>{fmtResaDate(r.date)} · {r.nb_personnes} pers.</span>
-                      </div>
-                      <div style={{ flexShrink:0 }}>{statutBadge(r.statut)}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
       </main>
 
       {!isMobile && (
