@@ -958,7 +958,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa }) {
           <label style={lbl}>Nombre de personnes *</label>
           <div style={{ display:'flex', alignItems:'center', gap:12 }}>
             <button onClick={()=>setNbPersonnes(n=>Math.max(1,n-1))} style={{ width:40, height:40, borderRadius:8, border:'1.5px solid #eee', background:'#f8f8f8', fontSize:20, cursor:'pointer', fontWeight:700 }}>−</button>
-            <input type="number" inputMode="numeric" pattern="[0-9]*" value={nbPersonnes} min={1} max={50} onChange={e=>setNbPersonnes(Math.max(1,parseInt(e.target.value)||1))} style={{ width:70, height:40, border:'1.5px solid #ddd', borderRadius:8, textAlign:'center', fontSize:16, fontWeight:700, outline:'none' }} />
+            <input type="number" inputMode="numeric" pattern="[0-9]*" min={1} max={50} value={nbPersonnes === undefined ? '' : nbPersonnes} onChange={e=>{ const v=e.target.value; if(v===''||v==='0'){ setNbPersonnes(''); } else { setNbPersonnes(parseInt(v)||1); } }} onBlur={()=>{ if(!nbPersonnes||nbPersonnes<1) setNbPersonnes(1); }} style={{ width:70, height:40, border:'1.5px solid #ddd', borderRadius:8, textAlign:'center', fontSize:16, fontWeight:700, outline:'none' }} />
             <button onClick={()=>setNbPersonnes(n=>Math.min(50,n+1))} style={{ width:40, height:40, borderRadius:8, border:'1.5px solid #eee', background:'#f8f8f8', fontSize:20, cursor:'pointer', fontWeight:700 }}>+</button>
           </div>
         </div>
