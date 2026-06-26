@@ -3130,7 +3130,6 @@ function CRMApp({ user, onLogout }) {
                     const isHov = hoverRow === c.id;
                     const bg = isHov?"#fffbea":i%2===0?"#fff":"#f9f9f9";
                     const td = { padding:"9px 12px", borderBottom:"1px solid #f0f0f0", verticalAlign:"middle", background:bg };
-                    const s = statsClients[c.id] || { total:0, noshow:0, derniereVisite:null };
                     return (
                       <tr key={c.id} onClick={()=>setModalDetailClient(c)} onMouseEnter={()=>setHoverRow(c.id)} onMouseLeave={()=>setHoverRow(null)} style={{ cursor:'pointer' }}>
                         <td style={td}><span style={badge(c.genre)}>{c.genre||"—"}</span></td>
@@ -3149,11 +3148,7 @@ function CRMApp({ user, onLogout }) {
                         <td style={{...td,fontSize:12,color:"#3b82f6",maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.mail||"—"}</td>
                         <td style={{...td,whiteSpace:"nowrap"}}>{formatDate(c.created_at)}</td>
                         <td style={td}>
-                          <div style={{ display:'flex', gap:10, fontSize:11, color:'#999', flexWrap:'wrap' }}>
-                            <span>📅 {s.total} résa</span>
-                            {s.noshow > 0 && <span style={{ color:'#dc2626' }}>❌ {s.noshow} no-show</span>}
-                            <span>🕐 {s.derniereVisite ? new Date(s.derniereVisite+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}) : 'Jamais'}</span>
-                          </div>
+                          <span style={{ fontSize:12, color:'#666' }}>📅 {statsClients[c.id]?.total || 0} résa</span>
                         </td>
                       </tr>
                     );
