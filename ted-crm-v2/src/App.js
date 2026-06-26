@@ -1832,6 +1832,7 @@ function CRMApp({ user, onLogout }) {
   const [modalDetailClient, setModalDetailClient] = useState(null);
   const [statsClients, setStatsClients] = useState({});
   const [topJours, setTopJours] = useState([]);
+  const [resasData, setResasData] = useState([]);
   const [modalEdit, setModalEdit] = useState(null);
   const [modalDelete, setModalDelete] = useState(null);
   const [modalImport, setModalImport] = useState(false);
@@ -2006,6 +2007,7 @@ function CRMApp({ user, onLogout }) {
 
   async function chargerToutesStatsClients() {
     const { data } = await supabase.from('reservations').select('client_id, statut, date, service');
+    setResasData(data || []);
     const stats = {};
     const joursSemaine = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
     const compteParJourService = {};
@@ -3123,16 +3125,6 @@ function CRMApp({ user, onLogout }) {
               <div style={{ fontSize:36, fontWeight:700, color:G }}>{newMonth}</div>
               <div style={{ fontSize:12, color:"#bbb", marginTop:3 }}>ce mois-ci</div>
             </div>
-            <div style={{ background:"#fff", borderRadius:10, border:"1.5px solid #e5e5e5", padding:"14px 18px" }}>
-              <div style={{ fontSize:11, fontWeight:700, letterSpacing:1, color:"#888", textTransform:"uppercase", marginBottom:10 }}>Top jours</div>
-              {topJours.length === 0 && <p style={{ fontSize:12, color:'#bbb' }}>Pas encore de données</p>}
-              {topJours.map(([label, count], i) => (
-                <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
-                  <span style={{ fontSize:13, color:'#444' }}>{i===0?'🥇':i===1?'🥈':'🥉'} {label}</span>
-                  <span style={{ fontSize:13, fontWeight:800, color:'#111' }}>{count}</span>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Tabs */}
@@ -3365,6 +3357,29 @@ function CRMApp({ user, onLogout }) {
                   <div style={{ fontSize:11, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Dernière visite</div>
                 </div>
               </div>
+              {(() => {
+                const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+                const compteJours = {};
+                resasData.filter(r => r.client_id === c.id && (r.statut === 'confirmee' || r.statut === 'venue')).forEach(r => {
+                  const jour = jours[new Date(r.date+'T12:00:00').getDay()];
+                  const service = r.service === 'midi' ? 'Midi' : 'Soir';
+                  const key = `${jour} ${service}`;
+                  compteJours[key] = (compteJours[key] || 0) + 1;
+                });
+                const topJoursClient = Object.entries(compteJours).sort((a,b) => b[1]-a[1]).slice(0,3);
+                if (topJoursClient.length === 0) return null;
+                return (
+                  <div style={{ background:'#f9f9f9', borderRadius:10, padding:'12px 14px' }}>
+                    <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px' }}>🏆 Jours favoris</p>
+                    {topJoursClient.map(([label, count], i) => (
+                      <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
+                        <span style={{ fontSize:13, color:'#444' }}>{i===0?'🥇':i===1?'🥈':'🥉'} {label}</span>
+                        <span style={{ fontSize:13, fontWeight:700, color:'#111' }}>{count} résa</span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           </Modal>
         );
