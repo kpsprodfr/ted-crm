@@ -3684,10 +3684,10 @@ function CRMApp({ user, onLogout }) {
         return (
         <div style={{minHeight:'100vh', background:'#f5f5f5'}}>
 
-          {/* 1. HEADER — titre + Import/Export + Corbeille — scrolle normalement */}
+          {/* 1. HEADER — scrolle et disparaît */}
           <div style={{padding:'24px 32px 16px'}}>
             <div style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
-              <h1 style={{fontSize:26, fontWeight:900, color:'#111', margin:0}}>Clients</h1>
+              <h1 style={{fontSize:28, fontWeight:900, color:'#111', margin:0}}>Clients</h1>
               <div style={{display:'flex', gap:8}}>
                 <div style={{position:'relative'}}>
                   <button onClick={()=>setShowExportMenu(v=>!v)} style={{height:38, padding:'0 14px', borderRadius:10, border:'1.5px solid #eee', background:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', color:'#666', display:'flex', alignItems:'center', gap:6}}>
@@ -3708,122 +3708,137 @@ function CRMApp({ user, onLogout }) {
             </div>
           </div>
 
-          {/* 2. STATS — ultra compactes en ligne */}
-          <div style={{padding:'0 32px 14px'}}>
-          <div style={{display:'flex', gap:10}}>
-            {/* Total */}
-            <div style={{background:'#fff', borderRadius:10, padding:'10px 16px', display:'flex', alignItems:'center', gap:10, flex:1}}>
-              <Users size={15} strokeWidth={2} color="#999"/>
-              <div>
-                <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 1px'}}>Total</p>
-                <p style={{fontSize:18, fontWeight:900, color:'#111', margin:0}}>{clients.length} <span style={{fontSize:11, color:'#22c55e', fontWeight:600}}>+{nbCeMois}</span></p>
+          {/* 2. BARRE STICKY */}
+          <div style={{position:'sticky', top:0, zIndex:100, background:'#f5f5f5', padding:'10px 32px 14px', borderBottom:'1px solid #eee', boxShadow:'0 2px 12px rgba(0,0,0,0.06)'}}>
+            <div style={{display:'flex', alignItems:'center', gap:12}}>
+              <div style={{position:'relative', flex:1}}>
+                <Search size={16} strokeWidth={2} color="#999" style={{position:'absolute', left:16, top:'50%', transform:'translateY(-50%)', pointerEvents:'none'}}/>
+                <input placeholder="Rechercher un client..." value={rechercheClients} onChange={e=>setRechercheClients(e.target.value)}
+                  style={{width:'100%', height:48, border:'1.5px solid #eee', borderRadius:14, padding:'0 16px 0 44px', fontSize:15, outline:'none', background:'#fff', boxSizing:'border-box'}}
+                  onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
+                {rechercheClients && <button onClick={()=>setRechercheClients('')} style={{position:'absolute', right:14, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'#aaa', fontSize:16, padding:0}}>✕</button>}
               </div>
-            </div>
-            {/* Ce mois */}
-            <div style={{background:'#fff', borderRadius:10, padding:'10px 16px', display:'flex', alignItems:'center', gap:10, flex:1}}>
-              <UserPlus size={15} strokeWidth={2} color="#999"/>
-              <div>
-                <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 1px'}}>Ce mois</p>
-                <p style={{fontSize:18, fontWeight:900, color:'#111', margin:0}}>{nbCeMois} <span style={{fontSize:11, color:pctEvol>=0?'#22c55e':'#dc2626', fontWeight:600}}>{pctEvol>=0?'+':''}{pctEvol}%</span></p>
+              <div style={{display:'flex', gap:6, flexShrink:0}}>
+                {[{id:'Tous',label:'Tous'},{id:'Homme',label:'Hommes'},{id:'Femme',label:'Femmes'},{id:'Entreprise',label:'Entreprises'}].map(f=>(
+                  <button key={f.id} onClick={()=>setFiltreGenreClients(f.id)} style={{height:48, padding:'0 20px', borderRadius:14, cursor:'pointer', fontSize:15, fontWeight:700, border:'none', background: filtreGenreClients===f.id?'#111':'#fff', color: filtreGenreClients===f.id?'#fff':'#666', boxShadow: filtreGenreClients===f.id?'none':'0 1px 4px rgba(0,0,0,0.06)'}}>{f.label}</button>
+                ))}
               </div>
-            </div>
-            {/* Top clients */}
-            <div style={{background:'#fff', borderRadius:10, padding:'10px 16px', display:'flex', alignItems:'center', gap:12, flex:3}}>
-              <Trophy size={15} strokeWidth={2} color="#E8C547" style={{flexShrink:0}}/>
-              <div style={{flex:1, minWidth:0}}>
-                <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 4px'}}>Top clients</p>
-                <div style={{display:'flex', gap:16}}>
-                  {topClients.length === 0 ? (
-                    <span style={{fontSize:12, color:'#bbb'}}>Pas encore de données</span>
-                  ) : topClients.map((c, i) => {
-                    const medals = ['🥇','🥈','🥉'];
-                    return (
-                      <div key={c.id} style={{display:'flex', alignItems:'center', gap:5}}>
-                        <span style={{fontSize:12}}>{medals[i]}</span>
-                        <span style={{fontSize:12, fontWeight:700, color:'#111', whiteSpace:'nowrap'}}>
-                          {c.genre==='Entreprise'?c.entreprise:`${c.prenom||''} ${c.nom||''}`}
-                        </span>
-                        <span style={{fontSize:11, color:'#999'}}>· {c.nb}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-              <button onClick={()=>setShowTopClients(true)} style={{fontSize:11, fontWeight:600, color:'#E8C547', background:'none', border:'none', cursor:'pointer', padding:0, flexShrink:0, whiteSpace:'nowrap'}}>Afficher plus</button>
-            </div>
-          </div>
-          </div>{/* fin stats */}
-
-          {/* 3. RECHERCHE + FILTRES — STICKY */}
-          <div style={{position:'sticky', top:0, zIndex:100, background:'#f5f5f5', padding:'10px 32px 12px', borderBottom:'1px solid #eee', boxShadow:'0 2px 8px rgba(0,0,0,0.05)'}}>
-            <div style={{display:'flex', alignItems:'center', gap:12, flexWrap:'wrap'}}>
-              <div style={{position:'relative', flex:1, minWidth:200}}>
-                <Search size={16} strokeWidth={2} color="#999" style={{position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', pointerEvents:'none'}}/>
-                <input placeholder="Rechercher un client..." value={rechercheClients} onChange={e=>setRechercheClients(e.target.value)} style={{width:'100%', height:44, border:'1.5px solid #eee', borderRadius:12, padding:'0 14px 0 40px', fontSize:14, outline:'none', background:'#fff', boxSizing:'border-box'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
-                {rechercheClients && <button onClick={()=>setRechercheClients('')} style={{position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'#aaa', fontSize:16, padding:0}}>✕</button>}
-              </div>
-              {[{id:'Tous',label:'Tous'},{id:'Homme',label:'Hommes'},{id:'Femme',label:'Femmes'},{id:'Entreprise',label:'Entreprises'}].map(f=>(
-                <button key={f.id} onClick={()=>setFiltreGenreClients(f.id)} style={{height:44, padding:'0 18px', borderRadius:12, cursor:'pointer', fontSize:14, fontWeight:700, border:'none', background: filtreGenreClients===f.id?'#111':'#fff', color: filtreGenreClients===f.id?'#fff':'#666', boxShadow:'0 1px 4px rgba(0,0,0,0.06)'}}>{f.label}</button>
-              ))}
-              <button onClick={()=>setModalAdd(true)} style={{height:44, padding:'0 20px', borderRadius:12, border:'none', background:'#E8C547', color:'#111', fontSize:14, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', gap:8, flexShrink:0, boxShadow:'0 2px 8px rgba(232,197,71,0.3)'}}>
-                <Plus size={16} strokeWidth={2}/> Nouveau client
+              <button onClick={()=>setModalAdd(true)} style={{height:48, padding:'0 24px', borderRadius:14, border:'none', background:'#E8C547', color:'#111', fontSize:15, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', gap:8, flexShrink:0, boxShadow:'0 2px 8px rgba(232,197,71,0.3)'}}>
+                <Plus size={18} strokeWidth={2}/> Nouveau client
               </button>
             </div>
           </div>
 
-          {/* 4. LISTE clients */}
-          <div style={{padding:'16px 32px 32px'}}>
-          <div style={{background:'#fff', borderRadius:14, overflow:'hidden'}}>
-            {clientsFiltres.length === 0 ? (
-              <div style={{padding:'48px', textAlign:'center', color:'#bbb'}}>
-                <Users size={32} strokeWidth={1.5} color="#ddd" style={{marginBottom:12}}/>
-                <p style={{fontSize:14, margin:0}}>Aucun client trouvé</p>
-              </div>
-            ) : clientsFiltres.map((c, idx) => {
-              const resasClient = resasData.filter(r=>r.client_id===c.id);
-              const total = resasClient.filter(r=>r.statut!=='absente'&&r.statut!=='annulee'&&r.statut!=='refusee').length;
-              const derniereVisite = resasClient.filter(r=>r.date<=aujourd&&(r.statut==='venue'||r.statut==='confirmee')).sort((a,b)=>b.date.localeCompare(a.date))[0];
-              const prochaineResa = resasClient.filter(r=>r.date>aujourd&&(r.statut==='confirmee'||r.statut==='attente')).sort((a,b)=>a.date.localeCompare(b.date))[0];
-              const avatarBg = c.genre==='Homme'?'#dbeafe':c.genre==='Femme'?'#fce7f3':'#dcfce7';
-              const avatarColor = c.genre==='Homme'?'#1d4ed8':c.genre==='Femme'?'#be185d':'#15803d';
-              const initiales = c.genre==='Entreprise'?(c.entreprise||'?').slice(0,2).toUpperCase():`${(c.prenom||'?')[0]}${(c.nom||'')[0]||''}`.toUpperCase();
-              return (
-                <div key={c.id} onClick={()=>setModalDetailClient(c)} style={{display:'flex', alignItems:'center', gap:16, padding:'14px 24px', borderBottom: idx<clientsFiltres.length-1?'1px solid #f5f5f5':'none', cursor:'pointer'}}
-                  onMouseEnter={e=>e.currentTarget.style.background='#fafafa'}
-                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                  <div style={{width:42, height:42, borderRadius:'50%', flexShrink:0, background:avatarBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, color:avatarColor}}>{initiales}</div>
-                  <div style={{minWidth:180, flex:'0 0 180px'}}>
-                    <div style={{fontWeight:700, fontSize:14, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.genre==='Entreprise'?c.entreprise:`${c.prenom||''} ${c.nom||''}`}</div>
-                    <div style={{display:'flex', alignItems:'center', gap:4, marginTop:2}}>
-                      <Phone size={11} strokeWidth={2} color="#999"/>
-                      <span style={{fontSize:12, color:'#999'}}>{c.tel||'—'}</span>
-                    </div>
-                  </div>
-                  <div style={{display:'flex', alignItems:'center', gap:8, flex:'0 0 110px'}}>
-                    <CalendarDays size={15} strokeWidth={2} color="#ccc"/>
-                    <div>
-                      <span style={{fontSize:18, fontWeight:800, color:'#111'}}>{total}</span>
-                      <div style={{fontSize:11, color:'#999'}}>réservations</div>
-                    </div>
-                  </div>
-                  <div style={{flex:1, minWidth:0}}>
-                    <div style={{fontSize:11, color:'#999', marginBottom:2}}>Dernière visite</div>
-                    <div style={{fontSize:13, fontWeight:600, color: derniereVisite?'#111':'#ccc', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
-                      {derniereVisite ? new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) : 'Jamais'}
-                    </div>
-                  </div>
-                  <div style={{flex:1, minWidth:0}}>
-                    <div style={{fontSize:11, color:'#999', marginBottom:2}}>Prochaine réservation</div>
-                    <div style={{fontSize:13, fontWeight:600, color: prochaineResa?'#16a34a':'#ccc', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
-                      {prochaineResa ? `${new Date(prochaineResa.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}${prochaineResa.heure ? ` à ${prochaineResa.heure}` : ''}` : '—'}
-                    </div>
-                  </div>
-                  <ChevronRight size={16} strokeWidth={2} color="#ddd" style={{flexShrink:0}}/>
+          {/* 3. STATS + LISTE */}
+          <div style={{padding:'20px 32px 32px'}}>
+
+            {/* Blocs stats */}
+            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:16, marginBottom:20}}>
+              {/* Total clients */}
+              <div style={{background:'#fff', borderRadius:16, padding:'20px 24px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+                <div>
+                  <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px'}}>Total clients</p>
+                  <p style={{fontSize:36, fontWeight:900, color:'#111', margin:'0 0 4px'}}>{clients.length}</p>
+                  <p style={{fontSize:13, color:'#22c55e', fontWeight:600, margin:0}}>+{nbCeMois} ce mois-ci</p>
                 </div>
-              );
-            })}
+                <div style={{width:52, height:52, borderRadius:14, background:'#f5f5f5', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                  <Users size={24} strokeWidth={2} color="#666"/>
+                </div>
+              </div>
+
+              {/* Nouveaux ce mois */}
+              <div style={{background:'#fff', borderRadius:16, padding:'20px 24px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+                <div>
+                  <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px'}}>Nouveaux ce mois-ci</p>
+                  <p style={{fontSize:36, fontWeight:900, color:'#111', margin:'0 0 4px'}}>{nbCeMois}</p>
+                  <p style={{fontSize:13, color:pctEvol>=0?'#22c55e':'#dc2626', fontWeight:600, margin:0}}>{pctEvol>=0?'+':''}{pctEvol}% vs mois dernier</p>
+                </div>
+                <div style={{width:52, height:52, borderRadius:14, background:'#fffbea', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                  <UserPlus size={24} strokeWidth={2} color="#E8C547"/>
+                </div>
+              </div>
+
+              {/* Top client */}
+              <div style={{background:'#fff', borderRadius:16, padding:'20px 24px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+                {(()=>{
+                  const top = clients.map(c=>({...c, nb:resasData.filter(r=>r.client_id===c.id&&r.statut!=='annulee'&&r.statut!=='absente'&&r.statut!=='refusee').length})).filter(c=>c.nb>0).sort((a,b)=>b.nb-a.nb)[0];
+                  return (
+                    <>
+                      <div style={{flex:1, minWidth:0}}>
+                        <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px'}}>Top client</p>
+                        {top ? (
+                          <>
+                            <p style={{fontSize:20, fontWeight:900, color:'#111', margin:'0 0 4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+                              {top.genre==='Entreprise'?top.entreprise:`${top.prenom} ${top.nom}`}
+                            </p>
+                            <p style={{fontSize:13, color:'#999', fontWeight:600, margin:0, cursor:'pointer', display:'flex', alignItems:'center', gap:4}} onClick={()=>setShowTopClients(true)}>
+                              {top.nb} réservations · <span style={{color:'#E8C547'}}>Voir classement</span>
+                            </p>
+                          </>
+                        ) : <p style={{fontSize:14, color:'#bbb', margin:0}}>Pas encore de données</p>}
+                      </div>
+                      <div style={{width:52, height:52, borderRadius:14, background:'#fffbea', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, cursor:'pointer'}} onClick={()=>setShowTopClients(true)}>
+                        <Trophy size={24} strokeWidth={2} color="#E8C547"/>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {/* Liste clients */}
+            <div style={{background:'#fff', borderRadius:16, overflow:'hidden'}}>
+              {clientsFiltres.length === 0 ? (
+                <div style={{padding:'48px', textAlign:'center', color:'#bbb'}}>
+                  <Users size={32} strokeWidth={1.5} color="#ddd" style={{marginBottom:12}}/>
+                  <p style={{fontSize:14, margin:0}}>Aucun client trouvé</p>
+                </div>
+              ) : clientsFiltres.map((c, idx) => {
+                const resasClient = resasData.filter(r=>r.client_id===c.id);
+                const total = resasClient.filter(r=>r.statut!=='absente'&&r.statut!=='annulee'&&r.statut!=='refusee').length;
+                const derniereVisite = resasClient.filter(r=>r.date<=aujourd&&(r.statut==='venue'||r.statut==='confirmee')).sort((a,b)=>b.date.localeCompare(a.date))[0];
+                const prochaineResa = resasClient.filter(r=>r.date>aujourd&&(r.statut==='confirmee'||r.statut==='attente')).sort((a,b)=>a.date.localeCompare(b.date))[0];
+                const avatarBg = c.genre==='Homme'?'#dbeafe':c.genre==='Femme'?'#fce7f3':'#dcfce7';
+                const avatarColor = c.genre==='Homme'?'#1d4ed8':c.genre==='Femme'?'#be185d':'#15803d';
+                const initiales = c.genre==='Entreprise'?(c.entreprise||'?').slice(0,2).toUpperCase():`${(c.prenom||'?')[0]}${(c.nom||'')[0]||''}`.toUpperCase();
+                return (
+                  <div key={c.id} onClick={()=>setModalDetailClient(c)}
+                    style={{display:'flex', alignItems:'center', gap:20, padding:'18px 24px', borderBottom: idx<clientsFiltres.length-1?'1px solid #f5f5f5':'none', cursor:'pointer'}}
+                    onMouseEnter={e=>e.currentTarget.style.background='#fafafa'}
+                    onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                    <div style={{width:48, height:48, borderRadius:'50%', flexShrink:0, background:avatarBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, fontWeight:800, color:avatarColor}}>{initiales}</div>
+                    <div style={{minWidth:200, flex:'0 0 200px'}}>
+                      <div style={{fontWeight:700, fontSize:16, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.genre==='Entreprise'?c.entreprise:`${c.prenom||''} ${c.nom||''}`}</div>
+                      <div style={{display:'flex', alignItems:'center', gap:4, marginTop:3}}>
+                        <Phone size={12} strokeWidth={2} color="#999"/>
+                        <span style={{fontSize:13, color:'#999'}}>{c.tel||'—'}</span>
+                      </div>
+                    </div>
+                    <div style={{display:'flex', alignItems:'center', gap:10, flex:'0 0 130px'}}>
+                      <CalendarDays size={18} strokeWidth={2} color="#ccc"/>
+                      <div>
+                        <span style={{fontSize:24, fontWeight:900, color:'#111'}}>{total}</span>
+                        <div style={{fontSize:12, color:'#999'}}>réservations</div>
+                      </div>
+                    </div>
+                    <div style={{flex:1, minWidth:0}}>
+                      <div style={{fontSize:12, color:'#999', marginBottom:3}}>Dernière visite</div>
+                      <div style={{fontSize:14, fontWeight:700, color: derniereVisite?'#111':'#ccc', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+                        {derniereVisite ? new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) : 'Jamais'}
+                      </div>
+                    </div>
+                    <div style={{flex:1, minWidth:0}}>
+                      <div style={{fontSize:12, color:'#999', marginBottom:3}}>Prochaine réservation</div>
+                      <div style={{fontSize:14, fontWeight:700, color: prochaineResa?'#16a34a':'#ccc', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+                        {prochaineResa ? `${new Date(prochaineResa.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}${prochaineResa.heure?` à ${prochaineResa.heure}`:''}` : '—'}
+                      </div>
+                    </div>
+                    <ChevronRight size={18} strokeWidth={2} color="#ddd" style={{flexShrink:0}}/>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          </div>{/* fin liste */}
 
         </div>
         );
