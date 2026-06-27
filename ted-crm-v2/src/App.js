@@ -3838,6 +3838,13 @@ function CRMApp({ user, onLogout }) {
 
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:24 }}>
                 <h1 style={{ margin:0, fontSize:32, fontWeight:900, color:'#111' }}>{nomAffiche}</h1>
+                {!ficheClientReadOnly && (
+                  <button onClick={()=>{ fermerFiche(); setModalDelete(c); }} style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:10, border:'1.5px solid #fca5a5', background:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', color:'#dc2626' }}
+                    onMouseEnter={e=>e.currentTarget.style.background='#fef2f2'}
+                    onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
+                    <Trash2 size={14} strokeWidth={2} color="#dc2626"/> Supprimer
+                  </button>
+                )}
               </div>
 
               {/* Infos + actions */}
@@ -3945,13 +3952,6 @@ function CRMApp({ user, onLogout }) {
                     )) : <p style={{ fontSize:13, color:'#bbb', margin:0 }}>Pas encore de données</p>}
                   </div>
 
-                  {!ficheClientReadOnly && (
-                    <button onClick={()=>{ fermerFiche(); setModalDelete(c); }} style={{ width:'100%', padding:'14px', borderRadius:12, border:'1.5px solid #fca5a5', background:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', color:'#dc2626', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}
-                      onMouseEnter={e=>e.currentTarget.style.background='#fef2f2'}
-                      onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
-                      <Trash2 size={16} strokeWidth={2} color="#dc2626" /> Supprimer le client
-                    </button>
-                  )}
                 </div>
               </div>
             </div>
