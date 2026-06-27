@@ -4021,20 +4021,23 @@ function CRMApp({ user, onLogout }) {
 
         return (
           <div style={{ position:'fixed', inset:0, background:'#f5f5f5', zIndex:500, overflowY:'auto', marginLeft:120 }}>
-            <div style={{ maxWidth:1100, margin:'0 auto', padding:'32px 32px' }}>
+            <div style={{ maxWidth:1100, margin:'0 auto', padding:'24px 32px' }}>
 
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:24 }}>
+              {/* Header */}
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:12 }}>
                   <h1 style={{ margin:0, fontSize:32, fontWeight:900, color:'#111' }}>{nomAffiche}</h1>
                   {!ficheClientReadOnly && (
-                    <button onClick={()=>{ fermerFiche(); setModalDelete(c); }} style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 14px', borderRadius:10, border:'1.5px solid #ddd', background:'#f5f5f5', fontSize:13, fontWeight:600, cursor:'pointer', color:'#999', flexShrink:0 }}
-                      onMouseEnter={e=>{ e.currentTarget.style.background='#fee2e2'; e.currentTarget.style.borderColor='#fca5a5'; e.currentTarget.style.color='#dc2626'; e.currentTarget.querySelector('svg').style.color='#dc2626'; }}
+                    <button onClick={()=>{ fermerFiche(); setModalDelete(c); }}
+                      style={{ height:38, padding:'0 14px', borderRadius:10, border:'1.5px solid #ddd', background:'#f5f5f5', fontSize:13, fontWeight:600, cursor:'pointer', color:'#999', display:'flex', alignItems:'center', gap:6, flexShrink:0 }}
+                      onMouseEnter={e=>{ e.currentTarget.style.background='#fee2e2'; e.currentTarget.style.borderColor='#fca5a5'; e.currentTarget.style.color='#dc2626'; }}
                       onMouseLeave={e=>{ e.currentTarget.style.background='#f5f5f5'; e.currentTarget.style.borderColor='#ddd'; e.currentTarget.style.color='#999'; }}>
-                      <Trash2 size={14} strokeWidth={2} color="#999"/> Supprimer
+                      <Trash2 size={14} strokeWidth={2} color="currentColor"/> Supprimer
                     </button>
                   )}
                 </div>
-                <button onClick={fermerFiche} style={{ display:'flex', alignItems:'center', gap:6, background:'#111', border:'none', borderRadius:10, padding:'8px 16px', cursor:'pointer', fontSize:14, color:'#fff', fontWeight:700, flexShrink:0 }}
+                <button onClick={fermerFiche}
+                  style={{ height:38, padding:'0 16px', borderRadius:10, background:'#111', border:'none', fontSize:13, fontWeight:700, cursor:'pointer', color:'#fff', display:'flex', alignItems:'center', gap:6, flexShrink:0 }}
                   onMouseEnter={e=>e.currentTarget.style.background='#333'}
                   onMouseLeave={e=>e.currentTarget.style.background='#111'}>
                   <ArrowLeft size={16} strokeWidth={2} color="#fff"/> Retour
@@ -4042,7 +4045,7 @@ function CRMApp({ user, onLogout }) {
               </div>
 
               {/* Infos + actions */}
-              <div style={{ background:'#fff', borderRadius:16, padding:24, marginBottom:20, display:'flex', alignItems:'center', gap:24, flexWrap:'wrap' }}>
+              <div style={{ background:'#fff', borderRadius:16, padding:'20px 24px', marginBottom:16, display:'flex', alignItems:'center', gap:24, flexWrap:'wrap' }}>
                 <div style={{ width:72, height:72, borderRadius:'50%', flexShrink:0, background:avatarBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, fontWeight:900, color:avatarColor }}>
                   {(((c.prenom||c.entreprise||'?')[0])+(c.nom||'')[0]||'').toUpperCase()}
                 </div>
@@ -4052,32 +4055,32 @@ function CRMApp({ user, onLogout }) {
                   {createdAtLabel && <div style={{ display:'flex', alignItems:'center', gap:10 }}><User size={16} strokeWidth={2} color="#666" /><span style={{ fontSize:14, color:'#999' }}>Client depuis le {createdAtLabel}</span></div>}
                 </div>
                 <div style={{ display:'flex', gap:12 }}>
-                  {c.tel && <a href={`tel:${c.tel}`} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'14px 20px', borderRadius:12, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', minWidth:80, color:'#111', textDecoration:'none' }}><Phone size={20} strokeWidth={2}/><span style={{ fontSize:13, fontWeight:600 }}>Appeler</span></a>}
-                  {c.tel && <a href={`sms:${c.tel}`} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'14px 20px', borderRadius:12, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', minWidth:80, color:'#111', textDecoration:'none' }}><MessageSquare size={20} strokeWidth={2}/><span style={{ fontSize:13, fontWeight:600 }}>SMS</span></a>}
-                  {!ficheClientReadOnly && <button onClick={()=>{ setModalEdit(c); }} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'14px 20px', borderRadius:12, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', minWidth:80, color:'#111' }}><Pencil size={20} strokeWidth={2}/><span style={{ fontSize:13, fontWeight:600 }}>Modifier</span></button>}
+                  {c.tel && <a href={`tel:${c.tel}`} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'12px 20px', borderRadius:12, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', minWidth:80, color:'#111', textDecoration:'none', fontSize:13, fontWeight:600 }}><Phone size={20} strokeWidth={2}/>Appeler</a>}
+                  {c.tel && <a href={`sms:${c.tel}`} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'12px 20px', borderRadius:12, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', minWidth:80, color:'#111', textDecoration:'none', fontSize:13, fontWeight:600 }}><MessageSquare size={20} strokeWidth={2}/>SMS</a>}
+                  {!ficheClientReadOnly && <button onClick={()=>{ setModalEdit(c); }} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'12px 20px', borderRadius:12, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', minWidth:80, color:'#111', fontSize:13, fontWeight:600 }}><Pencil size={20} strokeWidth={2}/>Modifier</button>}
                 </div>
               </div>
 
-              {/* 4 blocs stats — ultra compacts en ligne */}
-              <div style={{ display:'flex', gap:10, marginBottom:16 }}>
+              {/* 4 blocs stats */}
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16, marginBottom:16 }}>
                 {[
-                  { icon:<CalendarDays size={14} strokeWidth={2} color="#E8C547"/>, bg:'#fffbea', label:'RÉSA TOTALES', value:totalResas, sub:createdAtLabel?`Depuis le ${createdAtLabel}`:'' },
-                  { icon:<UserX size={14} strokeWidth={2} color="#ef4444"/>, bg:'#fef2f2', label:'NO-SHOW', value:noshowResas, sub:`${pct}% des résa` },
-                  { icon:<Clock size={14} strokeWidth={2} color="#3b82f6"/>, bg:'#eff6ff', label:'DERNIÈRE VISITE', value:derniereVisite?new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'Jamais', sub:derniereVisiteIlYA!==null?`Il y a ${derniereVisiteIlYA}j`:'' },
-                  { icon:<CalendarDays size={14} strokeWidth={2} color="#22c55e"/>, bg:'#f0fdf4', label:'PROCHAINE RÉSA', value:prochaineResa?new Date(prochaineResa.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'Aucune', sub:prochaineResa?`Dans ${Math.ceil((new Date(prochaineResa.date+'T12:00:00')-new Date())/(1000*60*60*24))}j à ${prochaineResa.heure}`:'' }
+                  { icon:<CalendarDays size={20} strokeWidth={2} color="#E8C547"/>, bg:'#fffbea', label:'RÉSA TOTALES', value:totalResas, sub:createdAtLabel?`Depuis le ${createdAtLabel}`:'' },
+                  { icon:<UserX size={20} strokeWidth={2} color="#ef4444"/>, bg:'#fef2f2', label:'NO-SHOW', value:noshowResas, sub:`${pct}% des résa` },
+                  { icon:<Clock size={20} strokeWidth={2} color="#3b82f6"/>, bg:'#eff6ff', label:'DERNIÈRE VISITE', value:derniereVisite?new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'Jamais', sub:derniereVisiteIlYA!==null?`Il y a ${derniereVisiteIlYA} jours`:'' },
+                  { icon:<CalendarDays size={20} strokeWidth={2} color="#22c55e"/>, bg:'#f0fdf4', label:'PROCHAINE RÉSA', value:prochaineResa?new Date(prochaineResa.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'Aucune', sub:prochaineResa?`Dans ${Math.ceil((new Date(prochaineResa.date+'T12:00:00')-new Date())/(1000*60*60*24))}j à ${prochaineResa.heure}`:'' }
                 ].map((stat,i)=>(
-                  <div key={i} style={{ flex:1, background:'#fff', borderRadius:10, padding:'10px 14px' }}>
-                    <div style={{ width:28, height:28, borderRadius:6, background:stat.bg, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:6 }}>{stat.icon}</div>
-                    <p style={{ fontSize:9, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 2px' }}>{stat.label}</p>
-                    <p style={{ fontSize:15, fontWeight:900, color:'#111', margin:'0 0 1px' }}>{stat.value}</p>
-                    <p style={{ fontSize:10, color:'#999', margin:0 }}>{stat.sub}</p>
+                  <div key={i} style={{ background:'#fff', borderRadius:16, padding:'16px 20px' }}>
+                    <div style={{ width:36, height:36, borderRadius:10, background:stat.bg, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:10 }}>{stat.icon}</div>
+                    <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 4px' }}>{stat.label}</p>
+                    <p style={{ fontSize:18, fontWeight:900, color:'#111', margin:'0 0 2px' }}>{stat.value}</p>
+                    <p style={{ fontSize:11, color:'#999', margin:0 }}>{stat.sub}</p>
                   </div>
                 ))}
               </div>
 
               {/* Commentaire */}
               {c.commentaire && (
-                <div style={{ background:'#fff', borderRadius:14, padding:20, marginBottom:20, border:'1.5px solid #f0f0f0' }}>
+                <div style={{ background:'#fff', borderRadius:16, padding:'20px 24px', marginBottom:16, border:'1.5px solid #f0f0f0' }}>
                   <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
                     <MessageSquare size={18} strokeWidth={2} color="#111"/>
                     <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#111' }}>Commentaire</h3>
@@ -4086,14 +4089,14 @@ function CRMApp({ user, onLogout }) {
                 </div>
               )}
               {!c.commentaire && !ficheClientReadOnly && (
-                <button onClick={()=>setModalEdit(c)} style={{ width:'100%', padding:'12px', marginBottom:20, border:'1.5px dashed #ddd', borderRadius:12, background:'transparent', cursor:'pointer', fontSize:13, color:'#999', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                <button onClick={()=>setModalEdit(c)} style={{ width:'100%', padding:'12px', marginBottom:16, border:'1.5px dashed #ddd', borderRadius:12, background:'transparent', cursor:'pointer', fontSize:13, color:'#999', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
                   <Plus size={14} strokeWidth={2} color="#999"/> Ajouter un commentaire
                 </button>
               )}
 
-              {/* Grille historique + jours favoris — même hauteur */}
+              {/* Grille historique + jours favoris */}
               <div style={{ display:'grid', gridTemplateColumns:'1fr 320px', gap:16, alignItems:'stretch' }}>
-                <div style={{ background:'#fff', borderRadius:14, padding:20, display:'flex', flexDirection:'column', maxHeight:320 }}>
+                <div style={{ background:'#fff', borderRadius:16, padding:'20px 24px', display:'flex', flexDirection:'column', maxHeight:340 }}>
                   <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14, flexShrink:0 }}>
                     <CalendarDays size={18} strokeWidth={2} color="#111" />
                     <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#111' }}>Historique des réservations</h3>
@@ -4123,7 +4126,7 @@ function CRMApp({ user, onLogout }) {
                   </div>
                 </div>
 
-                <div style={{ background:'#fff', borderRadius:14, padding:20, display:'flex', flexDirection:'column', maxHeight:320 }}>
+                <div style={{ background:'#fff', borderRadius:16, padding:'20px 24px', display:'flex', flexDirection:'column', maxHeight:340 }}>
                   <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6, flexShrink:0 }}>
                     <Star size={16} strokeWidth={2} color="#111" />
                     <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#111' }}>Jours favoris</h3>
