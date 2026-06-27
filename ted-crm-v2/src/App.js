@@ -2392,48 +2392,72 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
 
         {/* ── Modal Demandes en attente ── */}
         {showDemandesAttente && (
-          <Modal title={`📋 Demandes en attente${attente.length > 0 ? ` (${attente.length})` : ''}`} onClose={()=>setShowDemandesAttente(false)} maxW={560} zIndex={3100}>
-            {loading && <p style={{ color:'#bbb', fontSize:14, padding:'20px 0' }}>Chargement…</p>}
-            {!loading && attente.length === 0 && (
-              <div style={{ textAlign:'center', padding:'32px 0', color:'#bbb' }}>
-                <div style={{ fontSize:40, marginBottom:10 }}>📭</div>
-                <p style={{ fontSize:15 }}>Aucune nouvelle demande</p>
+          <>
+            <div onMouseDown={e=>{e.preventDefault();e.stopPropagation();}} onClick={()=>setShowDemandesAttente(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:2999,pointerEvents:'all'}}/>
+            <div onClick={e=>e.stopPropagation()} onMouseDown={e=>e.stopPropagation()} style={{position:'fixed',top:'50%',left:'50%',transform:'translate(-50%,-50%)',background:'#fff',borderRadius:20,width:'min(620px, calc(100vw - 48px))',maxHeight:'85vh',display:'flex',flexDirection:'column',boxShadow:'0 32px 80px rgba(0,0,0,0.25)',zIndex:3000,overflow:'hidden'}}>
+              {/* Header */}
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'24px 28px 20px',flexShrink:0,borderBottom:'1px solid #f0f0f0'}}>
+                <div>
+                  <h2 style={{margin:0,fontSize:20,fontWeight:800,color:'#111'}}>Demandes en attente</h2>
+                  <p style={{margin:'4px 0 0',fontSize:13,color:'#999'}}>{attente.length} demande{attente.length>1?'s':''} à traiter</p>
+                </div>
+                <button onClick={()=>setShowDemandesAttente(false)} style={{width:36,height:36,borderRadius:'50%',border:'none',background:'#f0f0f0',cursor:'pointer',fontSize:18,color:'#666',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
               </div>
-            )}
-            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-              {attente.map(r => {
-                const c = r.clients || {};
-                const nom = c.entreprise ? c.entreprise : `${c.prenom || ''} ${c.nom || ''}`.trim();
-                return (
-                  <div key={r.id} style={cardStyle}>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:8, marginBottom:10 }}>
-                      <div>
-                        <span style={{ fontWeight:700, fontSize:15 }}>{nom || '—'}</span>
-                        {c.mail && <span style={{ fontSize:12, color:'#888', marginTop:2, display:'block' }}>{c.mail}</span>}
-                        {c.tel && (
-                          <a href={`tel:${c.tel}`} style={{ display:'inline-flex', alignItems:'center', gap:6, background:G, color:'#111', borderRadius:8, padding:'6px 14px', fontSize:13, fontWeight:700, textDecoration:'none', marginTop:8 }}>
-                            📞 Appeler · {c.tel}
-                          </a>
-                        )}
-                      </div>
-                      <div style={{ textAlign:'right', flexShrink:0 }}>
-                        <div style={{ fontSize:13, fontWeight:700 }}>{fmtResaDate(r.date)}</div>
-                        <div style={{ fontSize:12, color:'#888' }}>{r.service === 'midi' ? '🌞 Midi' : '🌙 Soir'}{r.heure ? ` · ${r.heure}` : ''}</div>
-                        <div style={{ fontSize:12, color:'#555', marginTop:2 }}>👥 {r.nb_personnes} pers.</div>
-                      </div>
-                    </div>
-                    {r.occasion && <p style={{ fontSize:12, color:'#6b7280', marginBottom:6 }}>🎉 {r.occasion}</p>}
-                    {r.commentaire_client && <p style={{ fontSize:12, color:'#aaa', fontStyle:'italic', marginBottom:8, borderLeft:`3px solid #eee`, paddingLeft:8 }}>"{r.commentaire_client}"</p>}
-                    <div style={{ fontSize:11, color:'#bbb', marginBottom:10 }}>Reçue le {new Date(r.created_at).toLocaleDateString('fr-FR')} à {new Date(r.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
-                    <div style={{ display:'flex', gap:8 }}>
-                      <button onClick={()=>setAcceptResa(r)} style={{ flex:1, background:'#16a34a', color:'#fff', border:'none', borderRadius:8, height:40, fontWeight:700, fontSize:14, cursor:'pointer' }}>✓ Accepter</button>
-                      <button onClick={()=>setRefusResa(r)} style={{ flex:1, background:'#fef2f2', color:'#dc2626', border:'1.5px solid #dc2626', borderRadius:8, height:40, fontWeight:700, fontSize:14, cursor:'pointer' }}>✕ Refuser</button>
-                    </div>
+              {/* Liste scrollable */}
+              <div style={{flex:1,overflowY:'auto',padding:'16px 28px'}}>
+                {attente.length === 0 && (
+                  <div style={{textAlign:'center',padding:'48px 0',color:'#bbb'}}>
+                    <div style={{fontSize:48,marginBottom:12}}>✓</div>
+                    <p style={{fontSize:15,fontWeight:600,margin:0}}>Aucune demande en attente</p>
                   </div>
-                );
-              })}
+                )}
+                {attente.sort((a,b)=>a.date.localeCompare(b.date)).map(r=>{
+                  const cl = r.clients || {};
+                  const avatarBg = cl.genre==='Homme'?'#dbeafe':cl.genre==='Femme'?'#fce7f3':'#dcfce7';
+                  const avatarColor = cl.genre==='Homme'?'#1d4ed8':cl.genre==='Femme'?'#be185d':'#15803d';
+                  const initiales = cl.genre==='Entreprise'?(cl.entreprise||'?').slice(0,2).toUpperCase():`${(cl.prenom||'?')[0]}${(cl.nom||'')[0]||''}`.toUpperCase();
+                  return (
+                    <div key={r.id} style={{background:'#f9f9f9',borderRadius:14,padding:16,marginBottom:12,border:'1.5px solid #f0f0f0'}}>
+                      <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:14}}>
+                        <div style={{width:44,height:44,borderRadius:'50%',flexShrink:0,background:avatarBg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,fontWeight:800,color:avatarColor}}>{initiales}</div>
+                        <div style={{flex:1}}>
+                          <div style={{fontWeight:800,fontSize:15,color:'#111'}}>{cl.genre==='Entreprise'?cl.entreprise:`${cl.prenom||''} ${cl.nom||''}`}</div>
+                          <div style={{fontSize:13,color:'#999',display:'flex',gap:8,marginTop:2,flexWrap:'wrap'}}>
+                            <span>{cl.tel}</span>
+                            {cl.mail && <><span>·</span><span>{cl.mail}</span></>}
+                          </div>
+                        </div>
+                        {cl.tel && <a href={`tel:${cl.tel}`} onClick={e=>e.stopPropagation()} style={{width:36,height:36,borderRadius:'50%',background:'#fff',border:'1.5px solid #eee',display:'flex',alignItems:'center',justifyContent:'center',textDecoration:'none',flexShrink:0}}><Phone size={16} strokeWidth={2} color="#666"/></a>}
+                      </div>
+                      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8,marginBottom:14}}>
+                        {[
+                          {label:'Date', value:new Date(r.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})},
+                          {label:'Service', value:r.service==='midi'?'☀️ Midi':'🌙 Soir'},
+                          {label:'Heure', value:r.heure||'—'},
+                          {label:'Personnes', value:`${r.nb_personnes} pers.`},
+                          {label:'Occasion', value:r.occasion||'—'},
+                        ].map((item,i)=>(
+                          <div key={i} style={{background:'#fff',borderRadius:8,padding:'8px 12px'}}>
+                            <div style={{fontSize:10,fontWeight:700,color:'#999',textTransform:'uppercase',letterSpacing:0.5,marginBottom:3}}>{item.label}</div>
+                            <div style={{fontSize:13,fontWeight:700,color:'#111'}}>{item.value}</div>
+                          </div>
+                        ))}
+                      </div>
+                      {r.commentaire_client && <div style={{background:'#fffbea',borderRadius:8,padding:'8px 12px',marginBottom:14,fontSize:13,color:'#666',fontStyle:'italic'}}>💬 {r.commentaire_client}</div>}
+                      <div style={{display:'flex',gap:10}}>
+                        <button onClick={()=>setRefusResa(r)} style={{flex:1,height:44,border:'1.5px solid #ddd',borderRadius:10,background:'#fff',fontSize:14,fontWeight:700,cursor:'pointer',color:'#666'}}>✕ Refuser</button>
+                        <button onClick={()=>setAcceptResa(r)} style={{flex:2,height:44,border:'none',borderRadius:10,background:'#E8C547',fontSize:14,fontWeight:800,cursor:'pointer',color:'#111'}}>✓ Accepter la réservation</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Fermer fixe en bas */}
+              <div style={{flexShrink:0,padding:'16px 28px',borderTop:'1px solid #eee'}}>
+                <button onClick={()=>setShowDemandesAttente(false)} style={{width:'100%',height:48,border:'1.5px solid #eee',borderRadius:12,background:'#fff',fontSize:14,fontWeight:600,cursor:'pointer',color:'#666'}}>Fermer</button>
+              </div>
             </div>
-          </Modal>
+          </>
         )}
 
       </main>
