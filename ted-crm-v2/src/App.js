@@ -2761,7 +2761,7 @@ function CRMApp({ user, onLogout }) {
       if (filtreGenre === 'Entreprises' && c.genre !== 'Entreprise') return false;
       const q = commSearch.toLowerCase();
       if (q && !normalizeStr(c.nom||'').includes(normalizeStr(q)) && !normalizeStr(c.prenom||'').includes(normalizeStr(q)) && !(c.mail||'').toLowerCase().includes(q)) return false;
-      if (filtreAbsentsActif) {
+      if (filtreAbsentsMois > 0) {
         const aujourd = new Date().toISOString().split('T')[0];
         const resasC = resasData.filter(r => r.client_id === c.id);
         const aResaFuture = resasC.some(r => r.date > aujourd && (r.statut === 'confirmee' || r.statut === 'attente'));
@@ -2926,19 +2926,14 @@ function CRMApp({ user, onLogout }) {
               {/* Clients absents depuis */}
               <div>
                 <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Clients absents depuis</p>
-                <div style={{display:'flex', alignItems:'center', gap:8}}>
-                  <select value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{ flex:1, height:38, border:'1.5px solid #eee', borderRadius:8, padding:'0 10px', fontSize:13, outline:'none', background:'#fff' }}>
-                    <option value={0}>Indifférent</option>
-                    <option value={1}>1 mois</option>
-                    <option value={2}>2 mois</option>
-                    <option value={3}>3 mois</option>
-                    <option value={6}>6 mois</option>
-                    <option value={12}>12 mois</option>
-                  </select>
-                  <button onClick={()=>setFiltreAbsentsActif(v=>!v)} style={{ padding:'6px 12px', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', border:'1.5px solid', borderColor: filtreAbsentsActif?'#111':'#eee', background: filtreAbsentsActif?'#111':'#fff', color: filtreAbsentsActif?'#E8C547':'#666' }}>
-                    {filtreAbsentsActif ? '✓ Actif' : 'Activer'}
-                  </button>
-                </div>
+                <select value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{ width:'100%', height:38, border:'1.5px solid #eee', borderRadius:8, padding:'0 10px', fontSize:13, outline:'none', background:'#fff', cursor:'pointer' }}>
+                  <option value={0}>Indifférent</option>
+                  <option value={1}>1 mois</option>
+                  <option value={2}>2 mois</option>
+                  <option value={3}>3 mois</option>
+                  <option value={6}>6 mois</option>
+                  <option value={12}>12 mois</option>
+                </select>
               </div>
 
               {/* Résumé de la cible */}
@@ -2976,8 +2971,12 @@ function CRMApp({ user, onLogout }) {
               <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14, flexShrink:0}}>
                 <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0}}>
                   Destinataires ({clientsFiltresComm.length})
+                  {selectedComm.length > 0 && (
+                    <span style={{marginLeft:8, background:'#E8C547', color:'#111', borderRadius:20, padding:'2px 8px', fontSize:11, fontWeight:800}}>
+                      {selectedComm.length} sél.
+                    </span>
+                  )}
                 </p>
-                <span style={{fontSize:12, fontWeight:600, color:'#E8C547', background:'#fffbea', borderRadius:20, padding:'3px 10px'}}>{selectedComm.length} sélectionné{selectedComm.length>1?'s':''}</span>
               </div>
 
               {/* Recherche */}
@@ -3013,7 +3012,7 @@ function CRMApp({ user, onLogout }) {
                         {(c.prenom||c.entreprise||'?')[0]?.toUpperCase()}
                       </div>
                       <div style={{flex:1, minWidth:0}}>
-                        <div style={{fontWeight:700, fontSize:13, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+                        <div style={{fontWeight:700, fontSize:13, color:'#111'}}>
                           {c.genre==='Entreprise'?c.entreprise:`${c.prenom} ${c.nom}`}
                         </div>
                         <div style={{fontSize:12, color:'#999'}}>{c.tel}</div>
@@ -3094,30 +3093,11 @@ function CRMApp({ user, onLogout }) {
                 </div>
 
                 {/* Aperçu */}
-                {(commType==='sms'?smsMessage:commMessage).length > 0 && (
-                  <div>
-                    <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Aperçu</p>
-                    <div style={{background:'#f0f0f0', borderRadius:16, padding:'14px 16px', maxWidth:300}}>
-                      <div style={{background:'#fff', borderRadius:12, padding:'10px 14px', fontSize:13, color:'#111', lineHeight:1.7, whiteSpace:'pre-wrap'}}>
-                        {(()=>{
-                          const premier = clientsFiltresComm.find(c=>selectedComm.includes(c.id));
-                          return (commType==='sms'?smsMessage:commMessage)
-                            .replace(/{prenom}/g, premier?.prenom||'Karl')
-                            .replace(/{nom}/g, premier?.nom||'Sounier')
-                            .replace(/{tel}/g, premier?.tel||'06 43 00 49 87')
-                            .replace(/{entreprise}/g, premier?.entreprise||'')
-                            .replace(/{lien_resa}/g, 'https://ted-crm.pages.dev/reserver.html');
-                        })()}
-                      </div>
-                      {commType==='sms' && <p style={{fontSize:11, color:'#999', margin:'6px 0 0', textAlign:'right'}}>Environ {Math.ceil(smsMessage.length/smsLimit)||0} SMS ({smsLimit} car.)</p>}
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Bouton envoyer */}
               <div style={{flexShrink:0, borderTop:'1px solid #eee', paddingTop:16, marginTop:8}}>
-                <button onClick={()=>setShowPreview(true)} disabled={selectedComm.length===0||(commType==='sms'?!smsMessage.trim():(!commObjet.trim()||!commMessage.trim()))} style={{ width:'100%', height:52, border:'none', borderRadius:12, background: (selectedComm.length>0&&(commType==='sms'?smsMessage.trim():commObjet.trim()&&commMessage.trim()))?'#E8C547':'#f0f0f0', color: (selectedComm.length>0&&(commType==='sms'?smsMessage.trim():commObjet.trim()&&commMessage.trim()))?'#111':'#bbb', fontSize:15, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                <button onClick={()=>setShowConfirmEnvoi(true)} disabled={selectedComm.length===0||(commType==='sms'?!smsMessage.trim():(!commObjet.trim()||!commMessage.trim()))} style={{ width:'100%', height:52, border:'none', borderRadius:12, background: (selectedComm.length>0&&(commType==='sms'?smsMessage.trim():commObjet.trim()&&commMessage.trim()))?'#E8C547':'#f0f0f0', color: (selectedComm.length>0&&(commType==='sms'?smsMessage.trim():commObjet.trim()&&commMessage.trim()))?'#111':'#bbb', fontSize:15, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
                   <Send size={18} strokeWidth={2}/> Envoyer la campagne
                 </button>
                 {selectedComm.length>0 && <p style={{textAlign:'center', fontSize:12, color:'#999', margin:'6px 0 0'}}>Envoi immédiat à {selectedComm.length} destinataire{selectedComm.length>1?'s':''}</p>}
@@ -3153,63 +3133,51 @@ function CRMApp({ user, onLogout }) {
             </div>
           )}
 
-          {/* ─── Modal Prévisualisation ─── */}
-          {showPreview && (
+          {/* ─── Modal Récap + Confirmation envoi ─── */}
+          {showConfirmEnvoi && (
             <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:4000,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
-              <div style={{background:'#fff',borderRadius:20,width:'min(680px,calc(100vw - 48px))',maxHeight:'90vh',display:'flex',flexDirection:'column',boxShadow:'0 32px 80px rgba(0,0,0,0.3)',overflow:'hidden'}}>
+              <div style={{background:'#fff',borderRadius:20,width:'min(620px,calc(100vw-48px))',maxHeight:'90vh',display:'flex',flexDirection:'column',boxShadow:'0 32px 80px rgba(0,0,0,0.3)',overflow:'hidden'}}>
                 <div style={{padding:'24px 28px 20px',borderBottom:'1px solid #f0f0f0',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
-                  <h2 style={{margin:0,fontSize:20,fontWeight:800,color:'#111'}}>Prévisualisation</h2>
-                  <button onClick={()=>setShowPreview(false)} style={{width:36,height:36,borderRadius:'50%',border:'none',background:'#f0f0f0',cursor:'pointer',fontSize:18,color:'#666'}}>✕</button>
+                  <h2 style={{margin:0,fontSize:20,fontWeight:800,color:'#111'}}>Récapitulatif de l'envoi</h2>
+                  <button onClick={()=>setShowConfirmEnvoi(false)} style={{width:36,height:36,borderRadius:'50%',border:'none',background:'#f0f0f0',cursor:'pointer',fontSize:18,color:'#666'}}>✕</button>
                 </div>
                 <div style={{flex:1,overflowY:'auto',padding:'24px 28px'}}>
+                  {/* Filtres actifs */}
                   <div style={{background:'#f9f9f9',borderRadius:12,padding:16,marginBottom:20}}>
-                    <p style={{fontSize:12,fontWeight:700,color:'#999',textTransform:'uppercase',letterSpacing:1,margin:'0 0 10px'}}>Récapitulatif</p>
+                    <p style={{fontSize:12,fontWeight:700,color:'#999',textTransform:'uppercase',letterSpacing:1,margin:'0 0 10px'}}>Filtres actifs</p>
                     <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
                       {filtreGenre!=='Tous' && <span style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>{filtreGenre}</span>}
-                      {filtreAbsentsActif && <span style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>Absents {filtreAbsentsMois} mois</span>}
+                      {filtreAbsentsMois > 0 && <span style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>Absents {filtreAbsentsMois} mois</span>}
                       {filtreJours?.size>0 && [...filtreJours].map(j=><span key={j} style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>{j}</span>)}
                       {filtreServices?.size>0 && [...filtreServices].map(s=><span key={s} style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>{s==='midi'?'☀️ Midi':'🌙 Soir'}</span>)}
-                      {filtreGenre==='Tous' && !filtreAbsentsActif && !filtreJours?.size && !filtreServices?.size && <span style={{fontSize:13,color:'#999'}}>Aucun filtre — tous les clients</span>}
+                      {filtreGenre==='Tous' && !filtreAbsentsMois && !filtreJours?.size && !filtreServices?.size && <span style={{fontSize:13,color:'#999'}}>Aucun filtre — tous les clients</span>}
                     </div>
                   </div>
+                  {/* Destinataires + aperçu */}
                   {(()=>{
-                    const ids = selectedComm;
-                    const destClients = clients.filter(c=>ids.includes(c.id));
+                    const destClients = clients.filter(c=>selectedComm.includes(c.id));
+                    const premier = destClients[0];
                     const apercu = commType==='email'
-                      ? (commMessage||'').replace(/{prenom}/g, destClients[0]?.prenom||'{prenom}').replace(/{nom}/g, destClients[0]?.nom||'{nom}').replace(/{tel}/g, destClients[0]?.tel||'{tel}').replace(/{entreprise}/g, destClients[0]?.entreprise||'{entreprise}')
-                      : (smsMessage||'').replace(/{prenom}/g, destClients[0]?.prenom||'{prenom}').replace(/{nom}/g, destClients[0]?.nom||'{nom}');
+                      ? (commMessage||'').replace(/{prenom}/g, premier?.prenom||'{prenom}').replace(/{nom}/g, premier?.nom||'{nom}').replace(/{tel}/g, premier?.tel||'{tel}').replace(/{entreprise}/g, premier?.entreprise||'{entreprise}').replace(/{lien_resa}/g,'https://ted-crm.pages.dev/reserver.html')
+                      : (smsMessage||'').replace(/{prenom}/g, premier?.prenom||'{prenom}').replace(/{nom}/g, premier?.nom||'{nom}').replace(/{lien_resa}/g,'https://ted-crm.pages.dev/reserver.html');
                     return (
                       <div>
-                        <p style={{fontSize:13,fontWeight:700,color:'#111',margin:'0 0 10px'}}>{ids.length} destinataire{ids.length>1?'s':''} — {commType==='email'?'Email':'SMS'}</p>
-                        <div style={{fontSize:13,color:'#666',marginBottom:16}}>{destClients.slice(0,3).map(c=>`${c.prenom} ${c.nom}`).join(', ')}{destClients.length>3&&` +${destClients.length-3} autres`}</div>
-                        {commType==='email' && <div style={{marginBottom:12}}><span style={{fontSize:12,fontWeight:700,color:'#999'}}>Objet : </span><span style={{fontSize:13,color:'#111'}}>{commObjet}</span></div>}
-                        <div style={{background:'#f9f9f9',borderRadius:12,padding:16,fontSize:14,lineHeight:1.7,color:'#111',whiteSpace:'pre-wrap'}}>{apercu}</div>
+                        <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 8px'}}>
+                          {selectedComm.length} destinataire{selectedComm.length>1?'s':''} — {commType==='email'?'📧 Email':'📱 SMS'}
+                        </p>
+                        <p style={{fontSize:13,color:'#666',margin:'0 0 20px'}}>{destClients.slice(0,4).map(c=>c.genre==='Entreprise'?c.entreprise:`${c.prenom} ${c.nom}`).join(', ')}{destClients.length>4&&` +${destClients.length-4} autres`}</p>
+                        {commType==='email' && <div style={{marginBottom:12,padding:'10px 14px',background:'#f9f9f9',borderRadius:8}}><span style={{fontSize:12,fontWeight:700,color:'#999'}}>Objet : </span><span style={{fontSize:13,fontWeight:600,color:'#111'}}>{commObjet}</span></div>}
+                        <p style={{fontSize:12,fontWeight:700,color:'#999',textTransform:'uppercase',letterSpacing:1,margin:'0 0 8px'}}>Aperçu du message</p>
+                        <div style={{background:'#f9f9f9',borderRadius:12,padding:16,fontSize:14,lineHeight:1.8,color:'#111',whiteSpace:'pre-wrap',borderLeft:'3px solid #E8C547'}}>{apercu}</div>
+                        {commType==='sms' && <p style={{fontSize:12,color:'#999',margin:'8px 0 0',textAlign:'right'}}>~{Math.ceil((smsMessage||'').length/smsLimit)} SMS · ~{(selectedComm.length*0.04).toFixed(2)}€</p>}
                       </div>
                     );
                   })()}
                 </div>
                 <div style={{padding:'20px 28px',borderTop:'1px solid #f0f0f0',display:'flex',gap:12,flexShrink:0}}>
-                  <button onClick={()=>setShowPreview(false)} style={{flex:1,height:46,border:'1.5px solid #ddd',borderRadius:10,background:'#fff',fontSize:14,fontWeight:600,cursor:'pointer',color:'#666'}}>Modifier</button>
-                  <button onClick={()=>{ setShowConfirmEnvoi(true); }} style={{flex:2,height:46,border:'none',borderRadius:10,background:'#E8C547',fontSize:15,fontWeight:800,cursor:'pointer',color:'#111',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
-                    <Send size={18} strokeWidth={2}/> Envoyer ({selectedComm.length})
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ─── Modal Confirmation envoi ─── */}
-          {showConfirmEnvoi && (
-            <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:5000,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
-              <div style={{background:'#fff',borderRadius:20,width:'min(420px,calc(100vw-48px))',padding:32,boxShadow:'0 32px 80px rgba(0,0,0,0.3)'}}>
-                <h2 style={{margin:'0 0 12px',fontSize:20,fontWeight:800,color:'#111'}}>Confirmer l'envoi ?</h2>
-                <p style={{fontSize:14,color:'#666',margin:'0 0 24px',lineHeight:1.6}}>
-                  Vous allez envoyer {commType==='email'?'un email':'un SMS'} à <strong>{selectedComm.length} destinataire{selectedComm.length>1?'s':''}</strong>. Cette action est irréversible.
-                </p>
-                <div style={{display:'flex',gap:12}}>
-                  <button onClick={()=>setShowConfirmEnvoi(false)} style={{flex:1,height:46,border:'1.5px solid #ddd',borderRadius:10,background:'#fff',fontSize:14,fontWeight:600,cursor:'pointer',color:'#666'}}>Annuler</button>
-                  <button onClick={async()=>{ setShowConfirmEnvoi(false); setShowPreview(false); if (commType==='email') { await handleSendAll(); } else { setShowConfirmSms(true); } }} style={{flex:2,height:46,border:'none',borderRadius:10,background:'#E8C547',fontSize:15,fontWeight:800,cursor:'pointer',color:'#111'}}>
-                    Envoyer maintenant
+                  <button onClick={()=>setShowConfirmEnvoi(false)} style={{flex:1,height:48,border:'1.5px solid #ddd',borderRadius:10,background:'#fff',fontSize:14,fontWeight:600,cursor:'pointer',color:'#666'}}>Annuler</button>
+                  <button onClick={async()=>{ setShowConfirmEnvoi(false); if (commType==='email') { await handleSendAll(); } else { setShowConfirmSms(true); } }} style={{flex:2,height:48,border:'none',borderRadius:10,background:'#E8C547',fontSize:15,fontWeight:800,cursor:'pointer',color:'#111',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+                    <Send size={18} strokeWidth={2}/> Confirmer l'envoi ({selectedComm.length})
                   </button>
                 </div>
               </div>
@@ -3258,7 +3226,7 @@ function CRMApp({ user, onLogout }) {
       const q = commSearch.toLowerCase();
       const matchSearch = !q || normalizeStr(c.nom).includes(normalizeStr(q)) || normalizeStr(c.prenom).includes(normalizeStr(q)) || (c.mail||'').toLowerCase().includes(q);
       if (!matchFilter || !matchSearch) return false;
-      if (filtreAbsentsActif) {
+      if (filtreAbsentsMois > 0) {
         const aujourd = new Date().toISOString().split('T')[0];
         const resasC = resasData.filter(r => r.client_id === c.id);
         const aResaFuture = resasC.some(r => r.date > aujourd && (r.statut === 'confirmee' || r.statut === 'attente'));
