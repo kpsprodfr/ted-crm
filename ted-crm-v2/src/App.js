@@ -2622,17 +2622,11 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                   'annulee':   {bg:'#f3f4f6', color:'#6b7280', label:'Annulée'},
                 };
                 const s = statutColors[r.statut] || statutColors['confirmee'];
-                const avatarBg = r.clients?.genre==='Homme'?'#dbeafe':r.clients?.genre==='Femme'?'#fce7f3':'#dcfce7';
-                const avatarColor = r.clients?.genre==='Homme'?'#1d4ed8':r.clients?.genre==='Femme'?'#be185d':'#15803d';
-                const initiales = r.clients?.genre==='Entreprise'
-                  ? (r.clients?.entreprise||'?').slice(0,2).toUpperCase()
-                  : `${(r.clients?.prenom||'?')[0]}${(r.clients?.nom||'')[0]||''}`.toUpperCase();
                 return (
                   <div key={r.id} onClick={()=>setDetailResa(r)} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 20px', borderBottom:'1px solid #f5f5f5', cursor:'pointer' }}
                     onMouseEnter={e=>e.currentTarget.style.background='#fafafa'}
                     onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                     <span style={{ fontSize:14, fontWeight:800, color:'#111', minWidth:44, flexShrink:0 }}>{r.heure||'—'}</span>
-                    <div style={{ width:36, height:36, borderRadius:'50%', flexShrink:0, background:avatarBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:800, color:avatarColor }}>{initiales}</div>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ fontWeight:700, fontSize:14, color: r.statut==='absente'?'#dc2626':'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                         {r.clients?.genre==='Entreprise' ? r.clients?.entreprise : `${r.clients?.prenom||''} ${r.clients?.nom||''}`.trim()}
@@ -2640,7 +2634,6 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                       <div style={{ fontSize:12, color:'#999' }}>{r.nb_personnes} pers.</div>
                     </div>
                     <span style={{ background:s.bg, color:s.color, borderRadius:20, padding:'3px 10px', fontSize:11, fontWeight:700, flexShrink:0, whiteSpace:'nowrap' }}>{s.label}</span>
-                    {r.clients?.tel && <a href={`tel:${r.clients.tel}`} onClick={e=>e.stopPropagation()} style={{ width:32, height:32, borderRadius:8, background:'#f5f5f5', border:'none', display:'flex', alignItems:'center', justifyContent:'center', textDecoration:'none', flexShrink:0 }}><Phone size={14} strokeWidth={2} color="#666" /></a>}
                   </div>
                 );
               })}
