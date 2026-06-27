@@ -3379,47 +3379,105 @@ function CRMApp({ user, onLogout }) {
           {/* ─── Modal Récap + Confirmation envoi ─── */}
           {showConfirmEnvoi && (
             <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:4000,display:'flex',alignItems:'center',justifyContent:'center',padding:24,pointerEvents:'all',cursor:'default',touchAction:'none'}} onMouseDown={e=>{e.preventDefault();e.stopPropagation();setShowConfirmEnvoi(false);}} onClick={(e)=>{if(e.target===e.currentTarget)setShowConfirmEnvoi(false);}}>
-              <div style={{background:'#fff',borderRadius:20,width:'min(620px,calc(100vw-48px))',maxHeight:'90vh',display:'flex',flexDirection:'column',boxShadow:'0 32px 80px rgba(0,0,0,0.3)',overflow:'hidden'}} onClick={e=>e.stopPropagation()}>
-                <div style={{padding:'24px 28px 20px',borderBottom:'1px solid #f0f0f0',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
-                  <h2 style={{margin:0,fontSize:20,fontWeight:800,color:'#111'}}>Récapitulatif de l'envoi</h2>
-                  <button onClick={()=>setShowConfirmEnvoi(false)} style={{width:36,height:36,borderRadius:'50%',border:'none',background:'#f0f0f0',cursor:'pointer',fontSize:18,color:'#666'}}>✕</button>
+              <div style={{background:'#fff',borderRadius:20,width:'min(720px,calc(100vw-48px))',maxHeight:'88vh',display:'flex',flexDirection:'column',boxShadow:'0 32px 80px rgba(0,0,0,0.3)',overflow:'hidden'}} onClick={e=>e.stopPropagation()}>
+
+                {/* Header */}
+                <div style={{padding:'24px 32px 20px',borderBottom:'1px solid #f0f0f0',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
+                  <div>
+                    <h2 style={{margin:0,fontSize:20,fontWeight:800,color:'#111'}}>Récapitulatif de l'envoi</h2>
+                    <p style={{margin:'4px 0 0',fontSize:13,color:'#999'}}>Vérifiez avant d'envoyer</p>
+                  </div>
+                  <button onClick={()=>setShowConfirmEnvoi(false)} style={{width:36,height:36,borderRadius:'50%',border:'none',background:'#f0f0f0',cursor:'pointer',fontSize:18,color:'#666',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
                 </div>
-                <div style={{flex:1,overflowY:'auto',padding:'24px 28px'}}>
-                  {/* Filtres actifs */}
-                  <div style={{background:'#f9f9f9',borderRadius:12,padding:16,marginBottom:20}}>
-                    <p style={{fontSize:12,fontWeight:700,color:'#999',textTransform:'uppercase',letterSpacing:1,margin:'0 0 10px'}}>Filtres actifs</p>
-                    <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
-                      {filtreGenresComm.size>0 && [...filtreGenresComm].map(g=><span key={g} style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>{g}s</span>)}
-                      {filtreAbsentsMois > 0 && <span style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>Absents {filtreAbsentsMois} mois</span>}
-                      {filtreJours?.size>0 && [...filtreJours].map(j=><span key={j} style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>{j}</span>)}
-                      {filtreServices?.size>0 && [...filtreServices].map(s=><span key={s} style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>{s==='midi'?'☀️ Midi':'🌙 Soir'}</span>)}
-                      {filtreGenresComm.size===0 && !filtreAbsentsMois && !filtreJours?.size && !filtreServices?.size && <span style={{fontSize:13,color:'#999'}}>Aucun filtre — tous les clients</span>}
+
+                <div style={{flex:1,overflowY:'auto',padding:'24px 32px'}}>
+                  {/* Ligne infos envoi */}
+                  <div style={{display:'flex',gap:12,marginBottom:20}}>
+                    <div style={{flex:1,background:'#f9f9f9',borderRadius:12,padding:'14px 16px'}}>
+                      <p style={{fontSize:11,fontWeight:700,color:'#999',textTransform:'uppercase',letterSpacing:1,margin:'0 0 6px'}}>Destinataires</p>
+                      <p style={{fontSize:22,fontWeight:900,color:'#111',margin:'0 0 2px'}}>{selectedComm.length}</p>
+                      <p style={{fontSize:12,color:'#666',margin:0}}>
+                        {clients.filter(c=>selectedComm.includes(c.id)).slice(0,3).map(c=>c.prenom||c.entreprise).join(', ')}
+                        {selectedComm.length>3?` et ${selectedComm.length-3} autres`:''}
+                      </p>
+                    </div>
+                    <div style={{flex:1,background:'#f9f9f9',borderRadius:12,padding:'14px 16px'}}>
+                      <p style={{fontSize:11,fontWeight:700,color:'#999',textTransform:'uppercase',letterSpacing:1,margin:'0 0 6px'}}>Type</p>
+                      <p style={{fontSize:16,fontWeight:800,color:'#111',margin:'0 0 2px'}}>{commType==='email'?'✉️ Email':'💬 SMS'}</p>
+                      <p style={{fontSize:12,color:'#666',margin:0}}>{commType==='sms'?`~${(selectedComm.length*0.04).toFixed(2)}€ estimés`:'Envoi gratuit'}</p>
+                    </div>
+                    <div style={{flex:2,background:'#f9f9f9',borderRadius:12,padding:'14px 16px'}}>
+                      <p style={{fontSize:11,fontWeight:700,color:'#999',textTransform:'uppercase',letterSpacing:1,margin:'0 0 8px'}}>Filtres actifs</p>
+                      <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+                        {filtreGenresComm.size>0 && [...filtreGenresComm].map(g=><span key={g} style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'3px 10px',fontSize:12,fontWeight:700}}>{g}s</span>)}
+                        {filtreAbsentsMois>0 && <span style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'3px 10px',fontSize:12,fontWeight:700}}>Absents {filtreAbsentsMois}m</span>}
+                        {filtreJours?.size>0 && [...filtreJours].map(j=><span key={j} style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'3px 10px',fontSize:12,fontWeight:700}}>{j}</span>)}
+                        {filtreServices?.size>0 && [...filtreServices].map(s=><span key={s} style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'3px 10px',fontSize:12,fontWeight:700}}>{s==='midi'?'☀️ Midi':'🌙 Soir'}</span>)}
+                        {filtreGenresComm.size===0 && !filtreAbsentsMois && !filtreJours?.size && !filtreServices?.size && <span style={{fontSize:13,color:'#999'}}>Aucun — tous les clients</span>}
+                      </div>
                     </div>
                   </div>
-                  {/* Destinataires + aperçu */}
+
+                  {/* Aperçu réaliste */}
                   {(()=>{
-                    const destClients = clients.filter(c=>selectedComm.includes(c.id));
-                    const premier = destClients[0];
-                    const apercu = commType==='email'
-                      ? (commMessage||'').replace(/{prenom}/g, premier?.prenom||'{prenom}').replace(/{nom}/g, premier?.nom||'{nom}').replace(/{tel}/g, premier?.tel||'{tel}').replace(/{entreprise}/g, premier?.entreprise||'{entreprise}').replace(/{lien_resa}/g,'https://ted-crm.pages.dev/reserver.html')
-                      : (smsMessage||'').replace(/{prenom}/g, premier?.prenom||'{prenom}').replace(/{nom}/g, premier?.nom||'{nom}').replace(/{lien_resa}/g,'https://ted-crm.pages.dev/reserver.html');
+                    const premier = clients.find(c=>selectedComm.includes(c.id));
+                    const replaceVars = (txt) => (txt||'')
+                      .replace(/{prenom}/g, premier?.prenom||'Prénom')
+                      .replace(/{nom}/g, premier?.nom||'Nom')
+                      .replace(/{tel}/g, premier?.tel||'Téléphone')
+                      .replace(/{entreprise}/g, premier?.entreprise||'Entreprise')
+                      .replace(/{lien_resa}/g, 'https://ted-crm.pages.dev/reserver.html');
                     return (
-                      <div>
-                        <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 8px'}}>
-                          {selectedComm.length} destinataire{selectedComm.length>1?'s':''} — {commType==='email'?'📧 Email':'📱 SMS'}
-                        </p>
-                        <p style={{fontSize:13,color:'#666',margin:'0 0 20px'}}>{destClients.slice(0,4).map(c=>c.genre==='Entreprise'?c.entreprise:`${c.prenom} ${c.nom}`).join(', ')}{destClients.length>4&&` +${destClients.length-4} autres`}</p>
-                        {commType==='email' && <div style={{marginBottom:12,padding:'10px 14px',background:'#f9f9f9',borderRadius:8}}><span style={{fontSize:12,fontWeight:700,color:'#999'}}>Objet : </span><span style={{fontSize:13,fontWeight:600,color:'#111'}}>{commObjet}</span></div>}
-                        <p style={{fontSize:12,fontWeight:700,color:'#999',textTransform:'uppercase',letterSpacing:1,margin:'0 0 8px'}}>Aperçu du message</p>
-                        <div style={{background:'#f9f9f9',borderRadius:12,padding:16,fontSize:14,lineHeight:1.8,color:'#111',whiteSpace:'pre-wrap',borderLeft:'3px solid #E8C547'}}>{apercu}</div>
-                        {commType==='sms' && <p style={{fontSize:12,color:'#999',margin:'8px 0 0',textAlign:'right'}}>~{Math.ceil((smsMessage||'').length/smsLimit)} SMS · ~{(selectedComm.length*0.04).toFixed(2)}€</p>}
+                      <div style={{border:'1.5px solid #eee',borderRadius:14,overflow:'hidden'}}>
+                        {commType==='email' ? (
+                          <>
+                            <div style={{background:'#f8f8f8',padding:'14px 20px',borderBottom:'1px solid #eee'}}>
+                              <div style={{display:'flex',gap:8,marginBottom:6,fontSize:13}}>
+                                <span style={{color:'#999',minWidth:60}}>De :</span>
+                                <span style={{fontWeight:600,color:'#111'}}>Le TED &lt;com.astegal@gmail.com&gt;</span>
+                              </div>
+                              <div style={{display:'flex',gap:8,marginBottom:6,fontSize:13}}>
+                                <span style={{color:'#999',minWidth:60}}>À :</span>
+                                <span style={{fontWeight:600,color:'#111'}}>
+                                  {premier?.mail||`${premier?.prenom||''} ${premier?.nom||''}`.trim()||'destinataire'}
+                                  {selectedComm.length>1?` + ${selectedComm.length-1} autres`:''}
+                                </span>
+                              </div>
+                              <div style={{display:'flex',gap:8,fontSize:13}}>
+                                <span style={{color:'#999',minWidth:60}}>Objet :</span>
+                                <span style={{fontWeight:800,color:'#111'}}>{commObjet||'(sans objet)'}</span>
+                              </div>
+                            </div>
+                            <div style={{padding:'24px 28px',minHeight:120,fontSize:15,color:'#333',lineHeight:1.8,whiteSpace:'pre-wrap'}}>
+                              {replaceVars(commMessage)||'(message vide)'}
+                            </div>
+                            <div style={{background:'#f8f8f8',padding:'12px 20px',borderTop:'1px solid #eee',fontSize:12,color:'#999',textAlign:'center'}}>
+                              Le TED · Restaurant & Club · 28 Av. des Frères Montgolfier, 69680 Chassieu
+                            </div>
+                          </>
+                        ) : (
+                          <div style={{padding:24,background:'#f0f0f0',display:'flex',justifyContent:'flex-end'}}>
+                            <div style={{maxWidth:'80%'}}>
+                              <div style={{background:'#111',borderRadius:'18px 18px 4px 18px',padding:'14px 18px'}}>
+                                <p style={{color:'#fff',fontSize:15,lineHeight:1.6,margin:0,whiteSpace:'pre-wrap'}}>
+                                  {replaceVars(smsMessage)||'(message vide)'}
+                                </p>
+                              </div>
+                              <p style={{fontSize:11,color:'#999',textAlign:'right',marginTop:6}}>
+                                {(smsMessage||'').length}/160 · LE TED
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })()}
                 </div>
-                <div style={{padding:'20px 28px',borderTop:'1px solid #f0f0f0',display:'flex',gap:12,flexShrink:0}}>
-                  <button onClick={()=>setShowConfirmEnvoi(false)} style={{flex:1,height:48,border:'1.5px solid #ddd',borderRadius:10,background:'#fff',fontSize:14,fontWeight:600,cursor:'pointer',color:'#666'}}>Annuler</button>
-                  <button onClick={async()=>{ setShowConfirmEnvoi(false); if (commType==='email') { await handleSendAll(); } else { setShowConfirmSms(true); } }} style={{flex:2,height:48,border:'none',borderRadius:10,background:'#E8C547',fontSize:15,fontWeight:800,cursor:'pointer',color:'#111',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+
+                {/* Boutons */}
+                <div style={{flexShrink:0,padding:'16px 32px',borderTop:'1px solid #eee',display:'flex',gap:12}}>
+                  <button onClick={()=>setShowConfirmEnvoi(false)} style={{flex:1,height:50,border:'1.5px solid #ddd',borderRadius:12,background:'#fff',fontSize:15,fontWeight:600,cursor:'pointer',color:'#666'}}>Modifier</button>
+                  <button onClick={async()=>{ setShowConfirmEnvoi(false); if(commType==='email'){await handleSendAll();}else{setShowConfirmSms(true);} }} style={{flex:2,height:50,border:'none',borderRadius:12,background:'#E8C547',fontSize:15,fontWeight:800,cursor:'pointer',color:'#111',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
                     <Send size={18} strokeWidth={2}/> Confirmer l'envoi ({selectedComm.length})
                   </button>
                 </div>
