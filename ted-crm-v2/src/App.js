@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus } from 'lucide-react';
+import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus, UserPlus } from 'lucide-react';
 import { supabase } from "./supabase";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -2508,6 +2508,8 @@ function CRMApp({ user, onLogout }) {
   const [pageSize, setPageSize] = useState(25);
   const [page, setPage] = useState(1);
   const [modalAdd, setModalAdd] = useState(false);
+  const [addClientForm, setAddClientForm] = useState({});
+  const [showConfirmQuitterClient, setShowConfirmQuitterClient] = useState(false);
   const [modalDetailClient, setModalDetailClient] = useState(null);
   const [ficheClientReadOnly, setFicheClientReadOnly] = useState(false);
   const [showToutesResas, setShowToutesResas] = useState(false);
@@ -4031,7 +4033,90 @@ function CRMApp({ user, onLogout }) {
       )}
       </div>{/* end marginLeft wrapper */}
 
-      {modalAdd && <ClientForm existingClients={clients} onSave={addClient} onCancel={()=>setModalAdd(false)} />}
+      {modalAdd && (() => {
+        const fermerAdd = () => {
+          const aDesDonnees = addClientForm.prenom || addClientForm.nom || addClientForm.tel;
+          if (aDesDonnees) { setShowConfirmQuitterClient(true); }
+          else { setModalAdd(false); setAddClientForm({}); }
+        };
+        const valide = (addClientForm.tel||'').replace(/\s/g,'').length >= 10 && addClientForm.prenom && addClientForm.nom && addClientForm.genre;
+        const sauvegarderNouveauClient = () => { if (!valide) return; addClient(addClientForm); setAddClientForm({}); };
+        return (
+          <>
+            <div onClick={fermerAdd} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:2999,pointerEvents:'all',cursor:'default'}}/>
+            <div style={{position:'fixed', ...(isMobile?{inset:0,transform:'none',width:'100%',height:'100%',borderRadius:0}:{top:'50%',left:'50%',transform:'translate(-50%,-50%)',width:'min(520px,calc(100vw - 48px))',maxHeight:'90vh',borderRadius:20}), background:'#fff', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.25)', zIndex:3000, overflow:'hidden'}} onClick={e=>e.stopPropagation()}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'24px 28px 20px',flexShrink:0,borderBottom:'1px solid #f0f0f0'}}>
+                <h2 style={{margin:0,fontSize:22,fontWeight:800,color:'#111'}}>Nouveau client</h2>
+                <button onClick={fermerAdd} style={{width:36,height:36,borderRadius:'50%',border:'none',background:'#f0f0f0',cursor:'pointer',fontSize:18,color:'#666',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+              </div>
+              <div style={{flex:1,overflowY:'auto',padding:'20px 28px',display:'flex',flexDirection:'column',gap:20}}>
+                <div>
+                  <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>1. Téléphone</p>
+                  <div style={{position:'relative'}}>
+                    <Phone size={18} strokeWidth={2} color="#999" style={{position:'absolute',left:16,top:'50%',transform:'translateY(-50%)',pointerEvents:'none'}}/>
+                    <input type="tel" inputMode="numeric" value={addClientForm.tel||''} onChange={e=>setAddClientForm({...addClientForm,tel:e.target.value})} placeholder="06 43 00 49 87" style={{width:'100%',height:52,border:'1.5px solid #eee',borderRadius:12,padding:'0 16px 0 48px',fontSize:15,outline:'none',boxSizing:'border-box'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
+                  </div>
+                </div>
+                <div>
+                  <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>2. Genre</p>
+                  <div style={{display:'flex',gap:8}}>
+                    {['Homme','Femme','Entreprise'].map(g=>(
+                      <button key={g} onClick={()=>setAddClientForm({...addClientForm,genre:g})} style={{flex:1,height:46,borderRadius:10,cursor:'pointer',fontSize:13,fontWeight:700,border:'1.5px solid',borderColor:addClientForm.genre===g?(g==='Homme'?'#3b82f6':g==='Femme'?'#ec4899':'#22c55e'):'#eee',background:addClientForm.genre===g?(g==='Homme'?'#dbeafe':g==='Femme'?'#fce7f3':'#dcfce7'):'#fff',color:addClientForm.genre===g?(g==='Homme'?'#1d4ed8':g==='Femme'?'#be185d':'#15803d'):'#666'}}>{g}</button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>3. Identité</p>
+                  <div style={{display:'flex',gap:10}}>
+                    <input value={addClientForm.prenom||''} onChange={e=>setAddClientForm({...addClientForm,prenom:e.target.value})} placeholder="Prénom" style={{flex:1,height:52,border:'1.5px solid #eee',borderRadius:12,padding:'0 16px',fontSize:15,outline:'none',boxSizing:'border-box'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
+                    <input value={addClientForm.nom||''} onChange={e=>setAddClientForm({...addClientForm,nom:e.target.value})} placeholder="Nom" style={{flex:1,height:52,border:'1.5px solid #eee',borderRadius:12,padding:'0 16px',fontSize:15,outline:'none',boxSizing:'border-box'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
+                  </div>
+                </div>
+                {addClientForm.genre==='Entreprise' && (
+                  <div>
+                    <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>Nom de l'entreprise</p>
+                    <input value={addClientForm.entreprise||''} onChange={e=>setAddClientForm({...addClientForm,entreprise:e.target.value})} placeholder="Nom de l'entreprise" style={{width:'100%',height:52,border:'1.5px solid #eee',borderRadius:12,padding:'0 16px',fontSize:15,outline:'none',boxSizing:'border-box'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
+                  </div>
+                )}
+                <div>
+                  <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>4. Email <span style={{fontSize:12,fontWeight:400,color:'#999'}}>(optionnel)</span></p>
+                  <div style={{position:'relative'}}>
+                    <Mail size={18} strokeWidth={2} color="#999" style={{position:'absolute',left:16,top:'50%',transform:'translateY(-50%)',pointerEvents:'none'}}/>
+                    <input type="email" value={addClientForm.mail||''} onChange={e=>setAddClientForm({...addClientForm,mail:e.target.value})} placeholder="email@exemple.com" style={{width:'100%',height:52,border:'1.5px solid #eee',borderRadius:12,padding:'0 16px 0 48px',fontSize:15,outline:'none',boxSizing:'border-box'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
+                  </div>
+                </div>
+                <div>
+                  <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>5. Commentaire <span style={{fontSize:12,fontWeight:400,color:'#999'}}>(optionnel)</span></p>
+                  <textarea value={addClientForm.commentaire||''} onChange={e=>setAddClientForm({...addClientForm,commentaire:e.target.value})} placeholder="Notes internes (allergies, préférences...)" style={{width:'100%',height:80,border:'1.5px solid #eee',borderRadius:12,padding:'12px 16px',fontSize:14,outline:'none',resize:'none',fontFamily:'inherit',boxSizing:'border-box'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
+                </div>
+              </div>
+              <div style={{flexShrink:0,padding:'16px 28px',paddingBottom:'calc(16px + env(safe-area-inset-bottom))',borderTop:'1px solid #eee',background:'#fff'}}>
+                <button disabled={!valide} onClick={sauvegarderNouveauClient} style={{width:'100%',height:54,background:valide?'#E8C547':'#f0f0f0',color:valide?'#111':'#bbb',border:'none',borderRadius:14,fontSize:16,fontWeight:800,cursor:valide?'pointer':'not-allowed',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+                  <UserPlus size={18} strokeWidth={2}/> Créer le client
+                </button>
+                {!valide && (
+                  <p style={{textAlign:'center',fontSize:12,color:'#999',margin:'6px 0 0'}}>
+                    {!(addClientForm.tel||'').replace(/\s/g,'').length>=10?'Renseignez un téléphone':!addClientForm.genre?'Choisissez un genre':'Renseignez prénom et nom'}
+                  </p>
+                )}
+                <button onClick={fermerAdd} style={{width:'100%',background:'none',border:'none',color:'#999',fontSize:14,cursor:'pointer',padding:'8px',marginTop:4}}>Annuler</button>
+              </div>
+            </div>
+            {showConfirmQuitterClient && (
+              <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:6000,display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'all'}} onClick={()=>setShowConfirmQuitterClient(false)}>
+                <div style={{background:'#fff',borderRadius:16,padding:'28px 24px',maxWidth:320,width:'90%',textAlign:'center'}} onClick={e=>e.stopPropagation()}>
+                  <h3 style={{margin:'0 0 8px',fontSize:17,fontWeight:800,color:'#111'}}>Quitter sans enregistrer ?</h3>
+                  <p style={{margin:'0 0 20px',fontSize:14,color:'#666'}}>Les informations saisies seront perdues.</p>
+                  <div style={{display:'flex',gap:10}}>
+                    <button onClick={()=>setShowConfirmQuitterClient(false)} style={{flex:1,height:44,border:'1.5px solid #ddd',borderRadius:10,background:'#fff',fontSize:14,fontWeight:600,cursor:'pointer',color:'#666'}}>Continuer</button>
+                    <button onClick={()=>{setShowConfirmQuitterClient(false);setModalAdd(false);setAddClientForm({});}} style={{flex:1,height:44,border:'none',borderRadius:10,background:'#dc2626',fontSize:14,fontWeight:800,cursor:'pointer',color:'#fff'}}>Quitter</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        );
+      })()}
       {modalEdit && (() => {
         const aDesDonnees = editForm.prenom !== (modalEdit.prenom||'') || editForm.nom !== (modalEdit.nom||'') || editForm.tel !== (modalEdit.tel||'') || editForm.mail !== (modalEdit.mail||'') || editForm.genre !== (modalEdit.genre||'') || editForm.entreprise !== (modalEdit.entreprise||'') || editForm.commentaire !== (modalEdit.commentaire||'');
         const fermerEdit = () => {
