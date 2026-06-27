@@ -4049,7 +4049,7 @@ function CRMApp({ user, onLogout }) {
           if (aDesDonnees) { setShowConfirmQuitterClient(true); }
           else { setModalAdd(false); setAddClientForm({}); }
         };
-        const valide = (addClientForm.tel||'').replace(/\s/g,'').length >= 10 && addClientForm.prenom && addClientForm.nom && addClientForm.genre;
+        const valide = (addClientForm.tel||'').replace(/\s/g,'').length >= 10 && addClientForm.prenom && addClientForm.nom && addClientForm.genre && (addClientForm.mail||'').includes('@');
         const sauvegarderNouveauClient = () => { if (!valide) return; addClient(addClientForm); setAddClientForm({}); };
         return (
           <>
@@ -4061,14 +4061,14 @@ function CRMApp({ user, onLogout }) {
               </div>
               <div style={{flex:1,overflowY:'auto',padding:'20px 28px',display:'flex',flexDirection:'column',gap:20}}>
                 <div>
-                  <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>1. Téléphone</p>
+                  <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>1. Téléphone <span style={{color:'#dc2626'}}>*</span></p>
                   <div style={{position:'relative'}}>
                     <Phone size={18} strokeWidth={2} color="#999" style={{position:'absolute',left:16,top:'50%',transform:'translateY(-50%)',pointerEvents:'none'}}/>
                     <input type="tel" inputMode="numeric" value={addClientForm.tel||''} onChange={e=>setAddClientForm({...addClientForm,tel:e.target.value})} placeholder="06 43 00 49 87" style={{width:'100%',height:52,border:'1.5px solid #eee',borderRadius:12,padding:'0 16px 0 48px',fontSize:15,outline:'none',boxSizing:'border-box'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
                   </div>
                 </div>
                 <div>
-                  <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>2. Genre</p>
+                  <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>2. Genre <span style={{color:'#dc2626'}}>*</span></p>
                   <div style={{display:'flex',gap:8}}>
                     {['Homme','Femme','Entreprise'].map(g=>(
                       <button key={g} onClick={()=>setAddClientForm({...addClientForm,genre:g})} style={{flex:1,height:46,borderRadius:10,cursor:'pointer',fontSize:13,fontWeight:700,border:'1.5px solid',borderColor:addClientForm.genre===g?(g==='Homme'?'#3b82f6':g==='Femme'?'#ec4899':'#22c55e'):'#eee',background:addClientForm.genre===g?(g==='Homme'?'#dbeafe':g==='Femme'?'#fce7f3':'#dcfce7'):'#fff',color:addClientForm.genre===g?(g==='Homme'?'#1d4ed8':g==='Femme'?'#be185d':'#15803d'):'#666'}}>{g}</button>
@@ -4076,7 +4076,7 @@ function CRMApp({ user, onLogout }) {
                   </div>
                 </div>
                 <div>
-                  <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>3. Identité</p>
+                  <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>3. Prénom et Nom <span style={{color:'#dc2626'}}>*</span></p>
                   <div style={{display:'flex',gap:10}}>
                     <input value={addClientForm.prenom||''} onChange={e=>setAddClientForm({...addClientForm,prenom:e.target.value})} placeholder="Prénom" style={{flex:1,height:52,border:'1.5px solid #eee',borderRadius:12,padding:'0 16px',fontSize:15,outline:'none',boxSizing:'border-box'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
                     <input value={addClientForm.nom||''} onChange={e=>setAddClientForm({...addClientForm,nom:e.target.value})} placeholder="Nom" style={{flex:1,height:52,border:'1.5px solid #eee',borderRadius:12,padding:'0 16px',fontSize:15,outline:'none',boxSizing:'border-box'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
@@ -4089,7 +4089,7 @@ function CRMApp({ user, onLogout }) {
                   </div>
                 )}
                 <div>
-                  <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>4. Email <span style={{fontSize:12,fontWeight:400,color:'#999'}}>(optionnel)</span></p>
+                  <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>4. Email <span style={{color:'#dc2626'}}>*</span></p>
                   <div style={{position:'relative'}}>
                     <Mail size={18} strokeWidth={2} color="#999" style={{position:'absolute',left:16,top:'50%',transform:'translateY(-50%)',pointerEvents:'none'}}/>
                     <input type="email" value={addClientForm.mail||''} onChange={e=>setAddClientForm({...addClientForm,mail:e.target.value})} placeholder="email@exemple.com" style={{width:'100%',height:52,border:'1.5px solid #eee',borderRadius:12,padding:'0 16px 0 48px',fontSize:15,outline:'none',boxSizing:'border-box'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
@@ -4106,9 +4106,10 @@ function CRMApp({ user, onLogout }) {
                 </button>
                 {!valide && (
                   <p style={{textAlign:'center',fontSize:12,color:'#999',margin:'6px 0 0'}}>
-                    {!(addClientForm.tel||'').replace(/\s/g,'').length>=10?'Renseignez un téléphone':!addClientForm.genre?'Choisissez un genre':'Renseignez prénom et nom'}
+                    {!(addClientForm.tel||'').replace(/\s/g,'').length>=10?'Renseignez un numéro de téléphone':!addClientForm.genre?'Choisissez un genre':(!addClientForm.prenom||!addClientForm.nom)?'Renseignez le prénom et le nom':!(addClientForm.mail||'').includes('@')?'Renseignez un email valide':''}
                   </p>
                 )}
+                <p style={{fontSize:11,color:'#bbb',textAlign:'center',margin:'6px 0 0'}}><span style={{color:'#dc2626'}}>*</span> Champs obligatoires</p>
                 <button onClick={fermerAdd} style={{width:'100%',background:'none',border:'none',color:'#999',fontSize:14,cursor:'pointer',padding:'8px',marginTop:4}}>Annuler</button>
               </div>
             </div>
