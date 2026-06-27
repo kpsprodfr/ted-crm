@@ -1475,8 +1475,9 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
                         pattern="[0-9]*"
                         min={1}
                         max={50}
-                        value={nbPersonnes||1}
-                        onChange={e=>{ const val=parseInt(e.target.value); if(!isNaN(val)&&val>=1&&val<=50){setNbPersonnes(val);}else if(e.target.value===''){setNbPersonnes('');} }}
+                        value={nbPersonnes===undefined||nbPersonnes===null?'':nbPersonnes}
+                        onChange={e=>{ const raw=e.target.value; if(raw===''||raw==='0'){setNbPersonnes('');}else{const val=parseInt(raw);if(!isNaN(val)&&val>=1&&val<=50)setNbPersonnes(val);} }}
+                        onFocus={e=>e.target.select()}
                         onBlur={()=>{ if(!nbPersonnes||nbPersonnes<1)setNbPersonnes(1); }}
                         style={{ width:80, height:52, fontSize:32, fontWeight:800, color:'#111', textAlign:'center', border:'1.5px solid #eee', borderRadius:12, outline:'none', background:'#fff', cursor:'text', MozAppearance:'textfield' }}
                       />
