@@ -2759,6 +2759,7 @@ function CRMApp({ user, onLogout }) {
 
   async function editClient(c) {
     setClients(prev => prev.map(x => x.id === c.id ? {...x, ...c} : x));
+    setModalDetailClient(prev => prev && prev.id === c.id ? {...prev, ...c} : prev);
     setModalEdit(null);
     showToast("Client modifié avec succès ✓");
     const { error } = await supabase.from("clients").update({ genre:c.genre, nom:c.nom, prenom:c.prenom, tel:c.tel, mail:c.mail, commentaire:c.commentaire, entreprise:c.entreprise||"" }).eq("id", c.id);
@@ -3833,7 +3834,7 @@ function CRMApp({ user, onLogout }) {
             {!ficheClientReadOnly && (
               <div style={{ display:'flex', gap:8 }}>
                 <button onClick={()=>{ fermerFiche(); setModalDelete(c); }} style={{ flex:1, height:44, border:'1.5px solid #dc2626', borderRadius:10, background:'#fef2f2', color:'#dc2626', fontSize:14, fontWeight:700, cursor:'pointer' }}>🗑️ Supprimer le client</button>
-                <button onClick={()=>{ fermerFiche(); setModalEdit(c); }} style={{ flex:2, height:44, border:'none', borderRadius:10, background:'#E8C547', color:'#111', fontSize:14, fontWeight:700, cursor:'pointer' }}>✏️ Modifier le client</button>
+                <button onClick={()=>{ setModalEdit(c); }} style={{ flex:2, height:44, border:'none', borderRadius:10, background:'#E8C547', color:'#111', fontSize:14, fontWeight:700, cursor:'pointer' }}>✏️ Modifier le client</button>
               </div>
             )}
             <button onClick={fermerFiche} style={{ width:'100%', height:44, background:'#fff', border:'1.5px solid #ddd', borderRadius:10, fontSize:14, fontWeight:600, cursor:'pointer', color:'#666' }}>Fermer</button>
@@ -3895,7 +3896,7 @@ function CRMApp({ user, onLogout }) {
                 <div style={{ display:'flex', gap:12 }}>
                   {c.tel && <a href={`tel:${c.tel}`} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'14px 20px', borderRadius:12, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', minWidth:80, color:'#111', textDecoration:'none' }}><Phone size={20} strokeWidth={2}/><span style={{ fontSize:13, fontWeight:600 }}>Appeler</span></a>}
                   {c.tel && <a href={`sms:${c.tel}`} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'14px 20px', borderRadius:12, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', minWidth:80, color:'#111', textDecoration:'none' }}><MessageSquare size={20} strokeWidth={2}/><span style={{ fontSize:13, fontWeight:600 }}>SMS</span></a>}
-                  {!ficheClientReadOnly && <button onClick={()=>{ fermerFiche(); setModalEdit(c); }} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'14px 20px', borderRadius:12, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', minWidth:80, color:'#111' }}><Pencil size={20} strokeWidth={2}/><span style={{ fontSize:13, fontWeight:600 }}>Modifier</span></button>}
+                  {!ficheClientReadOnly && <button onClick={()=>{ setModalEdit(c); }} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'14px 20px', borderRadius:12, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', minWidth:80, color:'#111' }}><Pencil size={20} strokeWidth={2}/><span style={{ fontSize:13, fontWeight:600 }}>Modifier</span></button>}
                 </div>
               </div>
 
