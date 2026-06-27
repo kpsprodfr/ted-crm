@@ -1968,6 +1968,9 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
   const [calDragX, setCalDragX] = useState(0);
   const [calIsDragging, setCalIsDragging] = useState(false);
   const calSwipeTouchStartX = useRef(null);
+  const calTouchStartY = useRef(null);
+  const [calSlideDir, setCalSlideDir] = useState(null);
+  const [calAnimating, setCalAnimating] = useState(false);
   const [calMensuelOuvert, setCalMensuelOuvert] = useState(false);
   const [calJourSelectionne, setCalJourSelectionne] = useState(new Date().toISOString().split('T')[0]);
   const [calServiceSelectionne, setCalServiceSelectionne] = useState(new Date().getHours() < 15 ? 'midi' : 'soir');
@@ -2314,19 +2317,40 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                   {/* 3. Grand calendrier mensuel — toujours visible sur desktop */}
                   {(!isMobile || calMensuelOuvert) && (() => {
                     const changerMois = (direction) => {
-                      setCalDragX(direction > 0 ? -300 : 300);
+                      if (calAnimating) return;
+                      setCalAnimating(true);
+                      setCalSlideDir(direction > 0 ? 'left' : 'right');
                       setTimeout(() => {
                         setCalDate(new Date(annee, mois + direction, 1));
-                        setCalDragX(direction > 0 ? 300 : -300);
-                        setTimeout(() => setCalDragX(0), 20);
-                      }, 150);
+                        setCalSlideDir(null);
+                        setCalAnimating(false);
+                      }, 280);
+                    };
+                    const handleCalTouchStart = (e) => {
+                      calSwipeTouchStartX.current = e.touches[0].clientX;
+                      calTouchStartY.current = e.touches[0].clientY;
+                      setCalIsDragging(true);
+                      setCalDragX(0);
+                    };
+                    const handleCalTouchMove = (e) => {
+                      if (calSwipeTouchStartX.current === null) return;
+                      const dx = e.touches[0].clientX - calSwipeTouchStartX.current;
+                      const dy = e.touches[0].clientY - calTouchStartY.current;
+                      if (Math.abs(dy) > Math.abs(dx)) return;
+                      setCalDragX(Math.max(-120, Math.min(120, dx)));
+                    };
+                    const handleCalTouchEnd = (e) => {
+                      if (calSwipeTouchStartX.current === null) return;
+                      const dx = e.changedTouches[0].clientX - calSwipeTouchStartX.current;
+                      const dy = e.changedTouches[0].clientY - calTouchStartY.current;
+                      setCalIsDragging(false);
+                      setCalDragX(0);
+                      if (Math.abs(dy) > Math.abs(dx) || Math.abs(dx) < 50) { calSwipeTouchStartX.current = null; return; }
+                      changerMois(dx < 0 ? 1 : -1);
+                      calSwipeTouchStartX.current = null;
                     };
                     return (
-                    <div style={{ marginBottom:4, userSelect:'none', WebkitUserSelect:'none', overflow:'hidden' }}
-                      onTouchStart={e=>{ calSwipeTouchStartX.current=e.touches[0].clientX; setCalIsDragging(true); setCalDragX(0); }}
-                      onTouchMove={e=>{ if(calSwipeTouchStartX.current===null)return; const dx=e.touches[0].clientX-calSwipeTouchStartX.current; setCalDragX(Math.max(-150,Math.min(150,dx))); }}
-                      onTouchEnd={e=>{ if(calSwipeTouchStartX.current===null)return; const dx=e.changedTouches[0].clientX-calSwipeTouchStartX.current; setCalIsDragging(false); if(Math.abs(dx)>60){const dir=dx<0?1:-1; setCalDragX(dx<0?-300:300); setTimeout(()=>{ setCalDate(new Date(annee,mois+dir,1)); setCalDragX(dx<0?300:-300); setTimeout(()=>setCalDragX(0),20); },150);}else{setCalDragX(0);} calSwipeTouchStartX.current=null; }}
-                    >
+                    <div style={{ marginBottom:4, userSelect:'none', WebkitUserSelect:'none' }}>
                       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
                         <button onClick={()=>changerMois(-1)} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, fontSize:16, cursor:'pointer', fontWeight:700 }}>‹</button>
                         <span style={{ fontWeight:800, fontSize:18 }}>{MOIS[mois]} {annee}</span>
@@ -2335,27 +2359,37 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                       <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2, marginBottom:4 }}>
                         {JOURS.map(j => <div key={j} style={{ textAlign:'center', fontSize:13, fontWeight:700, color:'#999', padding:'8px 0' }}>{j}</div>)}
                       </div>
-                      <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:3, transform:`translateX(${calDragX}px)`, transition:calIsDragging?'none':'transform 0.2s cubic-bezier(0.4,0,0.2,1)', willChange:'transform', touchAction:'pan-y' }}>
-                        {cases.map((d, i) => {
-                          if (!d) return <div key={i} />;
-                          const iso = `${annee}-${String(mois+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-                          const hasResa = !!confirmeesParJour[iso];
-                          const isToday = today.getFullYear()===annee && today.getMonth()===mois && today.getDate()===d;
-                          const isSelected = calJourSelectionne === iso;
-                          const estPasse = new Date(iso) < new Date(new Date().setHours(0,0,0,0));
-                          return (
-                            <button key={i} onClick={() => setCalJourSelectionne(iso)}
-                              style={{ textAlign:'center', height:48, borderRadius:6, cursor:'pointer', position:'relative', border:'none',
-                                background: isSelected ? '#111' : isToday ? '#fffbeb' : 'transparent',
-                                outline: isToday && !isSelected ? '1.5px solid #E8C547' : 'none',
-                                color: isSelected ? '#fff' : '#111',
-                                fontWeight: isSelected || isToday ? 800 : 400, fontSize:16,
-                                opacity: estPasse ? 0.4 : 1, transition:'background 0.15s' }}>
-                              {d}
-                              {hasResa && <span style={{ display:'block', width:4, height:4, borderRadius:'50%', background:'#E8C547', margin:'2px auto 0' }} />}
-                            </button>
-                          );
-                        })}
+                      <div
+                        onTouchStart={handleCalTouchStart}
+                        onTouchMove={handleCalTouchMove}
+                        onTouchEnd={handleCalTouchEnd}
+                        style={{ overflow:'hidden', position:'relative' }}
+                      >
+                        <div
+                          className={calSlideDir==='left' ? 'cal-slide-from-right' : calSlideDir==='right' ? 'cal-slide-from-left' : ''}
+                          style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:3, transform: calIsDragging ? `translateX(${calDragX}px)` : 'translateX(0)', transition: calIsDragging ? 'none' : calSlideDir ? 'none' : 'transform 0.2s ease', willChange:'transform', touchAction:'pan-y' }}
+                        >
+                          {cases.map((d, i) => {
+                            if (!d) return <div key={i} />;
+                            const iso = `${annee}-${String(mois+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                            const hasResa = !!confirmeesParJour[iso];
+                            const isToday = today.getFullYear()===annee && today.getMonth()===mois && today.getDate()===d;
+                            const isSelected = calJourSelectionne === iso;
+                            const estPasse = new Date(iso) < new Date(new Date().setHours(0,0,0,0));
+                            return (
+                              <button key={i} onClick={() => setCalJourSelectionne(iso)}
+                                style={{ textAlign:'center', height:48, borderRadius:6, cursor:'pointer', position:'relative', border:'none',
+                                  background: isSelected ? '#111' : isToday ? '#fffbeb' : 'transparent',
+                                  outline: isToday && !isSelected ? '1.5px solid #E8C547' : 'none',
+                                  color: isSelected ? '#fff' : '#111',
+                                  fontWeight: isSelected || isToday ? 800 : 400, fontSize:16,
+                                  opacity: estPasse ? 0.4 : 1, transition:'background 0.15s' }}>
+                                {d}
+                                {hasResa && <span style={{ display:'block', width:4, height:4, borderRadius:'50%', background:'#E8C547', margin:'2px auto 0' }} />}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                     );

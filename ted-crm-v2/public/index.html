@@ -26,10 +26,14 @@
         box-shadow: 0 0 0 2px rgba(232,197,71,0.2);
       }
       body { overflow-x: hidden; max-width: 100vw; }
-      @keyframes slideInFromRight { from { opacity:0; transform:translateX(40px); } to { opacity:1; transform:translateX(0); } }
-      @keyframes slideInFromLeft  { from { opacity:0; transform:translateX(-40px); } to { opacity:1; transform:translateX(0); } }
-      .cal-slide-from-right { animation: slideInFromRight 0.25s cubic-bezier(0.4,0,0.2,1) forwards; }
-      .cal-slide-from-left  { animation: slideInFromLeft  0.25s cubic-bezier(0.4,0,0.2,1) forwards; }
+      @keyframes slideFromRight { from { opacity:0; transform:translateX(100%); } to { opacity:1; transform:translateX(0); } }
+      @keyframes slideFromLeft  { from { opacity:0; transform:translateX(-100%); } to { opacity:1; transform:translateX(0); } }
+      @keyframes slideToLeft    { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(-100%); } }
+      @keyframes slideToRight   { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(100%); } }
+      .cal-slide-from-right { animation: slideFromRight 0.28s cubic-bezier(0.4,0,0.2,1) forwards; }
+      .cal-slide-from-left  { animation: slideFromLeft  0.28s cubic-bezier(0.4,0,0.2,1) forwards; }
+      .cal-slide-to-left    { animation: slideToLeft    0.28s cubic-bezier(0.4,0,0.2,1) forwards; }
+      .cal-slide-to-right   { animation: slideToRight   0.28s cubic-bezier(0.4,0,0.2,1) forwards; }
       input[type=number]::-webkit-inner-spin-button,
       input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
       input[type=number] { -moz-appearance: textfield; }
