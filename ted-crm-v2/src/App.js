@@ -2884,6 +2884,7 @@ function CRMApp({ user, onLogout }) {
     deleteGuard.current = true;
     setClients(prev => prev.filter(x => x.id !== id));
     setModalDelete(null);
+    setModalDetailClient(null);
     showToast("Client déplacé dans la corbeille ✓");
     const { error } = await supabase.from("clients").update({ deleted_at: new Date().toISOString(), deleted_by: user.email }).eq("id", id);
     if (error) {
@@ -4028,7 +4029,7 @@ function CRMApp({ user, onLogout }) {
                 <div style={{ display:'flex', alignItems:'center', gap:12 }}>
                   <h1 style={{ margin:0, fontSize:32, fontWeight:900, color:'#111' }}>{nomAffiche}</h1>
                   {!ficheClientReadOnly && (
-                    <button onClick={()=>{ fermerFiche(); setModalDelete(c); }}
+                    <button onClick={()=>setModalDelete(c)}
                       style={{ height:38, padding:'0 14px', borderRadius:10, border:'1.5px solid #ddd', background:'#f5f5f5', fontSize:13, fontWeight:600, cursor:'pointer', color:'#999', display:'flex', alignItems:'center', gap:6, flexShrink:0 }}
                       onMouseEnter={e=>{ e.currentTarget.style.background='#fee2e2'; e.currentTarget.style.borderColor='#fca5a5'; e.currentTarget.style.color='#dc2626'; }}
                       onMouseLeave={e=>{ e.currentTarget.style.background='#f5f5f5'; e.currentTarget.style.borderColor='#ddd'; e.currentTarget.style.color='#999'; }}>
@@ -4336,7 +4337,31 @@ function CRMApp({ user, onLogout }) {
           </>
         );
       })()}
-      {modalDelete && <ConfirmModal title={`Supprimer ${modalDelete.genre==='Entreprise'?(modalDelete.entreprise||modalDelete.nom):(`${modalDelete.prenom} ${modalDelete.nom}`)} ?`} msg="Cette action est définitive. Le client sera déplacé dans la corbeille." onOk={()=>deleteClient(modalDelete.id)} onCancel={()=>setModalDelete(null)} okLabel="Supprimer" danger />}
+      {modalDelete && (
+        <>
+          <div onMouseDown={e=>{e.preventDefault();e.stopPropagation();}} onClick={()=>setModalDelete(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:4000,pointerEvents:'all'}}/>
+          <div onClick={e=>e.stopPropagation()} onMouseDown={e=>e.stopPropagation()} style={{position:'fixed',top:'50%',left:'50%',transform:'translate(-50%,-50%)',background:'#fff',borderRadius:20,width:'min(440px,calc(100vw - 48px))',display:'flex',flexDirection:'column',boxShadow:'0 32px 80px rgba(0,0,0,0.25)',zIndex:4001,overflow:'hidden'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'24px 28px 20px',flexShrink:0}}>
+              <h2 style={{margin:0,fontSize:20,fontWeight:800,color:'#111'}}>
+                Supprimer {modalDelete.genre==='Entreprise'?(modalDelete.entreprise||modalDelete.nom):`${modalDelete.prenom} ${modalDelete.nom}`} ?
+              </h2>
+              <button onClick={()=>setModalDelete(null)} style={{width:36,height:36,borderRadius:'50%',border:'none',background:'#f0f0f0',cursor:'pointer',fontSize:18,color:'#666',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>✕</button>
+            </div>
+            <div style={{padding:'0 28px 24px'}}>
+              <div style={{background:'#fff5f5',border:'1.5px solid #fca5a5',borderRadius:12,padding:'14px 16px',marginBottom:20,display:'flex',alignItems:'center',gap:12}}>
+                <Trash2 size={20} strokeWidth={2} color="#dc2626" style={{flexShrink:0}}/>
+                <p style={{margin:0,fontSize:14,color:'#dc2626',lineHeight:1.5}}>Cette action est définitive. Le client sera déplacé dans la corbeille et pourra être restauré.</p>
+              </div>
+              <div style={{display:'flex',gap:10}}>
+                <button onClick={()=>setModalDelete(null)} style={{flex:1,height:52,border:'1.5px solid #eee',borderRadius:12,background:'#fff',fontSize:15,fontWeight:600,cursor:'pointer',color:'#666'}}>Annuler</button>
+                <button onClick={()=>deleteClient(modalDelete.id)} style={{flex:1,height:52,border:'none',borderRadius:12,background:'#dc2626',fontSize:15,fontWeight:800,cursor:'pointer',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+                  <Trash2 size={16} strokeWidth={2} color="#fff"/> Supprimer
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
       {modalImport && <ImportModal existingClients={clients} onImport={importClients} onCancel={()=>setModalImport(false)} />}
       {modalComment && <Modal title={`Commentaire — ${modalComment.prenom} ${modalComment.nom}`} onClose={()=>setModalComment(null)}><p style={{fontSize:14,lineHeight:1.7,margin:0}}>{modalComment.commentaire}</p></Modal>}
       {modalCorbeille && !isMobile && <CorbeilleModal onClose={()=>{ setModalCorbeille(false); loadClients(); }} showToast={showToast} />}
