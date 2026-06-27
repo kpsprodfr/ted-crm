@@ -3597,49 +3597,52 @@ function CRMApp({ user, onLogout }) {
             </div>
           </div>
 
-          {/* 2. STATS — scrollent normalement */}
+          {/* 2. STATS — compactes en ligne */}
           <div style={{padding:'0 32px 16px'}}>
-          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:16}}>
-            <div style={{background:'#fff', borderRadius:14, padding:'20px 24px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
-              <div>
-                <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 6px'}}>Total clients</p>
-                <p style={{fontSize:32, fontWeight:900, color:'#111', margin:'0 0 4px'}}>{clients.length}</p>
-                <p style={{fontSize:12, color:'#22c55e', fontWeight:600, margin:0}}>+{nbCeMois} ce mois-ci</p>
+          <div style={{display:'flex', gap:12, flexWrap:'wrap'}}>
+            {/* Total clients */}
+            <div style={{background:'#fff', borderRadius:12, padding:'14px 20px', display:'flex', alignItems:'center', gap:14, flex:1, minWidth:160}}>
+              <div style={{width:36, height:36, borderRadius:10, background:'#f5f5f5', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
+                <Users size={18} strokeWidth={2} color="#666"/>
               </div>
-              <div style={{width:48, height:48, borderRadius:12, background:'#f5f5f5', display:'flex', alignItems:'center', justifyContent:'center'}}><Users size={22} strokeWidth={2} color="#666"/></div>
-            </div>
-            <div style={{background:'#fff', borderRadius:14, padding:'20px 24px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
               <div>
-                <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 6px'}}>Nouveaux ce mois-ci</p>
-                <p style={{fontSize:32, fontWeight:900, color:'#111', margin:'0 0 4px'}}>{nbCeMois}</p>
-                <p style={{fontSize:12, color: pctEvol>=0?'#22c55e':'#dc2626', fontWeight:600, margin:0}}>{pctEvol>=0?'+':''}{pctEvol}% vs mois dernier</p>
+                <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 2px'}}>Total clients</p>
+                <p style={{fontSize:22, fontWeight:900, color:'#111', margin:'0 0 1px'}}>{clients.length}</p>
+                <p style={{fontSize:11, color:'#22c55e', fontWeight:600, margin:0}}>+{nbCeMois} ce mois</p>
               </div>
-              <div style={{width:48, height:48, borderRadius:12, background:'#f5f5f5', display:'flex', alignItems:'center', justifyContent:'center'}}><UserPlus size={22} strokeWidth={2} color="#666"/></div>
             </div>
-            <div style={{background:'#fff', borderRadius:14, padding:'20px 24px'}}>
-              <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14}}>
-                <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0}}>Top clients</p>
-                <button onClick={()=>setShowTop300(v=>!v)} style={{fontSize:12, fontWeight:600, color:'#E8C547', background:'none', border:'none', cursor:'pointer', padding:0}}>
-                  {showTop300 ? 'Réduire' : 'Afficher plus'}
-                </button>
+            {/* Nouveaux ce mois */}
+            <div style={{background:'#fff', borderRadius:12, padding:'14px 20px', display:'flex', alignItems:'center', gap:14, flex:1, minWidth:160}}>
+              <div style={{width:36, height:36, borderRadius:10, background:'#f5f5f5', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
+                <UserPlus size={18} strokeWidth={2} color="#666"/>
+              </div>
+              <div>
+                <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 2px'}}>Nouveaux ce mois</p>
+                <p style={{fontSize:22, fontWeight:900, color:'#111', margin:'0 0 1px'}}>{nbCeMois}</p>
+                <p style={{fontSize:11, color: pctEvol>=0?'#22c55e':'#dc2626', fontWeight:600, margin:0}}>{pctEvol>=0?'+':''}{pctEvol}% vs mois dernier</p>
+              </div>
+            </div>
+            {/* Top 3 clients */}
+            <div style={{background:'#fff', borderRadius:12, padding:'14px 20px', flex:2, minWidth:280}}>
+              <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10}}>
+                <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0}}>Top clients</p>
+                <button onClick={()=>setShowTop300(v=>!v)} style={{fontSize:11, fontWeight:600, color:'#E8C547', background:'none', border:'none', cursor:'pointer', padding:0}}>Afficher plus</button>
               </div>
               {topClients.length === 0 ? (
-                <p style={{fontSize:13, color:'#bbb', margin:0}}>Pas encore de données</p>
+                <p style={{fontSize:12, color:'#bbb', margin:0}}>Pas encore de données</p>
               ) : (
-                <div style={{display:'flex', flexDirection:'column', gap:8}}>
+                <div style={{display:'flex', flexDirection:'column', gap:6}}>
                   {topClients.map((c, i) => {
                     const avatarBg = c.genre==='Homme'?'#dbeafe':c.genre==='Femme'?'#fce7f3':'#dcfce7';
                     const avatarColor = c.genre==='Homme'?'#1d4ed8':c.genre==='Femme'?'#be185d':'#15803d';
                     const initiales = c.genre==='Entreprise'?(c.entreprise||'?').slice(0,2).toUpperCase():`${(c.prenom||'?')[0]}${(c.nom||'')[0]||''}`.toUpperCase();
                     const medals = ['🥇','🥈','🥉'];
                     return (
-                      <div key={c.id} onClick={()=>setModalDetailClient(c)} style={{display:'flex', alignItems:'center', gap:10, cursor:'pointer', padding:'6px 0', borderBottom: i<topClients.length-1?'1px solid #f5f5f5':'none'}}>
-                        <span style={{fontSize:18, flexShrink:0}}>{medals[i]}</span>
-                        <div style={{width:32, height:32, borderRadius:'50%', flexShrink:0, background:avatarBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:800, color:avatarColor}}>{initiales}</div>
-                        <div style={{flex:1, minWidth:0}}>
-                          <div style={{fontWeight:700, fontSize:13, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.genre==='Entreprise'?c.entreprise:`${c.prenom||''} ${c.nom||''}`}</div>
-                        </div>
-                        <span style={{background:'#fffbea', color:'#111', borderRadius:20, padding:'2px 10px', fontSize:12, fontWeight:800, flexShrink:0}}>{c.nb} résa</span>
+                      <div key={c.id} onClick={()=>setModalDetailClient(c)} style={{display:'flex', alignItems:'center', gap:8, cursor:'pointer'}}>
+                        <span style={{fontSize:14, flexShrink:0}}>{medals[i]}</span>
+                        <div style={{width:26, height:26, borderRadius:'50%', flexShrink:0, background:avatarBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:800, color:avatarColor}}>{initiales}</div>
+                        <span style={{fontSize:13, fontWeight:700, color:'#111', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.genre==='Entreprise'?c.entreprise:`${c.prenom||''} ${c.nom||''}`}</span>
+                        <span style={{fontSize:12, fontWeight:700, color:'#999', flexShrink:0}}>{c.nb} résa</span>
                       </div>
                     );
                   })}
