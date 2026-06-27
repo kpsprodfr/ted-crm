@@ -4016,40 +4016,37 @@ function CRMApp({ user, onLogout }) {
 
               {/* Grille historique + jours favoris — même hauteur */}
               <div style={{ display:'grid', gridTemplateColumns:'1fr 320px', gap:16, alignItems:'stretch' }}>
-                <div style={{ background:'#fff', borderRadius:14, padding:20, display:'flex', flexDirection:'column' }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16, flexShrink:0 }}>
+                <div style={{ background:'#fff', borderRadius:14, padding:20, display:'flex', flexDirection:'column', maxHeight:320 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14, flexShrink:0 }}>
                     <CalendarDays size={18} strokeWidth={2} color="#111" />
                     <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#111' }}>Historique des réservations</h3>
                   </div>
-                  <div style={{ flex:1, overflowY:'auto' }}>
-                    <table style={{ width:'100%', borderCollapse:'collapse' }}>
-                      <thead><tr>{['DATE','SERVICE','COUVERTS','STATUT'].map(h=><th key={h} style={{ padding:'8px 12px', textAlign:'left', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, borderBottom:'1px solid #f0f0f0' }}>{h}</th>)}</tr></thead>
-                      <tbody>
-                        {resasData.filter(r=>r.client_id===c.id).sort((a,b)=>b.date.localeCompare(a.date)).slice(0, showToutesResas?undefined:5).map(r=>{
-                          const sc = statutColors2[r.statut] || statutColors2.confirmee;
-                          return (
-                            <tr key={r.id} style={{ borderBottom:'1px solid #f5f5f5' }}>
-                              <td style={{ padding:'12px 12px' }}>
-                                <div style={{ fontWeight:600, fontSize:14, color:'#111' }}>{new Date(r.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</div>
-                                <div style={{ fontSize:12, color:'#999' }}>{r.heure}</div>
-                              </td>
-                              <td style={{ padding:'12px 12px' }}><span style={{ display:'flex', alignItems:'center', gap:6, fontSize:14, color:'#444' }}>{r.service==='midi'?<Sun size={14} strokeWidth={2} color="#E8C547"/>:<Moon size={14} strokeWidth={2} color="#666"/>}{r.service==='midi'?'Midi':'Soir'}</span></td>
-                              <td style={{ padding:'12px 12px', fontSize:14, color:'#444' }}>{r.nb_personnes ? `${r.nb_personnes} pers.` : '—'}</td>
-                              <td style={{ padding:'12px 12px' }}><span style={{ background:sc.bg, color:sc.color, borderRadius:20, padding:'3px 10px', fontSize:12, fontWeight:700 }}>{sc.label}</span></td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', padding:'6px 0', borderBottom:'2px solid #f0f0f0', marginBottom:4, flexShrink:0 }}>
+                    {['DATE','SERVICE','COUVERTS','STATUT'].map(h=>(
+                      <span key={h} style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>{h}</span>
+                    ))}
                   </div>
-                  {resasData.filter(r=>r.client_id===c.id).length > 5 && (
-                    <button onClick={()=>setShowToutesResas(!showToutesResas)} style={{ width:'100%', padding:'10px', marginTop:10, flexShrink:0, border:'1.5px solid #eee', borderRadius:8, background:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', color:'#666', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-                      {showToutesResas?'Voir moins':'Voir toutes les réservations'} <ChevronRight size={14}/>
-                    </button>
-                  )}
+                  <div style={{ overflowY:'auto', flex:1 }}>
+                    {resasData.filter(r=>r.client_id===c.id).sort((a,b)=>b.date.localeCompare(a.date)).map(r=>{
+                      const sc = statutColors2[r.statut] || statutColors2.confirmee;
+                      return (
+                        <div key={r.id} style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', alignItems:'center', padding:'10px 0', borderBottom:'1px solid #f5f5f5' }}>
+                          <div>
+                            <div style={{ fontWeight:600, fontSize:13, color:'#111' }}>{new Date(r.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})}</div>
+                            <div style={{ fontSize:11, color:'#999' }}>{r.heure}</div>
+                          </div>
+                          <div style={{ display:'flex', alignItems:'center', gap:4, fontSize:13, color:'#444' }}>
+                            {r.service==='midi'?<><Sun size={13} strokeWidth={2} color="#E8C547"/> Midi</>:<><Moon size={13} strokeWidth={2} color="#666"/> Soir</>}
+                          </div>
+                          <div style={{ fontSize:13, color:'#444' }}>{r.nb_personnes ? `${r.nb_personnes} pers.` : '—'}</div>
+                          <div><span style={{ background:sc.bg, color:sc.color, borderRadius:20, padding:'3px 8px', fontSize:11, fontWeight:700 }}>{sc.label}</span></div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
 
-                <div style={{ background:'#fff', borderRadius:14, padding:20, display:'flex', flexDirection:'column' }}>
+                <div style={{ background:'#fff', borderRadius:14, padding:20, display:'flex', flexDirection:'column', maxHeight:320 }}>
                   <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6, flexShrink:0 }}>
                     <Star size={16} strokeWidth={2} color="#111" />
                     <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#111' }}>Jours favoris</h3>
