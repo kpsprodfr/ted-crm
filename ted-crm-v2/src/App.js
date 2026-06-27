@@ -179,13 +179,37 @@ function LoginPage({ onLogin }) {
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [tentativesEchouees, setTentativesEchouees] = useState(0);
+  const [delaiRestant, setDelaiRestant] = useState(0);
+  const [enAttente, setEnAttente] = useState(false);
   const isMob = window.innerWidth < 768;
 
+  function lancerDelai(nbTentatives) {
+    const delai = nbTentatives * 5;
+    setDelaiRestant(delai);
+    setEnAttente(true);
+    const interval = setInterval(() => {
+      setDelaiRestant(prev => {
+        if (prev <= 1) { clearInterval(interval); setEnAttente(false); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  }
+
   async function handleLogin() {
+    if (enAttente) return;
     setLoginLoading(true);
     setLoginError("");
     const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword });
-    if (error) { setLoginError("Email ou mot de passe incorrect."); setLoginLoading(false); return; }
+    if (error) {
+      const nouvTentatives = tentativesEchouees + 1;
+      setTentativesEchouees(nouvTentatives);
+      setLoginError("Email ou mot de passe incorrect.");
+      setLoginLoading(false);
+      lancerDelai(nouvTentatives);
+      return;
+    }
+    setTentativesEchouees(0);
     onLogin();
   }
 
@@ -223,15 +247,20 @@ function LoginPage({ onLogin }) {
 
       {loginError && (
         <div style={{ background:'#fef2f2', border:'1px solid #fca5a5', borderRadius:10, padding:'10px 14px', marginBottom:16, fontSize:14, color:'#d92d20', display:'flex', alignItems:'center', gap:8 }}>
-          <AlertCircle size={16} color="#d92d20" strokeWidth={1.8} style={{ flexShrink:0 }} /> {loginError}
+          <AlertCircle size={16} color="#d92d20" strokeWidth={1.8} style={{ flexShrink:0 }} />
+          <span>{loginError}{enAttente && <strong> Nouvelle tentative dans {delaiRestant}s.</strong>}</span>
         </div>
       )}
 
-      <button onClick={handleLogin} disabled={loginLoading}
-        style={{ width:'100%', height:60, background:'#efc434', border:'none', borderRadius:12, fontSize:17, fontWeight:700, cursor: loginLoading ? 'not-allowed' : 'pointer', color:'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:10, boxShadow:'0 4px 14px rgba(239,196,52,0.28)', transition:'background 0.2s, transform 0.1s' }}
-        onMouseEnter={e=>{ if(!loginLoading) e.currentTarget.style.background='#ddb226'; }}
-        onMouseLeave={e=>{ if(!loginLoading) e.currentTarget.style.background='#efc434'; }}>
-        {loginLoading ? 'Connexion...' : <><span>Se connecter</span><ArrowRight size={20} strokeWidth={2} /></>}
+      <button onClick={handleLogin} disabled={loginLoading || enAttente}
+        style={{ width:'100%', height:60, background: enAttente ? '#f0f0f0' : '#efc434', border:'none', borderRadius:12, fontSize:17, fontWeight:700, cursor: (loginLoading || enAttente) ? 'not-allowed' : 'pointer', color: enAttente ? '#999' : '#111', display:'flex', alignItems:'center', justifyContent:'center', gap:10, boxShadow: enAttente ? 'none' : '0 4px 14px rgba(239,196,52,0.28)', transition:'all 0.2s' }}
+        onMouseEnter={e=>{ if(!loginLoading && !enAttente) e.currentTarget.style.background='#ddb226'; }}
+        onMouseLeave={e=>{ if(!loginLoading && !enAttente) e.currentTarget.style.background='#efc434'; }}>
+        {enAttente ? (
+          <><span>Veuillez patienter</span><span style={{background:'#ddd', color:'#666', borderRadius:20, padding:'2px 10px', fontSize:15, fontWeight:800}}>{delaiRestant}s</span></>
+        ) : loginLoading ? 'Connexion...' : (
+          <><span>Se connecter</span><ArrowRight size={20} strokeWidth={2}/></>
+        )}
       </button>
 
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, paddingTop:20, marginTop:22, borderTop:'1px solid #eee' }}>
