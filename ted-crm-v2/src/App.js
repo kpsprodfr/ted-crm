@@ -3526,9 +3526,9 @@ function CRMApp({ user, onLogout }) {
         const pctEvol = nbMoisDernier>0 ? Math.round((nbCeMois-nbMoisDernier)/nbMoisDernier*100) : 0;
 
         return (
-        <main style={{ padding:'0 32px 28px' }}>
+        <main style={{ height:'100vh', overflowY:'auto' }}>
           {/* HEADER STICKY — titre + corbeille + import/export + recherche + filtres */}
-          <div style={{position:'sticky', top:0, zIndex:200, background:'#f5f5f5', paddingTop:24, paddingBottom:0}}>
+          <div style={{position:'sticky', top:0, zIndex:200, background:'#f5f5f5', padding:'24px 32px 0', boxShadow:'0 2px 8px rgba(0,0,0,0.04)'}}>
             {/* Ligne titre + boutons */}
             <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16}}>
               <h1 style={{fontSize:26, fontWeight:900, color:'#111', margin:0}}>Clients</h1>
@@ -3566,8 +3566,10 @@ function CRMApp({ user, onLogout }) {
             </div>
           </div>
 
-          {/* 3 blocs stats — scrollables */}
-          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:16, marginBottom:16, marginTop:4}}>
+          {/* Contenu scrollable */}
+          <div style={{padding:'16px 32px 32px'}}>
+          {/* 3 blocs stats */}
+          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:16, marginBottom:16}}>
             <div style={{background:'#fff', borderRadius:14, padding:'20px 24px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
               <div>
                 <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 6px'}}>Total clients</p>
@@ -3599,7 +3601,7 @@ function CRMApp({ user, onLogout }) {
           </div>
 
           {/* Liste clients */}
-          <div style={{background:'#fff', borderRadius:14, overflow:'hidden'}}>
+          <div style={{background:'#fff', borderRadius:14, overflow:'hidden', marginBottom:16}}>
             {clientsFiltres.length === 0 ? (
               <div style={{padding:'48px', textAlign:'center', color:'#bbb'}}>
                 <Users size={32} strokeWidth={1.5} color="#ddd" style={{marginBottom:12}}/>
@@ -3649,6 +3651,7 @@ function CRMApp({ user, onLogout }) {
               );
             })}
           </div>
+          </div>{/* fin contenu scrollable */}
         </main>
         );
       })()}
