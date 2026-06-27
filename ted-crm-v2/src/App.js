@@ -3256,70 +3256,73 @@ function CRMApp({ user, onLogout }) {
           <div style={{display:'grid', gridTemplateColumns:'240px 1fr 380px', gap:16, height:'calc(100vh - 130px)', overflow:'hidden'}}>
 
             {/* ─── Colonne 1 — Ciblage ─── */}
-            <div style={{background:'#fff', borderRadius:16, boxShadow:'0 1px 4px rgba(0,0,0,0.04)', padding:14, display:'flex', flexDirection:'column', gap:8, height:'100%', overflow:'hidden'}}>
-              <p style={{fontSize:12, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0, flexShrink:0}}>Cibler vos destinataires</p>
+            <div style={{background:'#fff', borderRadius:16, boxShadow:'0 1px 4px rgba(0,0,0,0.04)', padding:14, display:'flex', flexDirection:'column', height:'100%', overflow:'hidden'}}>
+              <p style={{fontSize:12, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px', flexShrink:0}}>Cibler vos destinataires</p>
 
-              {/* Segment */}
-              <div style={{flexShrink:0}}>
-                <p style={{fontSize:15, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Segment</p>
-                <div onClick={()=>setFiltreGenresComm(new Set())} style={{padding:'10px 14px', borderRadius:8, marginBottom:3, cursor:'pointer', border: filtreGenresComm.size===0?'1.5px solid #E8C547':'1.5px solid #eee', background: filtreGenresComm.size===0?'#fffbea':'#fff', display:'flex', alignItems:'center', gap:8}}>
-                  <div style={{width:16,height:16,borderRadius:4,flexShrink:0,border:'1.5px solid',borderColor:filtreGenresComm.size===0?'#E8C547':'#ddd',background:filtreGenresComm.size===0?'#E8C547':'#fff',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                    {filtreGenresComm.size===0 && <Check size={10} strokeWidth={3} color="#111"/>}
-                  </div>
-                  <span style={{fontSize:14, fontWeight:600, color:'#111', flex:1}}>Tous les clients</span>
-                </div>
-                {[{g:'Homme',label:'Hommes'},{g:'Femme',label:'Femmes'},{g:'Entreprise',label:'Entreprises'}].map(({g,label}) => {
-                  const actif = filtreGenresComm.has(g);
-                  return (
-                    <div key={g} onClick={()=>toggleGenreComm(g)} style={{padding:'10px 14px', borderRadius:8, marginBottom:3, cursor:'pointer', border: actif?'1.5px solid #E8C547':'1.5px solid #eee', background: actif?'#fffbea':'#fff', display:'flex', alignItems:'center', gap:8}}>
-                      <div style={{width:16,height:16,borderRadius:4,flexShrink:0,border:'1.5px solid',borderColor:actif?'#E8C547':'#ddd',background:actif?'#E8C547':'#fff',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                        {actif && <Check size={10} strokeWidth={3} color="#111"/>}
-                      </div>
-                      <span style={{fontSize:14, fontWeight:600, color:'#111', flex:1}}>{label}</span>
+              {/* Contenu scrollable */}
+              <div style={{flex:1, overflowY:'auto', display:'flex', flexDirection:'column', gap:8}}>
+                {/* Segment */}
+                <div style={{flexShrink:0}}>
+                  <p style={{fontSize:15, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Segment</p>
+                  <div onClick={()=>setFiltreGenresComm(new Set())} style={{padding:'10px 14px', borderRadius:8, marginBottom:3, cursor:'pointer', border: filtreGenresComm.size===0?'1.5px solid #E8C547':'1.5px solid #eee', background: filtreGenresComm.size===0?'#fffbea':'#fff', display:'flex', alignItems:'center', gap:8}}>
+                    <div style={{width:16,height:16,borderRadius:4,flexShrink:0,border:'1.5px solid',borderColor:filtreGenresComm.size===0?'#E8C547':'#ddd',background:filtreGenresComm.size===0?'#E8C547':'#fff',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                      {filtreGenresComm.size===0 && <Check size={10} strokeWidth={3} color="#111"/>}
                     </div>
-                  );
-                })}
-              </div>
-
-              {/* Jour favori */}
-              <div style={{flexShrink:0}}>
-                <p style={{fontSize:15, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Jour favori</p>
-                <div style={{display:'flex', flexWrap:'wrap', gap:4}}>
-                  {['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].map((j,i) => {
-                    const jourComplet = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'][i];
+                    <span style={{fontSize:14, fontWeight:600, color:'#111', flex:1}}>Tous les clients</span>
+                  </div>
+                  {[{g:'Homme',label:'Hommes'},{g:'Femme',label:'Femmes'},{g:'Entreprise',label:'Entreprises'}].map(({g,label}) => {
+                    const actif = filtreGenresComm.has(g);
                     return (
-                      <button key={j} onClick={()=>toggleFiltreJour(jourComplet)} style={{padding:'6px 12px', borderRadius:20, fontSize:13, fontWeight:700, cursor:'pointer', border:'1.5px solid', borderColor: filtreJours.has(jourComplet)?'#111':'#eee', background: filtreJours.has(jourComplet)?'#111':'#fff', color: filtreJours.has(jourComplet)?'#E8C547':'#666'}}>{j}</button>
+                      <div key={g} onClick={()=>toggleGenreComm(g)} style={{padding:'10px 14px', borderRadius:8, marginBottom:3, cursor:'pointer', border: actif?'1.5px solid #E8C547':'1.5px solid #eee', background: actif?'#fffbea':'#fff', display:'flex', alignItems:'center', gap:8}}>
+                        <div style={{width:16,height:16,borderRadius:4,flexShrink:0,border:'1.5px solid',borderColor:actif?'#E8C547':'#ddd',background:actif?'#E8C547':'#fff',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                          {actif && <Check size={10} strokeWidth={3} color="#111"/>}
+                        </div>
+                        <span style={{fontSize:14, fontWeight:600, color:'#111', flex:1}}>{label}</span>
+                      </div>
                     );
                   })}
                 </div>
-              </div>
 
-              {/* Service préféré */}
-              <div style={{flexShrink:0}}>
-                <p style={{fontSize:15, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Service préféré</p>
-                <div style={{display:'flex', gap:6}}>
-                  {[{id:'midi',label:'Midi',icon:'☀️'},{id:'soir',label:'Soir',icon:'🌙'}].map(s => (
-                    <button key={s.id} onClick={()=>toggleFiltreService(s.id)} style={{flex:1, height:40, borderRadius:8, fontSize:14, fontWeight:700, cursor:'pointer', border:'1.5px solid', borderColor: filtreServices.has(s.id)?'#111':'#eee', background: filtreServices.has(s.id)?'#111':'#fff', color: filtreServices.has(s.id)?'#E8C547':'#666'}}>{s.icon} {s.label}</button>
-                  ))}
+                {/* Jour favori */}
+                <div style={{flexShrink:0}}>
+                  <p style={{fontSize:15, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Jour favori</p>
+                  <div style={{display:'flex', flexWrap:'wrap', gap:4}}>
+                    {['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].map((j,i) => {
+                      const jourComplet = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'][i];
+                      return (
+                        <button key={j} onClick={()=>toggleFiltreJour(jourComplet)} style={{padding:'6px 12px', borderRadius:20, fontSize:13, fontWeight:700, cursor:'pointer', border:'1.5px solid', borderColor: filtreJours.has(jourComplet)?'#111':'#eee', background: filtreJours.has(jourComplet)?'#111':'#fff', color: filtreJours.has(jourComplet)?'#E8C547':'#666'}}>{j}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Service préféré */}
+                <div style={{flexShrink:0}}>
+                  <p style={{fontSize:15, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Service préféré</p>
+                  <div style={{display:'flex', gap:6}}>
+                    {[{id:'midi',label:'Midi',icon:'☀️'},{id:'soir',label:'Soir',icon:'🌙'}].map(s => (
+                      <button key={s.id} onClick={()=>toggleFiltreService(s.id)} style={{flex:1, height:40, borderRadius:8, fontSize:14, fontWeight:700, cursor:'pointer', border:'1.5px solid', borderColor: filtreServices.has(s.id)?'#111':'#eee', background: filtreServices.has(s.id)?'#111':'#fff', color: filtreServices.has(s.id)?'#E8C547':'#666'}}>{s.icon} {s.label}</button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Clients absents depuis */}
+                <div style={{flexShrink:0}}>
+                  <p style={{fontSize:15, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Clients absents depuis</p>
+                  <select value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{width:'100%', height:40, border:'1.5px solid #eee', borderRadius:8, padding:'0 10px', fontSize:14, outline:'none', background:'#fff', cursor:'pointer'}}>
+                    <option value={0}>Indifférent</option>
+                    <option value={1}>1 mois</option>
+                    <option value={2}>2 mois</option>
+                    <option value={3}>3 mois</option>
+                    <option value={6}>6 mois</option>
+                    <option value={12}>12 mois</option>
+                  </select>
                 </div>
               </div>
 
-              {/* Clients absents depuis */}
-              <div style={{flexShrink:0}}>
-                <p style={{fontSize:15, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Clients absents depuis</p>
-                <select value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{width:'100%', height:40, border:'1.5px solid #eee', borderRadius:8, padding:'0 10px', fontSize:14, outline:'none', background:'#fff', cursor:'pointer'}}>
-                  <option value={0}>Indifférent</option>
-                  <option value={1}>1 mois</option>
-                  <option value={2}>2 mois</option>
-                  <option value={3}>3 mois</option>
-                  <option value={6}>6 mois</option>
-                  <option value={12}>12 mois</option>
-                </select>
-              </div>
-
-              {/* Résumé de la cible */}
-              <div style={{marginTop:'auto', background:'#f9f9f9', borderRadius:10, padding:'8px 10px', flexShrink:0}}>
-                <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 6px'}}>Résumé de la cible</p>
+              {/* Résumé de la cible — toujours visible en bas */}
+              <div style={{flexShrink:0, marginTop:12, background:'#f9f9f9', borderRadius:12, padding:'12px 14px'}}>
+                <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px'}}>Résumé de la cible</p>
                 {(()=>{
                   const total = clientsFiltresComm.length;
                   const h = clientsFiltresComm.filter(c=>c.genre==='Homme').length;
@@ -3383,7 +3386,7 @@ function CRMApp({ user, onLogout }) {
                         {(c.prenom||c.entreprise||'?')[0]?.toUpperCase()}
                       </div>
                       <div style={{flex:1, minWidth:0}}>
-                        <div style={{fontWeight:700, fontSize:15, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.genre==='Entreprise'?c.entreprise:`${c.prenom} ${c.nom}`}</div>
+                        <div style={{fontWeight:500, fontSize:15, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.genre==='Entreprise'?c.entreprise:`${c.prenom} ${c.nom}`}</div>
                         <div style={{fontSize:13, color:'#999'}}>{c.tel}</div>
                       </div>
                     </div>
@@ -3739,7 +3742,7 @@ function CRMApp({ user, onLogout }) {
               onTouchEnd={e=>e.currentTarget.style.background='#fff'}>
               <div style={{ width:40, height:40, borderRadius:'50%', flexShrink:0, background:avatarBgM, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, color:avatarColorM }}>{initialesM}</div>
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontWeight:700, fontSize:14, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                <div style={{ fontWeight:500, fontSize:14, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                   {c.genre==='Entreprise' ? (c.entreprise||c.nom||'—') : `${c.prenom||''} ${c.nom||''}`}
                 </div>
                 <div style={{ fontSize:12, color:'#999', marginTop:2 }}>{c.tel||'—'}</div>
@@ -3912,7 +3915,7 @@ function CRMApp({ user, onLogout }) {
                     onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                     <div style={{width:48, height:48, borderRadius:'50%', flexShrink:0, background:avatarBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, fontWeight:800, color:avatarColor}}>{initiales}</div>
                     <div style={{minWidth:200, flex:'0 0 200px'}}>
-                      <div style={{fontWeight:700, fontSize:14, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.genre==='Entreprise'?c.entreprise:`${c.prenom||''} ${c.nom||''}`}</div>
+                      <div style={{fontWeight:500, fontSize:14, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.genre==='Entreprise'?c.entreprise:`${c.prenom||''} ${c.nom||''}`}</div>
                       <div style={{display:'flex', alignItems:'center', gap:4, marginTop:3}}>
                         <Phone size={12} strokeWidth={2} color="#999"/>
                         <span style={{fontSize:12, color:'#999'}}>{c.tel||'—'}</span>
