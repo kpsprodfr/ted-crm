@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save } from 'lucide-react';
+import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus } from 'lucide-react';
 import { supabase } from "./supabase";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -3922,6 +3922,22 @@ function CRMApp({ user, onLogout }) {
                 ))}
               </div>
 
+              {/* Commentaire */}
+              {c.commentaire && (
+                <div style={{ background:'#fff', borderRadius:14, padding:20, marginBottom:20, border:'1.5px solid #f0f0f0' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
+                    <MessageSquare size={18} strokeWidth={2} color="#111"/>
+                    <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#111' }}>Commentaire</h3>
+                  </div>
+                  <p style={{ margin:0, fontSize:14, color:'#444', lineHeight:1.7, whiteSpace:'pre-wrap' }}>{c.commentaire}</p>
+                </div>
+              )}
+              {!c.commentaire && !ficheClientReadOnly && (
+                <button onClick={()=>setModalEdit(c)} style={{ width:'100%', padding:'12px', marginBottom:20, border:'1.5px dashed #ddd', borderRadius:12, background:'transparent', cursor:'pointer', fontSize:13, color:'#999', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                  <Plus size={14} strokeWidth={2} color="#999"/> Ajouter un commentaire
+                </button>
+              )}
+
               {/* Grille historique + jours favoris */}
               <div style={{ display:'grid', gridTemplateColumns:'1fr 320px', gap:20 }}>
                 <div style={{ background:'#fff', borderRadius:14, padding:24 }}>
@@ -4006,7 +4022,7 @@ function CRMApp({ user, onLogout }) {
 
       {modalAdd && <ClientForm existingClients={clients} onSave={addClient} onCancel={()=>setModalAdd(false)} />}
       {modalEdit && (() => {
-        const aDesDonnees = editForm.prenom !== (modalEdit.prenom||'') || editForm.nom !== (modalEdit.nom||'') || editForm.tel !== (modalEdit.tel||'') || editForm.mail !== (modalEdit.mail||'') || editForm.genre !== (modalEdit.genre||'') || editForm.entreprise !== (modalEdit.entreprise||'');
+        const aDesDonnees = editForm.prenom !== (modalEdit.prenom||'') || editForm.nom !== (modalEdit.nom||'') || editForm.tel !== (modalEdit.tel||'') || editForm.mail !== (modalEdit.mail||'') || editForm.genre !== (modalEdit.genre||'') || editForm.entreprise !== (modalEdit.entreprise||'') || editForm.commentaire !== (modalEdit.commentaire||'');
         const fermerEdit = () => {
           if (aDesDonnees) { setPendingFermer(()=>()=>setModalEdit(null)); setShowConfirmQuitter(true); }
           else { setModalEdit(null); }
