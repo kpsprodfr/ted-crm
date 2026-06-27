@@ -3527,44 +3527,14 @@ function CRMApp({ user, onLogout }) {
 
         return (
         <main style={{ padding:'28px 32px' }}>
+          {/* Titre + corbeille */}
           <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20, flexWrap:'wrap', gap:12}}>
             <h1 style={{fontSize:26, fontWeight:900, color:'#111', margin:0}}>Clients</h1>
             <button onClick={()=>setModalCorbeille(true)} style={{background:'#fff', color:'#888', border:'1px solid #ddd', borderRadius:8, padding:'0 12px', height:34, fontSize:12, cursor:'pointer'}}>🗑️ Corbeille</button>
           </div>
 
-          {/* Barre recherche + filtres + bouton */}
-          <div style={{display:'flex', alignItems:'center', gap:12, marginBottom:20, flexWrap:'wrap'}}>
-            <div style={{position:'relative', flex:1, minWidth:200}}>
-              <Search size={16} strokeWidth={2} color="#999" style={{position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', pointerEvents:'none'}}/>
-              <input placeholder="Rechercher un client..." value={rechercheClients} onChange={e=>setRechercheClients(e.target.value)} style={{width:'100%', height:44, border:'1.5px solid #eee', borderRadius:12, padding:'0 14px 0 40px', fontSize:14, outline:'none', background:'#fff', boxSizing:'border-box'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
-              {rechercheClients && <button onClick={()=>setRechercheClients('')} style={{position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'#aaa', fontSize:16, padding:0}}>✕</button>}
-            </div>
-            <div style={{display:'flex', gap:6}}>
-              {[{id:'Tous',label:'Tous'},{id:'Homme',label:'Hommes'},{id:'Femme',label:'Femmes'},{id:'Entreprise',label:'Entreprises'}].map(f=>(
-                <button key={f.id} onClick={()=>setFiltreGenreClients(f.id)} style={{height:44, padding:'0 18px', borderRadius:12, cursor:'pointer', fontSize:14, fontWeight:700, border:'none', background: filtreGenreClients===f.id?'#111':'#fff', color: filtreGenreClients===f.id?'#fff':'#666', boxShadow: filtreGenreClients===f.id?'none':'0 1px 4px rgba(0,0,0,0.06)'}}>{f.label}</button>
-              ))}
-            </div>
-            <div style={{display:'flex', gap:8, flexShrink:0}}>
-              <button onClick={()=>setModalAdd(true)} style={{height:44, padding:'0 20px', borderRadius:12, border:'none', background:'#E8C547', color:'#111', fontSize:14, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', gap:8}}>
-                <Plus size={16} strokeWidth={2}/> Nouveau client
-              </button>
-              <div style={{position:'relative'}}>
-                <button onClick={()=>setShowExportMenu(v=>!v)} style={{height:44, padding:'0 14px', borderRadius:12, border:'1.5px solid #eee', background:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', color:'#666', display:'flex', alignItems:'center', gap:6}}>
-                  📥 Import/Export
-                </button>
-                {showExportMenu && (
-                  <div style={{position:'absolute', right:0, top:'calc(100% + 4px)', background:'#fff', border:'1.5px solid #eee', borderRadius:10, boxShadow:'0 8px 24px rgba(0,0,0,0.1)', zIndex:200, minWidth:180, overflow:'hidden'}}>
-                    <button onClick={()=>{exportToCSV(clients);setShowExportMenu(false);}} style={{display:'block',width:'100%',textAlign:'left',padding:'10px 16px',border:'none',background:'none',cursor:'pointer',fontSize:13,borderBottom:'1px solid #f5f5f5'}} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>⬇ Exporter CSV</button>
-                    <button onClick={()=>{exportToXLSX(clients);setShowExportMenu(false);}} style={{display:'block',width:'100%',textAlign:'left',padding:'10px 16px',border:'none',background:'none',cursor:'pointer',fontSize:13,borderBottom:'1px solid #f5f5f5'}} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>⬇ Exporter Excel</button>
-                    <button onClick={()=>{setModalImport(true);setShowExportMenu(false);}} style={{display:'block',width:'100%',textAlign:'left',padding:'10px 16px',border:'none',background:'none',cursor:'pointer',fontSize:13}} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>⬆ Importer clients</button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* 3 blocs stats */}
-          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:16, marginBottom:20}}>
+          {/* 3 blocs stats EN PREMIER */}
+          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:16, marginBottom:16}}>
             <div style={{background:'#fff', borderRadius:14, padding:'20px 24px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
               <div>
                 <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 6px'}}>Total clients</p>
@@ -3586,7 +3556,7 @@ function CRMApp({ user, onLogout }) {
                 <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 6px'}}>Top client</p>
                 {topClient && topClient.nb > 0 ? (
                   <>
-                    <p style={{fontSize:18, fontWeight:900, color:'#111', margin:'0 0 4px'}}>{topClient.genre==='Entreprise'?(topClient.entreprise||topClient.nom):`${topClient.prenom||''} ${topClient.nom||''}`}</p>
+                    <p style={{fontSize:18, fontWeight:900, color:'#111', margin:'0 0 4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:180}}>{topClient.genre==='Entreprise'?(topClient.entreprise||topClient.nom):`${topClient.prenom||''} ${topClient.nom||''}`}</p>
                     <p style={{fontSize:12, color:'#999', fontWeight:600, margin:0}}>{topClient.nb} réservations</p>
                   </>
                 ) : <p style={{fontSize:14, color:'#bbb', margin:0}}>Aucun</p>}
@@ -3595,8 +3565,37 @@ function CRMApp({ user, onLogout }) {
             </div>
           </div>
 
+          {/* Recherche + filtres STICKY */}
+          <div style={{position:'sticky', top:0, zIndex:100, background:'#f5f5f5', paddingTop:8, paddingBottom:12}}>
+            <div style={{display:'flex', alignItems:'center', gap:12, flexWrap:'wrap'}}>
+              <div style={{position:'relative', flex:1, minWidth:200}}>
+                <Search size={16} strokeWidth={2} color="#999" style={{position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', pointerEvents:'none'}}/>
+                <input placeholder="Rechercher un client..." value={rechercheClients} onChange={e=>setRechercheClients(e.target.value)} style={{width:'100%', height:44, border:'1.5px solid #eee', borderRadius:12, padding:'0 14px 0 40px', fontSize:14, outline:'none', background:'#fff', boxSizing:'border-box', boxShadow:'0 1px 4px rgba(0,0,0,0.06)'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
+                {rechercheClients && <button onClick={()=>setRechercheClients('')} style={{position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'#aaa', fontSize:16, padding:0}}>✕</button>}
+              </div>
+              {[{id:'Tous',label:'Tous'},{id:'Homme',label:'Hommes'},{id:'Femme',label:'Femmes'},{id:'Entreprise',label:'Entreprises'}].map(f=>(
+                <button key={f.id} onClick={()=>setFiltreGenreClients(f.id)} style={{height:44, padding:'0 18px', borderRadius:12, cursor:'pointer', fontSize:14, fontWeight:700, border:'none', background: filtreGenreClients===f.id?'#111':'#fff', color: filtreGenreClients===f.id?'#fff':'#666', boxShadow:'0 1px 4px rgba(0,0,0,0.06)'}}>{f.label}</button>
+              ))}
+              <button onClick={()=>setModalAdd(true)} style={{height:44, padding:'0 20px', borderRadius:12, border:'none', background:'#E8C547', color:'#111', fontSize:14, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', gap:8, flexShrink:0, boxShadow:'0 2px 8px rgba(232,197,71,0.3)'}}>
+                <Plus size={16} strokeWidth={2}/> Nouveau client
+              </button>
+              <div style={{position:'relative', flexShrink:0}}>
+                <button onClick={()=>setShowExportMenu(v=>!v)} style={{height:44, padding:'0 16px', borderRadius:12, border:'1.5px solid #eee', background:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', color:'#666', display:'flex', alignItems:'center', gap:6, boxShadow:'0 1px 4px rgba(0,0,0,0.06)'}}>
+                  📥 Import/Export
+                </button>
+                {showExportMenu && (
+                  <div style={{position:'absolute', right:0, top:'calc(100% + 4px)', background:'#fff', border:'1.5px solid #eee', borderRadius:10, boxShadow:'0 8px 24px rgba(0,0,0,0.1)', zIndex:200, minWidth:180, overflow:'hidden'}}>
+                    <button onClick={()=>{exportToCSV(clients);setShowExportMenu(false);}} style={{display:'block',width:'100%',textAlign:'left',padding:'10px 16px',border:'none',background:'none',cursor:'pointer',fontSize:13,borderBottom:'1px solid #f5f5f5'}} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>⬇ Exporter CSV</button>
+                    <button onClick={()=>{exportToXLSX(clients);setShowExportMenu(false);}} style={{display:'block',width:'100%',textAlign:'left',padding:'10px 16px',border:'none',background:'none',cursor:'pointer',fontSize:13,borderBottom:'1px solid #f5f5f5'}} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>⬇ Exporter Excel</button>
+                    <button onClick={()=>{setModalImport(true);setShowExportMenu(false);}} style={{display:'block',width:'100%',textAlign:'left',padding:'10px 16px',border:'none',background:'none',cursor:'pointer',fontSize:13}} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>⬆ Importer clients</button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Liste clients */}
-          <div style={{background:'#fff', borderRadius:14, overflow:'hidden'}}>
+          <div style={{background:'#fff', borderRadius:14, overflow:'hidden', marginTop:4}}>
             {clientsFiltres.length === 0 ? (
               <div style={{padding:'48px', textAlign:'center', color:'#bbb'}}>
                 <Users size={32} strokeWidth={1.5} color="#ddd" style={{marginBottom:12}}/>
@@ -3611,46 +3610,37 @@ function CRMApp({ user, onLogout }) {
               const avatarColor = c.genre==='Homme'?'#1d4ed8':c.genre==='Femme'?'#be185d':'#15803d';
               const initiales = c.genre==='Entreprise'?(c.entreprise||'?').slice(0,2).toUpperCase():`${(c.prenom||'?')[0]}${(c.nom||'')[0]||''}`.toUpperCase();
               return (
-                <div key={c.id} onClick={()=>setModalDetailClient(c)} style={{display:'flex', alignItems:'center', gap:16, padding:'16px 24px', borderBottom: idx<clientsFiltres.length-1?'1px solid #f5f5f5':'none', cursor:'pointer'}}
+                <div key={c.id} onClick={()=>setModalDetailClient(c)} style={{display:'flex', alignItems:'center', gap:16, padding:'14px 24px', borderBottom: idx<clientsFiltres.length-1?'1px solid #f5f5f5':'none', cursor:'pointer'}}
                   onMouseEnter={e=>e.currentTarget.style.background='#fafafa'}
                   onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                  <div style={{width:44, height:44, borderRadius:'50%', flexShrink:0, background:avatarBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:800, color:avatarColor}}>{initiales}</div>
+                  <div style={{width:42, height:42, borderRadius:'50%', flexShrink:0, background:avatarBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, color:avatarColor}}>{initiales}</div>
                   <div style={{minWidth:180, flex:'0 0 180px'}}>
-                    <div style={{fontWeight:700, fontSize:15, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.genre==='Entreprise'?c.entreprise:`${c.prenom||''} ${c.nom||''}`}</div>
+                    <div style={{fontWeight:700, fontSize:14, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.genre==='Entreprise'?c.entreprise:`${c.prenom||''} ${c.nom||''}`}</div>
                     <div style={{display:'flex', alignItems:'center', gap:4, marginTop:2}}>
-                      <Phone size={12} strokeWidth={2} color="#999"/>
+                      <Phone size={11} strokeWidth={2} color="#999"/>
                       <span style={{fontSize:12, color:'#999'}}>{c.tel||'—'}</span>
                     </div>
                   </div>
                   <div style={{display:'flex', alignItems:'center', gap:8, flex:'0 0 110px'}}>
-                    <CalendarDays size={16} strokeWidth={2} color="#ccc"/>
+                    <CalendarDays size={15} strokeWidth={2} color="#ccc"/>
                     <div>
-                      <span style={{fontSize:20, fontWeight:800, color:'#111'}}>{total}</span>
+                      <span style={{fontSize:18, fontWeight:800, color:'#111'}}>{total}</span>
                       <div style={{fontSize:11, color:'#999'}}>réservations</div>
                     </div>
                   </div>
-                  <div style={{flex:1, display:'flex', alignItems:'center', gap:8}}>
-                    <Clock size={16} strokeWidth={2} color="#ccc"/>
-                    <div>
-                      {prochaineResa ? (
-                        <>
-                          <div style={{fontSize:11, color:'#999', marginBottom:2}}>Prochaine réservation</div>
-                          <div style={{fontSize:13, fontWeight:700, color:'#16a34a'}}>{new Date(prochaineResa.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})} à {prochaineResa.heure}</div>
-                        </>
-                      ) : derniereVisite ? (
-                        <>
-                          <div style={{fontSize:11, color:'#999', marginBottom:2}}>Dernière visite</div>
-                          <div style={{fontSize:13, fontWeight:700, color:'#111'}}>{new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
-                        </>
-                      ) : (
-                        <>
-                          <div style={{fontSize:11, color:'#999', marginBottom:2}}>Dernière visite</div>
-                          <div style={{fontSize:13, fontWeight:600, color:'#bbb'}}>Jamais</div>
-                        </>
-                      )}
+                  <div style={{flex:1, minWidth:0}}>
+                    <div style={{fontSize:11, color:'#999', marginBottom:2}}>Dernière visite</div>
+                    <div style={{fontSize:13, fontWeight:600, color: derniereVisite?'#111':'#ccc', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+                      {derniereVisite ? new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) : 'Jamais'}
                     </div>
                   </div>
-                  <ChevronRight size={18} strokeWidth={2} color="#ddd"/>
+                  <div style={{flex:1, minWidth:0}}>
+                    <div style={{fontSize:11, color:'#999', marginBottom:2}}>Prochaine réservation</div>
+                    <div style={{fontSize:13, fontWeight:600, color: prochaineResa?'#16a34a':'#ccc', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+                      {prochaineResa ? `${new Date(prochaineResa.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})} à ${prochaineResa.heure}` : '—'}
+                    </div>
+                  </div>
+                  <ChevronRight size={16} strokeWidth={2} color="#ddd" style={{flexShrink:0}}/>
                 </div>
               );
             })}
