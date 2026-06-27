@@ -127,7 +127,7 @@ function Modal({ title, onClose, children, footer, maxW=520, zIndex=3000 }) {
   const isMobile = window.innerWidth < 768;
   return (
     <div
-      style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex, display:"flex", alignItems: isMobile ? "flex-end" : "center", justifyContent:"center", padding: isMobile ? 0 : "1rem" }}
+      style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex, display:"flex", alignItems: isMobile ? "flex-end" : "center", justifyContent:"center", padding: isMobile ? 0 : "1rem", pointerEvents:'all', cursor:'default' }}
       onPointerDown={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
@@ -379,10 +379,28 @@ function ClientForm({ initial, onSave, onCancel, existingClients, reservations =
   // ─── Design 2 colonnes desktop en mode édition ───────────────────────────
   if (isEdit && !isMobile) {
     const aujourd = new Date().toISOString().split('T')[0];
+    const [localConfirmQuitter, setLocalConfirmQuitter] = useState(false);
+    const isDirty = Object.keys(form).some(k => (form[k]||'') !== (initial[k]||''));
+    const handleOverlayClick = (e) => {
+      if (e.target !== e.currentTarget) return;
+      if (isDirty) { setLocalConfirmQuitter(true); } else { onCancel(); }
+    };
     return (
       <>
         {dupWarn && <ConfirmModal title="Doublon détecté" msg={`Attention : ${dupWarn} Voulez-vous tout de même continuer ?`} onOk={()=>{ setDupWarn(null); doSave(); }} onCancel={()=>setDupWarn(null)} okLabel="Ajouter quand même" />}
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.3)', zIndex:3000, display:'flex' }}>
+        {localConfirmQuitter && (
+          <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:9000,display:'flex',alignItems:'center',justifyContent:'center', pointerEvents:'all'}}>
+            <div style={{background:'#fff',borderRadius:16,padding:'28px 24px',maxWidth:320,width:'90%',textAlign:'center'}} onClick={e=>e.stopPropagation()}>
+              <h3 style={{margin:'0 0 8px',fontSize:17,fontWeight:800,color:'#111'}}>Quitter sans enregistrer ?</h3>
+              <p style={{margin:'0 0 20px',fontSize:14,color:'#666'}}>Les informations saisies seront perdues.</p>
+              <div style={{display:'flex',gap:10}}>
+                <button onClick={()=>setLocalConfirmQuitter(false)} style={{flex:1,height:44,border:'1.5px solid #ddd',borderRadius:10,background:'#fff',fontSize:14,fontWeight:600,cursor:'pointer',color:'#666'}}>Continuer la saisie</button>
+                <button onClick={()=>{setLocalConfirmQuitter(false); onCancel();}} style={{flex:1,height:44,border:'none',borderRadius:10,background:'#dc2626',fontSize:14,fontWeight:800,cursor:'pointer',color:'#fff'}}>Quitter</button>
+              </div>
+            </div>
+          </div>
+        )}
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.3)', zIndex:3000, display:'flex', pointerEvents:'all', cursor:'default' }} onClick={handleOverlayClick}>
 
           {/* Colonne gauche — liste clients grisée */}
           <div style={{ flex:1, background:'#f5f5f5', padding:'32px', overflowY:'auto', opacity:0.6, pointerEvents:'none' }}>
@@ -410,7 +428,7 @@ function ClientForm({ initial, onSave, onCancel, existingClients, reservations =
           </div>
 
           {/* Colonne droite — formulaire */}
-          <div style={{ width:480, background:'#fff', padding:'40px', display:'flex', flexDirection:'column', boxShadow:'-8px 0 40px rgba(0,0,0,0.1)' }}>
+          <div style={{ width:480, background:'#fff', padding:'40px', display:'flex', flexDirection:'column', boxShadow:'-8px 0 40px rgba(0,0,0,0.1)' }} onClick={e=>e.stopPropagation()}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:32 }}>
               <h2 style={{ margin:0, fontSize:24, fontWeight:900, color:'#111' }}>Modifier le client</h2>
               <button onClick={onCancel} style={{ width:36, height:36, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:18, color:'#666', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
@@ -2462,8 +2480,8 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
         );
       })()}
       {showConfirmDecoRP && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:9000, display:'flex', alignItems:'center', justifyContent:'center' }}>
-          <div style={{ background:'#fff', borderRadius:16, padding:'28px 24px', maxWidth:320, width:'90%', textAlign:'center' }}>
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:9000, display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'all', cursor:'default' }} onClick={(e)=>{if(e.target===e.currentTarget)setShowConfirmDecoRP(false);}}>
+          <div style={{ background:'#fff', borderRadius:16, padding:'28px 24px', maxWidth:320, width:'90%', textAlign:'center' }} onClick={e=>e.stopPropagation()}>
             <h3 style={{ margin:'0 0 8px', fontSize:17, fontWeight:800 }}>Se déconnecter ?</h3>
             <p style={{ margin:'0 0 20px', fontSize:14, color:'#666' }}>Vous devrez vous reconnecter pour accéder au CRM.</p>
             <div style={{ display:'flex', gap:10 }}>
@@ -2522,6 +2540,8 @@ function CRMApp({ user, onLogout }) {
   const [showAddResa, setShowAddResa] = useState(false);
   const [activeView, setActiveView] = useState('reservations'); // 'reservations' | 'clients' | 'communications'
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
+  const [showConfirmQuitter, setShowConfirmQuitter] = useState(false);
+  const [pendingFermer, setPendingFermer] = useState(null);
   const [commFilter, setCommFilter] = useState('tous');
   const [filtreGenre, setFiltreGenre] = useState('Tous');
   const [commType, setCommType] = useState('email');
@@ -3238,8 +3258,8 @@ function CRMApp({ user, onLogout }) {
 
           {/* ─── Modal Historique ─── */}
           {showHistorique && (
-            <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:4000,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
-              <div style={{background:'#fff',borderRadius:20,width:'min(600px,calc(100vw-48px))',maxHeight:'80vh',display:'flex',flexDirection:'column',overflow:'hidden'}}>
+            <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:4000,display:'flex',alignItems:'center',justifyContent:'center',padding:24,pointerEvents:'all',cursor:'default'}} onClick={(e)=>{if(e.target===e.currentTarget)setShowHistorique(false);}}>
+              <div style={{background:'#fff',borderRadius:20,width:'min(600px,calc(100vw-48px))',maxHeight:'80vh',display:'flex',flexDirection:'column',overflow:'hidden'}} onClick={e=>e.stopPropagation()}>
                 <div style={{padding:'24px 28px 20px',borderBottom:'1px solid #f0f0f0',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
                   <h2 style={{margin:0,fontSize:18,fontWeight:800,color:'#111'}}>Historique des envois</h2>
                   <button onClick={()=>setShowHistorique(false)} style={{width:36,height:36,borderRadius:'50%',border:'none',background:'#f0f0f0',cursor:'pointer',fontSize:18,color:'#666'}}>✕</button>
@@ -3266,8 +3286,8 @@ function CRMApp({ user, onLogout }) {
 
           {/* ─── Modal Récap + Confirmation envoi ─── */}
           {showConfirmEnvoi && (
-            <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:4000,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
-              <div style={{background:'#fff',borderRadius:20,width:'min(620px,calc(100vw-48px))',maxHeight:'90vh',display:'flex',flexDirection:'column',boxShadow:'0 32px 80px rgba(0,0,0,0.3)',overflow:'hidden'}}>
+            <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:4000,display:'flex',alignItems:'center',justifyContent:'center',padding:24,pointerEvents:'all',cursor:'default'}} onClick={(e)=>{if(e.target===e.currentTarget)setShowConfirmEnvoi(false);}}>
+              <div style={{background:'#fff',borderRadius:20,width:'min(620px,calc(100vw-48px))',maxHeight:'90vh',display:'flex',flexDirection:'column',boxShadow:'0 32px 80px rgba(0,0,0,0.3)',overflow:'hidden'}} onClick={e=>e.stopPropagation()}>
                 <div style={{padding:'24px 28px 20px',borderBottom:'1px solid #f0f0f0',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
                   <h2 style={{margin:0,fontSize:20,fontWeight:800,color:'#111'}}>Récapitulatif de l'envoi</h2>
                   <button onClick={()=>setShowConfirmEnvoi(false)} style={{width:36,height:36,borderRadius:'50%',border:'none',background:'#f0f0f0',cursor:'pointer',fontSize:18,color:'#666'}}>✕</button>
@@ -3317,8 +3337,8 @@ function CRMApp({ user, onLogout }) {
 
           {/* ─── Modal Confirmation SMS doublons ─── */}
           {showConfirmSms && (
-            <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:5000,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
-              <div style={{background:'#fff',borderRadius:20,width:'min(420px,calc(100vw-48px))',padding:32}}>
+            <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:5000,display:'flex',alignItems:'center',justifyContent:'center',padding:24,pointerEvents:'all',cursor:'default'}} onClick={(e)=>{if(e.target===e.currentTarget)setShowConfirmSms(false);}}>
+              <div style={{background:'#fff',borderRadius:20,width:'min(420px,calc(100vw-48px))',padding:32}} onClick={e=>e.stopPropagation()}>
                 <h2 style={{margin:'0 0 16px',fontSize:18,fontWeight:800,color:'#111'}}>Envoyer les SMS ?</h2>
                 <div style={{display:'flex',gap:12}}>
                   <button onClick={()=>setShowConfirmSms(false)} style={{flex:1,height:44,border:'1.5px solid #ddd',borderRadius:10,background:'#fff',fontSize:14,fontWeight:600,cursor:'pointer',color:'#666'}}>Annuler</button>
@@ -3330,8 +3350,8 @@ function CRMApp({ user, onLogout }) {
 
           {/* ─── Modal Confirmation Email doublons ─── */}
           {showConfirmComm && (
-            <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:5000,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
-              <div style={{background:'#fff',borderRadius:20,width:'min(480px,calc(100vw-48px))',padding:32}}>
+            <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:5000,display:'flex',alignItems:'center',justifyContent:'center',padding:24,pointerEvents:'all',cursor:'default'}} onClick={(e)=>{if(e.target===e.currentTarget)setShowConfirmComm(false);}}>
+              <div style={{background:'#fff',borderRadius:20,width:'min(480px,calc(100vw-48px))',padding:32}} onClick={e=>e.stopPropagation()}>
                 <h2 style={{margin:'0 0 12px',fontSize:18,fontWeight:800,color:'#111'}}>Confirmer l'envoi email</h2>
                 {doublons.length > 0 && <p style={{fontSize:13,color:'#dc2626',margin:'0 0 16px'}}>⚠️ {doublons.length} destinataire(s) ont déjà reçu un email avec le même objet.</p>}
                 <div style={{display:'flex',gap:12}}>
@@ -3982,8 +4002,8 @@ function CRMApp({ user, onLogout }) {
         );
       })()}
       {showConfirmDeconnexion && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:9000, display:'flex', alignItems:'center', justifyContent:'center' }}>
-          <div style={{ background:'#fff', borderRadius:16, padding:'28px 24px', maxWidth:320, width:'90%', textAlign:'center' }}>
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:9000, display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'all', cursor:'default' }} onClick={(e)=>{if(e.target===e.currentTarget)setShowConfirmDeconnexion(false);}}>
+          <div style={{ background:'#fff', borderRadius:16, padding:'28px 24px', maxWidth:320, width:'90%', textAlign:'center', boxShadow:'0 20px 60px rgba(0,0,0,0.2)' }} onClick={e=>e.stopPropagation()}>
             <h3 style={{ margin:'0 0 8px', fontSize:17, fontWeight:800 }}>Se déconnecter ?</h3>
             <p style={{ margin:'0 0 20px', fontSize:14, color:'#666' }}>Vous devrez vous reconnecter pour accéder au CRM.</p>
             <div style={{ display:'flex', gap:10 }}>
@@ -4002,6 +4022,18 @@ function CRMApp({ user, onLogout }) {
       {modalComment && <Modal title={`Commentaire — ${modalComment.prenom} ${modalComment.nom}`} onClose={()=>setModalComment(null)}><p style={{fontSize:14,lineHeight:1.7,margin:0}}>{modalComment.commentaire}</p></Modal>}
       {modalCorbeille && !isMobile && <CorbeilleModal onClose={()=>{ setModalCorbeille(false); loadClients(); }} showToast={showToast} />}
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
+      {showConfirmQuitter && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:9000,display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'all'}} onClick={()=>setShowConfirmQuitter(false)}>
+          <div style={{background:'#fff',borderRadius:16,padding:'28px 24px',maxWidth:320,width:'90%',textAlign:'center'}} onClick={e=>e.stopPropagation()}>
+            <h3 style={{margin:'0 0 8px',fontSize:17,fontWeight:800,color:'#111'}}>Quitter sans enregistrer ?</h3>
+            <p style={{margin:'0 0 20px',fontSize:14,color:'#666'}}>Les informations saisies seront perdues.</p>
+            <div style={{display:'flex',gap:10}}>
+              <button onClick={()=>setShowConfirmQuitter(false)} style={{flex:1,height:44,border:'1.5px solid #ddd',borderRadius:10,background:'#fff',fontSize:14,fontWeight:600,cursor:'pointer',color:'#666'}}>Continuer la saisie</button>
+              <button onClick={()=>{setShowConfirmQuitter(false); if(pendingFermer) { pendingFermer(); setPendingFermer(null); }}} style={{flex:1,height:44,border:'none',borderRadius:10,background:'#dc2626',fontSize:14,fontWeight:800,cursor:'pointer',color:'#fff'}}>Quitter</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
