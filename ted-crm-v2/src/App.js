@@ -3891,7 +3891,7 @@ function CRMApp({ user, onLogout }) {
         const il6MoisStr2 = new Date(Date.now()-180*24*60*60*1000).toISOString().split('T')[0];
         const resasFav = resasData.filter(r => r.client_id===c.id && (r.statut==='confirmee'||r.statut==='venue') && r.date>=il6MoisStr2);
         const compteJoursFav = {};
-        resasFav.forEach(r => { const j = joursSemaine2[new Date(r.date+'T12:00:00').getDay()]; compteJoursFav[j]=(compteJoursFav[j]||0)+1; });
+        resasFav.forEach(r => { const j = joursSemaine2[new Date(r.date+'T12:00:00').getDay()]; const service = r.service==='midi'?'Midi':'Soir'; const key=`${j}|${service}`; compteJoursFav[key]=(compteJoursFav[key]||0)+1; });
         const top3Jours = Object.entries(compteJoursFav).sort((a,b)=>b[1]-a[1]).slice(0,3);
 
         return (
@@ -3931,18 +3931,18 @@ function CRMApp({ user, onLogout }) {
               </div>
 
               {/* 4 blocs stats */}
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16, marginBottom:20 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:16 }}>
                 {[
-                  { icon:<CalendarDays size={24} strokeWidth={2} color="#E8C547"/>, bg:'#fffbea', label:'RÉSERVATIONS TOTALES', value:totalResas, sub:createdAtLabel?`Depuis le ${createdAtLabel}`:'' },
-                  { icon:<UserX size={24} strokeWidth={2} color="#ef4444"/>, bg:'#fef2f2', label:'NO-SHOW', value:noshowResas, sub:`${pct}% des réservations` },
-                  { icon:<Clock size={24} strokeWidth={2} color="#3b82f6"/>, bg:'#eff6ff', label:'DERNIÈRE VISITE', value:derniereVisite?new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'Jamais', sub:derniereVisiteIlYA!==null?`Il y a ${derniereVisiteIlYA} jour${derniereVisiteIlYA>1?'s':''}`:'' },
-                  { icon:<CalendarDays size={24} strokeWidth={2} color="#22c55e"/>, bg:'#f0fdf4', label:'PROCHAINE RÉSERVATION', value:prochaineResa?new Date(prochaineResa.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'Aucune', sub:prochaineResa?`Dans ${Math.ceil((new Date(prochaineResa.date+'T12:00:00')-new Date())/(1000*60*60*24))} jours à ${prochaineResa.heure}`:'' }
+                  { icon:<CalendarDays size={20} strokeWidth={2} color="#E8C547"/>, bg:'#fffbea', label:'RÉSERVATIONS TOTALES', value:totalResas, sub:createdAtLabel?`Depuis le ${createdAtLabel}`:'' },
+                  { icon:<UserX size={20} strokeWidth={2} color="#ef4444"/>, bg:'#fef2f2', label:'NO-SHOW', value:noshowResas, sub:`${pct}% des réservations` },
+                  { icon:<Clock size={20} strokeWidth={2} color="#3b82f6"/>, bg:'#eff6ff', label:'DERNIÈRE VISITE', value:derniereVisite?new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'Jamais', sub:derniereVisiteIlYA!==null?`Il y a ${derniereVisiteIlYA} jour${derniereVisiteIlYA>1?'s':''}`:'' },
+                  { icon:<CalendarDays size={20} strokeWidth={2} color="#22c55e"/>, bg:'#f0fdf4', label:'PROCHAINE RÉSERVATION', value:prochaineResa?new Date(prochaineResa.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'Aucune', sub:prochaineResa?`Dans ${Math.ceil((new Date(prochaineResa.date+'T12:00:00')-new Date())/(1000*60*60*24))} jours à ${prochaineResa.heure}`:'' }
                 ].map((stat,i)=>(
-                  <div key={i} style={{ background:'#fff', borderRadius:14, padding:20 }}>
-                    <div style={{ width:44, height:44, borderRadius:10, background:stat.bg, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:12 }}>{stat.icon}</div>
-                    <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 4px' }}>{stat.label}</p>
-                    <p style={{ fontSize:22, fontWeight:900, color:'#111', margin:'0 0 4px' }}>{stat.value}</p>
-                    <p style={{ fontSize:12, color:'#999', margin:0 }}>{stat.sub}</p>
+                  <div key={i} style={{ background:'#fff', borderRadius:12, padding:'14px 16px' }}>
+                    <div style={{ width:36, height:36, borderRadius:8, background:stat.bg, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:8 }}>{stat.icon}</div>
+                    <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 3px' }}>{stat.label}</p>
+                    <p style={{ fontSize:18, fontWeight:900, color:'#111', margin:'0 0 2px' }}>{stat.value}</p>
+                    <p style={{ fontSize:11, color:'#999', margin:0 }}>{stat.sub}</p>
                   </div>
                 ))}
               </div>
@@ -4005,17 +4005,23 @@ function CRMApp({ user, onLogout }) {
                         <p style={{ margin:0, fontSize:12, color:'#999' }}>Basé sur les 6 derniers mois</p>
                       </div>
                     </div>
-                    {top3Jours.length > 0 ? top3Jours.map(([jour,count],i)=>(
-                      <div key={jour} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 0', borderBottom:i<top3Jours.length-1?'1px solid #f5f5f5':'none' }}>
-                        <div style={{ width:44, height:44, borderRadius:8, background:['#fffbea','#fff7ed','#f0fdf4'][i], display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:900, color:['#E8C547','#f97316','#22c55e'][i], flexShrink:0 }}>
-                          {joursAbr[joursSemaine2.indexOf(jour)]}
+                    {top3Jours.length > 0 ? top3Jours.map(([key,count],i)=>{
+                      const [jour, service] = key.split('|');
+                      const abr = joursAbr[joursSemaine2.indexOf(jour)];
+                      return (
+                        <div key={key} style={{ display:'flex', alignItems:'center', gap:12, padding:'8px 0', borderBottom:i<top3Jours.length-1?'1px solid #f5f5f5':'none' }}>
+                          <div style={{ width:44, height:44, borderRadius:8, flexShrink:0, background:'#fffbea', border:'1.5px solid #E8C547', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:900, color:'#E8C547' }}>
+                            {abr}
+                          </div>
+                          <div style={{ flex:1 }}>
+                            <div style={{ fontWeight:700, fontSize:14, color:'#111' }}>{jour}</div>
+                            <div style={{ fontSize:12, color:'#999', display:'flex', alignItems:'center', gap:4 }}>
+                              {service==='Midi' ? '☀️' : '🌙'} {service} · {count} résa
+                            </div>
+                          </div>
                         </div>
-                        <div style={{ flex:1 }}>
-                          <div style={{ fontWeight:700, fontSize:14, color:'#111' }}>{jour}</div>
-                          <div style={{ fontSize:12, color:'#999' }}>{count} réservation{count>1?'s':''}</div>
-                        </div>
-                      </div>
-                    )) : <p style={{ fontSize:13, color:'#bbb', margin:0 }}>Pas encore de données</p>}
+                      );
+                    }) : <p style={{ fontSize:13, color:'#bbb', margin:0 }}>Pas encore de données</p>}
                   </div>
 
                 </div>
