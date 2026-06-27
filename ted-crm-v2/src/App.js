@@ -25,11 +25,27 @@ function downloadBlob(content, filename, mimeType) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function exportToCSV(clients) {
+function exportToCSV(clients, opts = {}) {
+  const { filtreLabel = 'Tous les clients', recherche = '' } = opts;
   const header = ["Genre","Entreprise","Nom","Prénom","Téléphone","Mail","Date d'ajout","Commentaire"];
   const rows = clients.map(c => [c.genre, c.genre==='Entreprise'?(c.entreprise||''):'', c.nom,c.prenom,c.tel,c.mail,formatDate(c.created_at),c.commentaire].map(v => `"${(v||"").replace(/"/g,'""')}"`));
-  const csv = "\uFEFF" + [header, ...rows].map(r => r.join(";")).join("\n");
-  downloadBlob(csv, "clients_TED.csv", "text/csv;charset=utf-8;");
+  const now = new Date();
+  const dateLabel = now.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) + ' à ' + now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  const recapLines = [
+    '',
+    '---,---,---,---,---,---,---,---',
+    'RÉCAPITULATIF,,,,,,,',
+    `"Date d'export";"${dateLabel}";;;;;;`,
+    `"Total exporté";"${clients.length} client${clients.length>1?'s':''}";;;;;;`,
+    `"Filtre appliqué";"${filtreLabel}";;;;;;`,
+    recherche ? `"Recherche appliquée";"${recherche}";;;;;;` : '',
+    `"Hommes";"${clients.filter(c=>c.genre==='Homme').length}";;;;;;`,
+    `"Femmes";"${clients.filter(c=>c.genre==='Femme').length}";;;;;;`,
+    `"Entreprises";"${clients.filter(c=>c.genre==='Entreprise').length}";;;;;;`,
+  ].filter(Boolean).join('\n');
+  const csvContent = "\uFEFF" + [header, ...rows].map(r => r.join(";")).join("\n") + '\n' + recapLines;
+  const nomFichier = `clients_TED_${filtreLabel.replace(/ /g,'_')}_${now.toISOString().split('T')[0]}.csv`;
+  downloadBlob(csvContent, nomFichier, "text/csv;charset=utf-8;");
 }
 
 function exportToXLSX(clients) {
@@ -3539,7 +3555,7 @@ function CRMApp({ user, onLogout }) {
                   </button>
                   {showExportMenu && (
                     <div style={{position:'absolute', right:0, top:'calc(100% + 4px)', background:'#fff', border:'1.5px solid #eee', borderRadius:10, boxShadow:'0 8px 24px rgba(0,0,0,0.1)', zIndex:300, minWidth:180, overflow:'hidden'}}>
-                      <button onClick={()=>{exportToCSV(clients);setShowExportMenu(false);}} style={{display:'block',width:'100%',textAlign:'left',padding:'10px 16px',border:'none',background:'none',cursor:'pointer',fontSize:13,borderBottom:'1px solid #f5f5f5'}} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>⬇ Exporter CSV</button>
+                      <button onClick={()=>{ const fl = filtreGenreClients==='Tous'?'Tous les clients':filtreGenreClients==='Homme'?'Hommes uniquement':filtreGenreClients==='Femme'?'Femmes uniquement':'Entreprises uniquement'; exportToCSV(clientsFiltres,{filtreLabel:fl,recherche:rechercheClients}); setShowExportMenu(false); }} style={{display:'block',width:'100%',textAlign:'left',padding:'10px 16px',border:'none',background:'none',cursor:'pointer',fontSize:13,borderBottom:'1px solid #f5f5f5'}} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>⬇ Exporter CSV</button>
                       <button onClick={()=>{exportToXLSX(clients);setShowExportMenu(false);}} style={{display:'block',width:'100%',textAlign:'left',padding:'10px 16px',border:'none',background:'none',cursor:'pointer',fontSize:13,borderBottom:'1px solid #f5f5f5'}} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>⬇ Exporter Excel</button>
                       <button onClick={()=>{setModalImport(true);setShowExportMenu(false);}} style={{display:'block',width:'100%',textAlign:'left',padding:'10px 16px',border:'none',background:'none',cursor:'pointer',fontSize:13}} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>⬆ Importer clients</button>
                     </div>
