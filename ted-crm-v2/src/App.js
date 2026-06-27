@@ -900,7 +900,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
       setEntreprise(data.entreprise || '');
       const { data: resas } = await supabase.from('reservations').select('statut,date').eq('client_id', data.id);
       if (resas) {
-        const total = resas.length;
+        const total = resas.filter(r => r.statut !== 'annulee' && r.statut !== 'absente' && r.statut !== 'refusee').length;
         const noshow = resas.filter(r => r.statut === 'absente').length;
         const derniereVisite = resas.filter(r => r.statut === 'venue' || r.statut === 'confirmee').sort((a,b) => b.date.localeCompare(a.date))[0];
         setStatsClient({
@@ -1650,7 +1650,7 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
   const resasClient = resaList.filter(r => r.client_id === resa.client_id);
   const nbVenues = resasClient.filter(r => r.statut === 'venue').length;
   const nbAbsentes = resasClient.filter(r => r.statut === 'absente').length;
-  const totalResas = resasClient.length;
+  const totalResas = resasClient.filter(r => r.statut !== 'annulee' && r.statut !== 'absente' && r.statut !== 'refusee').length;
   const noshow = nbAbsentes;
   const derniereVisite = resasClient
     .filter(r => (r.statut === 'venue' || r.statut === 'confirmee') && r.date <= aujourd)
@@ -3924,19 +3924,20 @@ function CRMApp({ user, onLogout }) {
           <div style={{ position:'fixed', inset:0, background:'#f5f5f5', zIndex:500, overflowY:'auto', marginLeft:120 }}>
             <div style={{ maxWidth:1100, margin:'0 auto', padding:'32px 32px' }}>
 
-              <button onClick={fermerFiche} style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'none', cursor:'pointer', fontSize:14, color:'#666', marginBottom:16, padding:0 }}>
-                <ArrowLeft size={16} strokeWidth={2} color="#666" /> Retour
-              </button>
-
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:24 }}>
-                <h1 style={{ margin:0, fontSize:32, fontWeight:900, color:'#111' }}>{nomAffiche}</h1>
-                {!ficheClientReadOnly && (
-                  <button onClick={()=>{ fermerFiche(); setModalDelete(c); }} style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 14px', borderRadius:10, border:'1.5px solid #fca5a5', background:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', color:'#dc2626', flexShrink:0 }}
-                    onMouseEnter={e=>e.currentTarget.style.background='#fef2f2'}
-                    onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
-                    <Trash2 size={14} strokeWidth={2} color="#dc2626"/> Supprimer
-                  </button>
-                )}
+                <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                  <h1 style={{ margin:0, fontSize:32, fontWeight:900, color:'#111' }}>{nomAffiche}</h1>
+                  {!ficheClientReadOnly && (
+                    <button onClick={()=>{ fermerFiche(); setModalDelete(c); }} style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 14px', borderRadius:10, border:'1.5px solid #fca5a5', background:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', color:'#dc2626', flexShrink:0 }}
+                      onMouseEnter={e=>e.currentTarget.style.background='#fef2f2'}
+                      onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
+                      <Trash2 size={14} strokeWidth={2} color="#dc2626"/> Supprimer
+                    </button>
+                  )}
+                </div>
+                <button onClick={fermerFiche} style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'1.5px solid #eee', borderRadius:10, padding:'8px 14px', cursor:'pointer', fontSize:14, color:'#666', fontWeight:600, flexShrink:0 }}>
+                  <ArrowLeft size={16} strokeWidth={2} color="#666"/> Retour
+                </button>
               </div>
 
               {/* Infos + actions */}
@@ -4009,7 +4010,7 @@ function CRMApp({ user, onLogout }) {
                                 <div style={{ fontSize:12, color:'#999' }}>{r.heure}</div>
                               </td>
                               <td style={{ padding:'12px 12px' }}><span style={{ display:'flex', alignItems:'center', gap:6, fontSize:14, color:'#444' }}>{r.service==='midi'?<Sun size={14} strokeWidth={2} color="#E8C547"/>:<Moon size={14} strokeWidth={2} color="#666"/>}{r.service==='midi'?'Midi':'Soir'}</span></td>
-                              <td style={{ padding:'12px 12px', fontSize:14, color:'#444' }}>{r.nb_personnes} pers.</td>
+                              <td style={{ padding:'12px 12px', fontSize:14, color:'#444' }}>{r.nb_personnes ? `${r.nb_personnes} pers.` : '—'}</td>
                               <td style={{ padding:'12px 12px' }}><span style={{ background:sc.bg, color:sc.color, borderRadius:20, padding:'3px 10px', fontSize:12, fontWeight:700 }}>{sc.label}</span></td>
                             </tr>
                           );
