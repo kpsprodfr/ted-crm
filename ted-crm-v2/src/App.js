@@ -3041,56 +3041,56 @@ function CRMApp({ user, onLogout }) {
             </button>
           </div>
 
-          <div style={{display:'grid', gridTemplateColumns: screenWidth < 1100 ? '220px 1fr 320px' : '260px 1fr 380px', gap: screenWidth < 1100 ? 12 : 16, height: screenWidth < 1100 ? 'calc(100vh - 90px)' : 'calc(100vh - 100px)', maxHeight: screenWidth < 1100 ? 'calc(100vh - 90px)' : 'calc(100vh - 100px)', overflow:'hidden'}}>
+          <div style={{display:'grid', gridTemplateColumns: screenWidth < 1100 ? '220px 1fr 320px' : '260px 1fr 380px', gap: screenWidth < 1100 ? 12 : 16, height:'calc(100vh - 88px)', overflow:'hidden'}}>
 
             {/* ─── Colonne 1 — Ciblage ─── */}
-            <div style={{background:'#fff', borderRadius:14, padding: screenWidth < 1100 ? 12 : 16, display:'flex', flexDirection:'column', gap: screenWidth < 1100 ? 8 : 12, overflowY:'auto'}}>
-              <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0}}>Cibler vos destinataires</p>
+            <div style={{background:'#fff', borderRadius:12, padding:14, display:'flex', flexDirection:'column', gap:10, height:'100%', overflow:'hidden'}}>
+              <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0, flexShrink:0}}>Cibler vos destinataires</p>
 
               {/* Segment */}
-              <div>
-                <p style={{fontSize: screenWidth < 1100 ? 12 : 13, fontWeight:700, color:'#111', margin: screenWidth < 1100 ? '0 0 5px' : '0 0 6px'}}>Segment</p>
+              <div style={{flexShrink:0}}>
+                <p style={{fontSize:12, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Segment</p>
                 {[
-                  {id:'Tous', label:'Tous les clients', icon:<Users size={14} strokeWidth={2}/>},
-                  {id:'Hommes', label:'Hommes', icon:<User size={14} strokeWidth={2}/>},
-                  {id:'Femmes', label:'Femmes', icon:<User size={14} strokeWidth={2}/>},
-                  {id:'Entreprises', label:'Entreprises', icon:<Building2 size={14} strokeWidth={2}/>},
+                  {id:'Tous', label:'Tous les clients', icon:<Users size={13} strokeWidth={2}/>},
+                  {id:'Hommes', label:'Hommes', icon:<User size={13} strokeWidth={2}/>},
+                  {id:'Femmes', label:'Femmes', icon:<User size={13} strokeWidth={2}/>},
+                  {id:'Entreprises', label:'Entreprises', icon:<Building2 size={13} strokeWidth={2}/>},
                 ].map(s => (
-                  <div key={s.id} onClick={()=>setFiltreGenre(s.id)} style={{ display:'flex', alignItems:'center', gap:8, padding: screenWidth < 1100 ? '6px 10px' : '8px 12px', borderRadius:8, cursor:'pointer', marginBottom: screenWidth < 1100 ? 3 : 4, border: filtreGenre===s.id?'1.5px solid #E8C547':'1.5px solid #eee', background: filtreGenre===s.id?'#fffbea':'#fff' }}>
+                  <div key={s.id} onClick={()=>setFiltreGenre(s.id)} style={{padding:'6px 10px', borderRadius:8, marginBottom:3, cursor:'pointer', border: filtreGenre===s.id?'1.5px solid #E8C547':'1.5px solid #eee', background: filtreGenre===s.id?'#fffbea':'#fff', display:'flex', alignItems:'center', gap:8}}>
                     <span style={{color: filtreGenre===s.id?'#E8C547':'#999'}}>{s.icon}</span>
-                    <span style={{fontSize: screenWidth < 1100 ? 12 : 13, fontWeight:600, color:'#111', flex:1}}>{s.label}</span>
-                    {filtreGenre===s.id && <CheckCircle size={14} color="#E8C547" strokeWidth={2}/>}
+                    <span style={{fontSize:12, fontWeight:600, color:'#111', flex:1}}>{s.label}</span>
+                    {filtreGenre===s.id && <CheckCircle size={12} color="#E8C547" strokeWidth={2}/>}
                   </div>
                 ))}
               </div>
 
               {/* Jour favori */}
-              <div>
-                <p style={{fontSize: screenWidth < 1100 ? 12 : 13, fontWeight:700, color:'#111', margin: screenWidth < 1100 ? '0 0 5px' : '0 0 6px'}}>Jour favori</p>
+              <div style={{flexShrink:0}}>
+                <p style={{fontSize:12, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Jour favori</p>
                 <div style={{display:'flex', flexWrap:'wrap', gap:4}}>
                   {['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].map((j,i) => {
                     const jourComplet = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'][i];
                     return (
-                      <button key={j} onClick={()=>toggleFiltreJour(jourComplet)} style={{ padding: screenWidth < 1100 ? '3px 7px' : '4px 8px', borderRadius:16, fontSize: screenWidth < 1100 ? 10 : 11, fontWeight:700, cursor:'pointer', border:'1.5px solid', borderColor: filtreJours.has(jourComplet)?'#111':'#eee', background: filtreJours.has(jourComplet)?'#111':'#fff', color: filtreJours.has(jourComplet)?'#E8C547':'#666' }}>{j}</button>
+                      <button key={j} onClick={()=>toggleFiltreJour(jourComplet)} style={{padding:'3px 7px', borderRadius:12, fontSize:10, fontWeight:700, cursor:'pointer', border:'1.5px solid', borderColor: filtreJours.has(jourComplet)?'#111':'#eee', background: filtreJours.has(jourComplet)?'#111':'#fff', color: filtreJours.has(jourComplet)?'#E8C547':'#666'}}>{j}</button>
                     );
                   })}
                 </div>
               </div>
 
               {/* Service préféré */}
-              <div>
-                <p style={{fontSize: screenWidth < 1100 ? 12 : 13, fontWeight:700, color:'#111', margin: screenWidth < 1100 ? '0 0 5px' : '0 0 6px'}}>Service préféré</p>
+              <div style={{flexShrink:0}}>
+                <p style={{fontSize:12, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Service préféré</p>
                 <div style={{display:'flex', gap:6}}>
                   {[{id:'midi',label:'Midi',icon:'☀️'},{id:'soir',label:'Soir',icon:'🌙'}].map(s => (
-                    <button key={s.id} onClick={()=>toggleFiltreService(s.id)} style={{ flex:1, padding:'6px', height: screenWidth < 1100 ? 32 : 36, borderRadius:8, fontSize: screenWidth < 1100 ? 12 : 13, fontWeight:700, cursor:'pointer', border:'1.5px solid', borderColor: filtreServices.has(s.id)?'#111':'#eee', background: filtreServices.has(s.id)?'#111':'#fff', color: filtreServices.has(s.id)?'#E8C547':'#666' }}>{s.icon} {s.label}</button>
+                    <button key={s.id} onClick={()=>toggleFiltreService(s.id)} style={{flex:1, height:30, borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', border:'1.5px solid', borderColor: filtreServices.has(s.id)?'#111':'#eee', background: filtreServices.has(s.id)?'#111':'#fff', color: filtreServices.has(s.id)?'#E8C547':'#666'}}>{s.icon} {s.label}</button>
                   ))}
                 </div>
               </div>
 
               {/* Clients absents depuis */}
-              <div>
-                <p style={{fontSize: screenWidth < 1100 ? 12 : 13, fontWeight:700, color:'#111', margin: screenWidth < 1100 ? '0 0 5px' : '0 0 6px'}}>Clients absents depuis</p>
-                <select value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{ width:'100%', height: screenWidth < 1100 ? 32 : 36, border:'1.5px solid #eee', borderRadius:8, padding:'0 10px', fontSize:12, outline:'none', background:'#fff', cursor:'pointer' }}>
+              <div style={{flexShrink:0}}>
+                <p style={{fontSize:12, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Clients absents depuis</p>
+                <select value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{width:'100%', height:32, border:'1.5px solid #eee', borderRadius:8, padding:'0 8px', fontSize:12, outline:'none', background:'#fff', cursor:'pointer'}}>
                   <option value={0}>Indifférent</option>
                   <option value={1}>1 mois</option>
                   <option value={2}>2 mois</option>
@@ -3101,84 +3101,72 @@ function CRMApp({ user, onLogout }) {
               </div>
 
               {/* Résumé de la cible */}
-              <div style={{marginTop:'auto', background:'#f9f9f9', borderRadius:8, padding: screenWidth < 1100 ? '8px 10px' : '10px 12px'}}>
-                <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px'}}>Résumé de la cible</p>
+              <div style={{marginTop:'auto', background:'#f9f9f9', borderRadius:8, padding:'10px 12px', flexShrink:0}}>
+                <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 6px'}}>Résumé de la cible</p>
                 {(()=>{
                   const total = clientsFiltresComm.length;
-                  const hommes = clientsFiltresComm.filter(c=>c.genre==='Homme').length;
-                  const femmes = clientsFiltresComm.filter(c=>c.genre==='Femme').length;
-                  const entreprises = clientsFiltresComm.filter(c=>c.genre==='Entreprise').length;
-                  return (
-                    <div style={{display:'flex', flexDirection:'column', gap:5}}>
-                      {[
-                        {label:'Total ciblé', value:`${total} clients`, bold:true},
-                        {label:'Hommes', value:`${hommes} (${total?Math.round(hommes/total*100):0}%)`},
-                        {label:'Femmes', value:`${femmes} (${total?Math.round(femmes/total*100):0}%)`},
-                        {label:'Entreprises', value:`${entreprises} (${total?Math.round(entreprises/total*100):0}%)`},
-                      ].map((r,i) => (
-                        <div key={i} style={{display:'flex', justifyContent:'space-between', fontSize: screenWidth < 1100 ? 11 : 12}}>
-                          <span style={{color:'#666'}}>{r.label}</span>
-                          <span style={{fontWeight: r.bold?800:600, color:'#111'}}>{r.value}</span>
-                        </div>
-                      ))}
+                  const h = clientsFiltresComm.filter(c=>c.genre==='Homme').length;
+                  const f = clientsFiltresComm.filter(c=>c.genre==='Femme').length;
+                  const e = clientsFiltresComm.filter(c=>c.genre==='Entreprise').length;
+                  return [
+                    {label:'Total ciblé', value:`${total} clients`, bold:true},
+                    {label:'Hommes', value:`${h} (${total?Math.round(h/total*100):0}%)`},
+                    {label:'Femmes', value:`${f} (${total?Math.round(f/total*100):0}%)`},
+                    {label:'Entreprises', value:`${e} (${total?Math.round(e/total*100):0}%)`},
+                  ].map((r,i)=>(
+                    <div key={i} style={{display:'flex', justifyContent:'space-between', fontSize:11, marginBottom:3}}>
+                      <span style={{color:'#666'}}>{r.label}</span>
+                      <span style={{fontWeight:r.bold?800:600, color:'#111'}}>{r.value}</span>
                     </div>
-                  );
+                  ));
                 })()}
-                <button onClick={()=>{ setFiltreGenre('Tous'); setFiltreAbsentsMois(3); setFiltreAbsentsActif(false); setFiltreJours(new Set()); setFiltreServices(new Set()); }} style={{ width:'100%', marginTop:8, padding:'6px', border:'none', background:'none', fontSize:11, color:'#999', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-                  <RotateCcw size={12} strokeWidth={2}/> Réinitialiser les filtres
+                <button onClick={()=>{ setFiltreGenre('Tous'); setFiltreAbsentsMois(0); setFiltreJours(new Set()); setFiltreServices(new Set()); }} style={{width:'100%', marginTop:6, padding:'5px', border:'none', background:'none', fontSize:11, color:'#999', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:4}}>
+                  <RotateCcw size={10} strokeWidth={2}/> Réinitialiser
                 </button>
               </div>
             </div>
 
             {/* ─── Colonne 2 — Destinataires ─── */}
-            <div style={{background:'#fff', borderRadius:14, padding: screenWidth < 1100 ? 12 : 16, display:'flex', flexDirection:'column', height:'100%', overflow:'hidden'}}>
-              <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14, flexShrink:0}}>
-                <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0}}>
-                  Destinataires ({clientsFiltresComm.length})
-                  {selectedComm.length > 0 && (
-                    <span style={{marginLeft:8, background:'#E8C547', color:'#111', borderRadius:20, padding:'2px 8px', fontSize:11, fontWeight:800}}>
-                      {selectedComm.length} sél.
-                    </span>
-                  )}
-                </p>
-              </div>
+            <div style={{background:'#fff', borderRadius:12, padding:14, display:'flex', flexDirection:'column', height:'100%', overflow:'hidden'}}>
+              <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 10px', flexShrink:0}}>
+                Destinataires ({clientsFiltresComm.length})
+                {selectedComm.length > 0 && <span style={{marginLeft:6, background:'#E8C547', color:'#111', borderRadius:20, padding:'1px 7px', fontSize:10, fontWeight:800}}>{selectedComm.length} sél.</span>}
+              </p>
 
               {/* Recherche */}
-              <div style={{position:'relative', marginBottom:12, flexShrink:0}}>
-                <Search size={15} strokeWidth={2} color="#999" style={{position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', pointerEvents:'none'}}/>
+              <div style={{position:'relative', marginBottom:8, flexShrink:0}}>
+                <Search size={13} strokeWidth={2} color="#999" style={{position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', pointerEvents:'none'}}/>
                 <input placeholder="Rechercher un client..." value={commSearch} onChange={e=>setCommSearch(e.target.value)}
-                  style={{width:'100%', height:38, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px 0 36px', fontSize:13, outline:'none', boxSizing:'border-box'}}/>
+                  style={{width:'100%', height:34, border:'1.5px solid #eee', borderRadius:8, padding:'0 10px 0 30px', fontSize:12, outline:'none', boxSizing:'border-box'}}/>
               </div>
 
               {/* Tout sélectionner */}
-              <div onClick={toggleToutSelection} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 12px', borderRadius:8, cursor:'pointer', marginBottom:8, flexShrink:0, background:'#f9f9f9' }}>
-                <div style={{ width:20, height:20, borderRadius:5, border:'1.5px solid', borderColor: tousSelectionnes?'#E8C547':'#ddd', background: tousSelectionnes?'#E8C547':'#fff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                  {tousSelectionnes && <Check size={12} strokeWidth={3} color="#111"/>}
+              <div onClick={toggleToutSelection} style={{display:'flex', alignItems:'center', gap:10, padding:'7px 10px', borderRadius:8, cursor:'pointer', marginBottom:6, background:'#f9f9f9', flexShrink:0}}>
+                <div style={{width:18, height:18, borderRadius:4, border:'1.5px solid', borderColor: tousSelectionnes?'#E8C547':'#ddd', background: tousSelectionnes?'#E8C547':'#fff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
+                  {tousSelectionnes && <Check size={11} strokeWidth={3} color="#111"/>}
                 </div>
-                <span style={{fontWeight:700, fontSize:13, color:'#111', flex:1}}>Tout sélectionner</span>
-                <span style={{fontSize:13, color:'#999'}}>{clientsFiltresComm.length}</span>
+                <span style={{fontWeight:700, fontSize:12, color:'#111', flex:1}}>Tout sélectionner</span>
+                <span style={{fontSize:12, color:'#999'}}>{clientsFiltresComm.length}</span>
               </div>
 
-              {/* Liste clients */}
-              <div style={{flex:1, overflowY:'auto', display:'flex', flexDirection:'column', gap:2}}>
+              {/* Liste scrollable */}
+              <div style={{flex:1, overflowY:'auto'}}>
                 {clientsFiltresComm.map(c => {
                   const estSel = selectedComm.includes(c.id);
                   const isMobileNum = isNumeroMobile(c.tel||'');
                   const disabled = commType==='sms' && !isMobileNum;
                   return (
-                    <div key={c.id} onClick={()=>!disabled&&toggleSelectionClient(c.id)} style={{ display:'flex', alignItems:'center', gap:10, padding: screenWidth < 1100 ? '6px 8px' : '8px 10px', borderRadius:8, cursor: disabled?'not-allowed':'pointer', opacity: disabled?0.4:1, background: estSel?'#fffbea':'transparent' }}
-                      onMouseEnter={e=>{ if (!disabled) e.currentTarget.style.background = estSel?'#fffbea':'#f9f9f9'; }}
+                    <div key={c.id} onClick={()=>!disabled&&toggleSelectionClient(c.id)} style={{display:'flex', alignItems:'center', gap:8, padding:'7px 8px', borderRadius:8, cursor: disabled?'not-allowed':'pointer', opacity: disabled?0.4:1, marginBottom:2, background: estSel?'#fffbea':'transparent'}}
+                      onMouseEnter={e=>{ if(!disabled) e.currentTarget.style.background = estSel?'#fffbea':'#f9f9f9'; }}
                       onMouseLeave={e=>{ e.currentTarget.style.background = estSel?'#fffbea':'transparent'; }}>
-                      <div style={{ width:20, height:20, borderRadius:5, border:'1.5px solid', flexShrink:0, borderColor: estSel?'#E8C547':'#ddd', background: estSel?'#E8C547':'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                        {estSel && <Check size={12} strokeWidth={3} color="#111"/>}
+                      <div style={{width:18, height:18, borderRadius:4, border:'1.5px solid', flexShrink:0, borderColor: estSel?'#E8C547':'#ddd', background: estSel?'#E8C547':'#fff', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                        {estSel && <Check size={11} strokeWidth={3} color="#111"/>}
                       </div>
-                      <div style={{ width: screenWidth < 1100 ? 28 : 30, height: screenWidth < 1100 ? 28 : 30, borderRadius:'50%', flexShrink:0, background: c.genre==='Homme'?'#dbeafe':c.genre==='Femme'?'#fce7f3':'#dcfce7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, color: c.genre==='Homme'?'#1d4ed8':c.genre==='Femme'?'#be185d':'#15803d' }}>
+                      <div style={{width:28, height:28, borderRadius:'50%', flexShrink:0, background: c.genre==='Homme'?'#dbeafe':c.genre==='Femme'?'#fce7f3':'#dcfce7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color: c.genre==='Homme'?'#1d4ed8':c.genre==='Femme'?'#be185d':'#15803d'}}>
                         {(c.prenom||c.entreprise||'?')[0]?.toUpperCase()}
                       </div>
                       <div style={{flex:1, minWidth:0}}>
-                        <div style={{fontWeight:700, fontSize:13, color:'#111'}}>
-                          {c.genre==='Entreprise'?c.entreprise:`${c.prenom} ${c.nom}`}
-                        </div>
+                        <div style={{fontWeight:700, fontSize:12, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.genre==='Entreprise'?c.entreprise:`${c.prenom} ${c.nom}`}</div>
                         <div style={{fontSize:11, color:'#999'}}>{c.tel}</div>
                       </div>
                     </div>
@@ -3188,80 +3176,65 @@ function CRMApp({ user, onLogout }) {
             </div>
 
             {/* ─── Colonne 3 — Message ─── */}
-            <div style={{background:'#fff', borderRadius:14, padding: screenWidth < 1100 ? 12 : 16, display:'flex', flexDirection:'column', height:'100%', overflow:'hidden'}}>
-              <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 12px', flexShrink:0}}>Créer une campagne</p>
+            <div style={{background:'#fff', borderRadius:12, padding:14, display:'flex', flexDirection:'column', height:'100%', overflow:'hidden'}}>
+              <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 10px', flexShrink:0}}>Créer une campagne</p>
 
               {/* Onglets SMS / Email */}
-              <div style={{display:'flex', gap:0, marginBottom:14, flexShrink:0, borderBottom:'2px solid #f0f0f0'}}>
-                {[{id:'email',label:'Email',icon:<Mail size={15} strokeWidth={2}/>},{id:'sms',label:'SMS',icon:<MessageSquare size={15} strokeWidth={2}/>}].map(t => (
-                  <button key={t.id} onClick={()=>setCommType(t.id)} style={{ flex:1, height:40, border:'none', background:'none', fontSize:14, fontWeight:700, cursor:'pointer', color: commType===t.id?'#111':'#999', borderBottom: commType===t.id?'2px solid #E8C547':'2px solid transparent', marginBottom:-2, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+              <div style={{display:'flex', gap:0, marginBottom:12, flexShrink:0, borderBottom:'2px solid #f0f0f0'}}>
+                {[{id:'email',label:'Email',icon:<Mail size={14} strokeWidth={2}/>},{id:'sms',label:'SMS',icon:<MessageSquare size={14} strokeWidth={2}/>}].map(t => (
+                  <button key={t.id} onClick={()=>setCommType(t.id)} style={{flex:1, height:34, border:'none', background:'none', fontSize:13, fontWeight:700, cursor:'pointer', color: commType===t.id?'#111':'#999', borderBottom: commType===t.id?'2px solid #E8C547':'2px solid transparent', marginBottom:-2, display:'flex', alignItems:'center', justifyContent:'center', gap:5}}>
                     {t.icon} {t.label}
                   </button>
                 ))}
               </div>
 
-              <div style={{flex:1, overflowY:'auto', display:'flex', flexDirection:'column', gap: screenWidth < 1100 ? 10 : 12}}>
-
-                {/* Nom de la campagne */}
+              {/* Contenu scrollable */}
+              <div style={{flex:1, overflowY:'auto', display:'flex', flexDirection:'column', gap:10}}>
                 <div>
-                  <label style={{fontSize:13, fontWeight:700, color:'#111', display:'block', marginBottom:6}}>Nom de la campagne</label>
-                  <input value={nomCampagne} onChange={e=>setNomCampagne(e.target.value.slice(0,100))} placeholder="Ex: Offre spéciale été – Juin 2026" style={{width:'100%', height: screenWidth < 1100 ? 36 : 40, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:13, outline:'none', boxSizing:'border-box'}}/>
-                  <div style={{textAlign:'right', fontSize:11, color:'#999', marginTop:3}}>{nomCampagne.length}/100</div>
+                  <label style={{fontSize:12, fontWeight:700, color:'#111', display:'block', marginBottom:4}}>Nom de la campagne</label>
+                  <input value={nomCampagne} onChange={e=>setNomCampagne(e.target.value.slice(0,100))} placeholder="Ex: Offre spéciale été – Juin 2026" style={{width:'100%', height:36, border:'1.5px solid #eee', borderRadius:8, padding:'0 10px', fontSize:12, outline:'none', boxSizing:'border-box'}}/>
+                  <div style={{textAlign:'right', fontSize:10, color:'#999', marginTop:2}}>{nomCampagne.length}/100</div>
                 </div>
 
-                {/* Objet email */}
                 {commType==='email' && (
                   <div>
-                    <label style={{fontSize:13, fontWeight:700, color:'#111', display:'block', marginBottom:6}}>Objet</label>
-                    <input value={commObjet} onChange={e=>setCommObjet(e.target.value)} placeholder="Objet de l'email..." style={{width:'100%', height: screenWidth < 1100 ? 36 : 40, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:13, outline:'none', boxSizing:'border-box'}}/>
+                    <label style={{fontSize:12, fontWeight:700, color:'#111', display:'block', marginBottom:4}}>Objet</label>
+                    <input value={commObjet} onChange={e=>setCommObjet(e.target.value)} placeholder="Objet de l'email..." style={{width:'100%', height:36, border:'1.5px solid #eee', borderRadius:8, padding:'0 10px', fontSize:12, outline:'none', boxSizing:'border-box'}}/>
                   </div>
                 )}
 
-                {/* Message */}
                 <div>
-                  <label style={{fontSize:13, fontWeight:700, color:'#111', display:'block', marginBottom:6}}>Message</label>
+                  <label style={{fontSize:12, fontWeight:700, color:'#111', display:'block', marginBottom:4}}>Message</label>
                   <textarea
                     value={commType==='sms'?smsMessage:commMessage}
-                    onChange={e => {
-                      const limit = commType==='sms' ? smsLimit : 2000;
-                      commType==='sms' ? setSmsMessage(e.target.value.slice(0,limit)) : setCommMessage(e.target.value.slice(0,limit));
-                    }}
+                    onChange={e => { const limit = commType==='sms'?smsLimit:2000; commType==='sms'?setSmsMessage(e.target.value.slice(0,limit)):setCommMessage(e.target.value.slice(0,limit)); }}
                     placeholder="Écrivez votre message..."
-                    style={{width:'100%', height: screenWidth < 1100 ? 80 : 90, border:'1.5px solid #eee', borderRadius:8, padding:'10px 12px', fontSize:13, outline:'none', resize:'none', boxSizing:'border-box', fontFamily:'inherit'}}
+                    style={{width:'100%', height:90, border:'1.5px solid #eee', borderRadius:8, padding:'8px 10px', fontSize:12, outline:'none', resize:'none', boxSizing:'border-box', fontFamily:'inherit'}}
                   />
                   {commType==='sms' && (
-                    <div style={{display:'flex', justifyContent:'space-between', fontSize:11, color:'#999', marginTop:3}}>
+                    <div style={{display:'flex', justifyContent:'space-between', fontSize:10, color:'#999', marginTop:2}}>
                       <span>{smsMessage.length}/{smsLimit} caractères</span>
-                      <span>Environ {Math.ceil(smsMessage.length/smsLimit)||0} SMS (~0.04€/dest.)</span>
+                      <span>~0.04€/dest.</span>
                     </div>
                   )}
                 </div>
 
-                {/* Variables disponibles */}
                 <div>
-                  <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Variables disponibles</p>
-                  <div style={{display:'flex', flexWrap:'wrap', gap:6}}>
-                    {[
-                      {label:'{prenom}', val:'{prenom}'},
-                      {label:'{nom}', val:'{nom}'},
-                      {label:'{tel}', val:'{tel}'},
-                      {label:'{entreprise}', val:'{entreprise}'},
-                      {label:'{lien_resa}', val:'https://ted-crm.pages.dev/reserver.html'},
-                    ].map(v => (
-                      <button key={v.label} onClick={()=>{ const setter = commType==='sms'?setSmsMessage:setCommMessage; const val = commType==='sms'?smsMessage:commMessage; setter(val+v.val); }} style={{ padding:'4px 10px', borderRadius:20, fontSize:12, fontWeight:600, background:'#fffbea', border:'1.5px solid #E8C547', color:'#111', cursor:'pointer' }}>{v.label}</button>
+                  <p style={{fontSize:12, fontWeight:700, color:'#111', margin:'0 0 6px'}}>Variables disponibles</p>
+                  <div style={{display:'flex', flexWrap:'wrap', gap:5}}>
+                    {['{prenom}','{nom}','{tel}','{entreprise}','{lien_resa}'].map(v => (
+                      <button key={v} onClick={()=>{ const setter=commType==='sms'?setSmsMessage:setCommMessage; const val=commType==='sms'?smsMessage:commMessage; setter(val+v); }} style={{padding:'3px 8px', borderRadius:16, fontSize:11, fontWeight:600, background:'#fffbea', border:'1.5px solid #E8C547', color:'#111', cursor:'pointer'}}>{v}</button>
                     ))}
                   </div>
                 </div>
-
-                {/* Aperçu */}
               </div>
 
-              {/* Bouton envoyer */}
-              <div style={{flexShrink:0, borderTop:'1px solid #eee', paddingTop:16, marginTop:8}}>
-                <button onClick={()=>setShowConfirmEnvoi(true)} disabled={selectedComm.length===0||(commType==='sms'?!smsMessage.trim():(!commObjet.trim()||!commMessage.trim()))} style={{ width:'100%', height:52, border:'none', borderRadius:12, background: (selectedComm.length>0&&(commType==='sms'?smsMessage.trim():commObjet.trim()&&commMessage.trim()))?'#E8C547':'#f0f0f0', color: (selectedComm.length>0&&(commType==='sms'?smsMessage.trim():commObjet.trim()&&commMessage.trim()))?'#111':'#bbb', fontSize:15, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-                  <Send size={18} strokeWidth={2}/> Envoyer la campagne
+              {/* Bouton fixe en bas */}
+              <div style={{flexShrink:0, borderTop:'1px solid #eee', paddingTop:10, marginTop:8}}>
+                <button onClick={()=>setShowConfirmEnvoi(true)} disabled={selectedComm.length===0||(commType==='sms'?!smsMessage.trim():(!commObjet.trim()||!commMessage.trim()))} style={{width:'100%', height:44, border:'none', borderRadius:10, background: (selectedComm.length>0&&(commType==='sms'?smsMessage.trim():commObjet.trim()&&commMessage.trim()))?'#E8C547':'#f0f0f0', color: (selectedComm.length>0&&(commType==='sms'?smsMessage.trim():commObjet.trim()&&commMessage.trim()))?'#111':'#bbb', fontSize:14, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6}}>
+                  <Send size={16} strokeWidth={2}/> Envoyer la campagne
                 </button>
-                {selectedComm.length>0 && <p style={{textAlign:'center', fontSize:12, color:'#999', margin:'6px 0 0'}}>Envoi immédiat à {selectedComm.length} destinataire{selectedComm.length>1?'s':''}</p>}
+                {selectedComm.length>0 && <p style={{textAlign:'center', fontSize:11, color:'#999', margin:'4px 0 0'}}>Envoi immédiat à {selectedComm.length} destinataire{selectedComm.length>1?'s':''}</p>}
               </div>
             </div>
           </div>
