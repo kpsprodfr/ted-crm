@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw } from 'lucide-react';
+import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save } from 'lucide-react';
 import { supabase } from "./supabase";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -275,7 +275,7 @@ function LoginPage({ onLogin }) {
 }
 
 // ─── Client Form ──────────────────────────────────────────────────────────────
-function ClientForm({ initial, onSave, onCancel, existingClients }) {
+function ClientForm({ initial, onSave, onCancel, existingClients, reservations = [] }) {
   const isEdit = !!initial?.id;
   const isMobile = window.innerWidth < 768;
   const [form, setForm] = useState({
@@ -375,6 +375,133 @@ function ClientForm({ initial, onSave, onCancel, existingClients }) {
   const fieldGroup = { marginBottom: 14 };
 
   const clientValide = !!(form.tel && form.nom && form.prenom && form.genre && form.genre !== 'Non renseigné');
+
+  // ─── Design 2 colonnes desktop en mode édition ───────────────────────────
+  if (isEdit && !isMobile) {
+    const aujourd = new Date().toISOString().split('T')[0];
+    return (
+      <>
+        {dupWarn && <ConfirmModal title="Doublon détecté" msg={`Attention : ${dupWarn} Voulez-vous tout de même continuer ?`} onOk={()=>{ setDupWarn(null); doSave(); }} onCancel={()=>setDupWarn(null)} okLabel="Ajouter quand même" />}
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.3)', zIndex:3000, display:'flex' }}>
+
+          {/* Colonne gauche — liste clients grisée */}
+          <div style={{ flex:1, background:'#f5f5f5', padding:'32px', overflowY:'auto', opacity:0.6, pointerEvents:'none' }}>
+            <h2 style={{ fontSize:24, fontWeight:900, color:'#111', margin:'0 0 20px' }}>Clients</h2>
+            <div style={{ background:'#fff', borderRadius:10, padding:'10px 14px', marginBottom:20, display:'flex', alignItems:'center', gap:8 }}>
+              <Search size={16} color="#999" strokeWidth={2}/>
+              <span style={{ fontSize:14, color:'#bbb' }}>Rechercher un client...</span>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', padding:'8px 0', borderBottom:'1px solid #eee', marginBottom:8 }}>
+              {['NOM','TÉLÉPHONE','DERNIÈRE RÉSERVATION'].map(h => (
+                <span key={h} style={{ fontSize:11, fontWeight:700, color:'#999', letterSpacing:0.5 }}>{h}</span>
+              ))}
+            </div>
+            {existingClients.slice(0,10).map(c => {
+              const derniereResa = reservations.filter(r=>r.client_id===c.id&&r.date<=aujourd).sort((a,b)=>b.date.localeCompare(a.date))[0];
+              return (
+                <div key={c.id} style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', padding:'12px 0', borderBottom:'1px solid #f0f0f0' }}>
+                  <span style={{ fontWeight:700, fontSize:14, color:'#111' }}>{c.genre==='Entreprise'?c.entreprise:`${c.prenom} ${c.nom}`}</span>
+                  <span style={{ fontSize:14, color:'#444' }}>{c.tel}</span>
+                  <span style={{ fontSize:14, color:'#444' }}>{derniereResa ? new Date(derniereResa.date+'T12:00:00').toLocaleDateString('fr-FR') : '—'}</span>
+                </div>
+              );
+            })}
+            <div style={{ marginTop:16, fontSize:13, color:'#999' }}>{existingClients.length} clients</div>
+          </div>
+
+          {/* Colonne droite — formulaire */}
+          <div style={{ width:480, background:'#fff', padding:'40px', display:'flex', flexDirection:'column', boxShadow:'-8px 0 40px rgba(0,0,0,0.1)' }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:32 }}>
+              <h2 style={{ margin:0, fontSize:24, fontWeight:900, color:'#111' }}>Modifier le client</h2>
+              <button onClick={onCancel} style={{ width:36, height:36, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:18, color:'#666', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
+            </div>
+
+            <div style={{ display:'flex', flexDirection:'column', gap:20, flex:1, overflowY:'auto' }}>
+
+              {/* Genre */}
+              <div>
+                <label style={{ fontSize:14, fontWeight:700, color:'#111', display:'block', marginBottom:8 }}>Genre</label>
+                <select value={form.genre} onChange={e=>set('genre', e.target.value)} style={{ width:'100%', height:52, border:`1.5px solid ${errors.genre?'#dc2626':'#eee'}`, borderRadius:12, padding:'0 16px', fontSize:15, outline:'none', background:'#fff', cursor:'pointer' }}>
+                  <option value="Non renseigné">-- Sélectionner --</option>
+                  {GENRES.filter(g=>g!=='Non renseigné').map(g=><option key={g}>{g}</option>)}
+                </select>
+                {errors.genre && <p style={{ fontSize:12, color:'#dc2626', marginTop:4 }}>{errors.genre}</p>}
+              </div>
+
+              {/* Entreprise si Entreprise */}
+              {form.genre==='Entreprise' && (
+                <div>
+                  <label style={{ fontSize:14, fontWeight:700, color:'#111', display:'block', marginBottom:8 }}>Nom de l'entreprise</label>
+                  <input value={form.entreprise} onChange={e=>set('entreprise', e.target.value)}
+                    style={{ width:'100%', height:52, border:`1.5px solid ${errors.entreprise?'#dc2626':'#eee'}`, borderRadius:12, padding:'0 16px', fontSize:15, outline:'none', boxSizing:'border-box' }}
+                    onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=errors.entreprise?'#dc2626':'#eee'}/>
+                  {errors.entreprise && <p style={{ fontSize:12, color:'#dc2626', marginTop:4 }}>{errors.entreprise}</p>}
+                </div>
+              )}
+
+              {/* Prénom */}
+              <div>
+                <label style={{ fontSize:14, fontWeight:700, color:'#111', display:'block', marginBottom:8 }}>Prénom</label>
+                <input value={form.prenom} onChange={e=>set('prenom', e.target.value)}
+                  style={{ width:'100%', height:52, border:`1.5px solid ${errors.prenom?'#dc2626':'#eee'}`, borderRadius:12, padding:'0 16px', fontSize:15, outline:'none', boxSizing:'border-box' }}
+                  onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=errors.prenom?'#dc2626':'#eee'}/>
+                {errors.prenom && <p style={{ fontSize:12, color:'#dc2626', marginTop:4 }}>{errors.prenom}</p>}
+              </div>
+
+              {/* Nom */}
+              <div>
+                <label style={{ fontSize:14, fontWeight:700, color:'#111', display:'block', marginBottom:8 }}>Nom</label>
+                <input value={form.nom} onChange={e=>set('nom', e.target.value)}
+                  style={{ width:'100%', height:52, border:`1.5px solid ${errors.nom?'#dc2626':'#eee'}`, borderRadius:12, padding:'0 16px', fontSize:15, outline:'none', boxSizing:'border-box' }}
+                  onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=errors.nom?'#dc2626':'#eee'}/>
+                {errors.nom && <p style={{ fontSize:12, color:'#dc2626', marginTop:4 }}>{errors.nom}</p>}
+              </div>
+
+              {/* Téléphone */}
+              <div>
+                <label style={{ fontSize:14, fontWeight:700, color:'#111', display:'block', marginBottom:8 }}>Téléphone</label>
+                <div style={{ position:'relative' }}>
+                  <Phone size={16} strokeWidth={2} color="#999" style={{ position:'absolute', left:16, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }}/>
+                  <input value={form.tel} onChange={e=>handleTel(e.target.value)} type="tel" inputMode="numeric" maxLength={10}
+                    style={{ width:'100%', height:52, border:`1.5px solid ${errors.tel?'#dc2626':'#eee'}`, borderRadius:12, padding:'0 16px 0 44px', fontSize:15, outline:'none', boxSizing:'border-box' }}
+                    onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=errors.tel?'#dc2626':'#eee'}/>
+                </div>
+                {errors.tel && <p style={{ fontSize:12, color:'#dc2626', marginTop:4 }}>{errors.tel}</p>}
+                {dupClient && <div style={{ background:'#fef2f2', border:'2px solid #dc2626', borderRadius:10, padding:'10px 14px', marginTop:8, fontSize:13, color:'#dc2626' }}>⚠️ Ce numéro est déjà utilisé par <strong>{dupClient.prenom} {dupClient.nom}</strong></div>}
+              </div>
+
+              {/* Email */}
+              <div>
+                <label style={{ fontSize:14, fontWeight:700, color:'#111', display:'block', marginBottom:8 }}>Email</label>
+                <div style={{ position:'relative' }}>
+                  <Mail size={16} strokeWidth={2} color="#999" style={{ position:'absolute', left:16, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }}/>
+                  <input value={form.mail} onChange={e=>set('mail', e.target.value)} type="email"
+                    style={{ width:'100%', height:52, border:`1.5px solid ${errors.mail?'#dc2626':'#eee'}`, borderRadius:12, padding:'0 16px 0 44px', fontSize:15, outline:'none', boxSizing:'border-box' }}
+                    onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=errors.mail?'#dc2626':'#eee'}/>
+                </div>
+                {errors.mail && <p style={{ fontSize:12, color:'#dc2626', marginTop:4 }}>{errors.mail}</p>}
+              </div>
+
+              {/* Commentaire */}
+              <div>
+                <label style={{ fontSize:14, fontWeight:700, color:'#111', display:'block', marginBottom:8 }}>Commentaire</label>
+                <textarea value={form.commentaire} onChange={e=>set('commentaire', e.target.value)} placeholder="Notes sur ce client…"
+                  style={{ width:'100%', border:'1.5px solid #eee', borderRadius:12, padding:'12px 16px', fontSize:15, outline:'none', boxSizing:'border-box', resize:'vertical', minHeight:80, fontFamily:'inherit' }}
+                  onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
+              </div>
+            </div>
+
+            <div style={{ display:'flex', gap:12, marginTop:32 }}>
+              <button onClick={onCancel} style={{ flex:1, height:52, border:'1.5px solid #eee', borderRadius:12, background:'#fff', fontSize:15, fontWeight:600, cursor:'pointer', color:'#666' }}>Annuler</button>
+              <button onClick={dupClient ? undefined : handleSubmit} disabled={!!dupClient || !clientValide} style={{ flex:2, height:52, border:'none', borderRadius:12, background: dupClient ? '#ddd' : (success ? '#22c55e' : (clientValide ? '#E8C547' : '#f0f0f0')), color: dupClient ? '#999' : (success ? '#fff' : (clientValide ? '#111' : '#bbb')), fontSize:15, fontWeight:800, cursor: dupClient || !clientValide ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                {success ? '✓ Enregistré !' : <><Save size={18} strokeWidth={2}/> Enregistrer</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -3982,7 +4109,7 @@ function CRMApp({ user, onLogout }) {
       </div>{/* end marginLeft wrapper */}
 
       {modalAdd && <ClientForm existingClients={clients} onSave={addClient} onCancel={()=>setModalAdd(false)} />}
-      {modalEdit && <ClientForm initial={modalEdit} existingClients={clients} onSave={editClient} onCancel={()=>setModalEdit(null)} />}
+      {modalEdit && <ClientForm initial={modalEdit} existingClients={clients} onSave={editClient} onCancel={()=>setModalEdit(null)} reservations={resasData} />}
       {modalDelete && <ConfirmModal title={`Supprimer ${modalDelete.genre==='Entreprise'?(modalDelete.entreprise||modalDelete.nom):(`${modalDelete.prenom} ${modalDelete.nom}`)} ?`} msg="Cette action est définitive. Le client sera déplacé dans la corbeille." onOk={()=>deleteClient(modalDelete.id)} onCancel={()=>setModalDelete(null)} okLabel="Supprimer" danger />}
       {modalImport && <ImportModal existingClients={clients} onImport={importClients} onCancel={()=>setModalImport(false)} />}
       {modalComment && <Modal title={`Commentaire — ${modalComment.prenom} ${modalComment.nom}`} onClose={()=>setModalComment(null)}><p style={{fontSize:14,lineHeight:1.7,margin:0}}>{modalComment.commentaire}</p></Modal>}
