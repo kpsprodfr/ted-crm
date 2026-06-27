@@ -2202,7 +2202,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
       )}
 
       <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? '1fr 380px' : undefined, gap: !isMobile ? 16 : undefined, padding: !isMobile ? '24px 32px' : undefined, maxWidth: !isMobile ? 1440 : undefined, margin: !isMobile ? '0 auto' : undefined, alignItems: !isMobile ? 'stretch' : 'start', height: !isMobile ? 'calc(100vh - 48px)' : undefined, boxSizing: !isMobile ? 'border-box' : undefined, background: !isMobile ? '#f5f5f5' : undefined }}>
-      <main style={{ maxWidth: isMobile ? 800 : 'none', margin: isMobile ? '0 auto' : 0, padding: isMobile ? '16px 12px 100px' : '0', display: !isMobile ? 'flex' : 'block', flexDirection: !isMobile ? 'column' : undefined, gap: !isMobile ? 12 : undefined, height: !isMobile ? '100%' : undefined, overflow: !isMobile ? 'hidden' : undefined }}>
+      <main style={{ maxWidth: isMobile ? 800 : 'none', margin: isMobile ? '0 auto' : 0, padding: isMobile ? '12px 16px 100px' : '0', display: !isMobile ? 'flex' : 'block', flexDirection: !isMobile ? 'column' : undefined, gap: !isMobile ? 12 : undefined, height: !isMobile ? '100%' : undefined, overflow: !isMobile ? 'hidden' : undefined }}>
 
         {!isMobile && (
           <div style={{ display:'flex', alignItems:'center', gap:12, flexShrink:0, position:'relative' }}>
@@ -2418,7 +2418,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           const dateLabel = new Date(calJourSelectionne + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
           const serviceLabel = calServiceSelectionne === 'midi' ? '☀️ Midi' : '🌙 Soir';
           return (
-            <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:20, marginBottom:20, boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
+            <div style={{ background:'#fff', borderRadius:14, padding:'14px 16px', marginBottom:12, boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
                 <div>
                   <div style={{ fontWeight:800, fontSize:17 }}>Réservations TED</div>
@@ -2443,28 +2443,21 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                       <span style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1}}>Couverts</span>
                       <span/>
                     </div>
-                    {resasDuJour.map(r => (
-                      <div key={r.id} onClick={() => setDetailResa(r)} style={{display:'grid', gridTemplateColumns:'2fr 1fr 1fr auto', gap:8, alignItems:'center', padding:'10px 0', borderBottom:'1px solid #f0f0f0', cursor:'pointer', borderLeft: r.statut==='absente' ? '4px solid #dc2626' : r.statut==='annulee' ? '4px solid #f97316' : '4px solid transparent', background: r.statut==='absente' ? '#fff0f0' : r.statut==='annulee' ? '#fff5f5' : 'white', opacity: r.statut==='annulee' ? 0.85 : 1, paddingLeft: (r.statut==='annulee'||r.statut==='absente') ? 8 : 0}}>
-                        <div>
-                          <div style={{fontWeight: r.statut==='absente' ? 700 : 700, fontSize:14, color: r.statut==='absente' ? '#dc2626' : r.clients?.genre==='Entreprise' ? '#E8C547' : '#111', display:'flex', alignItems:'center', flexWrap:'wrap', gap:4}}>
+                    {resasDuJour.map((r,ri) => {
+                      const sMobile = ({confirmee:{bg:'#dcfce7',color:'#16a34a',label:'Confirmée'},attente:{bg:'#fef9c3',color:'#ca8a04',label:'En attente'},venue:{bg:'#d1fae5',color:'#059669',label:'Venue'},absente:{bg:'#fee2e2',color:'#dc2626',label:'No-show'},annulee:{bg:'#f3f4f6',color:'#6b7280',label:'Annulée'}})[r.statut]||{bg:'#f3f4f6',color:'#666',label:r.statut};
+                      return (
+                      <div key={r.id} onClick={() => setDetailResa(r)} style={{display:'flex', alignItems:'center', gap:12, padding:'10px 0', borderBottom: ri<resasDuJour.length-1?'1px solid #f5f5f5':'none', cursor:'pointer'}}>
+                        <span style={{fontSize:13, fontWeight:800, color:'#111', minWidth:40, flexShrink:0}}>{r.heure||'—'}</span>
+                        <div style={{flex:1, minWidth:0}}>
+                          <div style={{fontSize:14, fontWeight:700, color: r.statut==='absente'?'#dc2626':'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
                             {r.clients?.genre==='Entreprise' ? r.clients?.entreprise : `${r.clients?.prenom||''} ${r.clients?.nom||''}`}
-                            {r.statut==='annulee' && <span style={{background:'#f97316', color:'#fff', fontSize:10, fontWeight:700, borderRadius:4, padding:'2px 6px', textTransform:'uppercase'}}>Annulée</span>}
-                            {r.statut==='absente' && <span style={{background:'#dc2626', color:'#fff', fontSize:10, fontWeight:700, borderRadius:4, padding:'2px 6px', textTransform:'uppercase'}}>Absente</span>}
                           </div>
-                          {r.clients?.tel && (
-                            <a href={`tel:${r.clients.tel}`} onClick={e => e.stopPropagation()} style={{fontSize:12, color:'#666', textDecoration:'none'}}>
-                              📞 {r.clients.tel}
-                            </a>
-                          )}
-                          {r.commentaire_client && (
-                            <div style={{fontSize:11, color:'#999', fontStyle:'italic', marginTop:2}}>{r.commentaire_client}</div>
-                          )}
+                          <div style={{fontSize:12, color:'#999'}}>{r.nb_personnes} pers.</div>
                         </div>
-                        <div style={{fontSize:14, color:'#444', fontWeight:600}}>{r.heure || '—'}</div>
-                        <div style={{fontSize:14, color:'#444', fontWeight:600}}>{r.nb_personnes} pers.</div>
-                        <span style={{color:'#ccc', fontSize:16}}>›</span>
+                        <span style={{background:sMobile.bg, color:sMobile.color, borderRadius:20, padding:'3px 8px', fontSize:11, fontWeight:700, flexShrink:0}}>{sMobile.label}</span>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
@@ -3685,22 +3678,22 @@ function CRMApp({ user, onLogout }) {
           {/* Onglets + Recherche — uniquement sur l'onglet Clients */}
           {mobileTab === 'clients' && (
             <>
-              <div style={{ display:'flex', gap:6, padding:'8px 12px 6px', background:'#fff', overflowX:'auto', scrollbarWidth:'none' }}>
-                {[
-                  { id:'tous', label:'Tous', count:clients.length },
-                  { id:'particuliers', label:'👤 Particuliers', count:clients.filter(c=>c.genre!=='Entreprise').length },
-                  { id:'entreprises', label:'🏢 Entreprises', count:clients.filter(c=>c.genre==='Entreprise').length }
-                ].map(tab => (
-                  <button key={tab.id} onClick={()=>{setActiveTab(tab.id);setPage(1)}} style={{ background:activeTab===tab.id?'#111':'#f0f0f0', color:activeTab===tab.id?'#fff':'#666', border:'none', borderRadius:99, padding:'6px 14px', fontSize:12, fontWeight:activeTab===tab.id?700:500, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0 }}>
-                    {tab.label} <span style={{ background:activeTab===tab.id?G:'#ddd', color:activeTab===tab.id?'#111':'#999', borderRadius:99, padding:'1px 6px', fontSize:10, fontWeight:700, marginLeft:2 }}>{tab.count}</span>
-                  </button>
-                ))}
-              </div>
-              <div style={{ padding:'0 12px 8px', background:'#fff', borderBottom:'1px solid #eee' }}>
-                <div style={{ position:'relative' }}>
+              <div style={{ padding:'8px 12px 6px', background:'#f5f5f5' }}>
+                <div style={{ position:'relative', marginBottom:8 }}>
                   <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#bbb', fontSize:14 }}>🔍</span>
-                  <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1)}} placeholder="Rechercher..." style={{ width:'100%', height:38, border:'1.5px solid #eee', borderRadius:10, padding:'0 36px 0 36px', fontSize:16, outline:'none', boxSizing:'border-box', background:'#f8f8f8' }} />
+                  <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1)}} placeholder="Rechercher..." style={{ width:'100%', height:44, border:'1.5px solid #eee', borderRadius:12, padding:'0 36px 0 38px', fontSize:14, outline:'none', boxSizing:'border-box', background:'#fff' }} />
                   {search && <button onClick={()=>{setSearch('');setPage(1)}} style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', fontSize:16, cursor:'pointer', color:'#aaa' }}>✕</button>}
+                </div>
+                <div style={{ display:'flex', gap:8, overflowX:'auto', scrollbarWidth:'none', paddingBottom:4 }}>
+                  {[
+                    { id:'tous', label:'Tous' },
+                    { id:'particuliers', label:'Particuliers' },
+                    { id:'entreprises', label:'Entreprises' }
+                  ].map(tab => (
+                    <button key={tab.id} onClick={()=>{setActiveTab(tab.id);setPage(1)}} style={{ height:36, padding:'0 14px', borderRadius:10, fontSize:13, fontWeight:700, border:'none', flexShrink:0, cursor:'pointer', background:activeTab===tab.id?'#111':'#fff', color:activeTab===tab.id?'#fff':'#666' }}>
+                      {tab.label}
+                    </button>
+                  ))}
                 </div>
               </div>
             </>
@@ -3715,7 +3708,7 @@ function CRMApp({ user, onLogout }) {
 
       {/* ═══ MOBILE — RÉSERVATIONS INLINE ═══ */}
       {isMobile && mobileTab === 'reservations' && (
-        <div style={{ paddingTop:56, overflowX:'hidden', maxWidth:'100vw', width:'100%' }}>
+        <div style={{ paddingTop:56, overflowX:'hidden', maxWidth:'100vw', width:'100%', background:'#f5f5f5', minHeight:'100vh' }}>
           <ReservationsPage
             inline
             showToast={showToast}
@@ -3727,42 +3720,35 @@ function CRMApp({ user, onLogout }) {
 
       {/* ═══ MOBILE CARDS ═══ */}
       {isMobile && mobileTab === 'clients' && (
-        <div style={{ paddingTop:146, paddingBottom:'calc(90px + env(safe-area-inset-bottom, 16px))', paddingLeft:12, paddingRight:12 }}>
+        <div style={{ paddingTop:146, paddingBottom:'calc(90px + env(safe-area-inset-bottom, 16px))', background:'#f5f5f5', minHeight:'100vh' }}>
           {pageClients.length === 0 && (
             <div style={{ textAlign:'center', padding:'4rem 2rem' }}>
               <div style={{ fontSize:48, marginBottom:12 }}>🔍</div>
               <p style={{ color:'#bbb', fontSize:15 }}>Aucun client trouvé</p>
             </div>
           )}
+          <div style={{ background:'#fff', borderRadius:14, margin:'12px 16px', overflow:'hidden', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
           {pageClients.map((c,i) => {
-            const s = statsClients[c.id] || { total:0, noshow:0, derniereVisite:null };
-            const aujourd = new Date().toISOString().split('T')[0];
-            const derniereVisite = resasData.filter(r => r.client_id===c.id && r.date<=aujourd && (r.statut==='venue'||r.statut==='confirmee')).sort((a,b)=>b.date.localeCompare(a.date))[0];
-            const prochaineResa = resasData.filter(r => r.client_id===c.id && r.date>aujourd && (r.statut==='confirmee'||r.statut==='attente')).sort((a,b)=>a.date.localeCompare(b.date))[0];
+            const avatarBgM = c.genre==='Homme'?'#dbeafe':c.genre==='Femme'?'#fce7f3':'#dcfce7';
+            const avatarColorM = c.genre==='Homme'?'#1d4ed8':c.genre==='Femme'?'#be185d':'#15803d';
+            const initialesM = c.genre==='Entreprise'?(c.entreprise||'?').slice(0,2).toUpperCase():`${(c.prenom||'?')[0]}${(c.nom||'')[0]||''}`.toUpperCase();
             return (
-            <div key={c.id} onClick={()=>setModalDetailClient(c)} style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:'12px', marginBottom:8, boxShadow:'0 2px 8px rgba(0,0,0,0.05)', animation:'slideUpFade 0.25s ease both', animationDelay:`${i*0.04}s`, cursor:'pointer' }}>
-              <div style={{ display:'flex', alignItems:'flex-start', gap:8 }}>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:4 }}>
-                    <span style={badge(c.genre)}>{c.genre}</span>
-                    <span style={{ fontWeight:700, fontSize:15, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                      {c.genre==='Entreprise' ? (c.entreprise||c.nom||'—') : `${c.nom||''} ${c.prenom||''}`}
-                    </span>
-                  </div>
-                  {c.mail && <p style={{ fontSize:11, color:'#3b82f6', margin:'2px 0', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.mail}</p>}
-                  {c.tel && <p style={{ fontSize:12, color:'#555', fontWeight:600, margin:'2px 0' }}>{c.tel}</p>}
-                  <div style={{ fontSize:11, color:'#999', marginTop:4, display:'flex', gap:8, flexWrap:'wrap' }}>
-                    <span>📅 {s.total} résa</span>
-                    {s.noshow > 0 && <span style={{ color:'#dc2626' }}>❌ {s.noshow} no-show</span>}
-                    {derniereVisite && <span>🕐 Vu le {new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span>}
-                    {prochaineResa && <span style={{ color:'#16a34a', fontWeight:600 }}>📆 Prochaine : {new Date(prochaineResa.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span>}
-                  </div>
+            <div key={c.id} onClick={()=>setModalDetailClient(c)}
+              style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', borderBottom: i<pageClients.length-1?'1px solid #f5f5f5':'none', cursor:'pointer', background:'#fff' }}
+              onTouchStart={e=>e.currentTarget.style.background='#fafafa'}
+              onTouchEnd={e=>e.currentTarget.style.background='#fff'}>
+              <div style={{ width:40, height:40, borderRadius:'50%', flexShrink:0, background:avatarBgM, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, color:avatarColorM }}>{initialesM}</div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontWeight:700, fontSize:14, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                  {c.genre==='Entreprise' ? (c.entreprise||c.nom||'—') : `${c.prenom||''} ${c.nom||''}`}
                 </div>
-                <span style={{ color:'#ccc', fontSize:20, alignSelf:'center' }}>›</span>
+                <div style={{ fontSize:12, color:'#999', marginTop:2 }}>{c.tel||'—'}</div>
               </div>
+              <ChevronRight size={16} strokeWidth={2} color="#ddd"/>
             </div>
             );
           })}
+          </div>
           {totalPages > 1 && (
             <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:16, padding:'8px 0 16px' }}>
               <button disabled={safePage<=1} onClick={()=>setPage(p=>p-1)} style={{ width:44, height:44, borderRadius:12, border:'1.5px solid #eee', background:'#fff', fontSize:20, cursor:safePage<=1?'not-allowed':'pointer', color:safePage<=1?'#ddd':'#111', display:'flex', alignItems:'center', justifyContent:'center' }}>‹</button>
@@ -4107,12 +4093,14 @@ function CRMApp({ user, onLogout }) {
           </div>
         );
         if (isMobile) return (
-          <div style={{ position:'fixed', inset:0, background:'#f8f8f8', zIndex:6000, display:'flex', flexDirection:'column' }}>
-            <div style={{ background:'#111', padding:'16px 20px', paddingTop:'calc(16px + env(safe-area-inset-top))', borderBottom:'3px solid #E8C547', flexShrink:0, display:'flex', alignItems:'center', gap:12 }}>
-              <button onClick={fermerFiche} style={{ background:'none', border:'none', color:'#fff', fontSize:18, cursor:'pointer', touchAction:'manipulation', padding:0 }}>← Retour</button>
-              <h2 style={{ color:'#fff', margin:0, fontSize:17, fontWeight:800, flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{nomAffiche}</h2>
+          <div style={{ position:'fixed', inset:0, background:'#f5f5f5', zIndex:6000, display:'flex', flexDirection:'column' }}>
+            <div style={{ background:'#f5f5f5', padding:'16px 16px 12px', paddingTop:'calc(16px + env(safe-area-inset-top))', borderBottom:'1px solid #eee', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
+              <h2 style={{ color:'#111', margin:0, fontSize:18, fontWeight:900, flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{nomAffiche}</h2>
+              <button onClick={fermerFiche} style={{ height:36, padding:'0 14px', borderRadius:10, background:'#111', border:'none', fontSize:13, fontWeight:700, color:'#fff', display:'flex', alignItems:'center', gap:6, flexShrink:0, cursor:'pointer', touchAction:'manipulation' }}>
+                <ArrowLeft size={14} strokeWidth={2} color="#fff"/> Retour
+              </button>
             </div>
-            <div style={{ flex:1, overflowY:'auto', padding:'16px', WebkitOverflowScrolling:'touch' }}>{ficheBody}</div>
+            <div style={{ flex:1, overflowY:'auto', padding:'12px 16px', WebkitOverflowScrolling:'touch' }}>{ficheBody}</div>
             <div style={{ background:'#fff', padding:'12px 16px', paddingBottom:'calc(12px + env(safe-area-inset-bottom))', borderTop:'1px solid #eee', flexShrink:0 }}>{ficheFooter}</div>
           </div>
         );
