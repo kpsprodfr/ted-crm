@@ -1687,160 +1687,181 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
     window.location.href = `sms:${c.tel}?body=${encodeURIComponent(smsTexte)}`;
   }
 
+  function containsEmoji(str) {
+    return /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(str||'');
+  }
+  const smsLimit = containsEmoji(smsTexte) ? 70 : 160;
+  const avatarBg = c.genre==='Homme'?'#dbeafe':c.genre==='Femme'?'#fce7f3':'#dcfce7';
+  const avatarColor = c.genre==='Homme'?'#1d4ed8':c.genre==='Femme'?'#be185d':'#15803d';
+  const initiales = c.genre==='Entreprise'
+    ? (c.entreprise||'?').slice(0,2).toUpperCase()
+    : `${(c.prenom||'?')[0]}${(c.nom||'')[0]||''}`.toUpperCase();
+
   return (
-    <Modal title="Détail de la réservation" onClose={fermerModal} maxW={480} zIndex={3000}
-      footer={
-        <div style={{ width:'100%', display:'flex', flexDirection:'column', gap:8 }}>
-          <div style={{ background:'#f9f9f9', borderRadius:10, padding:'12px 16px', marginBottom:4, display:'flex', gap:16, flexWrap:'wrap' }}>
-            <div style={{ textAlign:'center', flex:1 }}>
-              <div style={{ fontSize:20, fontWeight:800, color:'#111' }}>{totalResas}</div>
-              <div style={{ fontSize:11, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Résa total</div>
-            </div>
-            <div style={{ textAlign:'center', flex:1 }}>
-              <div style={{ fontSize:20, fontWeight:800, color: noshow > 0 ? '#dc2626' : '#111' }}>{noshow}</div>
-              <div style={{ fontSize:11, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>No-show</div>
-            </div>
-            <div style={{ textAlign:'center', flex:2 }}>
-              <div style={{ fontSize:13, fontWeight:700, color:'#111' }}>{derniereVisiteFormatee}</div>
-              <div style={{ fontSize:11, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Dernière visite</div>
-            </div>
+    <>
+      {/* Overlay bloquant */}
+      <div onMouseDown={e=>{e.preventDefault();e.stopPropagation();}} onClick={fermerModal}
+        style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:2999,pointerEvents:'all'}}/>
+
+      {/* Modal */}
+      <div onClick={e=>e.stopPropagation()} onMouseDown={e=>e.stopPropagation()}
+        style={{position:'fixed',top:'50%',left:'50%',transform:'translate(-50%,-50%)',background:'#fff',borderRadius:20,width:'min(560px,calc(100vw - 48px))',maxHeight:'90vh',display:'flex',flexDirection:'column',boxShadow:'0 32px 80px rgba(0,0,0,0.25)',zIndex:3000,overflow:'hidden'}}>
+
+        {/* Header */}
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'24px 28px 20px',flexShrink:0,borderBottom:'1px solid #f0f0f0'}}>
+          <div>
+            <h2 style={{margin:0,fontSize:20,fontWeight:800,color:'#111'}}>Détail de la réservation</h2>
+            <p style={{margin:'4px 0 0',fontSize:13,color:'#999'}}>
+              {new Date(resa.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
+            </p>
           </div>
-          {onEdit && (
-            <button onClick={()=>{ onClose(); onEdit(resa); }} style={{ width:'100%', height:44, background:'#E8C547', color:'#111', border:'none', borderRadius:10, fontSize:14, fontWeight:700, cursor:'pointer' }}>✏️ Modifier la réservation</button>
-          )}
-          <div style={{ borderTop:'1px solid #f0f0f0', paddingTop:8 }}>
-            {statutModifie ? (
-              <button onClick={sauvegarderStatut} disabled={saving} style={{ width:'100%', height:44, background: saving ? '#ddd' : '#16a34a', color: saving ? '#999' : '#fff', border:'none', borderRadius:10, fontSize:14, fontWeight:800, cursor: saving ? 'not-allowed' : 'pointer' }}>
-                {saving ? 'Enregistrement…' : '✓ Valider'}
-              </button>
-            ) : (
-              <button type="button" onClick={fermerModal} style={{ width:'100%', ...btnSecondary }}>Fermer</button>
+          <button onClick={fermerModal} style={{width:36,height:36,borderRadius:'50%',border:'none',background:'#f0f0f0',cursor:'pointer',fontSize:18,color:'#666',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+        </div>
+
+        {/* Contenu scrollable */}
+        <div style={{flex:1,overflowY:'auto',padding:'20px 28px',display:'flex',flexDirection:'column',gap:16}}>
+
+          {/* Bloc client */}
+          <div style={{background:'#f9f9f9',borderRadius:14,padding:'16px 18px',display:'flex',alignItems:'center',gap:14}}>
+            <div style={{width:48,height:48,borderRadius:'50%',flexShrink:0,background:avatarBg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,fontWeight:800,color:avatarColor}}>
+              {initiales}
+            </div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:800,fontSize:16,color:'#111'}}>{nom||'—'}</div>
+              {c.prenom && c.nom && c.entreprise && <div style={{fontSize:13,color:'#888',marginTop:1}}>{c.prenom} {c.nom}</div>}
+              {c.tel && <a href={`tel:${c.tel}`} style={{fontSize:13,color:'#666',textDecoration:'none',display:'flex',alignItems:'center',gap:4,marginTop:3}}><Phone size={12} strokeWidth={2} color="#999"/> {c.tel}</a>}
+              {c.mail && <div style={{fontSize:12,color:'#3b82f6',marginTop:2}}>{c.mail}</div>}
+            </div>
+            {c.tel && (
+              <div style={{display:'flex',gap:8}}>
+                <a href={`tel:${c.tel}`} style={{width:38,height:38,borderRadius:10,background:'#E8C547',border:'none',display:'flex',alignItems:'center',justifyContent:'center',textDecoration:'none',flexShrink:0}}>
+                  <Phone size={16} strokeWidth={2} color="#111"/>
+                </a>
+                <button onClick={()=>{ setShowSmsPanel(!showSmsPanel); if(!showSmsPanel) setSmsTexte(smsSuggestions[0]); }} style={{width:38,height:38,borderRadius:10,background:'#fff',border:'1.5px solid #eee',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}>
+                  <MessageSquare size={16} strokeWidth={2} color="#666"/>
+                </button>
+              </div>
             )}
           </div>
-        </div>
-      }>
-      <div style={{ display:'flex', flexDirection:'column', gap:0 }}>
 
-        {/* Nom + contact */}
-        <div style={{ paddingBottom:16, marginBottom:4 }}>
-          <div style={{ fontSize:19, fontWeight:800, marginBottom:4, color:'#111' }}>{nom || '—'}</div>
-          {c.prenom && c.nom && c.entreprise && <div style={{ fontSize:13, color:'#888', marginBottom:2 }}>{c.prenom} {c.nom}</div>}
-          {c.tel && <div style={{ fontSize:14, color:'#444', marginBottom:2 }}>📞 {c.tel}</div>}
-          {c.mail && <a href={`mailto:${c.mail}`} style={{ fontSize:13, color:'#3b82f6', textDecoration:'none' }}>{c.mail}</a>}
-        </div>
-
-        {/* Boutons SMS + Appeler */}
-        {c.tel && (
-          <div style={{ display:'flex', gap:8, marginBottom:16 }}>
-            <button onClick={()=>{ setShowSmsPanel(!showSmsPanel); setSmsTexte(smsSuggestions[0]); }} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#fff', color:'#111', border:'1.5px solid #ddd', borderRadius:10, height:44, fontSize:13, fontWeight:700, cursor:'pointer' }}>💬 SMS</button>
-            <a href={`tel:${c.tel}`} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6, background:'#111', color:'#fff', borderRadius:10, height:44, fontSize:13, fontWeight:700, textDecoration:'none' }}>📞 Appeler</a>
+          {/* Infos réservation */}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+            {[
+              {label:'Service', value: resa.service==='midi'?'☀️ Midi':'🌙 Soir'},
+              {label:'Heure', value: resa.heure||'—'},
+              {label:'Personnes', value: `${resa.nb_personnes} pers.`},
+              {label:'Occasion', value: resa.occasion||'—'},
+            ].map((item,i)=>(
+              <div key={i} style={{background:'#f9f9f9',borderRadius:10,padding:'12px 14px'}}>
+                <div style={{fontSize:10,fontWeight:700,color:'#999',textTransform:'uppercase',letterSpacing:0.5,marginBottom:4}}>{item.label}</div>
+                <div style={{fontSize:14,fontWeight:600,color:'#111'}}>{item.value}</div>
+              </div>
+            ))}
+            {resa.commentaire_client && (
+              <div style={{gridColumn:'1/-1',background:'#f9f9f9',borderRadius:10,padding:'12px 14px'}}>
+                <div style={{fontSize:10,fontWeight:700,color:'#999',textTransform:'uppercase',letterSpacing:0.5,marginBottom:4}}>Commentaire</div>
+                <div style={{fontSize:14,color:'#555',fontStyle:'italic'}}>"{resa.commentaire_client}"</div>
+              </div>
+            )}
+            {resa.raison_refus && (
+              <div style={{gridColumn:'1/-1',background:'#fef2f2',borderRadius:10,padding:'12px 14px'}}>
+                <div style={{fontSize:10,fontWeight:700,color:'#dc2626',textTransform:'uppercase',letterSpacing:0.5,marginBottom:4}}>Motif refus</div>
+                <div style={{fontSize:14,color:'#dc2626'}}>{resa.raison_refus}</div>
+              </div>
+            )}
           </div>
-        )}
 
-        {/* Panneau SMS */}
-        {showSmsPanel && c.tel && (() => {
-          function containsEmoji(str) {
-            return /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/u.test(str||'');
-          }
-          const smsLimit = containsEmoji(smsTexte) ? 70 : 160;
-          return (
-            <div style={{ background:'#f8f8f8', borderRadius:12, padding:14, display:'flex', flexDirection:'column', gap:8, marginBottom:16 }}>
-              <div style={{ fontSize:12, fontWeight:700, color:'#555', marginBottom:2 }}>Suggestions</div>
-              <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
-                {smsSuggestions.map((s, i) => (
-                  <button key={i} onClick={()=>setSmsTexte(s.slice(0, smsLimit))} style={{ textAlign:'left', background: smsTexte === s ? '#E8C547' : '#fff', border:'1.5px solid #eee', borderRadius:8, padding:'8px 10px', fontSize:12, cursor:'pointer', color:'#111', fontWeight: smsTexte === s ? 700 : 400 }}>{s}</button>
-                ))}
-              </div>
-              <textarea value={smsTexte} onChange={e=>setSmsTexte(e.target.value.slice(0, smsLimit))} rows={3} style={{ width:'100%', border:'1.5px solid #ddd', borderRadius:8, padding:'8px 10px', fontSize:13, resize:'vertical', outline:'none', fontFamily:'inherit' }} placeholder="Rédigez votre message…" />
-              <div style={{ display:'flex', justifyContent:'space-between', marginTop:-4, marginBottom:2 }}>
-                <span style={{ fontSize:12, color: smsTexte.length > smsLimit * 0.9 ? '#dc2626' : '#999', fontWeight: smsTexte.length > smsLimit * 0.9 ? 700 : 400 }}>
-                  {smsTexte.length}/{smsLimit} caractères
-                  {containsEmoji(smsTexte) && <span style={{ color:'#E8C547', marginLeft:6 }}>⚠️ Emoji = 70 max</span>}
-                </span>
-                <span style={{ fontSize:12, color:'#999' }}>~0.04€</span>
-              </div>
-              <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-                <span style={{ fontSize:11, color:'#999', alignSelf:'center' }}>Insérer :</span>
-                {[
-                  { label:'{prénom}', val: c.prenom || '{prénom}' },
-                  { label:'{nom}', val: c.nom || '{nom}' },
-                  { label:'{entreprise}', val: c.entreprise || '{entreprise}' },
-                  { label:'{tel}', val: c.tel || '{tel}' },
-                  { label:'🔗 Lien résa', val: 'https://ted-crm.pages.dev/reserver.html' },
-                ].map(v => (
-                  <button key={v.label} onClick={()=>setSmsTexte((smsTexte + v.val).slice(0, smsLimit))} style={{ background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:6, padding:'3px 10px', fontSize:12, fontWeight:600, color:'#111', cursor:'pointer' }}>{v.label}</button>
-                ))}
-              </div>
-              <button onClick={envoyerSms} disabled={!smsTexte.trim()} style={{ background: smsTexte.trim() ? '#111' : '#ddd', color: smsTexte.trim() ? '#fff' : '#999', border:'none', borderRadius:9, height:40, fontSize:14, fontWeight:700, cursor: smsTexte.trim() ? 'pointer' : 'not-allowed' }}>
-                📤 Envoyer le SMS · {c.tel}
-              </button>
-            </div>
-          );
-        })()}
-
-        <div style={{ height:1, background:'#f0f0f0', marginBottom:16 }} />
-
-        {/* Infos réservation */}
-        <div style={{ marginBottom:4 }}>
-          {[
-            ['Date', fmtResaDate(resa.date)],
-            ['Service', resa.service === 'midi' ? '🌞 Midi' : '🌙 Soir'],
-            resa.heure ? ['Heure', resa.heure] : null,
-            ['Personnes', `${resa.nb_personnes} personne${resa.nb_personnes > 1 ? 's' : ''}`],
-            resa.occasion ? ['Occasion', resa.occasion] : null,
-          ].filter(Boolean).map(([l,v]) => (
-            <div key={l} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 0', borderBottom:'1px solid #f5f5f5' }}>
-              <span style={{ color:'#999', fontSize:14 }}>{l}</span>
-              <span style={{ fontWeight:600, fontSize:14, color:'#111' }}>{v}</span>
-            </div>
-          ))}
-          {resa.commentaire_client && <p style={{ fontSize:13, color:'#aaa', fontStyle:'italic', borderLeft:'3px solid #eee', paddingLeft:10, margin:'10px 0 2px' }}>"{resa.commentaire_client}"</p>}
-          {resa.raison_refus && <div style={{ background:'#fef2f2', borderRadius:8, padding:'8px 12px', fontSize:13, color:'#dc2626', marginTop:8 }}>Motif refus : {resa.raison_refus}</div>}
-        </div>
-
-        <div style={{ height:1, background:'#f0f0f0', margin:'12px 0' }} />
-
-        {/* Statut — badge cliquable + panneau */}
-        <div style={{ position:'relative' }}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'4px 0' }}>
-            <span style={{ fontSize:14, color:'#999', fontWeight:500 }}>Statut</span>
-            {(() => {
-              const s = STATUTS_COLORS.find(x => x.value === statutEnCours) || STATUTS_COLORS[0];
-              return (
-                <button onClick={()=>setShowStatutPanel(!showStatutPanel)} style={{ display:'flex', alignItems:'center', gap:8, background:`${s.color}18`, border:`1.5px solid ${s.color}`, borderRadius:20, padding:'6px 14px', cursor:'pointer', fontWeight:700, fontSize:13, color:s.color }}>
-                  <span style={{ width:8, height:8, borderRadius:'50%', background:s.color, display:'inline-block' }}/>
-                  {s.label}
-                  {statutModifie && <span style={{ fontSize:10, color:s.color, opacity:0.8 }}>●</span>}
-                  <span style={{ fontSize:10, opacity:0.7 }}>▼</span>
-                </button>
-              );
-            })()}
-          </div>
-          {showStatutPanel && (
-            <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:5000, display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'all', cursor:'default', touchAction:'none' }} onMouseDown={e=>{e.preventDefault();e.stopPropagation();setShowStatutPanel(false);}} onClick={()=>setShowStatutPanel(false)}>
-              <div style={{ background:'#fff', borderRadius:16, padding:24, width:320, boxShadow:'0 20px 60px rgba(0,0,0,0.2)' }} onMouseDown={e=>e.stopPropagation()} onClick={e=>e.stopPropagation()}>
-                <h3 style={{ margin:'0 0 16px', fontSize:16, fontWeight:800 }}>Changer le statut</h3>
-                {STATUTS_COLORS.map(s => (
-                  <div key={s.value} onClick={()=>{ setStatutEnCours(s.value); setStatutModifie(s.value !== resa.statut); setShowStatutPanel(false); }}
-                    style={{ display:'flex', alignItems:'center', gap:12, padding:12, borderRadius:10, cursor:'pointer', marginBottom:6, background: statutEnCours === s.value ? `${s.color}10` : '#fff' }}
-                    onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'}
-                    onMouseLeave={e=>e.currentTarget.style.background=statutEnCours===s.value?`${s.color}10`:'#fff'}
-                  >
-                    <div style={{ width:12, height:12, borderRadius:'50%', background:s.color, flexShrink:0 }}/>
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontWeight:700, fontSize:14, color: statutEnCours === s.value ? s.color : '#111' }}>{s.label}</div>
-                      <div style={{ fontSize:12, color:'#999' }}>{s.desc}</div>
-                    </div>
-                    {statutEnCours === s.value && <span style={{ color:s.color, fontSize:18 }}>✓</span>}
+          {/* Statut */}
+          <div>
+            <p style={{fontSize:13,fontWeight:700,color:'#111',margin:'0 0 8px'}}>Statut</p>
+            <div style={{position:'relative'}}>
+              {(()=>{
+                const s = STATUTS_COLORS.find(x=>x.value===statutEnCours)||STATUTS_COLORS[0];
+                return (
+                  <button onClick={()=>setShowStatutPanel(!showStatutPanel)} style={{width:'100%',height:48,borderRadius:12,border:`2px solid ${s.color}`,background:`${s.color}18`,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 16px',fontSize:15,fontWeight:700,color:s.color}}>
+                    <span style={{display:'flex',alignItems:'center',gap:8}}><span style={{width:10,height:10,borderRadius:'50%',background:s.color,display:'inline-block'}}/>{s.label}{statutModifie&&<span style={{fontSize:10,opacity:0.8}}>●</span>}</span>
+                    <ChevronDown size={16} strokeWidth={2} color={s.color}/>
+                  </button>
+                );
+              })()}
+              {showStatutPanel && (
+                <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:5000,display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'all',cursor:'default',touchAction:'none'}} onMouseDown={e=>{e.preventDefault();e.stopPropagation();setShowStatutPanel(false);}} onClick={()=>setShowStatutPanel(false)}>
+                  <div style={{background:'#fff',borderRadius:16,padding:24,width:320,boxShadow:'0 20px 60px rgba(0,0,0,0.2)'}} onMouseDown={e=>e.stopPropagation()} onClick={e=>e.stopPropagation()}>
+                    <h3 style={{margin:'0 0 16px',fontSize:16,fontWeight:800}}>Changer le statut</h3>
+                    {STATUTS_COLORS.map(s=>(
+                      <div key={s.value} onClick={()=>{setStatutEnCours(s.value);setStatutModifie(s.value!==resa.statut);setShowStatutPanel(false);}}
+                        style={{display:'flex',alignItems:'center',gap:12,padding:12,borderRadius:10,cursor:'pointer',marginBottom:6,background:statutEnCours===s.value?`${s.color}10`:'#fff'}}
+                        onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'}
+                        onMouseLeave={e=>e.currentTarget.style.background=statutEnCours===s.value?`${s.color}10`:'#fff'}>
+                        <div style={{width:12,height:12,borderRadius:'50%',background:s.color,flexShrink:0}}/>
+                        <div style={{flex:1}}>
+                          <div style={{fontWeight:700,fontSize:14,color:statutEnCours===s.value?s.color:'#111'}}>{s.label}</div>
+                          <div style={{fontSize:12,color:'#999'}}>{s.desc}</div>
+                        </div>
+                        {statutEnCours===s.value && <span style={{color:s.color,fontSize:18}}>✓</span>}
+                      </div>
+                    ))}
                   </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Panneau SMS */}
+          {showSmsPanel && c.tel && (
+            <div style={{background:'#f9f9f9',borderRadius:12,padding:16,display:'flex',flexDirection:'column',gap:8}}>
+              <p style={{fontSize:12,fontWeight:700,color:'#999',margin:'0 0 4px',textTransform:'uppercase',letterSpacing:0.5}}>Suggestions</p>
+              <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                {smsSuggestions.map((s,i)=>(
+                  <button key={i} onClick={()=>setSmsTexte(s.slice(0,smsLimit))} style={{width:'100%',textAlign:'left',background:smsTexte===s?'#E8C547':'#fff',border:'1.5px solid #eee',borderRadius:8,padding:'8px 12px',fontSize:12,cursor:'pointer',color:'#111',fontWeight:smsTexte===s?700:400}}>{s}</button>
                 ))}
+              </div>
+              <textarea value={smsTexte} onChange={e=>setSmsTexte(e.target.value.slice(0,smsLimit))} placeholder="Votre message…"
+                style={{width:'100%',height:70,border:'1.5px solid #eee',borderRadius:8,padding:'8px 12px',fontSize:13,resize:'none',outline:'none',fontFamily:'inherit',boxSizing:'border-box'}}/>
+              <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
+                <span style={{fontSize:11,color:'#999',alignSelf:'center'}}>Insérer :</span>
+                {[{label:'{prénom}',val:c.prenom||'{prénom}'},{label:'{nom}',val:c.nom||'{nom}'},{label:'🔗 Lien',val:'https://ted-crm.pages.dev/reserver.html'}].map(v=>(
+                  <button key={v.label} onClick={()=>setSmsTexte((smsTexte+v.val).slice(0,smsLimit))} style={{background:'#fffbea',border:'1.5px solid #E8C547',borderRadius:6,padding:'3px 10px',fontSize:12,fontWeight:600,color:'#111',cursor:'pointer'}}>{v.label}</button>
+                ))}
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <span style={{fontSize:11,color:smsTexte.length>smsLimit*0.9?'#dc2626':'#999',fontWeight:smsTexte.length>smsLimit*0.9?700:400}}>{smsTexte.length}/{smsLimit}{containsEmoji(smsTexte)&&' ⚠️ Emoji'}</span>
+                <button onClick={envoyerSms} disabled={!smsTexte.trim()} style={{background:smsTexte.trim()?'#111':'#ddd',color:smsTexte.trim()?'#fff':'#999',border:'none',borderRadius:8,padding:'6px 16px',fontSize:13,fontWeight:800,cursor:smsTexte.trim()?'pointer':'not-allowed'}}>Envoyer</button>
               </div>
             </div>
           )}
+
+          {/* Historique client */}
+          <div style={{background:'#f9f9f9',borderRadius:12,padding:'12px 16px',display:'flex',gap:0}}>
+            <div style={{textAlign:'center',flex:1}}>
+              <div style={{fontSize:20,fontWeight:800,color:'#111'}}>{totalResas}</div>
+              <div style={{fontSize:10,color:'#999',textTransform:'uppercase',letterSpacing:0.5}}>Résa total</div>
+            </div>
+            <div style={{textAlign:'center',flex:1}}>
+              <div style={{fontSize:20,fontWeight:800,color:noshow>0?'#dc2626':'#111'}}>{noshow}</div>
+              <div style={{fontSize:10,color:'#999',textTransform:'uppercase',letterSpacing:0.5}}>No-show</div>
+            </div>
+            <div style={{textAlign:'center',flex:2}}>
+              <div style={{fontSize:13,fontWeight:700,color:'#111'}}>{derniereVisiteFormatee}</div>
+              <div style={{fontSize:10,color:'#999',textTransform:'uppercase',letterSpacing:0.5}}>Dernière visite</div>
+            </div>
+          </div>
         </div>
 
+        {/* Boutons fixes en bas */}
+        <div style={{flexShrink:0,padding:'16px 28px',borderTop:'1px solid #eee',background:'#fff',display:'flex',gap:10}}>
+          <button onClick={fermerModal} style={{flex:1,height:52,border:'1.5px solid #eee',borderRadius:12,background:'#fff',fontSize:15,fontWeight:600,cursor:'pointer',color:'#666'}}>Fermer</button>
+          {onEdit && (
+            <button onClick={()=>{onClose();onEdit(resa);}} style={{flex:1,height:52,border:'none',borderRadius:12,background:'#f0f0f0',fontSize:15,fontWeight:700,cursor:'pointer',color:'#111',display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>✏️ Modifier</button>
+          )}
+          {statutModifie && (
+            <button onClick={sauvegarderStatut} disabled={saving} style={{flex:2,height:52,border:'none',borderRadius:12,background:saving?'#ddd':'#E8C547',fontSize:15,fontWeight:800,cursor:saving?'not-allowed':'pointer',color:saving?'#999':'#111',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+              <Check size={18} strokeWidth={2}/> {saving?'Enregistrement…':'Valider le statut'}
+            </button>
+          )}
+        </div>
       </div>
-    </Modal>
+    </>
   );
 }
 
