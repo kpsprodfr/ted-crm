@@ -2762,6 +2762,7 @@ function CRMApp({ user, onLogout }) {
   const [showHistorique, setShowHistorique] = useState(false);
   const [filtreJours, setFiltreJours] = useState(new Set());
   const [filtreServices, setFiltreServices] = useState(new Set());
+  const [showJoursDropdown, setShowJoursDropdown] = useState(false);
   function toggleFiltreJour(jour) { setFiltreJours(prev => { const n=new Set(prev); n.has(jour)?n.delete(jour):n.add(jour); return n; }); }
   function toggleFiltreService(service) { setFiltreServices(prev => { const n=new Set(prev); n.has(service)?n.delete(service):n.add(service); return n; }); }
   const [filtreAbsentsMois, setFiltreAbsentsMois] = useState(0);
@@ -3285,14 +3286,50 @@ function CRMApp({ user, onLogout }) {
 
                 {/* Jour favori */}
                 <div style={{flexShrink:0}}>
-                  <p style={{fontSize:15, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Jour favori</p>
-                  <div style={{display:'flex', flexWrap:'wrap', gap:4}}>
-                    {['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].map((j,i) => {
-                      const jourComplet = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'][i];
-                      return (
-                        <button key={j} onClick={()=>toggleFiltreJour(jourComplet)} style={{padding:'6px 12px', borderRadius:20, fontSize:13, fontWeight:700, cursor:'pointer', border:'1.5px solid', borderColor: filtreJours.has(jourComplet)?'#111':'#eee', background: filtreJours.has(jourComplet)?'#111':'#fff', color: filtreJours.has(jourComplet)?'#E8C547':'#666'}}>{j}</button>
-                      );
-                    })}
+                  <p style={{fontSize:15, fontWeight:700, color:'#111', margin:'0 0 6px'}}>Jour favori</p>
+                  <div style={{position:'relative'}}>
+                    <button
+                      onClick={()=>setShowJoursDropdown(v=>!v)}
+                      style={{width:'100%', height:40, border:'1.5px solid #eee', borderRadius:10, background:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 12px', fontSize:13, color:'#111', fontWeight:500}}
+                    >
+                      <span style={{overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1, textAlign:'left'}}>
+                        {filtreJours.size>0 ? [...filtreJours].map(j=>j.slice(0,3)).join(', ') : 'Tous les jours'}
+                      </span>
+                      <ChevronDown size={14} strokeWidth={2} color="#999" style={{flexShrink:0, marginLeft:6}}/>
+                    </button>
+                    {showJoursDropdown && (
+                      <>
+                        <div onClick={()=>setShowJoursDropdown(false)} style={{position:'fixed', inset:0, zIndex:299}}/>
+                        <div style={{position:'absolute', top:'calc(100% + 4px)', left:0, right:0, background:'#fff', borderRadius:12, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', zIndex:300, overflow:'hidden', border:'1.5px solid #eee'}}>
+                          <div
+                            onClick={()=>{setFiltreJours(new Set()); setShowJoursDropdown(false);}}
+                            style={{display:'flex', alignItems:'center', gap:10, padding:'10px 14px', cursor:'pointer', borderBottom:'1px solid #f5f5f5', background: filtreJours.size===0?'#fffbea':'#fff'}}
+                            onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'}
+                            onMouseLeave={e=>e.currentTarget.style.background=filtreJours.size===0?'#fffbea':'#fff'}
+                          >
+                            <div style={{width:16,height:16,borderRadius:4,flexShrink:0,border:'1.5px solid',borderColor:filtreJours.size===0?'#E8C547':'#ddd',background:filtreJours.size===0?'#E8C547':'#fff',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                              {filtreJours.size===0 && <Check size={10} strokeWidth={3} color="#111"/>}
+                            </div>
+                            <span style={{fontSize:13, fontWeight:500, color:'#111'}}>Tous les jours</span>
+                          </div>
+                          {['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'].map(jour=>{
+                            const actif = filtreJours.has(jour);
+                            return (
+                              <div key={jour} onClick={()=>toggleFiltreJour(jour)}
+                                style={{display:'flex', alignItems:'center', gap:10, padding:'10px 14px', cursor:'pointer', background:actif?'#fffbea':'#fff', borderBottom:'1px solid #f5f5f5'}}
+                                onMouseEnter={e=>e.currentTarget.style.background=actif?'#fffbea':'#f9f9f9'}
+                                onMouseLeave={e=>e.currentTarget.style.background=actif?'#fffbea':'#fff'}
+                              >
+                                <div style={{width:16,height:16,borderRadius:4,flexShrink:0,border:'1.5px solid',borderColor:actif?'#E8C547':'#ddd',background:actif?'#E8C547':'#fff',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                                  {actif && <Check size={10} strokeWidth={3} color="#111"/>}
+                                </div>
+                                <span style={{fontSize:13, fontWeight:500, color:'#111'}}>{jour}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
