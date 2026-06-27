@@ -731,6 +731,8 @@ function ImportModal({ onImport, onCancel, existingClients }) {
 function CorbeilleModal({ onClose, showToast }) {
   const [deleted, setDeleted] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [confirmVider, setConfirmVider] = useState(false);
+  const [confirmSuppr, setConfirmSuppr] = useState(null);
 
   useEffect(() => {
     supabase.from("clients").select("*").not("deleted_at", "is", null).order("deleted_at", { ascending: false })
@@ -744,52 +746,129 @@ function CorbeilleModal({ onClose, showToast }) {
   }
 
   async function deletePermanently(id) {
-    if (!window.confirm("Supprimer définitivement ce client ? Cette action est irréversible.")) return;
     await supabase.from("clients").delete().eq("id", id);
     setDeleted(prev => prev.filter(c => c.id !== id));
+    setConfirmSuppr(null);
     showToast("Client supprimé définitivement");
   }
 
   async function emptyTrash() {
-    if (!window.confirm(`Vider la corbeille ? ${deleted.length} client(s) seront supprimés définitivement.`)) return;
     await supabase.from("clients").delete().not("deleted_at", "is", null);
     setDeleted([]);
+    setConfirmVider(false);
     showToast("Corbeille vidée ✓");
   }
 
-  const footer = deleted.length > 0 ? [
-    <button key="empty" onClick={emptyTrash} style={{ background:"#dc2626", color:"#fff", border:"none", borderRadius:8, padding:"0 16px", height:44, fontWeight:700, fontSize:13, cursor:"pointer" }}>🗑 Vider la corbeille ({deleted.length})</button>
-  ] : null;
+  function nomClient(c) {
+    return c.genre === "Entreprise" ? (c.entreprise || c.nom) : `${c.nom || ""} ${c.prenom || ""}`.trim();
+  }
 
   return (
-    <Modal title="🗑 Corbeille" onClose={onClose} maxW={600} footer={footer}>
-      {loading && <p style={{ textAlign:"center", color:"#999", padding:"2rem" }}>Chargement...</p>}
-      {!loading && deleted.length === 0 && (
-        <div style={{ textAlign:"center", padding:"3rem" }}>
-          <div style={{ fontSize:48, marginBottom:12 }}>🗑</div>
-          <p style={{ color:"#bbb", fontSize:15 }}>La corbeille est vide</p>
-        </div>
-      )}
-      {!loading && deleted.map(c => (
-        <div key={c.id} style={{ background:"#fff", border:"1.5px solid #f0f0f0", borderRadius:12, padding:"14px", marginBottom:10, display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
-          <div style={{ flex:1 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
-              <span style={badge(c.genre)}>{c.genre}</span>
-              <span style={{ fontWeight:700, fontSize:15 }}>{c.genre === "Entreprise" ? (c.entreprise||c.nom) : `${c.nom} ${c.prenom}`}</span>
+    <>
+      <div
+        onClick={onClose}
+        onMouseDown={e => { e.preventDefault(); e.stopPropagation(); }}
+        style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:2999, cursor:"pointer" }}
+      />
+
+      <div style={{
+        position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)",
+        background:"#fff", borderRadius:20, width:"min(600px,calc(100vw - 48px))",
+        maxHeight:"85vh", display:"flex", flexDirection:"column",
+        boxShadow:"0 24px 80px rgba(0,0,0,0.18)", zIndex:3000, overflow:"hidden"
+      }}>
+        {/* Header */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"24px 28px 20px", borderBottom:"1.5px solid #f0f0f0", flexShrink:0 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+            <div style={{ width:40, height:40, borderRadius:12, background:"#fef2f2", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <span style={{ fontSize:20 }}>🗑</span>
             </div>
-            {c.tel && <p style={{ fontSize:13, color:"#555", margin:"2px 0" }}>📞 {c.tel}</p>}
-            <p style={{ fontSize:11, color:"#bbb", margin:"4px 0 0" }}>
-              Supprimé le {new Date(c.deleted_at).toLocaleDateString("fr-FR")} à {new Date(c.deleted_at).toLocaleTimeString("fr-FR", { hour:"2-digit", minute:"2-digit" })}
-              {c.deleted_by ? ` par ${c.deleted_by}` : ""}
-            </p>
+            <div>
+              <div style={{ fontWeight:800, fontSize:18, color:"#111" }}>Corbeille</div>
+              {!loading && <div style={{ fontSize:12, color:"#999", marginTop:1 }}>{deleted.length} client{deleted.length !== 1 ? "s" : ""}</div>}
+            </div>
           </div>
-          <div style={{ display:"flex", gap:8, flexShrink:0 }}>
-            <button onClick={()=>restore(c.id)} style={{ background:"#f0fdf4", border:"1.5px solid #22c55e", borderRadius:8, padding:"0 12px", height:36, fontWeight:600, fontSize:12, cursor:"pointer", color:"#16a34a" }}>↩ Restaurer</button>
-            <button onClick={()=>deletePermanently(c.id)} style={{ background:"#fef2f2", border:"1.5px solid #dc2626", borderRadius:8, padding:"0 12px", height:36, fontWeight:600, fontSize:12, cursor:"pointer", color:"#dc2626" }}>✕ Supprimer</button>
-          </div>
+          <button onClick={onClose} style={{ width:36, height:36, borderRadius:10, border:"1.5px solid #eee", background:"#f5f5f5", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, color:"#555", fontWeight:700 }}>✕</button>
         </div>
-      ))}
-    </Modal>
+
+        {/* Contenu scrollable */}
+        <div style={{ flex:1, overflowY:"auto", padding:"20px 28px" }}>
+          {loading && (
+            <div style={{ textAlign:"center", padding:"40px 0", color:"#bbb", fontSize:15 }}>Chargement…</div>
+          )}
+          {!loading && deleted.length === 0 && (
+            <div style={{ textAlign:"center", padding:"48px 0" }}>
+              <div style={{ fontSize:52, marginBottom:12 }}>🗑</div>
+              <div style={{ fontWeight:700, fontSize:16, color:"#333", marginBottom:6 }}>La corbeille est vide</div>
+              <div style={{ fontSize:13, color:"#bbb" }}>Les clients supprimés apparaîtront ici</div>
+            </div>
+          )}
+          {!loading && deleted.map(c => (
+            <div key={c.id} style={{ background:"#fafafa", border:"1.5px solid #f0f0f0", borderRadius:14, padding:"16px 18px", marginBottom:10, display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+                  <span style={badge(c.genre)}>{c.genre}</span>
+                  <span style={{ fontWeight:700, fontSize:15, color:"#111" }}>{nomClient(c)}</span>
+                </div>
+                {c.tel && <div style={{ fontSize:13, color:"#666", marginBottom:2 }}>📞 {c.tel}</div>}
+                <div style={{ fontSize:11, color:"#bbb" }}>
+                  Supprimé le {new Date(c.deleted_at).toLocaleDateString("fr-FR")} à {new Date(c.deleted_at).toLocaleTimeString("fr-FR", { hour:"2-digit", minute:"2-digit" })}
+                  {c.deleted_by ? ` par ${c.deleted_by}` : ""}
+                </div>
+              </div>
+              <div style={{ display:"flex", gap:8, flexShrink:0 }}>
+                <button onClick={() => restore(c.id)} style={{ height:38, padding:"0 14px", borderRadius:10, border:"1.5px solid #22c55e", background:"#f0fdf4", color:"#16a34a", fontWeight:700, fontSize:13, cursor:"pointer" }}>↩ Restaurer</button>
+                <button onClick={() => setConfirmSuppr(c)} style={{ height:38, padding:"0 14px", borderRadius:10, border:"1.5px solid #f0f0f0", background:"#fff", color:"#dc2626", fontWeight:700, fontSize:13, cursor:"pointer" }}>✕</button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding:"16px 28px 24px", borderTop:"1.5px solid #f0f0f0", flexShrink:0, display:"flex", gap:12 }}>
+          <button onClick={onClose} style={{ flex:1, height:50, borderRadius:14, border:"1.5px solid #eee", background:"#f5f5f5", fontWeight:700, fontSize:15, cursor:"pointer", color:"#333" }}>Fermer</button>
+          {deleted.length > 0 && (
+            <button onClick={() => setConfirmVider(true)} style={{ flex:1, height:50, borderRadius:14, border:"none", background:"#dc2626", color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer" }}>
+              Vider la corbeille ({deleted.length})
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Confirm suppression définitive */}
+      {confirmSuppr && (
+        <>
+          <div onClick={() => setConfirmSuppr(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.3)", zIndex:3100 }} />
+          <div style={{ position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)", background:"#fff", borderRadius:20, width:"min(420px,calc(100vw - 48px))", padding:"28px", zIndex:3101, boxShadow:"0 24px 80px rgba(0,0,0,0.18)" }}>
+            <div style={{ fontWeight:800, fontSize:17, color:"#111", marginBottom:8 }}>Supprimer définitivement ?</div>
+            <div style={{ fontSize:14, color:"#666", marginBottom:24 }}>
+              <strong>{nomClient(confirmSuppr)}</strong> sera supprimé définitivement. Cette action est irréversible.
+            </div>
+            <div style={{ display:"flex", gap:10 }}>
+              <button onClick={() => setConfirmSuppr(null)} style={{ flex:1, height:48, borderRadius:12, border:"1.5px solid #eee", background:"#f5f5f5", fontWeight:700, fontSize:14, cursor:"pointer" }}>Annuler</button>
+              <button onClick={() => deletePermanently(confirmSuppr.id)} style={{ flex:1, height:48, borderRadius:12, border:"none", background:"#dc2626", color:"#fff", fontWeight:700, fontSize:14, cursor:"pointer" }}>Supprimer</button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Confirm vider corbeille */}
+      {confirmVider && (
+        <>
+          <div onClick={() => setConfirmVider(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.3)", zIndex:3100 }} />
+          <div style={{ position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)", background:"#fff", borderRadius:20, width:"min(420px,calc(100vw - 48px))", padding:"28px", zIndex:3101, boxShadow:"0 24px 80px rgba(0,0,0,0.18)" }}>
+            <div style={{ fontWeight:800, fontSize:17, color:"#111", marginBottom:8 }}>Vider la corbeille ?</div>
+            <div style={{ fontSize:14, color:"#666", marginBottom:24 }}>
+              {deleted.length} client{deleted.length !== 1 ? "s" : ""} seront supprimés définitivement. Cette action est irréversible.
+            </div>
+            <div style={{ display:"flex", gap:10 }}>
+              <button onClick={() => setConfirmVider(false)} style={{ flex:1, height:48, borderRadius:12, border:"1.5px solid #eee", background:"#f5f5f5", fontWeight:700, fontSize:14, cursor:"pointer" }}>Annuler</button>
+              <button onClick={emptyTrash} style={{ flex:1, height:48, borderRadius:12, border:"none", background:"#dc2626", color:"#fff", fontWeight:700, fontSize:14, cursor:"pointer" }}>Vider ({deleted.length})</button>
+            </div>
+          </div>
+        </>
+      )}
+    </>
   );
 }
 
