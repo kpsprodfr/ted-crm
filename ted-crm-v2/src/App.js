@@ -3004,31 +3004,31 @@ function CRMApp({ user, onLogout }) {
         <div style={{marginLeft:120, height:'100vh', overflow:'hidden', background:'#f5f5f5', padding:'20px 32px', fontFamily:"'Inter','Segoe UI',Arial,sans-serif", boxSizing:'border-box', display:'flex', flexDirection:'column'}}>
 
           {/* Header */}
-          <div style={{display:'flex', alignItems:'center', gap:16, marginBottom:16, flexShrink:0}}>
+          <div style={{display:'flex', alignItems:'center', gap:16, marginBottom: screenWidth < 1100 ? 14 : 20, flexShrink:0}}>
             <h1 style={{fontSize:26, fontWeight:900, color:'#111', margin:0}}>Communications</h1>
             <button onClick={()=>{ loadEmailsHistorique(); loadSmsHistorique(); setShowHistorique(true); }} style={{ display:'flex', alignItems:'center', gap:6, background:'#fff', border:'1.5px solid #eee', borderRadius:8, padding:'6px 14px', fontSize:13, fontWeight:600, cursor:'pointer', color:'#444' }}>
               <History size={14} strokeWidth={2} /> Historique
             </button>
           </div>
 
-          <div style={{display:'grid', gridTemplateColumns: screenWidth < 1100 ? '220px 1fr 340px' : '260px 1fr 380px', gap:16, flex:1, overflow:'hidden'}}>
+          <div style={{display:'grid', gridTemplateColumns: screenWidth < 1100 ? '220px 1fr 320px' : '260px 1fr 380px', gap: screenWidth < 1100 ? 12 : 16, height: screenWidth < 1100 ? 'calc(100vh - 90px)' : 'calc(100vh - 100px)', maxHeight: screenWidth < 1100 ? 'calc(100vh - 90px)' : 'calc(100vh - 100px)', overflow:'hidden'}}>
 
             {/* ─── Colonne 1 — Ciblage ─── */}
-            <div style={{background:'#fff', borderRadius:14, padding:16, display:'flex', flexDirection:'column', gap:12, overflowY:'auto'}}>
+            <div style={{background:'#fff', borderRadius:14, padding: screenWidth < 1100 ? 12 : 16, display:'flex', flexDirection:'column', gap: screenWidth < 1100 ? 8 : 12, overflowY:'auto'}}>
               <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0}}>Cibler vos destinataires</p>
 
               {/* Segment */}
               <div>
-                <p style={{fontSize:12, fontWeight:700, color:'#111', margin:'0 0 6px'}}>Segment</p>
+                <p style={{fontSize: screenWidth < 1100 ? 12 : 13, fontWeight:700, color:'#111', margin: screenWidth < 1100 ? '0 0 5px' : '0 0 6px'}}>Segment</p>
                 {[
                   {id:'Tous', label:'Tous les clients', icon:<Users size={14} strokeWidth={2}/>},
                   {id:'Hommes', label:'Hommes', icon:<User size={14} strokeWidth={2}/>},
                   {id:'Femmes', label:'Femmes', icon:<User size={14} strokeWidth={2}/>},
                   {id:'Entreprises', label:'Entreprises', icon:<Building2 size={14} strokeWidth={2}/>},
                 ].map(s => (
-                  <div key={s.id} onClick={()=>setFiltreGenre(s.id)} style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 12px', borderRadius:8, cursor:'pointer', marginBottom:4, border: filtreGenre===s.id?'1.5px solid #E8C547':'1.5px solid #eee', background: filtreGenre===s.id?'#fffbea':'#fff' }}>
+                  <div key={s.id} onClick={()=>setFiltreGenre(s.id)} style={{ display:'flex', alignItems:'center', gap:8, padding: screenWidth < 1100 ? '6px 10px' : '8px 12px', borderRadius:8, cursor:'pointer', marginBottom: screenWidth < 1100 ? 3 : 4, border: filtreGenre===s.id?'1.5px solid #E8C547':'1.5px solid #eee', background: filtreGenre===s.id?'#fffbea':'#fff' }}>
                     <span style={{color: filtreGenre===s.id?'#E8C547':'#999'}}>{s.icon}</span>
-                    <span style={{fontSize:13, fontWeight:600, color:'#111', flex:1}}>{s.label}</span>
+                    <span style={{fontSize: screenWidth < 1100 ? 12 : 13, fontWeight:600, color:'#111', flex:1}}>{s.label}</span>
                     {filtreGenre===s.id && <CheckCircle size={14} color="#E8C547" strokeWidth={2}/>}
                   </div>
                 ))}
@@ -3036,12 +3036,12 @@ function CRMApp({ user, onLogout }) {
 
               {/* Jour favori */}
               <div>
-                <p style={{fontSize:12, fontWeight:700, color:'#111', margin:'0 0 6px'}}>Jour favori</p>
+                <p style={{fontSize: screenWidth < 1100 ? 12 : 13, fontWeight:700, color:'#111', margin: screenWidth < 1100 ? '0 0 5px' : '0 0 6px'}}>Jour favori</p>
                 <div style={{display:'flex', flexWrap:'wrap', gap:4}}>
                   {['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].map((j,i) => {
                     const jourComplet = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'][i];
                     return (
-                      <button key={j} onClick={()=>toggleFiltreJour(jourComplet)} style={{ padding:'4px 8px', borderRadius:16, fontSize:11, fontWeight:700, cursor:'pointer', border:'1.5px solid', borderColor: filtreJours.has(jourComplet)?'#111':'#eee', background: filtreJours.has(jourComplet)?'#111':'#fff', color: filtreJours.has(jourComplet)?'#E8C547':'#666' }}>{j}</button>
+                      <button key={j} onClick={()=>toggleFiltreJour(jourComplet)} style={{ padding: screenWidth < 1100 ? '3px 7px' : '4px 8px', borderRadius:16, fontSize: screenWidth < 1100 ? 10 : 11, fontWeight:700, cursor:'pointer', border:'1.5px solid', borderColor: filtreJours.has(jourComplet)?'#111':'#eee', background: filtreJours.has(jourComplet)?'#111':'#fff', color: filtreJours.has(jourComplet)?'#E8C547':'#666' }}>{j}</button>
                     );
                   })}
                 </div>
@@ -3049,18 +3049,18 @@ function CRMApp({ user, onLogout }) {
 
               {/* Service préféré */}
               <div>
-                <p style={{fontSize:12, fontWeight:700, color:'#111', margin:'0 0 6px'}}>Service préféré</p>
+                <p style={{fontSize: screenWidth < 1100 ? 12 : 13, fontWeight:700, color:'#111', margin: screenWidth < 1100 ? '0 0 5px' : '0 0 6px'}}>Service préféré</p>
                 <div style={{display:'flex', gap:6}}>
                   {[{id:'midi',label:'Midi',icon:'☀️'},{id:'soir',label:'Soir',icon:'🌙'}].map(s => (
-                    <button key={s.id} onClick={()=>toggleFiltreService(s.id)} style={{ flex:1, padding:'6px', height:34, borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', border:'1.5px solid', borderColor: filtreServices.has(s.id)?'#111':'#eee', background: filtreServices.has(s.id)?'#111':'#fff', color: filtreServices.has(s.id)?'#E8C547':'#666' }}>{s.icon} {s.label}</button>
+                    <button key={s.id} onClick={()=>toggleFiltreService(s.id)} style={{ flex:1, padding:'6px', height: screenWidth < 1100 ? 32 : 36, borderRadius:8, fontSize: screenWidth < 1100 ? 12 : 13, fontWeight:700, cursor:'pointer', border:'1.5px solid', borderColor: filtreServices.has(s.id)?'#111':'#eee', background: filtreServices.has(s.id)?'#111':'#fff', color: filtreServices.has(s.id)?'#E8C547':'#666' }}>{s.icon} {s.label}</button>
                   ))}
                 </div>
               </div>
 
               {/* Clients absents depuis */}
               <div>
-                <p style={{fontSize:12, fontWeight:700, color:'#111', margin:'0 0 6px'}}>Clients absents depuis</p>
-                <select value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{ width:'100%', height:34, border:'1.5px solid #eee', borderRadius:8, padding:'0 10px', fontSize:12, outline:'none', background:'#fff', cursor:'pointer' }}>
+                <p style={{fontSize: screenWidth < 1100 ? 12 : 13, fontWeight:700, color:'#111', margin: screenWidth < 1100 ? '0 0 5px' : '0 0 6px'}}>Clients absents depuis</p>
+                <select value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{ width:'100%', height: screenWidth < 1100 ? 32 : 36, border:'1.5px solid #eee', borderRadius:8, padding:'0 10px', fontSize:12, outline:'none', background:'#fff', cursor:'pointer' }}>
                   <option value={0}>Indifférent</option>
                   <option value={1}>1 mois</option>
                   <option value={2}>2 mois</option>
@@ -3071,7 +3071,7 @@ function CRMApp({ user, onLogout }) {
               </div>
 
               {/* Résumé de la cible */}
-              <div style={{marginTop:'auto', background:'#f9f9f9', borderRadius:8, padding:'10px 12px'}}>
+              <div style={{marginTop:'auto', background:'#f9f9f9', borderRadius:8, padding: screenWidth < 1100 ? '8px 10px' : '10px 12px'}}>
                 <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px'}}>Résumé de la cible</p>
                 {(()=>{
                   const total = clientsFiltresComm.length;
@@ -3086,7 +3086,7 @@ function CRMApp({ user, onLogout }) {
                         {label:'Femmes', value:`${femmes} (${total?Math.round(femmes/total*100):0}%)`},
                         {label:'Entreprises', value:`${entreprises} (${total?Math.round(entreprises/total*100):0}%)`},
                       ].map((r,i) => (
-                        <div key={i} style={{display:'flex', justifyContent:'space-between', fontSize:12}}>
+                        <div key={i} style={{display:'flex', justifyContent:'space-between', fontSize: screenWidth < 1100 ? 11 : 12}}>
                           <span style={{color:'#666'}}>{r.label}</span>
                           <span style={{fontWeight: r.bold?800:600, color:'#111'}}>{r.value}</span>
                         </div>
@@ -3101,7 +3101,7 @@ function CRMApp({ user, onLogout }) {
             </div>
 
             {/* ─── Colonne 2 — Destinataires ─── */}
-            <div style={{background:'#fff', borderRadius:14, padding:16, display:'flex', flexDirection:'column', height:'100%', overflow:'hidden'}}>
+            <div style={{background:'#fff', borderRadius:14, padding: screenWidth < 1100 ? 12 : 16, display:'flex', flexDirection:'column', height:'100%', overflow:'hidden'}}>
               <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14, flexShrink:0}}>
                 <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0}}>
                   Destinataires ({clientsFiltresComm.length})
@@ -3136,13 +3136,13 @@ function CRMApp({ user, onLogout }) {
                   const isMobileNum = isNumeroMobile(c.tel||'');
                   const disabled = commType==='sms' && !isMobileNum;
                   return (
-                    <div key={c.id} onClick={()=>!disabled&&toggleSelectionClient(c.id)} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 10px', borderRadius:8, cursor: disabled?'not-allowed':'pointer', opacity: disabled?0.4:1, background: estSel?'#fffbea':'transparent' }}
+                    <div key={c.id} onClick={()=>!disabled&&toggleSelectionClient(c.id)} style={{ display:'flex', alignItems:'center', gap:10, padding: screenWidth < 1100 ? '6px 8px' : '8px 10px', borderRadius:8, cursor: disabled?'not-allowed':'pointer', opacity: disabled?0.4:1, background: estSel?'#fffbea':'transparent' }}
                       onMouseEnter={e=>{ if (!disabled) e.currentTarget.style.background = estSel?'#fffbea':'#f9f9f9'; }}
                       onMouseLeave={e=>{ e.currentTarget.style.background = estSel?'#fffbea':'transparent'; }}>
                       <div style={{ width:20, height:20, borderRadius:5, border:'1.5px solid', flexShrink:0, borderColor: estSel?'#E8C547':'#ddd', background: estSel?'#E8C547':'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>
                         {estSel && <Check size={12} strokeWidth={3} color="#111"/>}
                       </div>
-                      <div style={{ width:30, height:30, borderRadius:'50%', flexShrink:0, background: c.genre==='Homme'?'#dbeafe':c.genre==='Femme'?'#fce7f3':'#dcfce7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, color: c.genre==='Homme'?'#1d4ed8':c.genre==='Femme'?'#be185d':'#15803d' }}>
+                      <div style={{ width: screenWidth < 1100 ? 28 : 30, height: screenWidth < 1100 ? 28 : 30, borderRadius:'50%', flexShrink:0, background: c.genre==='Homme'?'#dbeafe':c.genre==='Femme'?'#fce7f3':'#dcfce7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, color: c.genre==='Homme'?'#1d4ed8':c.genre==='Femme'?'#be185d':'#15803d' }}>
                         {(c.prenom||c.entreprise||'?')[0]?.toUpperCase()}
                       </div>
                       <div style={{flex:1, minWidth:0}}>
@@ -3158,7 +3158,7 @@ function CRMApp({ user, onLogout }) {
             </div>
 
             {/* ─── Colonne 3 — Message ─── */}
-            <div style={{background:'#fff', borderRadius:14, padding:16, display:'flex', flexDirection:'column', height:'100%', overflow:'hidden'}}>
+            <div style={{background:'#fff', borderRadius:14, padding: screenWidth < 1100 ? 12 : 16, display:'flex', flexDirection:'column', height:'100%', overflow:'hidden'}}>
               <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 12px', flexShrink:0}}>Créer une campagne</p>
 
               {/* Onglets SMS / Email */}
@@ -3170,12 +3170,12 @@ function CRMApp({ user, onLogout }) {
                 ))}
               </div>
 
-              <div style={{flex:1, overflowY:'auto', display:'flex', flexDirection:'column', gap:12}}>
+              <div style={{flex:1, overflowY:'auto', display:'flex', flexDirection:'column', gap: screenWidth < 1100 ? 10 : 12}}>
 
                 {/* Nom de la campagne */}
                 <div>
                   <label style={{fontSize:13, fontWeight:700, color:'#111', display:'block', marginBottom:6}}>Nom de la campagne</label>
-                  <input value={nomCampagne} onChange={e=>setNomCampagne(e.target.value.slice(0,100))} placeholder="Ex: Offre spéciale été – Juin 2026" style={{width:'100%', height:40, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:13, outline:'none', boxSizing:'border-box'}}/>
+                  <input value={nomCampagne} onChange={e=>setNomCampagne(e.target.value.slice(0,100))} placeholder="Ex: Offre spéciale été – Juin 2026" style={{width:'100%', height: screenWidth < 1100 ? 36 : 40, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:13, outline:'none', boxSizing:'border-box'}}/>
                   <div style={{textAlign:'right', fontSize:11, color:'#999', marginTop:3}}>{nomCampagne.length}/100</div>
                 </div>
 
@@ -3183,7 +3183,7 @@ function CRMApp({ user, onLogout }) {
                 {commType==='email' && (
                   <div>
                     <label style={{fontSize:13, fontWeight:700, color:'#111', display:'block', marginBottom:6}}>Objet</label>
-                    <input value={commObjet} onChange={e=>setCommObjet(e.target.value)} placeholder="Objet de l'email..." style={{width:'100%', height:40, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:13, outline:'none', boxSizing:'border-box'}}/>
+                    <input value={commObjet} onChange={e=>setCommObjet(e.target.value)} placeholder="Objet de l'email..." style={{width:'100%', height: screenWidth < 1100 ? 36 : 40, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:13, outline:'none', boxSizing:'border-box'}}/>
                   </div>
                 )}
 
@@ -3197,7 +3197,7 @@ function CRMApp({ user, onLogout }) {
                       commType==='sms' ? setSmsMessage(e.target.value.slice(0,limit)) : setCommMessage(e.target.value.slice(0,limit));
                     }}
                     placeholder="Écrivez votre message..."
-                    style={{width:'100%', height:90, border:'1.5px solid #eee', borderRadius:8, padding:'10px 12px', fontSize:13, outline:'none', resize:'none', boxSizing:'border-box', fontFamily:'inherit'}}
+                    style={{width:'100%', height: screenWidth < 1100 ? 80 : 90, border:'1.5px solid #eee', borderRadius:8, padding:'10px 12px', fontSize:13, outline:'none', resize:'none', boxSizing:'border-box', fontFamily:'inherit'}}
                   />
                   {commType==='sms' && (
                     <div style={{display:'flex', justifyContent:'space-between', fontSize:11, color:'#999', marginTop:3}}>
