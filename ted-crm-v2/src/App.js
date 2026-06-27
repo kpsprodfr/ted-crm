@@ -3526,11 +3526,11 @@ function CRMApp({ user, onLogout }) {
         const pctEvol = nbMoisDernier>0 ? Math.round((nbCeMois-nbMoisDernier)/nbMoisDernier*100) : 0;
 
         return (
-        <main style={{ height:'100vh', overflowY:'auto' }}>
-          {/* HEADER STICKY — titre + corbeille + import/export + recherche + filtres */}
-          <div style={{position:'sticky', top:0, zIndex:200, background:'#f5f5f5', padding:'24px 32px 0', boxShadow:'0 2px 8px rgba(0,0,0,0.04)'}}>
-            {/* Ligne titre + boutons */}
-            <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16}}>
+        <div style={{minHeight:'100vh', background:'#f5f5f5'}}>
+
+          {/* 1. HEADER — titre + Import/Export + Corbeille — scrolle normalement */}
+          <div style={{padding:'24px 32px 16px'}}>
+            <div style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
               <h1 style={{fontSize:26, fontWeight:900, color:'#111', margin:0}}>Clients</h1>
               <div style={{display:'flex', gap:8}}>
                 <div style={{position:'relative'}}>
@@ -3550,26 +3550,11 @@ function CRMApp({ user, onLogout }) {
                 </button>
               </div>
             </div>
-            {/* Ligne recherche + filtres + nouveau client */}
-            <div style={{display:'flex', alignItems:'center', gap:12, paddingBottom:12, flexWrap:'wrap'}}>
-              <div style={{position:'relative', flex:1, minWidth:200}}>
-                <Search size={16} strokeWidth={2} color="#999" style={{position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', pointerEvents:'none'}}/>
-                <input placeholder="Rechercher un client..." value={rechercheClients} onChange={e=>setRechercheClients(e.target.value)} style={{width:'100%', height:44, border:'1.5px solid #eee', borderRadius:12, padding:'0 14px 0 40px', fontSize:14, outline:'none', background:'#fff', boxSizing:'border-box', boxShadow:'0 1px 4px rgba(0,0,0,0.06)'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
-                {rechercheClients && <button onClick={()=>setRechercheClients('')} style={{position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'#aaa', fontSize:16, padding:0}}>✕</button>}
-              </div>
-              {[{id:'Tous',label:'Tous'},{id:'Homme',label:'Hommes'},{id:'Femme',label:'Femmes'},{id:'Entreprise',label:'Entreprises'}].map(f=>(
-                <button key={f.id} onClick={()=>setFiltreGenreClients(f.id)} style={{height:44, padding:'0 18px', borderRadius:12, cursor:'pointer', fontSize:14, fontWeight:700, border:'none', background: filtreGenreClients===f.id?'#111':'#fff', color: filtreGenreClients===f.id?'#fff':'#666', boxShadow:'0 1px 4px rgba(0,0,0,0.06)'}}>{f.label}</button>
-              ))}
-              <button onClick={()=>setModalAdd(true)} style={{height:44, padding:'0 20px', borderRadius:12, border:'none', background:'#E8C547', color:'#111', fontSize:14, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', gap:8, flexShrink:0, boxShadow:'0 2px 8px rgba(232,197,71,0.3)'}}>
-                <Plus size={16} strokeWidth={2}/> Nouveau client
-              </button>
-            </div>
           </div>
 
-          {/* Contenu scrollable */}
-          <div style={{padding:'16px 32px 32px'}}>
-          {/* 3 blocs stats */}
-          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:16, marginBottom:16}}>
+          {/* 2. STATS — scrollent normalement */}
+          <div style={{padding:'0 32px 16px'}}>
+          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:16}}>
             <div style={{background:'#fff', borderRadius:14, padding:'20px 24px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
               <div>
                 <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 6px'}}>Total clients</p>
@@ -3599,9 +3584,28 @@ function CRMApp({ user, onLogout }) {
               <div style={{width:48, height:48, borderRadius:12, background:'#fffbea', display:'flex', alignItems:'center', justifyContent:'center'}}><Trophy size={22} strokeWidth={2} color="#E8C547"/></div>
             </div>
           </div>
+          </div>{/* fin stats */}
 
-          {/* Liste clients */}
-          <div style={{background:'#fff', borderRadius:14, overflow:'hidden', marginBottom:16}}>
+          {/* 3. RECHERCHE + FILTRES — STICKY */}
+          <div style={{position:'sticky', top:0, zIndex:100, background:'#f5f5f5', padding:'10px 32px 12px', borderBottom:'1px solid #eee', boxShadow:'0 2px 8px rgba(0,0,0,0.05)'}}>
+            <div style={{display:'flex', alignItems:'center', gap:12, flexWrap:'wrap'}}>
+              <div style={{position:'relative', flex:1, minWidth:200}}>
+                <Search size={16} strokeWidth={2} color="#999" style={{position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', pointerEvents:'none'}}/>
+                <input placeholder="Rechercher un client..." value={rechercheClients} onChange={e=>setRechercheClients(e.target.value)} style={{width:'100%', height:44, border:'1.5px solid #eee', borderRadius:12, padding:'0 14px 0 40px', fontSize:14, outline:'none', background:'#fff', boxSizing:'border-box'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
+                {rechercheClients && <button onClick={()=>setRechercheClients('')} style={{position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'#aaa', fontSize:16, padding:0}}>✕</button>}
+              </div>
+              {[{id:'Tous',label:'Tous'},{id:'Homme',label:'Hommes'},{id:'Femme',label:'Femmes'},{id:'Entreprise',label:'Entreprises'}].map(f=>(
+                <button key={f.id} onClick={()=>setFiltreGenreClients(f.id)} style={{height:44, padding:'0 18px', borderRadius:12, cursor:'pointer', fontSize:14, fontWeight:700, border:'none', background: filtreGenreClients===f.id?'#111':'#fff', color: filtreGenreClients===f.id?'#fff':'#666', boxShadow:'0 1px 4px rgba(0,0,0,0.06)'}}>{f.label}</button>
+              ))}
+              <button onClick={()=>setModalAdd(true)} style={{height:44, padding:'0 20px', borderRadius:12, border:'none', background:'#E8C547', color:'#111', fontSize:14, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', gap:8, flexShrink:0, boxShadow:'0 2px 8px rgba(232,197,71,0.3)'}}>
+                <Plus size={16} strokeWidth={2}/> Nouveau client
+              </button>
+            </div>
+          </div>
+
+          {/* 4. LISTE clients */}
+          <div style={{padding:'16px 32px 32px'}}>
+          <div style={{background:'#fff', borderRadius:14, overflow:'hidden'}}>
             {clientsFiltres.length === 0 ? (
               <div style={{padding:'48px', textAlign:'center', color:'#bbb'}}>
                 <Users size={32} strokeWidth={1.5} color="#ddd" style={{marginBottom:12}}/>
@@ -3651,8 +3655,9 @@ function CRMApp({ user, onLogout }) {
               );
             })}
           </div>
-          </div>{/* fin contenu scrollable */}
-        </main>
+          </div>{/* fin liste */}
+
+        </div>
         );
       })()}
 
