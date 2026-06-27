@@ -1855,9 +1855,9 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
   const [ficheClientRP, setFicheClientRP] = useState(null);
   const [showConfirmDecoRP, setShowConfirmDecoRP] = useState(false);
   const [calDate, setCalDate] = useState(new Date());
-  const [calAnimation, setCalAnimation] = useState(null);
+  const [calDragX, setCalDragX] = useState(0);
+  const [calIsDragging, setCalIsDragging] = useState(false);
   const calSwipeTouchStartX = useRef(null);
-  const calSwipeTouchStartY = useRef(null);
   const [calMensuelOuvert, setCalMensuelOuvert] = useState(false);
   const [calJourSelectionne, setCalJourSelectionne] = useState(new Date().toISOString().split('T')[0]);
   const [calServiceSelectionne, setCalServiceSelectionne] = useState(new Date().getHours() < 15 ? 'midi' : 'soir');
@@ -2204,16 +2204,18 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                   {/* 3. Grand calendrier mensuel — toujours visible sur desktop */}
                   {(!isMobile || calMensuelOuvert) && (() => {
                     const changerMois = (direction) => {
-                      setCalAnimation(direction === 1 ? 'right' : 'left');
+                      setCalDragX(direction > 0 ? -300 : 300);
                       setTimeout(() => {
                         setCalDate(new Date(annee, mois + direction, 1));
-                        setCalAnimation(null);
-                      }, 200);
+                        setCalDragX(direction > 0 ? 300 : -300);
+                        setTimeout(() => setCalDragX(0), 20);
+                      }, 150);
                     };
                     return (
-                    <div style={{ marginBottom:4, userSelect:'none', WebkitUserSelect:'none' }}
-                      onTouchStart={e=>{ calSwipeTouchStartX.current=e.touches[0].clientX; calSwipeTouchStartY.current=e.touches[0].clientY; }}
-                      onTouchEnd={e=>{ if(calSwipeTouchStartX.current===null)return; const dx=e.changedTouches[0].clientX-calSwipeTouchStartX.current; const dy=e.changedTouches[0].clientY-calSwipeTouchStartY.current; if(Math.abs(dy)>Math.abs(dx)||Math.abs(dx)<50){calSwipeTouchStartX.current=null;return;} changerMois(dx<0?1:-1); calSwipeTouchStartX.current=null; calSwipeTouchStartY.current=null; }}
+                    <div style={{ marginBottom:4, userSelect:'none', WebkitUserSelect:'none', overflow:'hidden' }}
+                      onTouchStart={e=>{ calSwipeTouchStartX.current=e.touches[0].clientX; setCalIsDragging(true); setCalDragX(0); }}
+                      onTouchMove={e=>{ if(calSwipeTouchStartX.current===null)return; const dx=e.touches[0].clientX-calSwipeTouchStartX.current; setCalDragX(Math.max(-150,Math.min(150,dx))); }}
+                      onTouchEnd={e=>{ if(calSwipeTouchStartX.current===null)return; const dx=e.changedTouches[0].clientX-calSwipeTouchStartX.current; setCalIsDragging(false); if(Math.abs(dx)>60){const dir=dx<0?1:-1; setCalDragX(dx<0?-300:300); setTimeout(()=>{ setCalDate(new Date(annee,mois+dir,1)); setCalDragX(dx<0?300:-300); setTimeout(()=>setCalDragX(0),20); },150);}else{setCalDragX(0);} calSwipeTouchStartX.current=null; }}
                     >
                       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
                         <button onClick={()=>changerMois(-1)} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, fontSize:16, cursor:'pointer', fontWeight:700 }}>‹</button>
@@ -2223,7 +2225,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                       <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2, marginBottom:4 }}>
                         {JOURS.map(j => <div key={j} style={{ textAlign:'center', fontSize:13, fontWeight:700, color:'#999', padding:'8px 0' }}>{j}</div>)}
                       </div>
-                      <div className={calAnimation==='right'?'cal-slide-from-right':calAnimation==='left'?'cal-slide-from-left':''} style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:3, overflow:'hidden' }}>
+                      <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:3, transform:`translateX(${calDragX}px)`, transition:calIsDragging?'none':'transform 0.2s cubic-bezier(0.4,0,0.2,1)', willChange:'transform', touchAction:'pan-y' }}>
                         {cases.map((d, i) => {
                           if (!d) return <div key={i} />;
                           const iso = `${annee}-${String(mois+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -2240,7 +2242,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                                 fontWeight: isSelected || isToday ? 800 : 400, fontSize:16,
                                 opacity: estPasse ? 0.4 : 1, transition:'background 0.15s' }}>
                               {d}
-                              {hasResa && <span style={{ display:'block', width:4, height:4, borderRadius:'50%', background: isSelected ? '#E8C547' : '#E8C547', margin:'2px auto 0' }} />}
+                              {hasResa && <span style={{ display:'block', width:4, height:4, borderRadius:'50%', background:'#E8C547', margin:'2px auto 0' }} />}
                             </button>
                           );
                         })}
