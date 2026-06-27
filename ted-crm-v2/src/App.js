@@ -2201,14 +2201,14 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
         </header>
       )}
 
-      <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? '1fr 400px' : undefined, gap: !isMobile ? 24 : undefined, padding: !isMobile ? '24px 32px' : undefined, maxWidth: !isMobile ? 1440 : undefined, margin: !isMobile ? '0 auto' : undefined, alignItems: !isMobile ? 'stretch' : 'start', height: !isMobile ? 'calc(100vh - 48px)' : undefined, boxSizing: !isMobile ? 'border-box' : undefined }}>
+      <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? '1fr 380px' : undefined, gap: !isMobile ? 16 : undefined, padding: !isMobile ? '24px 32px' : undefined, maxWidth: !isMobile ? 1440 : undefined, margin: !isMobile ? '0 auto' : undefined, alignItems: !isMobile ? 'stretch' : 'start', height: !isMobile ? 'calc(100vh - 48px)' : undefined, boxSizing: !isMobile ? 'border-box' : undefined, background: !isMobile ? '#f5f5f5' : undefined }}>
       <main style={{ maxWidth: isMobile ? 800 : 'none', margin: isMobile ? '0 auto' : 0, padding: isMobile ? '16px 12px 100px' : '0', display: !isMobile ? 'flex' : 'block', flexDirection: !isMobile ? 'column' : undefined, gap: !isMobile ? 12 : undefined, height: !isMobile ? '100%' : undefined, overflow: !isMobile ? 'hidden' : undefined }}>
 
         {!isMobile && (
           <div style={{ display:'flex', alignItems:'center', gap:12, flexShrink:0, position:'relative' }}>
-            <h1 style={{ fontSize:26, fontWeight:900, color:'#111', margin:0 }}>Réservations</h1>
+            <h1 style={{ fontSize:28, fontWeight:900, color:'#111', margin:0 }}>Réservations</h1>
             <div style={{ position:'relative' }}>
-              <button onClick={()=>setShowFormDropdown(v=>!v)} style={{ display:'flex', alignItems:'center', gap:6, background:'#f0f0f0', border:'none', borderRadius:8, padding:'6px 12px', fontSize:12, fontWeight:600, cursor:'pointer', color:'#444' }}>
+              <button onClick={()=>setShowFormDropdown(v=>!v)} style={{ display:'flex', alignItems:'center', gap:6, height:38, padding:'0 14px', background:'#fff', border:'1.5px solid #eee', borderRadius:10, fontSize:13, fontWeight:600, cursor:'pointer', color:'#666' }}>
                 <Link size={14} strokeWidth={2} /> Formulaire
               </button>
               {showFormDropdown && (
@@ -2229,7 +2229,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
         {(() => {
           const nbAttente = resaList.filter(r => r.statut === 'attente').length;
           return (
-            <div onClick={()=>setShowDemandesAttente(true)} className={nbAttente > 0 ? 'alarm-blink' : ''} style={{ background: nbAttente > 0 ? '#dc2626' : '#fff', border: nbAttente > 0 ? 'none' : '1.5px solid #f0f0f0', borderRadius:12, padding:'14px 16px', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', flexShrink:0, transition:'background 0.1s' }}>
+            <div onClick={()=>setShowDemandesAttente(true)} className={nbAttente > 0 ? 'alarm-blink' : ''} style={{ background: nbAttente > 0 ? '#dc2626' : '#fff', border: nbAttente > 0 ? 'none' : '1.5px solid #f0f0f0', borderRadius:16, padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', flexShrink:0, transition:'background 0.1s', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
               <span style={{ fontSize:15, fontWeight:800, color: nbAttente > 0 ? '#fff' : '#111', display:'flex', alignItems:'center', gap:8 }}><ClipboardList size={16} strokeWidth={2} color={nbAttente > 0 ? '#fff' : '#666'} /> Demandes de réservation en attente</span>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                 {nbAttente > 0 ? (
@@ -2273,7 +2273,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           const couvertsMidi = calJourSelectionne ? resaList.filter(r => r.date === calJourSelectionne && r.service === 'midi' && r.statut === 'confirmee').reduce((sum, r) => sum + (r.nb_personnes || 0), 0) : 0;
           const couvertsSoir = calJourSelectionne ? resaList.filter(r => r.date === calJourSelectionne && r.service === 'soir' && r.statut === 'confirmee').reduce((sum, r) => sum + (r.nb_personnes || 0), 0) : 0;
           return (
-            <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', padding:14, flex:1, display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
+            <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', padding:14, flex:1, display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
               {/* 1. 7 rectangles */}
               <div style={{ display:'flex', gap:6, marginBottom:10, overflowX:'auto', flexShrink:0 }}>
                 {sept7Jours.map(dateStr => {
@@ -2583,32 +2583,36 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           ? resasDuJour.filter(r => { const n = `${r.clients?.prenom||''} ${r.clients?.nom||''} ${r.clients?.entreprise||''} ${r.clients?.tel||''}`.toLowerCase(); return n.includes(resaSearchPanel.toLowerCase()); })
           : resasDuJour;
         return (
-          <div style={{ background:'#fff', borderRadius:14, border:'1.5px solid #f0f0f0', height:'100%', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+          <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', height:'100%', display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
             {/* Header fixe */}
-            <div style={{ flexShrink:0, padding:'20px 20px 12px' }}>
-              <p style={{ fontSize:12, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 4px' }}>Réservations du</p>
-              <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8}}>
-                <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#111' }}>
+            <div style={{ flexShrink:0, padding:'20px 20px 14px', borderBottom:'1px solid #f5f5f5' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
+                <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0 }}>Réservations du</p>
+              </div>
+              <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10}}>
+                <h3 style={{ margin:0, fontSize:16, fontWeight:800, color:'#111' }}>
                   {calJourSelectionne ? new Date(calJourSelectionne+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}) : 'Sélectionner un jour'}
                   {calServiceSelectionne ? ` — ${calServiceSelectionne==='midi'?'☀️ Midi':'🌙 Soir'}` : ''}
                 </h3>
                 {calJourSelectionne && calServiceSelectionne && (
-                  <button onClick={()=>telechargerTableau(calJourSelectionne, calServiceSelectionne, resasDuJour.filter(r=>r.statut==='confirmee'))} style={{ background:'#111', color:'#fff', border:'none', borderRadius:8, padding:'6px 14px', fontSize:12, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
-                    <Download size={14} strokeWidth={2} color="#fff" /> Télécharger
+                  <button onClick={()=>telechargerTableau(calJourSelectionne, calServiceSelectionne, resasDuJour.filter(r=>r.statut==='confirmee'))} style={{ height:36, padding:'0 14px', background:'#111', color:'#fff', border:'none', borderRadius:10, fontSize:12, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+                    <Download size={13} strokeWidth={2} color="#fff" /> Télécharger
                   </button>
                 )}
               </div>
               {calJourSelectionne && calServiceSelectionne && (
                 <div style={{ display:'flex', gap:16, marginBottom:12, fontSize:13, color:'#666', alignItems:'center' }}>
-                  <span style={{ display:'flex', alignItems:'center', gap:5 }}><Users size={14} strokeWidth={2} color="#666" /> {resasDuJour.filter(r=>r.statut==='confirmee').length} réservation{resasDuJour.filter(r=>r.statut==='confirmee').length > 1 ? 's' : ''}</span>
-                  <span>·</span>
-                  <span style={{ display:'flex', alignItems:'center', gap:5 }}><UtensilsCrossed size={14} strokeWidth={2} color="#666" /> {resasDuJour.filter(r=>r.statut==='confirmee').reduce((s,r) => s + (r.nb_personnes||0), 0)} couverts</span>
+                  <span style={{ display:'flex', alignItems:'center', gap:5 }}><Users size={13} strokeWidth={2} color="#999" /> {resasDuJour.filter(r=>r.statut==='confirmee').length} réservation{resasDuJour.filter(r=>r.statut==='confirmee').length > 1 ? 's' : ''}</span>
+                  <span style={{ display:'flex', alignItems:'center', gap:5 }}><UtensilsCrossed size={13} strokeWidth={2} color="#999" /> {resasDuJour.filter(r=>r.statut==='confirmee').reduce((s,r) => s + (r.nb_personnes||0), 0)} couverts</span>
                 </div>
               )}
-              <input value={resaSearchPanel} onChange={e=>setResaSearchPanel(e.target.value)} placeholder="Rechercher une réservation..." style={{ width:'100%', height:38, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:13, outline:'none', boxSizing:'border-box' }} />
+              <div style={{ position:'relative' }}>
+                <Search size={14} strokeWidth={2} color="#999" style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} />
+                <input value={resaSearchPanel} onChange={e=>setResaSearchPanel(e.target.value)} placeholder="Rechercher une réservation..." style={{ width:'100%', height:40, border:'1.5px solid #eee', borderRadius:12, padding:'0 12px 0 34px', fontSize:13, outline:'none', boxSizing:'border-box' }} />
+              </div>
             </div>
             {/* Liste scrollable */}
-            <div style={{ flex:1, overflowY:'auto', padding:'0 20px' }}>
+            <div style={{ flex:1, overflowY:'auto' }}>
               {resasDuJourFiltrees.map(r => {
                 const statutColors = {
                   'confirmee': {bg:'#dcfce7', color:'#16a34a', label:'Confirmée'},
@@ -2618,32 +2622,39 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                   'annulee':   {bg:'#f3f4f6', color:'#6b7280', label:'Annulée'},
                 };
                 const s = statutColors[r.statut] || statutColors['confirmee'];
+                const avatarBg = r.clients?.genre==='Homme'?'#dbeafe':r.clients?.genre==='Femme'?'#fce7f3':'#dcfce7';
+                const avatarColor = r.clients?.genre==='Homme'?'#1d4ed8':r.clients?.genre==='Femme'?'#be185d':'#15803d';
+                const initiales = r.clients?.genre==='Entreprise'
+                  ? (r.clients?.entreprise||'?').slice(0,2).toUpperCase()
+                  : `${(r.clients?.prenom||'?')[0]}${(r.clients?.nom||'')[0]||''}`.toUpperCase();
                 return (
-                  <div key={r.id} onClick={()=>setDetailResa(r)} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 0', borderBottom:'1px solid #f5f5f5', cursor:'pointer' }}
-                    onMouseEnter={e=>e.currentTarget.style.background='#fffbea'}
+                  <div key={r.id} onClick={()=>setDetailResa(r)} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 20px', borderBottom:'1px solid #f5f5f5', cursor:'pointer' }}
+                    onMouseEnter={e=>e.currentTarget.style.background='#fafafa'}
                     onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                     <span style={{ fontSize:14, fontWeight:800, color:'#111', minWidth:44, flexShrink:0 }}>{r.heure||'—'}</span>
+                    <div style={{ width:36, height:36, borderRadius:'50%', flexShrink:0, background:avatarBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:800, color:avatarColor }}>{initiales}</div>
                     <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontWeight:700, fontSize:14, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                      <div style={{ fontWeight:700, fontSize:14, color: r.statut==='absente'?'#dc2626':'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                         {r.clients?.genre==='Entreprise' ? r.clients?.entreprise : `${r.clients?.prenom||''} ${r.clients?.nom||''}`.trim()}
                       </div>
                       <div style={{ fontSize:12, color:'#999' }}>{r.nb_personnes} pers.</div>
                     </div>
                     <span style={{ background:s.bg, color:s.color, borderRadius:20, padding:'3px 10px', fontSize:11, fontWeight:700, flexShrink:0, whiteSpace:'nowrap' }}>{s.label}</span>
-                    {r.clients?.tel && <a href={`tel:${r.clients.tel}`} onClick={e=>e.stopPropagation()} style={{ color:'#666', flexShrink:0, display:'flex', alignItems:'center', padding:4, borderRadius:6, textDecoration:'none' }}><Phone size={15} strokeWidth={2} color="#666" /></a>}
+                    {r.clients?.tel && <a href={`tel:${r.clients.tel}`} onClick={e=>e.stopPropagation()} style={{ width:32, height:32, borderRadius:8, background:'#f5f5f5', border:'none', display:'flex', alignItems:'center', justifyContent:'center', textDecoration:'none', flexShrink:0 }}><Phone size={14} strokeWidth={2} color="#666" /></a>}
                   </div>
                 );
               })}
               {resasDuJour.length === 0 && (
-                <p style={{ color:'#bbb', fontSize:13, textAlign:'center', padding:'32px 0' }}>
-                  {calJourSelectionne && calServiceSelectionne ? 'Aucune réservation confirmée' : 'Sélectionner un jour et un service'}
-                </p>
+                <div style={{ padding:'48px', textAlign:'center', color:'#bbb' }}>
+                  <CalendarDays size={32} strokeWidth={1.5} color="#ddd" style={{ marginBottom:12 }} />
+                  <p style={{ fontSize:14, margin:0 }}>{calJourSelectionne && calServiceSelectionne ? 'Aucune réservation confirmée' : 'Sélectionner un jour et un service'}</p>
+                </div>
               )}
             </div>
             {/* Bouton fixe en bas */}
-            <div style={{ flexShrink:0, padding:'12px 20px 20px', borderTop:'1px solid #f0f0f0' }}>
-              <button onClick={()=>setShowAddResa(true)} style={{ width:'100%', height:50, background:'#E8C547', border:'none', borderRadius:12, fontSize:15, fontWeight:800, cursor:'pointer', color:'#111' }}>
-                + Nouvelle réservation
+            <div style={{ flexShrink:0, padding:'14px 20px', borderTop:'1px solid #f5f5f5' }}>
+              <button onClick={()=>setShowAddResa(true)} style={{ width:'100%', height:52, background:'#E8C547', border:'none', borderRadius:14, fontSize:15, fontWeight:800, cursor:'pointer', color:'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:8, boxShadow:'0 2px 8px rgba(232,197,71,0.3)' }}>
+                <Plus size={18} strokeWidth={2} /> Nouvelle réservation
               </button>
             </div>
           </div>
