@@ -2548,7 +2548,10 @@ function CRMApp({ user, onLogout }) {
   const [showConfirmQuitter, setShowConfirmQuitter] = useState(false);
   const [pendingFermer, setPendingFermer] = useState(null);
   const [commFilter, setCommFilter] = useState('tous');
-  const [filtreGenre, setFiltreGenre] = useState('Tous');
+  const [filtreGenresComm, setFiltreGenresComm] = useState(new Set());
+  function toggleGenreComm(genre) {
+    setFiltreGenresComm(prev => { const next = new Set(prev); next.has(genre)?next.delete(genre):next.add(genre); return next; });
+  }
   const [commType, setCommType] = useState('email');
   const [nomCampagne, setNomCampagne] = useState('');
   const [showHistorique, setShowHistorique] = useState(false);
@@ -2925,9 +2928,7 @@ function CRMApp({ user, onLogout }) {
 
     // Filtre unifié pour les deux modes
     const clientsFiltresComm = clients.filter(c => {
-      if (filtreGenre === 'Hommes' && c.genre !== 'Homme') return false;
-      if (filtreGenre === 'Femmes' && c.genre !== 'Femme') return false;
-      if (filtreGenre === 'Entreprises' && c.genre !== 'Entreprise') return false;
+      if (filtreGenresComm.size > 0 && !filtreGenresComm.has(c.genre)) return false;
       const q = commSearch.toLowerCase();
       if (q && !normalizeStr(c.nom||'').includes(normalizeStr(q)) && !normalizeStr(c.prenom||'').includes(normalizeStr(q)) && !(c.mail||'').toLowerCase().includes(q)) return false;
       if (filtreAbsentsMois > 0) {
@@ -3055,18 +3056,23 @@ function CRMApp({ user, onLogout }) {
               {/* Segment */}
               <div style={{flexShrink:0}}>
                 <p style={{fontSize:12, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Segment</p>
-                {[
-                  {id:'Tous', label:'Tous les clients', icon:<Users size={13} strokeWidth={2}/>},
-                  {id:'Hommes', label:'Hommes', icon:<User size={13} strokeWidth={2}/>},
-                  {id:'Femmes', label:'Femmes', icon:<User size={13} strokeWidth={2}/>},
-                  {id:'Entreprises', label:'Entreprises', icon:<Building2 size={13} strokeWidth={2}/>},
-                ].map(s => (
-                  <div key={s.id} onClick={()=>setFiltreGenre(s.id)} style={{padding:'6px 10px', borderRadius:8, marginBottom:3, cursor:'pointer', border: filtreGenre===s.id?'1.5px solid #E8C547':'1.5px solid #eee', background: filtreGenre===s.id?'#fffbea':'#fff', display:'flex', alignItems:'center', gap:8}}>
-                    <span style={{color: filtreGenre===s.id?'#E8C547':'#999'}}>{s.icon}</span>
-                    <span style={{fontSize:12, fontWeight:600, color:'#111', flex:1}}>{s.label}</span>
-                    {filtreGenre===s.id && <CheckCircle size={12} color="#E8C547" strokeWidth={2}/>}
+                <div onClick={()=>setFiltreGenresComm(new Set())} style={{padding:'6px 10px', borderRadius:8, marginBottom:3, cursor:'pointer', border: filtreGenresComm.size===0?'1.5px solid #E8C547':'1.5px solid #eee', background: filtreGenresComm.size===0?'#fffbea':'#fff', display:'flex', alignItems:'center', gap:8}}>
+                  <div style={{width:16,height:16,borderRadius:4,flexShrink:0,border:'1.5px solid',borderColor:filtreGenresComm.size===0?'#E8C547':'#ddd',background:filtreGenresComm.size===0?'#E8C547':'#fff',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                    {filtreGenresComm.size===0 && <Check size={10} strokeWidth={3} color="#111"/>}
                   </div>
-                ))}
+                  <span style={{fontSize:12, fontWeight:600, color:'#111', flex:1}}>Tous les clients</span>
+                </div>
+                {[{g:'Homme',label:'Hommes'},{g:'Femme',label:'Femmes'},{g:'Entreprise',label:'Entreprises'}].map(({g,label}) => {
+                  const actif = filtreGenresComm.has(g);
+                  return (
+                    <div key={g} onClick={()=>toggleGenreComm(g)} style={{padding:'6px 10px', borderRadius:8, marginBottom:3, cursor:'pointer', border: actif?'1.5px solid #E8C547':'1.5px solid #eee', background: actif?'#fffbea':'#fff', display:'flex', alignItems:'center', gap:8}}>
+                      <div style={{width:16,height:16,borderRadius:4,flexShrink:0,border:'1.5px solid',borderColor:actif?'#E8C547':'#ddd',background:actif?'#E8C547':'#fff',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                        {actif && <Check size={10} strokeWidth={3} color="#111"/>}
+                      </div>
+                      <span style={{fontSize:12, fontWeight:600, color:'#111', flex:1}}>{label}</span>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Jour favori */}
@@ -3125,7 +3131,7 @@ function CRMApp({ user, onLogout }) {
                     </div>
                   ));
                 })()}
-                <button onClick={()=>{ setFiltreGenre('Tous'); setFiltreAbsentsMois(0); setFiltreJours(new Set()); setFiltreServices(new Set()); }} style={{width:'100%', marginTop:6, padding:'5px', border:'none', background:'none', fontSize:11, color:'#999', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:4}}>
+                <button onClick={()=>{ setFiltreGenresComm(new Set()); setFiltreAbsentsMois(0); setFiltreJours(new Set()); setFiltreServices(new Set()); }} style={{width:'100%', marginTop:6, padding:'5px', border:'none', background:'none', fontSize:11, color:'#999', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:4}}>
                   <RotateCcw size={10} strokeWidth={2}/> Réinitialiser
                 </button>
               </div>
@@ -3285,11 +3291,11 @@ function CRMApp({ user, onLogout }) {
                   <div style={{background:'#f9f9f9',borderRadius:12,padding:16,marginBottom:20}}>
                     <p style={{fontSize:12,fontWeight:700,color:'#999',textTransform:'uppercase',letterSpacing:1,margin:'0 0 10px'}}>Filtres actifs</p>
                     <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
-                      {filtreGenre!=='Tous' && <span style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>{filtreGenre}</span>}
+                      {filtreGenresComm.size>0 && [...filtreGenresComm].map(g=><span key={g} style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>{g}s</span>)}
                       {filtreAbsentsMois > 0 && <span style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>Absents {filtreAbsentsMois} mois</span>}
                       {filtreJours?.size>0 && [...filtreJours].map(j=><span key={j} style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>{j}</span>)}
                       {filtreServices?.size>0 && [...filtreServices].map(s=><span key={s} style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>{s==='midi'?'☀️ Midi':'🌙 Soir'}</span>)}
-                      {filtreGenre==='Tous' && !filtreAbsentsMois && !filtreJours?.size && !filtreServices?.size && <span style={{fontSize:13,color:'#999'}}>Aucun filtre — tous les clients</span>}
+                      {filtreGenresComm.size===0 && !filtreAbsentsMois && !filtreJours?.size && !filtreServices?.size && <span style={{fontSize:13,color:'#999'}}>Aucun filtre — tous les clients</span>}
                     </div>
                   </div>
                   {/* Destinataires + aperçu */}
