@@ -4047,30 +4047,27 @@ function CRMApp({ user, onLogout }) {
                     style={{display:'flex', alignItems:'center', gap:12, padding:'10px 20px', borderBottom: idx<clientsFiltres.length-1?'1px solid #f5f5f5':'none', cursor:'pointer'}}
                     onMouseEnter={e=>e.currentTarget.style.background='#fafafa'}
                     onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                    <div style={{width:34, height:34, borderRadius:'50%', flexShrink:0, background:avatarBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:800, color:avatarColor}}>{initiales}</div>
+                    <div style={{width:32, height:32, borderRadius:'50%', flexShrink:0, background:avatarBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:600, color:avatarColor}}>{initiales}</div>
                     <div style={{minWidth:180, flex:'0 0 180px'}}>
                       <div style={{fontWeight:500, fontSize:13, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.genre==='Entreprise'?c.entreprise:`${c.prenom||''} ${c.nom||''}`}</div>
-                      <div style={{display:'flex', alignItems:'center', gap:4, marginTop:2}}>
-                        <Phone size={11} strokeWidth={2} color="#999"/>
-                        <span style={{fontSize:11, color:'#999'}}>{c.tel||'—'}</span>
-                      </div>
+                      <div style={{fontSize:11, color:'#999', marginTop:1}}>{c.tel||'—'}</div>
                     </div>
                     <div style={{display:'flex', alignItems:'center', gap:8, flex:'0 0 110px'}}>
-                      <CalendarDays size={16} strokeWidth={2} color="#ccc"/>
+                      <CalendarDays size={15} strokeWidth={2} color="#ccc"/>
                       <div>
-                        <span style={{fontSize:16, fontWeight:900, color:'#111'}}>{total}</span>
+                        <span style={{fontSize:14, fontWeight:600, color:'#111'}}>{total}</span>
                         <div style={{fontSize:10, color:'#999'}}>réservations</div>
                       </div>
                     </div>
                     <div style={{flex:1, minWidth:0}}>
-                      <div style={{fontSize:10, color:'#999', marginBottom:2}}>Dernière visite</div>
-                      <div style={{fontSize:12, fontWeight:600, color: derniereVisite?'#111':'#ccc', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+                      <div style={{fontSize:10, color:'#999', marginBottom:1}}>Dernière visite</div>
+                      <div style={{fontSize:12, fontWeight:500, color: derniereVisite?'#111':'#ccc', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
                         {derniereVisite ? new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) : 'Jamais'}
                       </div>
                     </div>
                     <div style={{flex:1, minWidth:0}}>
-                      <div style={{fontSize:10, color:'#999', marginBottom:2}}>Prochaine réservation</div>
-                      <div style={{fontSize:12, fontWeight:600, color: prochaineResa?'#16a34a':'#ccc', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+                      <div style={{fontSize:10, color:'#999', marginBottom:1}}>Prochaine réservation</div>
+                      <div style={{fontSize:12, fontWeight:500, color: prochaineResa?'#16a34a':'#ccc', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
                         {prochaineResa ? `${new Date(prochaineResa.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}${prochaineResa.heure?` à ${prochaineResa.heure}`:''}` : '—'}
                       </div>
                     </div>
