@@ -3168,7 +3168,6 @@ function CRMApp({ user, onLogout }) {
   if (activeView === 'avis') {
     if (isMobile) return (
       <>
-        {/* Mobile : page indisponible */}
         <div style={{ position:'fixed', inset:0, background:'#f5f5f5', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:32, textAlign:'center' }}>
           <Star size={48} strokeWidth={1.5} color="#E8C547" style={{ marginBottom:16 }}/>
           <h2 style={{ fontSize:20, fontWeight:900, color:'#111', margin:'0 0 8px' }}>Avis clients</h2>
@@ -3189,200 +3188,226 @@ function CRMApp({ user, onLogout }) {
             </button>
           </div>
 
-          {/* Stats */}
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:14, marginBottom:20 }}>
+          {/* Ligne 1 — 4 blocs stats */}
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:14, marginBottom:16 }}>
             {[
-              { label:'Note moyenne', value:'4.2', sub:'sur 5 étoiles', icon:<Star size={18} strokeWidth={2} color="#E8C547"/>, bg:'#fffbea' },
-              { label:'Avis total', value:'24', sub:'depuis le début', icon:<MessageSquare size={18} strokeWidth={2} color="#3b82f6"/>, bg:'#eff6ff' },
-              { label:'Avis positifs', value:'18', sub:'4-5 étoiles (75%)', icon:<ThumbsUp size={18} strokeWidth={2} color="#22c55e"/>, bg:'#f0fdf4' },
-              { label:'À traiter', value:'3', sub:'1-3 étoiles', icon:<AlertCircle size={18} strokeWidth={2} color="#dc2626"/>, bg:'#fef2f2' },
+              { label:'NOTE MOYENNE', value:'4.2 ★', sub:'sur 5 étoiles', icon:<Star size={16} strokeWidth={2} color="#E8C547"/>, bg:'#fffbea' },
+              { label:'AVIS TOTAL', value:'24', sub:'depuis le début', icon:<MessageSquare size={16} strokeWidth={2} color="#3b82f6"/>, bg:'#eff6ff' },
+              { label:'AVIS POSITIFS', value:'18', sub:'4-5 étoiles · 75%', icon:<ThumbsUp size={16} strokeWidth={2} color="#22c55e"/>, bg:'#f0fdf4' },
+              { label:'À TRAITER', value:'3', sub:'1-3 étoiles', icon:<AlertCircle size={16} strokeWidth={2} color="#dc2626"/>, bg:'#fef2f2' },
             ].map((s,i) => (
               <div key={i} style={{ background:'#fff', borderRadius:14, padding:'14px 18px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
-                <div style={{ width:36, height:36, borderRadius:10, background:s.bg, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:10 }}>
-                  {s.icon}
-                </div>
-                <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 4px' }}>{s.label}</p>
-                <p style={{ fontSize:22, fontWeight:900, color:'#111', margin:'0 0 2px' }}>{s.value}</p>
+                <div style={{ width:32, height:32, borderRadius:8, background:s.bg, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:10 }}>{s.icon}</div>
+                <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 3px' }}>{s.label}</p>
+                <p style={{ fontSize:20, fontWeight:900, color:'#111', margin:'0 0 2px' }}>{s.value}</p>
                 <p style={{ fontSize:11, color:'#999', margin:0 }}>{s.sub}</p>
               </div>
             ))}
           </div>
 
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 360px', gap:16 }}>
+          {/* Ligne 2 — Graphique + Paramètres */}
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 320px', gap:16, marginBottom:16 }}>
 
-            {/* Colonne gauche — Liste des avis */}
-            <div>
-              {/* Filtres */}
-              <div style={{ display:'flex', gap:8, marginBottom:14 }}>
-                {[
-                  { id:'tous', label:'Tous les avis' },
-                  { id:'negatifs', label:'⚠️ 1-3 étoiles' },
-                  { id:'positifs', label:'✅ 4-5 étoiles' },
-                ].map((f,i) => (
-                  <button key={f.id} style={{ height:34, padding:'0 14px', borderRadius:9, fontSize:12, fontWeight:700, border:'none', cursor:'pointer', background: i===0?'#111':'#fff', color: i===0?'#fff':'#666', boxShadow:'0 1px 4px rgba(0,0,0,0.06)' }}>{f.label}</button>
-                ))}
-              </div>
-
-              {/* Liste avis */}
-              <div style={{ background:'#fff', borderRadius:14, overflow:'hidden', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
-                {[
-                  { nom:'Karl Sounier', date:'27 juin 2026', etoiles:5, message:'Super soirée, ambiance incroyable ! On reviendra très vite.', statut:'positif' },
-                  { nom:'Pauline Guerrero', date:'26 juin 2026', etoiles:4, message:'Très bonne expérience, service impeccable.', statut:'positif' },
-                  { nom:'Louis Cataldo', date:'25 juin 2026', etoiles:2, message:'Attente trop longue, un peu déçu de la soirée.', statut:'negatif' },
-                  { nom:'Camille Sounier', date:'24 juin 2026', etoiles:5, message:'Parfait comme toujours !', statut:'positif' },
-                  { nom:'Serge Lothos', date:'23 juin 2026', etoiles:3, message:'Bof, pas terrible ce soir-là.', statut:'negatif' },
-                ].map((a, idx) => (
-                  <div key={idx} style={{ display:'flex', alignItems:'flex-start', gap:14, padding:'14px 20px', borderBottom: idx<4?'1px solid #f5f5f5':'none', background: a.statut==='negatif'?'#fffafa':'#fff' }}>
-                    <div style={{ width:36, height:36, borderRadius:'50%', flexShrink:0, background: a.statut==='positif'?'#f0fdf4':'#fef2f2', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, color: a.statut==='positif'?'#16a34a':'#dc2626' }}>
-                      {a.nom[0]}
-                    </div>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
-                        <span style={{ fontSize:13, fontWeight:600, color:'#111' }}>{a.nom}</span>
-                        <span style={{ fontSize:11, color:'#999' }}>{a.date}</span>
-                      </div>
-                      <div style={{ display:'flex', gap:2, marginBottom:6 }}>
-                        {[1,2,3,4,5].map(i => (
-                          <Star key={i} size={13} strokeWidth={2} color={i<=a.etoiles?'#E8C547':'#eee'} fill={i<=a.etoiles?'#E8C547':'#eee'}/>
-                        ))}
-                      </div>
-                      <p style={{ fontSize:13, color:'#444', margin:'0 0 8px', lineHeight:1.5 }}>{a.message}</p>
-                      <div style={{ display:'flex', gap:8 }}>
-                        {a.statut==='negatif' && (
-                          <button style={{ height:28, padding:'0 12px', borderRadius:7, border:'1.5px solid #eee', background:'#fff', fontSize:11, fontWeight:600, cursor:'pointer', color:'#666', display:'flex', alignItems:'center', gap:4 }}>
-                            <Phone size={11} strokeWidth={2}/> Rappeler
-                          </button>
-                        )}
-                        {a.statut==='positif' && (
-                          <button style={{ height:28, padding:'0 12px', borderRadius:7, border:'none', background:'#f0fdf4', fontSize:11, fontWeight:600, cursor:'pointer', color:'#16a34a', display:'flex', alignItems:'center', gap:4 }}>
-                            ✓ Google My Business
-                          </button>
-                        )}
-                        <button style={{ height:28, padding:'0 12px', borderRadius:7, border:'1.5px solid #eee', background:'#fff', fontSize:11, fontWeight:600, cursor:'pointer', color:'#666' }}>
-                          Marquer traité
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Colonne droite — Paramètres automatisation */}
-            <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-
-              {/* Automatisation */}
-              <div style={{ background:'#fff', borderRadius:14, padding:'18px 20px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
-                  <div>
-                    <p style={{ fontSize:13, fontWeight:700, color:'#111', margin:'0 0 2px' }}>Demande automatique</p>
-                    <p style={{ fontSize:11, color:'#999', margin:0 }}>Envoi après chaque visite</p>
-                  </div>
-                  <div style={{ width:44, height:24, borderRadius:12, background:'#E8C547', cursor:'pointer', position:'relative' }}>
-                    <div style={{ width:20, height:20, borderRadius:'50%', background:'#fff', position:'absolute', top:2, right:2, boxShadow:'0 1px 4px rgba(0,0,0,0.2)' }}/>
-                  </div>
-                </div>
-
-                <div style={{ marginBottom:12 }}>
-                  <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 6px' }}>Envoyer après</p>
-                  <div style={{ position:'relative' }}>
-                    <select style={{ width:'100%', height:36, border:'1.5px solid #eee', borderRadius:9, padding:'0 30px 0 12px', fontSize:13, outline:'none', background:'#fff', appearance:'none', WebkitAppearance:'none', cursor:'pointer' }}>
-                      <option>2 heures</option>
-                      <option>4 heures</option>
-                      <option>24 heures</option>
-                      <option>48 heures</option>
-                    </select>
-                    <ChevronDown size={13} strokeWidth={2} color="#999" style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }}/>
-                  </div>
-                </div>
-
-                <div style={{ marginBottom:12 }}>
-                  <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 6px' }}>Canal</p>
-                  <div style={{ display:'flex', gap:8 }}>
-                    {['SMS','Email'].map((c,i) => (
-                      <button key={c} style={{ flex:1, height:34, borderRadius:9, border:'1.5px solid', borderColor: i===0?'#111':'#eee', background: i===0?'#111':'#fff', color: i===0?'#fff':'#666', fontSize:12, fontWeight:700, cursor:'pointer' }}>{c}</button>
-                    ))}
-                  </div>
-                </div>
-
+            {/* Graphique */}
+            <div style={{ background:'#fff', borderRadius:14, padding:'18px 20px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
                 <div>
-                  <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 6px' }}>Message</p>
-                  <textarea defaultValue="Bonjour {prenom}, merci pour votre visite au TED 🙏 Votre avis nous aide à nous améliorer. Donnez-nous une note ici : {lien_avis}"
-                    style={{ width:'100%', height:90, border:'1.5px solid #eee', borderRadius:9, padding:'10px 12px', fontSize:12, resize:'none', outline:'none', fontFamily:'inherit', boxSizing:'border-box', lineHeight:1.6 }}
-                  />
-                  <div style={{ fontSize:10, color:'#999', marginTop:3, textAlign:'right' }}>Variables : {'{prenom}'} {'{lien_avis}'}</div>
+                  <p style={{ fontSize:13, fontWeight:700, color:'#111', margin:'0 0 2px' }}>Évolution de la note</p>
+                  <p style={{ fontSize:11, color:'#999', margin:0 }}>6 derniers mois</p>
+                </div>
+                <div style={{ display:'flex', gap:6 }}>
+                  {['Semaine','Mois'].map((p,i) => (
+                    <button key={p} style={{ height:28, padding:'0 12px', borderRadius:7, fontSize:11, fontWeight:700, border:'none', cursor:'pointer', background: i===1?'#111':'#f0f0f0', color: i===1?'#fff':'#666' }}>{p}</button>
+                  ))}
                 </div>
               </div>
-
-              {/* Redirection Google */}
-              <div style={{ background:'#fff', borderRadius:14, padding:'18px 20px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
-                <p style={{ fontSize:13, fontWeight:700, color:'#111', margin:'0 0 4px' }}>Redirection Google</p>
-                <p style={{ fontSize:11, color:'#999', margin:'0 0 12px', lineHeight:1.5 }}>Les clients 4-5 étoiles seront redirigés vers votre page Google My Business</p>
-                <div style={{ background:'#f9f9f9', borderRadius:9, padding:'10px 12px', marginBottom:12 }}>
-                  <p style={{ fontSize:11, color:'#999', margin:'0 0 3px' }}>Lien Google My Business</p>
-                  <p style={{ fontSize:12, fontWeight:600, color:'#3b82f6', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>https://g.page/r/le-ted-chassieu/review</p>
+              <div style={{ position:'relative', height:140 }}>
+                <svg width="100%" height="140" viewBox="0 0 600 140" preserveAspectRatio="none">
+                  {[0,1,2,3,4].map(i => (
+                    <line key={i} x1="0" y1={i*30+10} x2="600" y2={i*30+10} stroke="#f0f0f0" strokeWidth="1"/>
+                  ))}
+                  <defs>
+                    <linearGradient id="avisGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#E8C547" stopOpacity="0.2"/>
+                      <stop offset="100%" stopColor="#E8C547" stopOpacity="0"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M0,90 C50,80 100,70 150,65 C200,60 250,50 300,45 C350,40 400,35 450,30 C500,25 550,20 600,18 L600,130 L0,130 Z" fill="url(#avisGrad)"/>
+                  <path d="M0,90 C50,80 100,70 150,65 C200,60 250,50 300,45 C350,40 400,35 450,30 C500,25 550,20 600,18" fill="none" stroke="#E8C547" strokeWidth="2.5" strokeLinecap="round"/>
+                  {[[0,90],[150,65],[300,45],[450,30],[600,18]].map(([x,y],i) => (
+                    <circle key={i} cx={x} cy={y} r="4" fill="#E8C547" stroke="#fff" strokeWidth="2"/>
+                  ))}
+                </svg>
+                <div style={{ display:'flex', justifyContent:'space-between', marginTop:4 }}>
+                  {['Jan','Fév','Mar','Avr','Mai','Jun'].map(m => (
+                    <span key={m} style={{ fontSize:10, color:'#999' }}>{m}</span>
+                  ))}
                 </div>
-                <button style={{ width:'100%', height:36, borderRadius:9, border:'1.5px solid #eee', background:'#fff', fontSize:12, fontWeight:600, cursor:'pointer', color:'#666', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-                  ✏️ Modifier le lien
-                </button>
-              </div>
-
-              {/* Seuil redirection */}
-              <div style={{ background:'#fff', borderRadius:14, padding:'18px 20px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
-                <p style={{ fontSize:13, fontWeight:700, color:'#111', margin:'0 0 4px' }}>Seuil de redirection</p>
-                <p style={{ fontSize:11, color:'#999', margin:'0 0 12px' }}>À partir de combien d'étoiles on redirige vers Google</p>
-                <div style={{ display:'flex', gap:8 }}>
-                  {[3,4,5].map(n => (
-                    <button key={n} style={{ flex:1, height:36, borderRadius:9, border:'1.5px solid', borderColor: n===4?'#E8C547':'#eee', background: n===4?'#fffbea':'#fff', fontSize:12, fontWeight:700, cursor:'pointer', color: n===4?'#111':'#666', display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
-                      {n}+ <Star size={11} strokeWidth={2} color={n===4?'#E8C547':'#999'} fill={n===4?'#E8C547':'none'}/>
-                    </button>
+                <div style={{ position:'absolute', top:0, left:-28, display:'flex', flexDirection:'column', justifyContent:'space-between', height:130 }}>
+                  {['5','4','3','2','1'].map(n => (
+                    <span key={n} style={{ fontSize:9, color:'#ccc' }}>{n}★</span>
                   ))}
                 </div>
               </div>
             </div>
+
+            {/* Paramètres */}
+            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+
+              {/* Automatisation */}
+              <div style={{ background:'#fff', borderRadius:14, padding:'16px 18px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+                  <div>
+                    <p style={{ fontSize:13, fontWeight:700, color:'#111', margin:'0 0 2px' }}>Demande automatique</p>
+                    <p style={{ fontSize:11, color:'#999', margin:0 }}>Après chaque visite confirmée</p>
+                  </div>
+                  <div style={{ width:40, height:22, borderRadius:11, background:'#E8C547', cursor:'pointer', position:'relative', flexShrink:0 }}>
+                    <div style={{ width:18, height:18, borderRadius:'50%', background:'#fff', position:'absolute', top:2, right:2, boxShadow:'0 1px 3px rgba(0,0,0,0.2)' }}/>
+                  </div>
+                </div>
+                <div style={{ marginBottom:10 }}>
+                  <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 5px' }}>Délai avant envoi</p>
+                  <div style={{ position:'relative' }}>
+                    <select style={{ width:'100%', height:34, border:'1.5px solid #eee', borderRadius:8, padding:'0 28px 0 10px', fontSize:12, outline:'none', background:'#fff', appearance:'none', cursor:'pointer' }}>
+                      <option>2 heures après la visite</option>
+                      <option>4 heures après la visite</option>
+                      <option>24 heures après la visite</option>
+                      <option>48 heures après la visite</option>
+                    </select>
+                    <ChevronDown size={12} strokeWidth={2} color="#999" style={{ position:'absolute', right:8, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }}/>
+                  </div>
+                </div>
+                <div style={{ background:'#f9f9f9', borderRadius:8, padding:'8px 10px', display:'flex', alignItems:'center', gap:8 }}>
+                  <div style={{ width:14, height:14, borderRadius:3, background:'#dc2626', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <span style={{ color:'#fff', fontSize:9, fontWeight:900 }}>✕</span>
+                  </div>
+                  <p style={{ fontSize:11, color:'#666', margin:0 }}>Aucun envoi si <strong>No-show</strong></p>
+                </div>
+              </div>
+
+              {/* Seuil Google */}
+              <div style={{ background:'#fff', borderRadius:14, padding:'16px 18px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
+                <p style={{ fontSize:13, fontWeight:700, color:'#111', margin:'0 0 4px' }}>Redirection Google</p>
+                <p style={{ fontSize:11, color:'#999', margin:'0 0 10px' }}>À partir de combien d'étoiles</p>
+                <div style={{ display:'flex', gap:6, marginBottom:10 }}>
+                  {[3,4,5].map(n => (
+                    <button key={n} style={{ flex:1, height:32, borderRadius:8, border:'1.5px solid', borderColor: n===4?'#E8C547':'#eee', background: n===4?'#fffbea':'#fff', fontSize:12, fontWeight:700, cursor:'pointer', color: n===4?'#111':'#666', display:'flex', alignItems:'center', justifyContent:'center', gap:3 }}>
+                      {n}+ <Star size={10} strokeWidth={2} color={n===4?'#E8C547':'#ccc'} fill={n===4?'#E8C547':'none'}/>
+                    </button>
+                  ))}
+                </div>
+                <button style={{ width:'100%', height:32, borderRadius:8, border:'1.5px solid #eee', background:'#f9f9f9', fontSize:11, fontWeight:600, cursor:'pointer', color:'#666', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>
+                  ✏️ Modifier le lien Google
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+          {/* Ligne 3 — Liste des avis */}
+          <div style={{ background:'#fff', borderRadius:14, overflow:'hidden', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 20px', borderBottom:'1px solid #f5f5f5' }}>
+              <p style={{ fontSize:13, fontWeight:700, color:'#111', margin:0 }}>Avis reçus</p>
+              <div style={{ display:'flex', gap:6 }}>
+                {[{id:'tous',label:'Tous'},{id:'negatifs',label:'⚠️ 1-3 ★'},{id:'positifs',label:'✅ 4-5 ★'},{id:'non_traites',label:'Non traités'}].map((f,i) => (
+                  <button key={f.id} style={{ height:28, padding:'0 12px', borderRadius:7, fontSize:11, fontWeight:700, border:'none', cursor:'pointer', background: i===0?'#111':'#f0f0f0', color: i===0?'#fff':'#666' }}>{f.label}</button>
+                ))}
+              </div>
+            </div>
+            {[
+              { nom:'Karl Sounier', date:'27 juin 2026', heure:'21h30', etoiles:5, commentaire:'Super soirée, ambiance incroyable ! On reviendra très vite.', traite:true },
+              { nom:'Pauline Guerrero', date:'26 juin 2026', heure:'20h15', etoiles:4, commentaire:'Très bonne expérience, service impeccable.', traite:true },
+              { nom:'Louis Cataldo', date:'25 juin 2026', heure:'19h45', etoiles:2, commentaire:'Attente trop longue, un peu déçu de la soirée.', traite:false },
+              { nom:'Camille Sounier', date:'24 juin 2026', heure:'21h00', etoiles:5, commentaire:'Parfait comme toujours ! Le meilleur endroit de Lyon.', traite:true },
+              { nom:'Serge Lothos', date:'23 juin 2026', heure:'20h30', etoiles:3, commentaire:'Bof, pas terrible ce soir-là. Service un peu lent.', traite:false },
+              { nom:'Marine Duvivier', date:'22 juin 2026', heure:'19h30', etoiles:5, commentaire:'Magnifique ! La déco, la musique, tout était parfait.', traite:true },
+            ].map((a,idx) => {
+              const positif = a.etoiles >= 4;
+              return (
+                <div key={idx} style={{ display:'flex', alignItems:'flex-start', gap:14, padding:'14px 20px', borderBottom: idx<5?'1px solid #f5f5f5':'none', background: !a.traite && !positif?'#fffafa':'#fff' }}>
+                  <div style={{ width:34, height:34, borderRadius:'50%', flexShrink:0, background: positif?'#f0fdf4':'#fef2f2', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, color: positif?'#16a34a':'#dc2626' }}>
+                    {a.nom[0]}
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                        <span style={{ fontSize:13, fontWeight:600, color:'#111' }}>{a.nom}</span>
+                        {!a.traite && !positif && <span style={{ background:'#fef2f2', color:'#dc2626', borderRadius:20, padding:'2px 8px', fontSize:10, fontWeight:700 }}>À traiter</span>}
+                        {a.traite && <span style={{ background:'#f0fdf4', color:'#16a34a', borderRadius:20, padding:'2px 8px', fontSize:10, fontWeight:700 }}>✓ Traité</span>}
+                      </div>
+                      <span style={{ fontSize:11, color:'#999' }}>{a.date} · {a.heure}</span>
+                    </div>
+                    <div style={{ display:'flex', gap:2, marginBottom:6 }}>
+                      {[1,2,3,4,5].map(i => (
+                        <Star key={i} size={12} strokeWidth={1.5} color={i<=a.etoiles?'#E8C547':'#eee'} fill={i<=a.etoiles?'#E8C547':'#eee'}/>
+                      ))}
+                      <span style={{ fontSize:11, color:'#999', marginLeft:4 }}>{a.etoiles}/5</span>
+                    </div>
+                    <p style={{ fontSize:13, color:'#444', margin:'0 0 8px', lineHeight:1.5 }}>{a.commentaire}</p>
+                    <div style={{ display:'flex', gap:6 }}>
+                      {!positif && (
+                        <button style={{ height:26, padding:'0 10px', borderRadius:7, border:'1.5px solid #eee', background:'#fff', fontSize:11, fontWeight:600, cursor:'pointer', color:'#666', display:'flex', alignItems:'center', gap:4 }}>
+                          <Mail size={11} strokeWidth={2}/> Répondre par email
+                        </button>
+                      )}
+                      {positif && (
+                        <button style={{ height:26, padding:'0 10px', borderRadius:7, border:'none', background:'#f0fdf4', fontSize:11, fontWeight:600, cursor:'pointer', color:'#16a34a', display:'flex', alignItems:'center', gap:4 }}>
+                          <Star size={11} strokeWidth={2} color="#16a34a"/> Voir sur Google
+                        </button>
+                      )}
+                      {!a.traite && (
+                        <button style={{ height:26, padding:'0 10px', borderRadius:7, border:'1.5px solid #eee', background:'#fff', fontSize:11, fontWeight:600, cursor:'pointer', color:'#666' }}>
+                          Marquer traité
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* Modal Aperçu client */}
           {showApercuClient && (
             <>
-              <div onClick={()=>setShowApercuClient(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:2999 }}/>
-              <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#f5f5f5', borderRadius:20, width:'min(400px, calc(100vw - 48px))', maxHeight:'85vh', overflowY:'auto', boxShadow:'0 32px 80px rgba(0,0,0,0.25)', zIndex:3000, padding:'32px 28px' }}>
-                <div style={{ textAlign:'center', marginBottom:24 }}>
-                  <img src="/favicon.png" style={{ width:56, height:56, marginBottom:12 }} alt="TED"/>
-                  <h2 style={{ fontSize:20, fontWeight:900, color:'#111', margin:'0 0 4px' }}>Le TED</h2>
-                  <p style={{ fontSize:13, color:'#999', margin:0 }}>Restaurant & Club — Chassieu</p>
+              <div onMouseDown={e=>{e.preventDefault();e.stopPropagation();}} onClick={()=>setShowApercuClient(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:2999, pointerEvents:'all' }}/>
+              <div onClick={e=>e.stopPropagation()} onMouseDown={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#f5f5f5', borderRadius:20, width:'min(380px, calc(100vw - 48px))', maxHeight:'88vh', overflowY:'auto', boxShadow:'0 32px 80px rgba(0,0,0,0.3)', zIndex:3000, padding:'28px 24px' }}>
+                <div style={{ textAlign:'center', marginBottom:20 }}>
+                  <img src="/favicon.png" style={{ width:52, height:52, marginBottom:10 }} alt="TED"/>
+                  <h2 style={{ fontSize:18, fontWeight:900, color:'#111', margin:'0 0 3px' }}>Le TED</h2>
+                  <p style={{ fontSize:12, color:'#999', margin:0 }}>Restaurant & Club — Chassieu</p>
                 </div>
-                <div style={{ background:'#fff', borderRadius:14, padding:'16px 20px', marginBottom:16 }}>
-                  <p style={{ fontSize:14, color:'#444', lineHeight:1.7, margin:0 }}>
-                    Bonjour <strong>Karl</strong>, merci pour votre visite au TED 🙏
-                    <br/><br/>
-                    Votre avis nous aide à nous améliorer. Comment s'est passée votre soirée ?
+                <div style={{ background:'#fff', borderRadius:14, padding:'14px 16px', marginBottom:12 }}>
+                  <p style={{ fontSize:13, color:'#444', lineHeight:1.7, margin:0 }}>
+                    Bonjour <strong>Karl</strong> 👋<br/><br/>
+                    Merci pour votre visite au TED hier soir.<br/>
+                    Votre avis nous aide à nous améliorer.
                   </p>
                 </div>
-                <div style={{ background:'#fff', borderRadius:14, padding:'20px', marginBottom:16, textAlign:'center' }}>
-                  <p style={{ fontSize:13, fontWeight:700, color:'#111', margin:'0 0 16px' }}>Donnez-nous une note</p>
-                  <div style={{ display:'flex', justifyContent:'center', gap:12, marginBottom:16 }}>
+                <div style={{ background:'#fff', borderRadius:14, padding:'18px 16px', marginBottom:12, textAlign:'center' }}>
+                  <p style={{ fontSize:13, fontWeight:700, color:'#111', margin:'0 0 14px' }}>Comment s'est passée votre soirée ?</p>
+                  <div style={{ display:'flex', justifyContent:'center', gap:10, marginBottom:12 }}>
                     {[1,2,3,4,5].map(i => (
-                      <div key={i} style={{ cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
-                        <Star size={36} strokeWidth={1.5} color={i<=4?'#E8C547':'#eee'} fill={i<=4?'#E8C547':'#eee'}/>
+                      <div key={i} style={{ cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:3 }}>
+                        <Star size={32} strokeWidth={1.5} color={i<=4?'#E8C547':'#ddd'} fill={i<=4?'#E8C547':'#ddd'}/>
                         <span style={{ fontSize:10, color:'#999' }}>{i}</span>
                       </div>
                     ))}
                   </div>
-                  <p style={{ fontSize:12, color:'#999', margin:0 }}>Appuyez sur une étoile pour noter</p>
+                  <p style={{ fontSize:11, color:'#999', margin:0 }}>Cliquez sur une étoile</p>
                 </div>
-                <div style={{ background:'#fff', borderRadius:14, padding:'16px 20px', marginBottom:16 }}>
-                  <p style={{ fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px' }}>Un commentaire ? <span style={{ fontWeight:400, color:'#999' }}>(optionnel)</span></p>
-                  <textarea placeholder="Partagez votre expérience..." style={{ width:'100%', height:80, border:'1.5px solid #eee', borderRadius:9, padding:'8px 12px', fontSize:13, resize:'none', outline:'none', fontFamily:'inherit', boxSizing:'border-box' }}/>
+                <div style={{ background:'#fff', borderRadius:14, padding:'14px 16px', marginBottom:12 }}>
+                  <p style={{ fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px' }}>Un commentaire ? <span style={{ fontWeight:400, color:'#999', fontSize:12 }}>(optionnel)</span></p>
+                  <textarea placeholder="Partagez votre expérience..." style={{ width:'100%', height:70, border:'1.5px solid #eee', borderRadius:9, padding:'8px 12px', fontSize:13, resize:'none', outline:'none', fontFamily:'inherit', boxSizing:'border-box' }}/>
                 </div>
-                <button style={{ width:'100%', height:52, border:'none', borderRadius:14, background:'#E8C547', color:'#111', fontSize:15, fontWeight:800, cursor:'pointer' }}>
+                <div style={{ background:'#f0fdf4', borderRadius:10, padding:'10px 14px', marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
+                  <Star size={14} color="#16a34a" strokeWidth={2} fill="#16a34a" style={{ flexShrink:0 }}/>
+                  <p style={{ fontSize:11, color:'#16a34a', margin:0, lineHeight:1.5 }}>Avec 4-5 étoiles, vous serez invité à partager votre avis sur Google 🙏</p>
+                </div>
+                <button style={{ width:'100%', height:50, border:'none', borderRadius:14, background:'#E8C547', color:'#111', fontSize:15, fontWeight:800, cursor:'pointer', marginBottom:8 }}>
                   Envoyer mon avis
                 </button>
-                <div style={{ background:'#f0fdf4', borderRadius:12, padding:'12px 16px', marginTop:12, display:'flex', alignItems:'center', gap:10 }}>
-                  <Star size={16} color="#16a34a" strokeWidth={2} fill="#16a34a"/>
-                  <p style={{ fontSize:12, color:'#16a34a', margin:0, fontWeight:500 }}>Avec 4-5 étoiles, vous serez redirigé vers Google pour partager votre avis publiquement 🙏</p>
-                </div>
-                <button onClick={()=>setShowApercuClient(false)} style={{ width:'100%', background:'none', border:'none', color:'#999', fontSize:13, cursor:'pointer', padding:'12px', marginTop:4 }}>Fermer l'aperçu</button>
+                <button onClick={()=>setShowApercuClient(false)} style={{ width:'100%', background:'none', border:'none', color:'#999', fontSize:12, cursor:'pointer', padding:'8px' }}>Fermer l'aperçu</button>
               </div>
             </>
           )}
