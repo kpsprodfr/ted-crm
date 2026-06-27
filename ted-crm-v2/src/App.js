@@ -2994,20 +2994,20 @@ function CRMApp({ user, onLogout }) {
     return (
       <>
         {sidebarDesktop}
-        <div style={{marginLeft:120, minHeight:'100vh', background:'#f5f5f5', padding:'24px 32px', fontFamily:"'Inter','Segoe UI',Arial,sans-serif", boxSizing:'border-box'}}>
+        <div style={{marginLeft:120, height:'100vh', overflow:'hidden', background:'#f5f5f5', padding:'20px 32px', fontFamily:"'Inter','Segoe UI',Arial,sans-serif", boxSizing:'border-box', display:'flex', flexDirection:'column'}}>
 
           {/* Header */}
-          <div style={{display:'flex', alignItems:'center', gap:16, marginBottom:24}}>
+          <div style={{display:'flex', alignItems:'center', gap:16, marginBottom:16, flexShrink:0}}>
             <h1 style={{fontSize:26, fontWeight:900, color:'#111', margin:0}}>Communications</h1>
             <button onClick={()=>{ loadEmailsHistorique(); loadSmsHistorique(); setShowHistorique(true); }} style={{ display:'flex', alignItems:'center', gap:6, background:'#fff', border:'1.5px solid #eee', borderRadius:8, padding:'6px 14px', fontSize:13, fontWeight:600, cursor:'pointer', color:'#444' }}>
               <History size={14} strokeWidth={2} /> Historique
             </button>
           </div>
 
-          <div style={{display:'grid', gridTemplateColumns:'280px 1fr 420px', gap:20, height:'calc(100vh - 120px)'}}>
+          <div style={{display:'grid', gridTemplateColumns:'280px 1fr 420px', gap:20, flex:1, overflow:'hidden'}}>
 
             {/* ─── Colonne 1 — Ciblage ─── */}
-            <div style={{background:'#fff', borderRadius:14, padding:20, display:'flex', flexDirection:'column', gap:16, overflowY:'auto'}}>
+            <div style={{background:'#fff', borderRadius:14, padding:16, display:'flex', flexDirection:'column', gap:12, overflowY:'auto'}}>
               <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0}}>Cibler vos destinataires</p>
 
               {/* Segment */}
@@ -3144,9 +3144,6 @@ function CRMApp({ user, onLogout }) {
                         </div>
                         <div style={{fontSize:12, color:'#999'}}>{c.tel}</div>
                       </div>
-                      <span style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:20, background: c.genre==='Entreprise'?'#dcfce7':c.genre==='Homme'?'#dbeafe':'#fce7f3', color: c.genre==='Entreprise'?'#15803d':c.genre==='Homme'?'#1d4ed8':'#be185d', flexShrink:0 }}>
-                        {c.genre==='Entreprise'?'Entreprise':'Particulier'}
-                      </span>
                     </div>
                   );
                 })}
