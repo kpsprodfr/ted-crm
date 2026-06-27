@@ -3250,7 +3250,7 @@ function CRMApp({ user, onLogout }) {
     return (
       <>
         {sidebarDesktop}
-        <div style={{marginLeft:120, height:'100vh', overflow:'hidden', background:'#f5f5f5', padding:'20px 32px', fontFamily:"'Inter','Segoe UI',Arial,sans-serif", boxSizing:'border-box', display:'flex', flexDirection:'column'}}>
+        <div style={{marginLeft:120, minHeight:'100vh', background:'#f5f5f5', padding:'24px 32px', boxSizing:'border-box'}}>
 
           {/* Header */}
           <div style={{display:'flex', alignItems:'center', gap:16, marginBottom:20, flexShrink:0}}>
@@ -3260,10 +3260,10 @@ function CRMApp({ user, onLogout }) {
             </button>
           </div>
 
-          <div style={{display:'grid', gridTemplateColumns:'240px 1fr 380px', gap:14, height:'calc(100vh - 96px)', overflow:'hidden'}}>
+          <div style={{display:'grid', gridTemplateColumns:'240px 1fr 380px', gap:14, height:'calc(100vh - 110px)', overflow:'hidden'}}>
 
             {/* ─── Colonne 1 — Ciblage ─── */}
-            <div style={{background:'#fff', borderRadius:12, padding:14, display:'flex', flexDirection:'column', gap:8, height:'100%', overflow:'hidden'}}>
+            <div style={{background:'#fff', borderRadius:16, boxShadow:'0 1px 4px rgba(0,0,0,0.04)', padding:14, display:'flex', flexDirection:'column', gap:8, height:'100%', overflow:'hidden'}}>
               <p style={{fontSize:12, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0, flexShrink:0}}>Cibler vos destinataires</p>
 
               {/* Segment */}
@@ -3351,7 +3351,7 @@ function CRMApp({ user, onLogout }) {
             </div>
 
             {/* ─── Colonne 2 — Destinataires ─── */}
-            <div style={{background:'#fff', borderRadius:12, padding:16, display:'flex', flexDirection:'column', height:'100%', overflow:'hidden'}}>
+            <div style={{background:'#fff', borderRadius:16, boxShadow:'0 1px 4px rgba(0,0,0,0.04)', padding:16, display:'flex', flexDirection:'column', height:'100%', overflow:'hidden'}}>
               <p style={{fontSize:13, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 12px', flexShrink:0}}>
                 Destinataires ({clientsFiltresComm.length})
                 {selectedComm.length > 0 && <span style={{marginLeft:6, background:'#E8C547', color:'#111', borderRadius:20, padding:'1px 8px', fontSize:11, fontWeight:800}}>{selectedComm.length} sél.</span>}
@@ -3400,7 +3400,7 @@ function CRMApp({ user, onLogout }) {
             </div>
 
             {/* ─── Colonne 3 — Message ─── */}
-            <div style={{background:'#fff', borderRadius:12, padding:16, display:'flex', flexDirection:'column', height:'100%', overflow:'hidden'}}>
+            <div style={{background:'#fff', borderRadius:16, boxShadow:'0 1px 4px rgba(0,0,0,0.04)', padding:16, display:'flex', flexDirection:'column', height:'100%', overflow:'hidden'}}>
               <p style={{fontSize:13, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 12px', flexShrink:0}}>Créer une campagne</p>
 
               {/* Onglets SMS / Email */}
