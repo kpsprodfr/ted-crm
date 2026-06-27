@@ -1855,6 +1855,7 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
   const [ficheClientRP, setFicheClientRP] = useState(null);
   const [showConfirmDecoRP, setShowConfirmDecoRP] = useState(false);
   const [calDate, setCalDate] = useState(new Date());
+  const [calAnimation, setCalAnimation] = useState(null);
   const calSwipeTouchStartX = useRef(null);
   const calSwipeTouchStartY = useRef(null);
   const [calMensuelOuvert, setCalMensuelOuvert] = useState(false);
@@ -2201,20 +2202,28 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                     </button>
                   )}
                   {/* 3. Grand calendrier mensuel — toujours visible sur desktop */}
-                  {(!isMobile || calMensuelOuvert) && (
+                  {(!isMobile || calMensuelOuvert) && (() => {
+                    const changerMois = (direction) => {
+                      setCalAnimation(direction === 1 ? 'right' : 'left');
+                      setTimeout(() => {
+                        setCalDate(new Date(annee, mois + direction, 1));
+                        setCalAnimation(null);
+                      }, 200);
+                    };
+                    return (
                     <div style={{ marginBottom:4, userSelect:'none', WebkitUserSelect:'none' }}
                       onTouchStart={e=>{ calSwipeTouchStartX.current=e.touches[0].clientX; calSwipeTouchStartY.current=e.touches[0].clientY; }}
-                      onTouchEnd={e=>{ if(calSwipeTouchStartX.current===null)return; const dx=e.changedTouches[0].clientX-calSwipeTouchStartX.current; const dy=e.changedTouches[0].clientY-calSwipeTouchStartY.current; if(Math.abs(dy)>Math.abs(dx)||Math.abs(dx)<50){calSwipeTouchStartX.current=null;return;} if(dx<0){setCalDate(new Date(annee,mois+1,1));}else{setCalDate(new Date(annee,mois-1,1));} calSwipeTouchStartX.current=null; calSwipeTouchStartY.current=null; }}
+                      onTouchEnd={e=>{ if(calSwipeTouchStartX.current===null)return; const dx=e.changedTouches[0].clientX-calSwipeTouchStartX.current; const dy=e.changedTouches[0].clientY-calSwipeTouchStartY.current; if(Math.abs(dy)>Math.abs(dx)||Math.abs(dx)<50){calSwipeTouchStartX.current=null;return;} changerMois(dx<0?1:-1); calSwipeTouchStartX.current=null; calSwipeTouchStartY.current=null; }}
                     >
                       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
-                        <button onClick={() => setCalDate(new Date(annee, mois - 1, 1))} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, fontSize:16, cursor:'pointer', fontWeight:700 }}>‹</button>
+                        <button onClick={()=>changerMois(-1)} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, fontSize:16, cursor:'pointer', fontWeight:700 }}>‹</button>
                         <span style={{ fontWeight:800, fontSize:18 }}>{MOIS[mois]} {annee}</span>
-                        <button onClick={() => setCalDate(new Date(annee, mois + 1, 1))} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, fontSize:16, cursor:'pointer', fontWeight:700 }}>›</button>
+                        <button onClick={()=>changerMois(1)} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, fontSize:16, cursor:'pointer', fontWeight:700 }}>›</button>
                       </div>
                       <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2, marginBottom:4 }}>
                         {JOURS.map(j => <div key={j} style={{ textAlign:'center', fontSize:13, fontWeight:700, color:'#999', padding:'8px 0' }}>{j}</div>)}
                       </div>
-                      <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:3 }}>
+                      <div className={calAnimation==='right'?'cal-slide-from-right':calAnimation==='left'?'cal-slide-from-left':''} style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:3, overflow:'hidden' }}>
                         {cases.map((d, i) => {
                           if (!d) return <div key={i} />;
                           const iso = `${annee}-${String(mois+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -2237,7 +2246,8 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                         })}
                       </div>
                     </div>
-                  )}
+                    );
+                  })()}
                 </div>
                 {/* Colonne Midi/Soir */}
                 <div style={!isMobile ? { background:'#f8f8f8', borderRadius:12 } : {}}>
