@@ -3952,15 +3952,17 @@ function CRMApp({ user, onLogout }) {
                 <div style={{ display:'flex', alignItems:'center', gap:12 }}>
                   <h1 style={{ margin:0, fontSize:32, fontWeight:900, color:'#111' }}>{nomAffiche}</h1>
                   {!ficheClientReadOnly && (
-                    <button onClick={()=>{ fermerFiche(); setModalDelete(c); }} style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 14px', borderRadius:10, border:'1.5px solid #fca5a5', background:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', color:'#dc2626', flexShrink:0 }}
-                      onMouseEnter={e=>e.currentTarget.style.background='#fef2f2'}
-                      onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
-                      <Trash2 size={14} strokeWidth={2} color="#dc2626"/> Supprimer
+                    <button onClick={()=>{ fermerFiche(); setModalDelete(c); }} style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 14px', borderRadius:10, border:'1.5px solid #ddd', background:'#f5f5f5', fontSize:13, fontWeight:600, cursor:'pointer', color:'#999', flexShrink:0 }}
+                      onMouseEnter={e=>{ e.currentTarget.style.background='#fee2e2'; e.currentTarget.style.borderColor='#fca5a5'; e.currentTarget.style.color='#dc2626'; e.currentTarget.querySelector('svg').style.color='#dc2626'; }}
+                      onMouseLeave={e=>{ e.currentTarget.style.background='#f5f5f5'; e.currentTarget.style.borderColor='#ddd'; e.currentTarget.style.color='#999'; }}>
+                      <Trash2 size={14} strokeWidth={2} color="#999"/> Supprimer
                     </button>
                   )}
                 </div>
-                <button onClick={fermerFiche} style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'1.5px solid #eee', borderRadius:10, padding:'8px 14px', cursor:'pointer', fontSize:14, color:'#666', fontWeight:600, flexShrink:0 }}>
-                  <ArrowLeft size={16} strokeWidth={2} color="#666"/> Retour
+                <button onClick={fermerFiche} style={{ display:'flex', alignItems:'center', gap:6, background:'#111', border:'none', borderRadius:10, padding:'8px 16px', cursor:'pointer', fontSize:14, color:'#fff', fontWeight:700, flexShrink:0 }}
+                  onMouseEnter={e=>e.currentTarget.style.background='#333'}
+                  onMouseLeave={e=>e.currentTarget.style.background='#111'}>
+                  <ArrowLeft size={16} strokeWidth={2} color="#fff"/> Retour
                 </button>
               </div>
 
