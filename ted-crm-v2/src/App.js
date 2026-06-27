@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send } from 'lucide-react';
+import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw } from 'lucide-react';
 import { supabase } from "./supabase";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -2395,6 +2395,10 @@ function CRMApp({ user, onLogout }) {
   const [showAddResa, setShowAddResa] = useState(false);
   const [activeView, setActiveView] = useState('reservations'); // 'reservations' | 'clients' | 'communications'
   const [commFilter, setCommFilter] = useState('tous');
+  const [filtreGenre, setFiltreGenre] = useState('Tous');
+  const [commType, setCommType] = useState('email');
+  const [nomCampagne, setNomCampagne] = useState('');
+  const [showHistorique, setShowHistorique] = useState(false);
   const [filtreJours, setFiltreJours] = useState(new Set());
   const [filtreServices, setFiltreServices] = useState(new Set());
   function toggleFiltreJour(jour) { setFiltreJours(prev => { const n=new Set(prev); n.has(jour)?n.delete(jour):n.add(jour); return n; }); }
@@ -2748,6 +2752,504 @@ function CRMApp({ user, onLogout }) {
     const limiteCommDate = (() => { const d = new Date(); d.setMonth(d.getMonth() - filtreAbsentsMois); return d.toISOString().split('T')[0]; })();
     const il6MoisComm = new Date(Date.now() - 180*24*60*60*1000).toISOString().split('T')[0];
     const joursSem = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+    const isNumeroMobile = (tel) => /^(\+336|\+337|06|07)/.test((tel||'').replace(/\s/g,''));
+
+    // Filtre unifié pour les deux modes
+    const clientsFiltresComm = clients.filter(c => {
+      if (filtreGenre === 'Hommes' && c.genre !== 'Homme') return false;
+      if (filtreGenre === 'Femmes' && c.genre !== 'Femme') return false;
+      if (filtreGenre === 'Entreprises' && c.genre !== 'Entreprise') return false;
+      const q = commSearch.toLowerCase();
+      if (q && !normalizeStr(c.nom||'').includes(normalizeStr(q)) && !normalizeStr(c.prenom||'').includes(normalizeStr(q)) && !(c.mail||'').toLowerCase().includes(q)) return false;
+      if (filtreAbsentsActif) {
+        const aujourd = new Date().toISOString().split('T')[0];
+        const resasC = resasData.filter(r => r.client_id === c.id);
+        const aResaFuture = resasC.some(r => r.date > aujourd && (r.statut === 'confirmee' || r.statut === 'attente'));
+        if (aResaFuture) return false;
+        const derniereResa = resasC.filter(r => r.date <= aujourd && (r.statut === 'venue' || r.statut === 'confirmee')).sort((a,b) => b.date.localeCompare(a.date))[0];
+        if (derniereResa && derniereResa.date >= limiteCommDate) return false;
+      }
+      if (filtreJours.size > 0 || filtreServices.size > 0) {
+        const resasC = resasData.filter(r => r.client_id === c.id && (r.statut === 'confirmee' || r.statut === 'venue') && r.date >= il6MoisComm);
+        const compteJ = {};
+        resasC.forEach(r => { const key = `${joursSem[new Date(r.date+'T12:00:00').getDay()]}_${r.service}`; compteJ[key] = (compteJ[key]||0)+1; });
+        const top3 = Object.entries(compteJ).sort((a,b)=>b[1]-a[1]).slice(0,3).map(e=>e[0]);
+        let match = false;
+        if (filtreJours.size > 0 && filtreServices.size > 0) {
+          for (const jour of filtreJours) { for (const srv of filtreServices) { if (top3.includes(`${jour}_${srv}`)) { match = true; break; } } if (match) break; }
+        } else if (filtreJours.size > 0) {
+          for (const jour of filtreJours) { if (top3.some(k => k.startsWith(jour+'_'))) { match = true; break; } }
+        } else {
+          for (const srv of filtreServices) { if (top3.some(k => k.endsWith('_'+srv))) { match = true; break; } }
+        }
+        if (!match) return false;
+      }
+      return true;
+    });
+
+    // Sélection unifiée selon le mode
+    const selectedComm = commType === 'email' ? commSelected : smsSelected;
+    const setSelectedComm = commType === 'email' ? setCommSelected : setSmsSelected;
+    const toggleSelectionClient = (id) => {
+      if (commType === 'sms' && !isNumeroMobile(clients.find(c=>c.id===id)?.tel||'')) return;
+      setSelectedComm(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]);
+    };
+    const tousSelectionnes = clientsFiltresComm.length > 0 && clientsFiltresComm.filter(c => commType==='sms'?isNumeroMobile(c.tel||''):true).every(c => selectedComm.includes(c.id));
+    const toggleToutSelection = () => {
+      if (tousSelectionnes) setSelectedComm([]);
+      else setSelectedComm(clientsFiltresComm.filter(c => commType==='sms'?isNumeroMobile(c.tel||''):true).map(c => c.id));
+    };
+
+    // Logique email
+    const selectedClients = clients.filter(c => commSelected.includes(c.id) && c.mail);
+    const buildHtml = (client) => {
+      const msg = commMessage.replace(/\n/g,'<br>').replace(/{prenom}/g, client.prenom||'').replace(/{nom}/g, client.nom||'').replace(/{tel}/g, client.tel||'').replace(/{entreprise}/g, client.entreprise||'');
+      return `<div style="font-family:Arial,sans-serif;max-width:580px;margin:0 auto;padding:32px 24px;background:#fff"><p style="font-size:15px;line-height:1.7;color:#222">${msg}</p><div style="margin-top:32px;padding-top:16px;border-top:1px solid #eee"><table cellpadding="0" cellspacing="0"><tr><td style="padding-right:12px;vertical-align:top"><img src="https://ted-crm.pages.dev/favicon.png" style="height:36px;width:36px"/></td><td><p style="margin:0;font-weight:800;font-size:14px;color:#111">Le TED — Restaurant &amp; Club</p><p style="margin:4px 0 0;font-size:12px;color:#888">📍 28 Av. des Frères Montgolfier, 69680 Chassieu</p><p style="margin:2px 0 0;font-size:12px;color:#888">📞 04 78 90 67 80</p><p style="margin:2px 0 0;font-size:12px"><a href="https://leted.fr" style="color:#E8C547;text-decoration:none;font-weight:700">leted.fr</a></p></td></tr></table></div></div>`;
+    };
+    const doSendComm = async () => {
+      setCommSending(true);
+      let sent = 0;
+      for (const client of selectedClients) {
+        try {
+          const res = await fetch('/send-email', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ to:client.mail, toName:`${client.prenom||''} ${client.nom||''}`.trim(), subject:commObjet, html:buildHtml(client) }) });
+          const text = await res.text(); let data = {}; try { data = JSON.parse(text); } catch(_) {}
+          if (data.success) sent++;
+        } catch(e) { console.error('[Comm] Erreur réseau pour', client.mail, e); }
+      }
+      await supabase.from('emails_envoyes').insert([{ objet:commObjet, message:commMessage, nb_destinataires:commSelected.length, destinataires:commSelected.map(id => { const c = clients.find(x=>x.id===id); return {id, nom:c?.nom, prenom:c?.prenom, mail:c?.mail}; }), envoye_par:user.email, statut:'envoye' }]);
+      setCommSending(false);
+      showToast(`📧 ${sent} email(s) envoyé(s) ✓`);
+      setCommObjet(''); setCommMessage(''); setCommSelected([]); setNomCampagne('');
+      loadEmailsHistorique();
+    };
+    const handleSendAll = async () => {
+      const { data: dejaSent } = await supabase.from('emails_envoyes').select('destinataires').eq('objet', commObjet);
+      const dejaSentIds = new Set((dejaSent||[]).flatMap(e => (e.destinataires||[]).map(d => d.id)));
+      setDoublons(commSelected.filter(id => dejaSentIds.has(id)));
+      setShowConfirmComm(true);
+    };
+
+    // Logique SMS
+    const containsEmoji = (str) => /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/u.test(str);
+    const smsLimit = containsEmoji(smsMessage) ? 70 : 160;
+    const doSendSms = async () => {
+      const { data: dejaSent } = await supabase.from('sms_envoyes').select('destinataires, message').eq('message', smsMessage);
+      const dejaSentIds = new Set((dejaSent||[]).flatMap(s => (s.destinataires||[]).map(d => d.id)));
+      const doublonsSms = smsSelected.filter(id => dejaSentIds.has(id));
+      const nouveaux = smsSelected.filter(id => !dejaSentIds.has(id));
+      if (doublonsSms.length > 0 && nouveaux.length === 0) { showToast('⚠️ Ce message a déjà été envoyé à tous ces destinataires', 'error'); setShowConfirmSms(false); return; }
+      if (doublonsSms.length > 0) {
+        const noms = doublonsSms.map(id => { const c = clients.find(x=>x.id===id); return `${c?.prenom} ${c?.nom}`; }).join(', ');
+        const ok = window.confirm(`⚠️ ${doublonsSms.length} personne(s) ont déjà reçu ce message :\n${noms}\n\nEnvoyer uniquement aux autres ?`);
+        if (!ok) return;
+        setSmsSelected(nouveaux);
+      }
+      const idsToSend = (doublonsSms.length > 0 ? nouveaux : smsSelected).filter(id => { const c = clients.find(x=>x.id===id); return c?.tel && isNumeroMobile(c.tel); });
+      let success = 0;
+      for (const id of idsToSend) {
+        const client = clients.find(c=>c.id===id);
+        if (!client?.tel) continue;
+        const msgPerso = smsMessage.replace(/{prenom}/g, client.prenom||'').replace(/{nom}/g, client.nom||'');
+        try { const res = await fetch('/send-sms', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({to:client.tel, message:msgPerso}) }); if (res.ok) success++; } catch(e) {}
+      }
+      await supabase.from('sms_envoyes').insert([{ message:smsMessage, nb_destinataires:success, destinataires:idsToSend.map(id => { const c = clients.find(x=>x.id===id); return {id, nom:c?.nom, prenom:c?.prenom, tel:c?.tel}; }), envoye_par:user.email }]);
+      showToast(`📱 ${success} SMS envoyé(s) ✓`);
+      setSmsMessage(''); setSmsSelected([]); setNomCampagne(''); setShowConfirmSms(false);
+      loadSmsHistorique();
+    };
+
+    // Historique combiné
+    const historiqueEnvois = [
+      ...emailsHistorique.map(e => ({...e, type:'email'})),
+      ...smsHistorique.map(s => ({...s, type:'sms'}))
+    ].sort((a,b) => (b.created_at||'').localeCompare(a.created_at||''));
+
+    return (
+      <>
+        {sidebarDesktop}
+        <div style={{marginLeft:120, minHeight:'100vh', background:'#f5f5f5', padding:'24px 32px', fontFamily:"'Inter','Segoe UI',Arial,sans-serif", boxSizing:'border-box'}}>
+
+          {/* Header */}
+          <div style={{display:'flex', alignItems:'center', gap:16, marginBottom:24}}>
+            <h1 style={{fontSize:26, fontWeight:900, color:'#111', margin:0}}>Communications</h1>
+            <button onClick={()=>{ loadEmailsHistorique(); loadSmsHistorique(); setShowHistorique(true); }} style={{ display:'flex', alignItems:'center', gap:6, background:'#fff', border:'1.5px solid #eee', borderRadius:8, padding:'6px 14px', fontSize:13, fontWeight:600, cursor:'pointer', color:'#444' }}>
+              <History size={14} strokeWidth={2} /> Historique
+            </button>
+          </div>
+
+          <div style={{display:'grid', gridTemplateColumns:'280px 1fr 420px', gap:20, height:'calc(100vh - 120px)'}}>
+
+            {/* ─── Colonne 1 — Ciblage ─── */}
+            <div style={{background:'#fff', borderRadius:14, padding:20, display:'flex', flexDirection:'column', gap:16, overflowY:'auto'}}>
+              <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0}}>Cibler vos destinataires</p>
+
+              {/* Segment */}
+              <div>
+                <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Segment</p>
+                {[
+                  {id:'Tous', label:'Tous les clients', icon:<Users size={16} strokeWidth={2}/>},
+                  {id:'Hommes', label:'Hommes', icon:<User size={16} strokeWidth={2}/>},
+                  {id:'Femmes', label:'Femmes', icon:<User size={16} strokeWidth={2}/>},
+                  {id:'Entreprises', label:'Entreprises', icon:<Building2 size={16} strokeWidth={2}/>},
+                ].map(s => (
+                  <div key={s.id} onClick={()=>setFiltreGenre(s.id)} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', borderRadius:10, cursor:'pointer', marginBottom:6, border: filtreGenre===s.id?'1.5px solid #E8C547':'1.5px solid #eee', background: filtreGenre===s.id?'#fffbea':'#fff' }}>
+                    <span style={{color: filtreGenre===s.id?'#E8C547':'#999'}}>{s.icon}</span>
+                    <span style={{fontSize:14, fontWeight:600, color:'#111', flex:1}}>{s.label}</span>
+                    {filtreGenre===s.id && <CheckCircle size={16} color="#E8C547" strokeWidth={2}/>}
+                  </div>
+                ))}
+              </div>
+
+              {/* Jour favori */}
+              <div>
+                <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Jour favori</p>
+                <div style={{display:'flex', flexWrap:'wrap', gap:6}}>
+                  {['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].map((j,i) => {
+                    const jourComplet = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'][i];
+                    return (
+                      <button key={j} onClick={()=>toggleFiltreJour(jourComplet)} style={{ padding:'5px 10px', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer', border:'1.5px solid', borderColor: filtreJours.has(jourComplet)?'#111':'#eee', background: filtreJours.has(jourComplet)?'#111':'#fff', color: filtreJours.has(jourComplet)?'#E8C547':'#666' }}>{j}</button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Service préféré */}
+              <div>
+                <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Service préféré</p>
+                <div style={{display:'flex', gap:8}}>
+                  {[{id:'midi',label:'Midi',icon:'☀️'},{id:'soir',label:'Soir',icon:'🌙'}].map(s => (
+                    <button key={s.id} onClick={()=>toggleFiltreService(s.id)} style={{ flex:1, padding:'8px', borderRadius:8, fontSize:13, fontWeight:700, cursor:'pointer', border:'1.5px solid', borderColor: filtreServices.has(s.id)?'#111':'#eee', background: filtreServices.has(s.id)?'#111':'#fff', color: filtreServices.has(s.id)?'#E8C547':'#666' }}>{s.icon} {s.label}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Clients absents depuis */}
+              <div>
+                <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Clients absents depuis</p>
+                <div style={{display:'flex', alignItems:'center', gap:8}}>
+                  <select value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{ flex:1, height:38, border:'1.5px solid #eee', borderRadius:8, padding:'0 10px', fontSize:13, outline:'none', background:'#fff' }}>
+                    <option value={0}>Indifférent</option>
+                    <option value={1}>1 mois</option>
+                    <option value={2}>2 mois</option>
+                    <option value={3}>3 mois</option>
+                    <option value={6}>6 mois</option>
+                    <option value={12}>12 mois</option>
+                  </select>
+                  <button onClick={()=>setFiltreAbsentsActif(v=>!v)} style={{ padding:'6px 12px', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', border:'1.5px solid', borderColor: filtreAbsentsActif?'#111':'#eee', background: filtreAbsentsActif?'#111':'#fff', color: filtreAbsentsActif?'#E8C547':'#666' }}>
+                    {filtreAbsentsActif ? '✓ Actif' : 'Activer'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Résumé de la cible */}
+              <div style={{marginTop:'auto', background:'#f9f9f9', borderRadius:10, padding:14}}>
+                <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 10px'}}>Résumé de la cible</p>
+                {(()=>{
+                  const total = clientsFiltresComm.length;
+                  const hommes = clientsFiltresComm.filter(c=>c.genre==='Homme').length;
+                  const femmes = clientsFiltresComm.filter(c=>c.genre==='Femme').length;
+                  const entreprises = clientsFiltresComm.filter(c=>c.genre==='Entreprise').length;
+                  return (
+                    <div style={{display:'flex', flexDirection:'column', gap:6}}>
+                      {[
+                        {label:'Total ciblé', value:`${total} clients`, bold:true},
+                        {label:'Hommes', value:`${hommes} (${total?Math.round(hommes/total*100):0}%)`},
+                        {label:'Femmes', value:`${femmes} (${total?Math.round(femmes/total*100):0}%)`},
+                        {label:'Entreprises', value:`${entreprises} (${total?Math.round(entreprises/total*100):0}%)`},
+                      ].map((r,i) => (
+                        <div key={i} style={{display:'flex', justifyContent:'space-between', fontSize:13}}>
+                          <span style={{color:'#666'}}>{r.label}</span>
+                          <span style={{fontWeight: r.bold?800:600, color:'#111'}}>{r.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+                <button onClick={()=>{ setFiltreGenre('Tous'); setFiltreAbsentsMois(3); setFiltreAbsentsActif(false); setFiltreJours(new Set()); setFiltreServices(new Set()); }} style={{ width:'100%', marginTop:12, padding:'8px', border:'none', background:'none', fontSize:12, color:'#999', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                  <RotateCcw size={12} strokeWidth={2}/> Réinitialiser les filtres
+                </button>
+              </div>
+            </div>
+
+            {/* ─── Colonne 2 — Destinataires ─── */}
+            <div style={{background:'#fff', borderRadius:14, padding:20, display:'flex', flexDirection:'column', overflow:'hidden'}}>
+              <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14, flexShrink:0}}>
+                <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0}}>
+                  Destinataires ({clientsFiltresComm.length})
+                </p>
+                <span style={{fontSize:12, fontWeight:600, color:'#E8C547', background:'#fffbea', borderRadius:20, padding:'3px 10px'}}>{selectedComm.length} sélectionné{selectedComm.length>1?'s':''}</span>
+              </div>
+
+              {/* Recherche */}
+              <div style={{position:'relative', marginBottom:12, flexShrink:0}}>
+                <Search size={15} strokeWidth={2} color="#999" style={{position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', pointerEvents:'none'}}/>
+                <input placeholder="Rechercher un client..." value={commSearch} onChange={e=>setCommSearch(e.target.value)}
+                  style={{width:'100%', height:38, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px 0 36px', fontSize:13, outline:'none', boxSizing:'border-box'}}/>
+              </div>
+
+              {/* Tout sélectionner */}
+              <div onClick={toggleToutSelection} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 12px', borderRadius:8, cursor:'pointer', marginBottom:8, flexShrink:0, background:'#f9f9f9' }}>
+                <div style={{ width:20, height:20, borderRadius:5, border:'1.5px solid', borderColor: tousSelectionnes?'#E8C547':'#ddd', background: tousSelectionnes?'#E8C547':'#fff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                  {tousSelectionnes && <Check size={12} strokeWidth={3} color="#111"/>}
+                </div>
+                <span style={{fontWeight:700, fontSize:13, color:'#111', flex:1}}>Tout sélectionner</span>
+                <span style={{fontSize:13, color:'#999'}}>{clientsFiltresComm.length}</span>
+              </div>
+
+              {/* Liste clients */}
+              <div style={{flex:1, overflowY:'auto', display:'flex', flexDirection:'column', gap:2}}>
+                {clientsFiltresComm.map(c => {
+                  const estSel = selectedComm.includes(c.id);
+                  const isMobileNum = isNumeroMobile(c.tel||'');
+                  const disabled = commType==='sms' && !isMobileNum;
+                  return (
+                    <div key={c.id} onClick={()=>!disabled&&toggleSelectionClient(c.id)} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 12px', borderRadius:8, cursor: disabled?'not-allowed':'pointer', opacity: disabled?0.4:1, background: estSel?'#fffbea':'transparent' }}
+                      onMouseEnter={e=>{ if (!disabled) e.currentTarget.style.background = estSel?'#fffbea':'#f9f9f9'; }}
+                      onMouseLeave={e=>{ e.currentTarget.style.background = estSel?'#fffbea':'transparent'; }}>
+                      <div style={{ width:20, height:20, borderRadius:5, border:'1.5px solid', flexShrink:0, borderColor: estSel?'#E8C547':'#ddd', background: estSel?'#E8C547':'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                        {estSel && <Check size={12} strokeWidth={3} color="#111"/>}
+                      </div>
+                      <div style={{ width:32, height:32, borderRadius:'50%', flexShrink:0, background: c.genre==='Homme'?'#dbeafe':c.genre==='Femme'?'#fce7f3':'#dcfce7', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, color: c.genre==='Homme'?'#1d4ed8':c.genre==='Femme'?'#be185d':'#15803d' }}>
+                        {(c.prenom||c.entreprise||'?')[0]?.toUpperCase()}
+                      </div>
+                      <div style={{flex:1, minWidth:0}}>
+                        <div style={{fontWeight:700, fontSize:13, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+                          {c.genre==='Entreprise'?c.entreprise:`${c.prenom} ${c.nom}`}
+                        </div>
+                        <div style={{fontSize:12, color:'#999'}}>{c.tel}</div>
+                      </div>
+                      <span style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:20, background: c.genre==='Entreprise'?'#dcfce7':c.genre==='Homme'?'#dbeafe':'#fce7f3', color: c.genre==='Entreprise'?'#15803d':c.genre==='Homme'?'#1d4ed8':'#be185d', flexShrink:0 }}>
+                        {c.genre==='Entreprise'?'Entreprise':'Particulier'}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ─── Colonne 3 — Message ─── */}
+            <div style={{background:'#fff', borderRadius:14, padding:20, display:'flex', flexDirection:'column', overflow:'hidden'}}>
+              <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 16px', flexShrink:0}}>Créer une campagne</p>
+
+              {/* Onglets SMS / Email */}
+              <div style={{display:'flex', gap:0, marginBottom:20, flexShrink:0, borderBottom:'2px solid #f0f0f0'}}>
+                {[{id:'email',label:'Email',icon:<Mail size={15} strokeWidth={2}/>},{id:'sms',label:'SMS',icon:<MessageSquare size={15} strokeWidth={2}/>}].map(t => (
+                  <button key={t.id} onClick={()=>setCommType(t.id)} style={{ flex:1, height:40, border:'none', background:'none', fontSize:14, fontWeight:700, cursor:'pointer', color: commType===t.id?'#111':'#999', borderBottom: commType===t.id?'2px solid #E8C547':'2px solid transparent', marginBottom:-2, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                    {t.icon} {t.label}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{flex:1, overflowY:'auto', display:'flex', flexDirection:'column', gap:14}}>
+
+                {/* Nom de la campagne */}
+                <div>
+                  <label style={{fontSize:13, fontWeight:700, color:'#111', display:'block', marginBottom:6}}>Nom de la campagne</label>
+                  <input value={nomCampagne} onChange={e=>setNomCampagne(e.target.value.slice(0,100))} placeholder="Ex: Offre spéciale été – Juin 2026" style={{width:'100%', height:40, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:13, outline:'none', boxSizing:'border-box'}}/>
+                  <div style={{textAlign:'right', fontSize:11, color:'#999', marginTop:3}}>{nomCampagne.length}/100</div>
+                </div>
+
+                {/* Objet email */}
+                {commType==='email' && (
+                  <div>
+                    <label style={{fontSize:13, fontWeight:700, color:'#111', display:'block', marginBottom:6}}>Objet</label>
+                    <input value={commObjet} onChange={e=>setCommObjet(e.target.value)} placeholder="Objet de l'email..." style={{width:'100%', height:40, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:13, outline:'none', boxSizing:'border-box'}}/>
+                  </div>
+                )}
+
+                {/* Message */}
+                <div>
+                  <label style={{fontSize:13, fontWeight:700, color:'#111', display:'block', marginBottom:6}}>Message</label>
+                  <textarea
+                    value={commType==='sms'?smsMessage:commMessage}
+                    onChange={e => {
+                      const limit = commType==='sms' ? smsLimit : 2000;
+                      commType==='sms' ? setSmsMessage(e.target.value.slice(0,limit)) : setCommMessage(e.target.value.slice(0,limit));
+                    }}
+                    placeholder="Écrivez votre message..."
+                    style={{width:'100%', height:110, border:'1.5px solid #eee', borderRadius:8, padding:'10px 12px', fontSize:13, outline:'none', resize:'none', boxSizing:'border-box', fontFamily:'inherit'}}
+                  />
+                  {commType==='sms' && (
+                    <div style={{display:'flex', justifyContent:'space-between', fontSize:11, color:'#999', marginTop:3}}>
+                      <span>{smsMessage.length}/{smsLimit} caractères</span>
+                      <span>Environ {Math.ceil(smsMessage.length/smsLimit)||0} SMS (~0.04€/dest.)</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Variables disponibles */}
+                <div>
+                  <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Variables disponibles</p>
+                  <div style={{display:'flex', flexWrap:'wrap', gap:6}}>
+                    {[
+                      {label:'{prenom}', val:'{prenom}'},
+                      {label:'{nom}', val:'{nom}'},
+                      {label:'{tel}', val:'{tel}'},
+                      {label:'{entreprise}', val:'{entreprise}'},
+                      {label:'{lien_resa}', val:'https://ted-crm.pages.dev/reserver.html'},
+                    ].map(v => (
+                      <button key={v.label} onClick={()=>{ const setter = commType==='sms'?setSmsMessage:setCommMessage; const val = commType==='sms'?smsMessage:commMessage; setter(val+v.val); }} style={{ padding:'4px 10px', borderRadius:20, fontSize:12, fontWeight:600, background:'#fffbea', border:'1.5px solid #E8C547', color:'#111', cursor:'pointer' }}>{v.label}</button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Aperçu */}
+                {(commType==='sms'?smsMessage:commMessage).length > 0 && (
+                  <div>
+                    <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Aperçu</p>
+                    <div style={{background:'#f0f0f0', borderRadius:16, padding:'14px 16px', maxWidth:300}}>
+                      <div style={{background:'#fff', borderRadius:12, padding:'10px 14px', fontSize:13, color:'#111', lineHeight:1.7, whiteSpace:'pre-wrap'}}>
+                        {(()=>{
+                          const premier = clientsFiltresComm.find(c=>selectedComm.includes(c.id));
+                          return (commType==='sms'?smsMessage:commMessage)
+                            .replace(/{prenom}/g, premier?.prenom||'Karl')
+                            .replace(/{nom}/g, premier?.nom||'Sounier')
+                            .replace(/{tel}/g, premier?.tel||'06 43 00 49 87')
+                            .replace(/{entreprise}/g, premier?.entreprise||'')
+                            .replace(/{lien_resa}/g, 'https://ted-crm.pages.dev/reserver.html');
+                        })()}
+                      </div>
+                      {commType==='sms' && <p style={{fontSize:11, color:'#999', margin:'6px 0 0', textAlign:'right'}}>Environ {Math.ceil(smsMessage.length/smsLimit)||0} SMS ({smsLimit} car.)</p>}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Bouton envoyer */}
+              <div style={{flexShrink:0, borderTop:'1px solid #eee', paddingTop:16, marginTop:8}}>
+                <button onClick={()=>setShowPreview(true)} disabled={selectedComm.length===0||(commType==='sms'?!smsMessage.trim():(!commObjet.trim()||!commMessage.trim()))} style={{ width:'100%', height:52, border:'none', borderRadius:12, background: (selectedComm.length>0&&(commType==='sms'?smsMessage.trim():commObjet.trim()&&commMessage.trim()))?'#E8C547':'#f0f0f0', color: (selectedComm.length>0&&(commType==='sms'?smsMessage.trim():commObjet.trim()&&commMessage.trim()))?'#111':'#bbb', fontSize:15, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                  <Send size={18} strokeWidth={2}/> Envoyer la campagne
+                </button>
+                {selectedComm.length>0 && <p style={{textAlign:'center', fontSize:12, color:'#999', margin:'6px 0 0'}}>Envoi immédiat à {selectedComm.length} destinataire{selectedComm.length>1?'s':''}</p>}
+              </div>
+            </div>
+          </div>
+
+          {/* ─── Modal Historique ─── */}
+          {showHistorique && (
+            <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:4000,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
+              <div style={{background:'#fff',borderRadius:20,width:'min(600px,calc(100vw-48px))',maxHeight:'80vh',display:'flex',flexDirection:'column',overflow:'hidden'}}>
+                <div style={{padding:'24px 28px 20px',borderBottom:'1px solid #f0f0f0',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
+                  <h2 style={{margin:0,fontSize:18,fontWeight:800,color:'#111'}}>Historique des envois</h2>
+                  <button onClick={()=>setShowHistorique(false)} style={{width:36,height:36,borderRadius:'50%',border:'none',background:'#f0f0f0',cursor:'pointer',fontSize:18,color:'#666'}}>✕</button>
+                </div>
+                <div style={{flex:1,overflowY:'auto',padding:'20px 28px'}}>
+                  {historiqueEnvois.length===0 ? (
+                    <p style={{color:'#bbb',textAlign:'center',padding:'32px 0'}}>Aucun envoi pour l'instant</p>
+                  ) : historiqueEnvois.map((h,i) => (
+                    <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 0',borderBottom:'1px solid #f5f5f5'}}>
+                      <div style={{width:36,height:36,borderRadius:8,background:h.type==='sms'?'#f0fdf4':'#eff6ff',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                        {h.type==='sms'?<MessageSquare size={16} color="#16a34a" strokeWidth={2}/>:<Mail size={16} color="#3b82f6" strokeWidth={2}/>}
+                      </div>
+                      <div style={{flex:1}}>
+                        <div style={{fontWeight:700,fontSize:13,color:'#111'}}>{h.type==='sms'?'SMS':'Email'} — {h.nb_destinataires} destinataire{h.nb_destinataires>1?'s':''}</div>
+                        <div style={{fontSize:12,color:'#999'}}>{h.objet||h.message?.slice(0,40)||''}</div>
+                        <div style={{fontSize:11,color:'#bbb'}}>{new Date(h.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Modal Prévisualisation ─── */}
+          {showPreview && (
+            <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:4000,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
+              <div style={{background:'#fff',borderRadius:20,width:'min(680px,calc(100vw - 48px))',maxHeight:'90vh',display:'flex',flexDirection:'column',boxShadow:'0 32px 80px rgba(0,0,0,0.3)',overflow:'hidden'}}>
+                <div style={{padding:'24px 28px 20px',borderBottom:'1px solid #f0f0f0',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
+                  <h2 style={{margin:0,fontSize:20,fontWeight:800,color:'#111'}}>Prévisualisation</h2>
+                  <button onClick={()=>setShowPreview(false)} style={{width:36,height:36,borderRadius:'50%',border:'none',background:'#f0f0f0',cursor:'pointer',fontSize:18,color:'#666'}}>✕</button>
+                </div>
+                <div style={{flex:1,overflowY:'auto',padding:'24px 28px'}}>
+                  <div style={{background:'#f9f9f9',borderRadius:12,padding:16,marginBottom:20}}>
+                    <p style={{fontSize:12,fontWeight:700,color:'#999',textTransform:'uppercase',letterSpacing:1,margin:'0 0 10px'}}>Récapitulatif</p>
+                    <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
+                      {filtreGenre!=='Tous' && <span style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>{filtreGenre}</span>}
+                      {filtreAbsentsActif && <span style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>Absents {filtreAbsentsMois} mois</span>}
+                      {filtreJours?.size>0 && [...filtreJours].map(j=><span key={j} style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>{j}</span>)}
+                      {filtreServices?.size>0 && [...filtreServices].map(s=><span key={s} style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>{s==='midi'?'☀️ Midi':'🌙 Soir'}</span>)}
+                      {filtreGenre==='Tous' && !filtreAbsentsActif && !filtreJours?.size && !filtreServices?.size && <span style={{fontSize:13,color:'#999'}}>Aucun filtre — tous les clients</span>}
+                    </div>
+                  </div>
+                  {(()=>{
+                    const ids = selectedComm;
+                    const destClients = clients.filter(c=>ids.includes(c.id));
+                    const apercu = commType==='email'
+                      ? (commMessage||'').replace(/{prenom}/g, destClients[0]?.prenom||'{prenom}').replace(/{nom}/g, destClients[0]?.nom||'{nom}').replace(/{tel}/g, destClients[0]?.tel||'{tel}').replace(/{entreprise}/g, destClients[0]?.entreprise||'{entreprise}')
+                      : (smsMessage||'').replace(/{prenom}/g, destClients[0]?.prenom||'{prenom}').replace(/{nom}/g, destClients[0]?.nom||'{nom}');
+                    return (
+                      <div>
+                        <p style={{fontSize:13,fontWeight:700,color:'#111',margin:'0 0 10px'}}>{ids.length} destinataire{ids.length>1?'s':''} — {commType==='email'?'Email':'SMS'}</p>
+                        <div style={{fontSize:13,color:'#666',marginBottom:16}}>{destClients.slice(0,3).map(c=>`${c.prenom} ${c.nom}`).join(', ')}{destClients.length>3&&` +${destClients.length-3} autres`}</div>
+                        {commType==='email' && <div style={{marginBottom:12}}><span style={{fontSize:12,fontWeight:700,color:'#999'}}>Objet : </span><span style={{fontSize:13,color:'#111'}}>{commObjet}</span></div>}
+                        <div style={{background:'#f9f9f9',borderRadius:12,padding:16,fontSize:14,lineHeight:1.7,color:'#111',whiteSpace:'pre-wrap'}}>{apercu}</div>
+                      </div>
+                    );
+                  })()}
+                </div>
+                <div style={{padding:'20px 28px',borderTop:'1px solid #f0f0f0',display:'flex',gap:12,flexShrink:0}}>
+                  <button onClick={()=>setShowPreview(false)} style={{flex:1,height:46,border:'1.5px solid #ddd',borderRadius:10,background:'#fff',fontSize:14,fontWeight:600,cursor:'pointer',color:'#666'}}>Modifier</button>
+                  <button onClick={()=>{ setShowConfirmEnvoi(true); }} style={{flex:2,height:46,border:'none',borderRadius:10,background:'#E8C547',fontSize:15,fontWeight:800,cursor:'pointer',color:'#111',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+                    <Send size={18} strokeWidth={2}/> Envoyer ({selectedComm.length})
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Modal Confirmation envoi ─── */}
+          {showConfirmEnvoi && (
+            <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:5000,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
+              <div style={{background:'#fff',borderRadius:20,width:'min(420px,calc(100vw-48px))',padding:32,boxShadow:'0 32px 80px rgba(0,0,0,0.3)'}}>
+                <h2 style={{margin:'0 0 12px',fontSize:20,fontWeight:800,color:'#111'}}>Confirmer l'envoi ?</h2>
+                <p style={{fontSize:14,color:'#666',margin:'0 0 24px',lineHeight:1.6}}>
+                  Vous allez envoyer {commType==='email'?'un email':'un SMS'} à <strong>{selectedComm.length} destinataire{selectedComm.length>1?'s':''}</strong>. Cette action est irréversible.
+                </p>
+                <div style={{display:'flex',gap:12}}>
+                  <button onClick={()=>setShowConfirmEnvoi(false)} style={{flex:1,height:46,border:'1.5px solid #ddd',borderRadius:10,background:'#fff',fontSize:14,fontWeight:600,cursor:'pointer',color:'#666'}}>Annuler</button>
+                  <button onClick={async()=>{ setShowConfirmEnvoi(false); setShowPreview(false); if (commType==='email') { await handleSendAll(); } else { setShowConfirmSms(true); } }} style={{flex:2,height:46,border:'none',borderRadius:10,background:'#E8C547',fontSize:15,fontWeight:800,cursor:'pointer',color:'#111'}}>
+                    Envoyer maintenant
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Modal Confirmation SMS doublons ─── */}
+          {showConfirmSms && (
+            <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:5000,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
+              <div style={{background:'#fff',borderRadius:20,width:'min(420px,calc(100vw-48px))',padding:32}}>
+                <h2 style={{margin:'0 0 16px',fontSize:18,fontWeight:800,color:'#111'}}>Envoyer les SMS ?</h2>
+                <div style={{display:'flex',gap:12}}>
+                  <button onClick={()=>setShowConfirmSms(false)} style={{flex:1,height:44,border:'1.5px solid #ddd',borderRadius:10,background:'#fff',fontSize:14,fontWeight:600,cursor:'pointer',color:'#666'}}>Annuler</button>
+                  <button onClick={doSendSms} style={{flex:2,height:44,border:'none',borderRadius:10,background:'#E8C547',fontSize:14,fontWeight:800,cursor:'pointer',color:'#111'}}>📱 Envoyer maintenant</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Modal Confirmation Email doublons ─── */}
+          {showConfirmComm && (
+            <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:5000,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
+              <div style={{background:'#fff',borderRadius:20,width:'min(480px,calc(100vw-48px))',padding:32}}>
+                <h2 style={{margin:'0 0 12px',fontSize:18,fontWeight:800,color:'#111'}}>Confirmer l'envoi email</h2>
+                {doublons.length > 0 && <p style={{fontSize:13,color:'#dc2626',margin:'0 0 16px'}}>⚠️ {doublons.length} destinataire(s) ont déjà reçu un email avec le même objet.</p>}
+                <div style={{display:'flex',gap:12}}>
+                  <button onClick={()=>{ setShowConfirmComm(false); setDoublons([]); }} style={{flex:1,height:44,border:'1.5px solid #ddd',borderRadius:10,background:'#fff',fontSize:14,fontWeight:600,cursor:'pointer',color:'#666'}}>Annuler</button>
+                  <button onClick={()=>{ setShowConfirmComm(false); setDoublons([]); doSendComm(); }} style={{flex:2,height:44,border:'none',borderRadius:10,background:'#E8C547',fontSize:14,fontWeight:800,cursor:'pointer',color:'#111'}}>
+                    {doublons.length > 0 ? '📤 Envoyer à tous quand même' : '📤 Envoyer maintenant'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+        {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
+      </>
+    );
+  }
     const commClients = clients.filter(c => {
       const matchFilter = commFilter === 'tous' ? true
         : commFilter === 'hommes' ? c.genre === 'Homme'
@@ -2865,813 +3367,6 @@ function CRMApp({ user, onLogout }) {
       setShowConfirmComm(true);
     };
 
-    return (
-      <div style={{height:'100vh', background:'#f5f5f5', fontFamily:"'Inter','Segoe UI',Arial,sans-serif", display:'flex', overflow:'hidden'}}>
-        {sidebarDesktop}
-        <div style={{marginLeft:120, flex:1, display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden'}}>
-
-        {/* Switcher Email / SMS */}
-        <div style={{padding:'16px 24px 0', flexShrink:0}}>
-          <div style={{display:'flex', background:'#e8e8e8', borderRadius:10, padding:3, width:'fit-content'}}>
-            <button onClick={()=>{ setCommMode('email'); setFiltreJours(new Set()); setFiltreServices(new Set()); }} style={{background:commMode==='email'?'#111':'transparent', color:commMode==='email'?'#fff':'#666', border:'none', borderRadius:8, padding:'8px 22px', fontSize:13, fontWeight:700, cursor:'pointer', transition:'all 0.2s'}}>📧 Email</button>
-            <button onClick={()=>{ setCommMode('sms'); setFiltreJours(new Set()); setFiltreServices(new Set()); }} style={{background:commMode==='sms'?'#111':'transparent', color:commMode==='sms'?'#fff':'#666', border:'none', borderRadius:8, padding:'8px 22px', fontSize:13, fontWeight:700, cursor:'pointer', transition:'all 0.2s'}}>📱 SMS</button>
-          </div>
-        </div>
-
-        {commMode === 'email' && (<>
-        <div style={{flex:1, display:'grid', gridTemplateColumns:'240px 260px 1fr', gap:14, padding:'14px 24px 20px', minHeight:0}}>
-
-          {/* Colonne 1 — Ciblage */}
-          <div style={{background:'#fff', borderRadius:12, boxShadow:'0 1px 4px rgba(0,0,0,0.07)', display:'flex', flexDirection:'column', overflow:'hidden'}}>
-            <div style={{padding:'12px 14px', borderBottom:'1px solid #f0f0f0', flexShrink:0}}>
-              <span style={{fontSize:11, fontWeight:800, color:'#999', textTransform:'uppercase', letterSpacing:1}}>🎯 Ciblage</span>
-            </div>
-            <div style={{flex:1, overflowY:'auto', padding:12}}>
-              {/* Genre */}
-              <p style={{fontSize:11, fontWeight:700, color:'#bbb', textTransform:'uppercase', letterSpacing:0.8, margin:'0 0 8px'}}>Genre</p>
-              <div style={{display:'flex', flexWrap:'wrap', gap:4, marginBottom:16}}>
-                {[['tous','Tous'],['hommes','Hommes'],['femmes','Femmes'],['entreprises','Entreprises']].map(([val,label]) => (
-                  <button key={val} onClick={()=>setCommFilter(val)} style={{background:commFilter===val?'#111':'#f0f0f0', color:commFilter===val?'#fff':'#666', border:'none', borderRadius:99, padding:'5px 12px', fontSize:11, fontWeight:600, cursor:'pointer'}}>{label}</button>
-                ))}
-              </div>
-              {/* Jours favoris */}
-              <p style={{fontSize:11, fontWeight:700, color:'#bbb', textTransform:'uppercase', letterSpacing:0.8, margin:'0 0 8px'}}>Jour favori</p>
-              <div style={{display:'flex', flexWrap:'wrap', gap:5, marginBottom:10}}>
-                {['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'].map(j => (
-                  <button key={j} onClick={()=>toggleFiltreJour(j)} style={{ padding:'5px 10px', borderRadius:20, fontSize:11, fontWeight:700, cursor:'pointer', border: filtreJours.has(j)?'2px solid #111':'1.5px solid #ddd', background: filtreJours.has(j)?'#111':'#fff', color: filtreJours.has(j)?'#E8C547':'#666', transition:'all 0.15s' }}>{j}</button>
-                ))}
-              </div>
-              <div style={{display:'flex', gap:6, marginBottom:12}}>
-                <button onClick={()=>toggleFiltreService('midi')} style={{ flex:1, padding:'7px 0', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', border: filtreServices.has('midi')?'2px solid #111':'1.5px solid #ddd', background: filtreServices.has('midi')?'#111':'#fff', color: filtreServices.has('midi')?'#E8C547':'#666', transition:'all 0.15s' }}>☀️ Midi</button>
-                <button onClick={()=>toggleFiltreService('soir')} style={{ flex:1, padding:'7px 0', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', border: filtreServices.has('soir')?'2px solid #111':'1.5px solid #ddd', background: filtreServices.has('soir')?'#111':'#fff', color: filtreServices.has('soir')?'#E8C547':'#666', transition:'all 0.15s' }}>🌙 Soir</button>
-              </div>
-              {(filtreJours.size > 0 || filtreServices.size > 0) && <p style={{fontSize:11, color:'#666', margin:'0 0 12px', fontStyle:'italic', background:'#f9f9f9', borderRadius:8, padding:'8px 10px'}}>{filtreJours.size > 0 && filtreServices.size > 0 ? `${[...filtreJours].join(', ')} · ${[...filtreServices].map(s=>s==='midi'?'Midi':'Soir').join('/')} dans top 3` : filtreJours.size > 0 ? `${[...filtreJours].join(', ')} dans top 3` : `${[...filtreServices].map(s=>s==='midi'?'Midi':'Soir').join('/')} dans top 3`}</p>}
-              {/* Absents */}
-              <div style={{borderTop:'1px solid #f0f0f0', paddingTop:12}}>
-                <p style={{fontSize:11, fontWeight:700, color:'#bbb', textTransform:'uppercase', letterSpacing:0.8, margin:'0 0 8px'}}>Clients absents</p>
-                <div style={{display:'flex', alignItems:'center', gap:8, flexWrap:'wrap'}}>
-                  <button onClick={()=>setFiltreAbsentsActif(v=>!v)} style={{ padding:'5px 12px', borderRadius:20, fontSize:11, fontWeight:700, cursor:'pointer', border: filtreAbsentsActif?'2px solid #111':'1.5px solid #ddd', background: filtreAbsentsActif?'#111':'#fff', color: filtreAbsentsActif?'#E8C547':'#666', transition:'all 0.15s' }}>Pas venus depuis</button>
-                  <input type="number" min={1} max={24} value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{width:44, height:28, border:'1.5px solid #ddd', borderRadius:6, textAlign:'center', fontSize:13}} />
-                  <span style={{fontSize:12, color:'#666'}}>mois</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Colonne 2 — Destinataires */}
-          <div style={{background:'#fff', borderRadius:12, boxShadow:'0 1px 4px rgba(0,0,0,0.07)', display:'flex', flexDirection:'column', overflow:'hidden'}}>
-            <div style={{padding:'12px 14px', borderBottom:'1px solid #f0f0f0', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0}}>
-              <span style={{fontSize:11, fontWeight:800, color:'#999', textTransform:'uppercase', letterSpacing:1}}>Destinataires</span>
-              <span style={{fontSize:12, color:'#aaa', fontWeight:600}}>{selectedClients.length} sél.</span>
-            </div>
-            <div style={{padding:'8px 12px', borderBottom:'1px solid #f0f0f0', flexShrink:0}}>
-              <input value={commSearch} onChange={e=>setCommSearch(e.target.value)} placeholder="Rechercher…" style={{width:'100%', border:'1px solid #e8e8e8', borderRadius:7, padding:'7px 10px', fontSize:13, outline:'none', boxSizing:'border-box', background:'#fafafa'}} />
-            </div>
-            <div style={{padding:'6px 14px', borderBottom:'1px solid #f0f0f0', flexShrink:0}}>
-              <button onClick={toggleAll} style={{background:'none', border:'none', fontSize:12, color:'#4f46e5', fontWeight:600, cursor:'pointer', padding:0}}>
-                {allSelected ? '☑ Tout désélectionner' : 'Tout sélectionner'} <span style={{color:'#bbb', fontWeight:400}}>({withEmail.length})</span>
-              </button>
-            </div>
-            <div style={{flex:1, overflowY:'auto'}}>
-              {commClients.map(c => {
-                const hasEmail = !!c.mail;
-                const checked = commSelected.includes(c.id);
-                const initial = ((c.prenom||'')[0]||(c.nom||'')[0]||'?').toUpperCase();
-                return (
-                  <label key={c.id} style={{display:'flex', alignItems:'center', gap:10, padding:'9px 14px', cursor:hasEmail?'pointer':'default', opacity:hasEmail?1:0.4, background:checked?'#fefce8':'#fff', borderBottom:'1px solid #f8f8f8', transition:'background 0.1s'}}>
-                    <input type="checkbox" checked={checked} disabled={!hasEmail} onChange={()=>toggleOne(c.id)} style={{width:15, height:15, accentColor:'#E8C547', flexShrink:0}} />
-                    <div style={{width:32, height:32, borderRadius:'50%', background:avatarColor(c), color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:12, flexShrink:0}}>{initial}</div>
-                    <div style={{flex:1, minWidth:0}}>
-                      <div style={{display:'flex', alignItems:'center', gap:6, flexWrap:'wrap'}}>
-                        <span style={{fontWeight:600, fontSize:13, color:'#111'}}>
-                          {c.genre === 'Entreprise' && c.entreprise ? c.entreprise : `${c.prenom||''} ${c.nom||''}`.trim()}
-                        </span>
-                        {c.genre === 'Entreprise' && <span style={{fontSize:11, background:'#d1fae5', color:'#065f46', borderRadius:4, padding:'1px 6px', fontWeight:600}}>Entreprise</span>}
-                      </div>
-                      {c.genre === 'Entreprise' && (c.nom || c.prenom) && (
-                        <span style={{fontSize:11, color:'#999'}}>Contact : {c.prenom} {c.nom}</span>
-                      )}
-                      <div style={{fontSize:11, color:hasEmail?'#6b7280':'#ccc', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>{c.mail||'Pas d\'email'}</div>
-                    </div>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Colonne 3 — Message + Historique */}
-          <div style={{display:'flex', flexDirection:'column', gap:12, minHeight:0, overflow:'hidden'}}>
-
-            {/* Composer */}
-            <div style={{background:'#fff', borderRadius:12, boxShadow:'0 1px 4px rgba(0,0,0,0.07)', display:'flex', flexDirection:'column', flexShrink:0}}>
-              <div style={{padding:'10px 18px', borderBottom:'1px solid #f0f0f0', display:'flex', alignItems:'center', gap:8}}>
-                <span style={{fontSize:12, color:'#aaa', fontWeight:600, width:40, flexShrink:0}}>De :</span>
-                <span style={{fontSize:13, color:'#888'}}>Le TED &lt;com.astegal@gmail.com&gt;</span>
-              </div>
-              <div style={{padding:'10px 18px', borderBottom:'1px solid #f0f0f0', display:'flex', alignItems:'center', gap:8}}>
-                <span style={{fontSize:12, color:'#aaa', fontWeight:600, width:40, flexShrink:0}}>Objet :</span>
-                <input value={commObjet} onChange={e=>setCommObjet(e.target.value)} placeholder="Objet de l'email…" style={{flex:1, border:'none', outline:'none', fontSize:14, color:'#111', background:'transparent'}} />
-              </div>
-              <div style={{padding:'14px 18px', borderBottom:'1px solid #f0f0f0', display:'flex', flexDirection:'column', gap:0}}>
-                <textarea
-                  ref={commTextareaRef}
-                  value={commMessage}
-                  onChange={e=>setCommMessage(e.target.value)}
-                  placeholder="Écrivez votre message ici..."
-                  style={{width:'100%', border:'none', outline:'none', resize:'none', minHeight:160, fontSize:14, lineHeight:1.7, color:'#222', fontFamily:'inherit', background:'transparent'}}
-                />
-                <div style={{display:'flex', gap:6, flexWrap:'wrap', alignItems:'center', marginTop:8, paddingTop:8, borderTop:'1px solid #f5f5f5'}}>
-                  <span style={{fontSize:11, color:'#bbb', alignSelf:'center'}}>Insérer :</span>
-                  {['{prenom}','{nom}','{tel}','{entreprise}'].map(v => (
-                    <button key={v} onClick={()=>{
-                      const ta = commTextareaRef.current;
-                      if (!ta) return;
-                      const start = ta.selectionStart;
-                      const end = ta.selectionEnd;
-                      const newVal = commMessage.substring(0, start) + v + commMessage.substring(end);
-                      setCommMessage(newVal);
-                      setTimeout(()=>{ ta.focus(); ta.setSelectionRange(start + v.length, start + v.length); }, 0);
-                    }} style={{background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:6, padding:'4px 10px', fontSize:12, fontWeight:600, cursor:'pointer', color:'#111'}}>{v}</button>
-                  ))}
-                  <button onClick={()=>{
-                    const ta = commTextareaRef.current;
-                    if (!ta) return;
-                    const start = ta.selectionStart;
-                    const lien = 'https://ted-crm.pages.dev/reserver';
-                    const newVal = commMessage.substring(0, start) + lien + commMessage.substring(start);
-                    setCommMessage(newVal);
-                    setTimeout(()=>{ ta.focus(); ta.setSelectionRange(start + lien.length, start + lien.length); }, 0);
-                  }} style={{background:'#f0f8ff', border:'1.5px solid #3b82f6', borderRadius:6, padding:'4px 10px', fontSize:12, fontWeight:600, color:'#3b82f6', cursor:'pointer'}}>
-                    🔗 Lien résa
-                  </button>
-                  <div style={{position:'relative', marginLeft:4}}>
-                    <button onClick={()=>setShowEmojiPicker(p=>!p)} style={{background:'#f5f5f5', border:'1px solid #eee', borderRadius:6, padding:'4px 10px', fontSize:16, cursor:'pointer', lineHeight:1}}>😊</button>
-                    {showEmojiPicker && (
-                      <>
-                        <div onClick={()=>setShowEmojiPicker(false)} style={{position:'fixed', inset:0, zIndex:100}} />
-                        <div style={{position:'absolute', bottom:'calc(100% + 8px)', left:0, background:'#fff', border:'1.5px solid #eee', borderRadius:12, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', padding:12, zIndex:101, width:280}}>
-                          {[
-                            {label:'Fêtes', emojis:['🎉','🎊','🥳','🎂','🎁','🎈','🥂','🍾']},
-                            {label:'Restaurant', emojis:['🍽️','🥩','🍷','🍸','🥗','🍕','👨‍🍳','⭐']},
-                            {label:'Communication', emojis:['👋','❤️','🔥','✨','💫','👀','📣','💌']},
-                            {label:'Temps', emojis:['📅','🕐','⏰','🌙','🌟','☀️','🌴']},
-                            {label:'Divers', emojis:['✅','⚠️','💡','🎯','🚀','💎','🏆','👑']},
-                          ].map(group => (
-                            <div key={group.label} style={{marginBottom:8}}>
-                              <div style={{fontSize:10, color:'#bbb', fontWeight:700, textTransform:'uppercase', letterSpacing:0.5, marginBottom:4}}>{group.label}</div>
-                              <div style={{display:'grid', gridTemplateColumns:'repeat(8,1fr)', gap:2}}>
-                                {group.emojis.map(emoji => (
-                                  <button key={emoji} onClick={()=>{
-                                    const ta = commTextareaRef.current;
-                                    if (!ta) return;
-                                    const start = ta.selectionStart;
-                                    const end = ta.selectionEnd;
-                                    const newVal = commMessage.substring(0, start) + emoji + commMessage.substring(end);
-                                    setCommMessage(newVal);
-                                    setShowEmojiPicker(false);
-                                    setTimeout(()=>{ ta.focus(); ta.setSelectionRange(start + emoji.length, start + emoji.length); }, 0);
-                                  }} style={{background:'none', border:'none', borderRadius:4, fontSize:18, cursor:'pointer', padding:'2px', lineHeight:1, textAlign:'center'}}
-                                    onMouseEnter={e=>e.currentTarget.style.background='#fffbea'}
-                                    onMouseLeave={e=>e.currentTarget.style.background='none'}
-                                  >{emoji}</button>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <div style={{color:'#aaa', fontSize:12, marginTop:12, paddingTop:12, borderTop:'1px solid #eee'}}>
-                  <img src="https://ted-crm.pages.dev/favicon.png" style={{height:18, verticalAlign:'middle', marginRight:6}} alt="" />
-                  <strong style={{color:'#888'}}>Le TED — Restaurant &amp; Club</strong> · 📍 Chassieu · 📞 04 78 90 67 80
-                </div>
-              </div>
-              <div style={{padding:'10px 18px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
-                <button onClick={()=>setShowPreview(true)} disabled={selectedClients.length===0||!commObjet.trim()||!commMessage.trim()} style={{background:(selectedClients.length>0&&commObjet.trim()&&commMessage.trim())?'#E8C547':'#f0f0f0', color:(selectedClients.length>0&&commObjet.trim()&&commMessage.trim())?'#111':'#bbb', border:'none', borderRadius:9, padding:'10px 24px', fontSize:14, fontWeight:800, cursor:(selectedClients.length>0&&commObjet.trim()&&commMessage.trim())?'pointer':'not-allowed', display:'flex', alignItems:'center', gap:8}}>
-                  <Eye size={16} strokeWidth={2} /> Prévisualiser
-                </button>
-                <span style={{fontSize:13, color:'#888'}}>
-                  {selectedClients.length > 0 ? <><strong style={{color:'#111'}}>{selectedClients.length}</strong> destinataire(s)</> : <span style={{color:'#ccc'}}>Aucun destinataire</span>}
-                </span>
-              </div>
-            </div>
-
-            {/* Historique email — scrollable */}
-            <div style={{flex:1, background:'#fff', borderRadius:12, boxShadow:'0 1px 4px rgba(0,0,0,0.07)', display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0}}>
-              <div style={{padding:'12px 16px', borderBottom:'1px solid #f0f0f0', flexShrink:0, display:'flex', alignItems:'center', gap:8}}>
-                <span style={{fontSize:13, fontWeight:800, color:'#111'}}>📋 Historique des envois</span>
-                <span style={{background:'#f0f0f0', borderRadius:99, padding:'2px 10px', fontSize:12, fontWeight:600, color:'#666'}}>{emailsHistorique.length}</span>
-              </div>
-              <div style={{flex:1, overflowY:'auto', padding:'8px 12px'}}>
-            {emailsHistorique.length === 0 && (
-              <div style={{textAlign:'center', padding:'2rem', color:'#bbb'}}>
-                <div style={{fontSize:36, marginBottom:8}}>📭</div>
-                <p style={{fontSize:14}}>Aucun email envoyé pour l'instant</p>
-              </div>
-            )}
-
-            {emailsHistorique.map(email => (
-              <div key={email.id} style={{background:'#fff', borderRadius:12, border:'1.5px solid #f0f0f0', marginBottom:10, overflow:'hidden', boxShadow:'0 2px 8px rgba(0,0,0,0.04)'}}>
-                <div onClick={()=>toggleEmailExpanded(email.id)} style={{padding:'14px 16px', cursor:'pointer', display:'flex', alignItems:'center', gap:12, background:emailsExpanded[email.id]?'#fffbea':'#fff'}}>
-                  <div style={{width:40, height:40, borderRadius:10, background:'#111', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0}}>📧</div>
-                  <div style={{flex:1, minWidth:0}}>
-                    <p style={{margin:0, fontWeight:700, fontSize:14, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{email.objet}</p>
-                    <p style={{margin:'3px 0 0', fontSize:12, color:'#999'}}>
-                      {new Date(email.created_at).toLocaleDateString('fr-FR', {day:'2-digit', month:'long', year:'numeric'})} à {new Date(email.created_at).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})}
-                    </p>
-                  </div>
-                  <div style={{display:'flex', alignItems:'center', gap:8, flexShrink:0}}>
-                    <span style={{background:'#f0f0f0', borderRadius:99, padding:'3px 10px', fontSize:12, fontWeight:600, color:'#555'}}>{email.nb_destinataires} envoi(s)</span>
-                    <span style={{fontSize:16, color:'#bbb', transform:emailsExpanded[email.id]?'rotate(90deg)':'rotate(0)', transition:'transform 0.2s'}}>›</span>
-                  </div>
-                </div>
-
-                {emailsExpanded[email.id] && (
-                  <div style={{padding:'0 16px 16px', borderTop:'1px solid #f5f5f5'}}>
-                    <p style={{fontSize:13, color:'#666', fontStyle:'italic', background:'#f9f9f9', borderRadius:8, padding:'10px 12px', margin:'12px 0', lineHeight:1.6, whiteSpace:'pre-wrap'}}>{email.message}</p>
-                    <p style={{fontSize:12, fontWeight:700, color:'#888', margin:'0 0 8px', textTransform:'uppercase', letterSpacing:0.5}}>Destinataires</p>
-                    <div style={{display:'flex', flexWrap:'wrap', gap:6}}>
-                      {(email.destinataires||[]).map((d, i) => (
-                        <div key={i} style={{display:'flex', alignItems:'center', gap:6, background:'#f5f5f5', borderRadius:8, padding:'5px 10px', fontSize:12}}>
-                          <div style={{width:24, height:24, borderRadius:'50%', background:'#E8C547', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:700, color:'#111'}}>
-                            {(d.prenom||d.nom||'?')[0]?.toUpperCase()}
-                          </div>
-                          <span style={{fontWeight:600, color:'#333'}}>{d.prenom} {d.nom}</span>
-                          <span style={{color:'#999'}}>{d.mail}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <p style={{fontSize:11, color:'#bbb', margin:'10px 0 0', textAlign:'right'}}>Envoyé par {email.envoye_par}</p>
-                  </div>
-                )}
-              </div>
-            ))}
-              </div>
-            </div>
-          </div>
-        </div>
-        </>)} {/* fin commMode === 'email' */}
-
-        {/* ─── Vue SMS ─── */}
-        {commMode === 'sms' && (() => {
-          const isNumeroMobile = (tel) => /^(\+336|\+337|06|07)/.test((tel||'').replace(/\s/g,''));
-
-          const limiteSmsDate = (() => { const d = new Date(); d.setMonth(d.getMonth() - filtreAbsentsMois); return d.toISOString().split('T')[0]; })();
-          const il6MoisSms = new Date(Date.now() - 180*24*60*60*1000).toISOString().split('T')[0];
-          const joursSemSms = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
-          const clientsSms = clients.filter(c => {
-            if (!c.tel) return false;
-            if (smsFilter === 'hommes' && c.genre !== 'Homme') return false;
-            if (smsFilter === 'femmes' && c.genre !== 'Femme') return false;
-            if (smsFilter === 'entreprises' && c.genre !== 'Entreprise') return false;
-            if (smsSearch) {
-              const sq = smsSearch.toLowerCase();
-              if (!(c.nom||'').toLowerCase().includes(sq) && !(c.prenom||'').toLowerCase().includes(sq) && !(c.tel||'').includes(sq)) return false;
-            }
-            if (filtreAbsentsActif) {
-              const aujourd = new Date().toISOString().split('T')[0];
-              const resasSms = resasData.filter(r => r.client_id === c.id);
-              const aResaFutureSms = resasSms.some(r => r.date > aujourd && (r.statut === 'confirmee' || r.statut === 'attente'));
-              if (aResaFutureSms) return false;
-              const derniereResaSms = resasSms.filter(r => r.date <= aujourd && (r.statut === 'venue' || r.statut === 'confirmee')).sort((a,b) => b.date.localeCompare(a.date))[0];
-              if (derniereResaSms && derniereResaSms.date >= limiteSmsDate) return false;
-            }
-            if (filtreJours.size > 0 || filtreServices.size > 0) {
-              const resasC = resasData.filter(r => r.client_id === c.id && (r.statut === 'confirmee' || r.statut === 'venue') && r.date >= il6MoisSms);
-              const compteJ = {};
-              resasC.forEach(r => { const key = `${joursSemSms[new Date(r.date+'T12:00:00').getDay()]}_${r.service}`; compteJ[key] = (compteJ[key]||0)+1; });
-              const top3 = Object.entries(compteJ).sort((a,b)=>b[1]-a[1]).slice(0,3).map(e=>e[0]);
-              let match = false;
-              if (filtreJours.size > 0 && filtreServices.size > 0) {
-                for (const jour of filtreJours) { for (const srv of filtreServices) { if (top3.includes(`${jour}_${srv}`)) { match = true; break; } } if (match) break; }
-              } else if (filtreJours.size > 0) {
-                for (const jour of filtreJours) { if (top3.some(k => k.startsWith(jour+'_'))) { match = true; break; } }
-              } else {
-                for (const srv of filtreServices) { if (top3.some(k => k.endsWith('_'+srv))) { match = true; break; } }
-              }
-              if (!match) return false;
-            }
-            return true;
-          });
-          const idsMobiles = clientsSms.filter(c => isNumeroMobile(c.tel)).map(c => c.id);
-          const allSmsSelected = idsMobiles.length > 0 && idsMobiles.every(id => smsSelected.includes(id));
-          const toggleAllSms = () => {
-            if (allSmsSelected) setSmsSelected([]);
-            else setSmsSelected(idsMobiles);
-          };
-          const toggleOneSms = (id) => { const c = clientsSms.find(x => x.id === id); if (c && !isNumeroMobile(c.tel)) return; setSmsSelected(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id]); };
-          const canSendSms = smsSelected.length > 0 && smsMessage.trim();
-          const smsAvatarColor = (c) => c.genre === 'Homme' ? '#0891b2' : c.genre === 'Femme' ? '#db2777' : c.genre === 'Entreprise' ? '#059669' : '#9ca3af';
-          const containsEmoji = (str) => /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{FE00}-\u{FE0F}]|[\u{1F000}-\u{1F02F}]/u.test(str);
-          const smsLimit = containsEmoji(smsMessage) ? 70 : 160;
-          const smsCount = Math.ceil(smsMessage.length / smsLimit);
-
-          const doSendSms = async () => {
-            const { data: dejaSent } = await supabase
-              .from('sms_envoyes')
-              .select('destinataires, message')
-              .eq('message', smsMessage);
-
-            const dejaSentIds = new Set(
-              (dejaSent || []).flatMap(s => (s.destinataires || []).map(d => d.id))
-            );
-
-            const doublons = smsSelected.filter(id => dejaSentIds.has(id));
-            const nouveaux = smsSelected.filter(id => !dejaSentIds.has(id));
-
-            if (doublons.length > 0 && nouveaux.length === 0) {
-              showToast('⚠️ Ce message a déjà été envoyé à tous ces destinataires', 'error');
-              setShowConfirmSms(false);
-              return;
-            }
-
-            if (doublons.length > 0) {
-              const noms = doublons.map(id => {
-                const c = clients.find(x => x.id === id);
-                return `${c?.prenom} ${c?.nom}`;
-              }).join(', ');
-              const ok = window.confirm(`⚠️ ${doublons.length} personne(s) ont déjà reçu ce message exactement :\n${noms}\n\nEnvoyer uniquement aux autres ?`);
-              if (!ok) return;
-              setSmsSelected(nouveaux);
-            }
-
-            const baseIds = doublons.length > 0 ? nouveaux : smsSelected;
-            const mobiles = baseIds.filter(id => { const c = clients.find(x => x.id === id); return c?.tel && isNumeroMobile(c.tel); });
-            const fixes = baseIds.filter(id => { const c = clients.find(x => x.id === id); return c?.tel && !isNumeroMobile(c.tel); });
-
-            if (mobiles.length === 0) {
-              showToast('⚠️ Aucun numéro mobile valide parmi les destinataires', 'error');
-              setShowConfirmSms(false);
-              return;
-            }
-
-            const idsToSend = mobiles;
-            let success = 0;
-            for (const id of idsToSend) {
-              const client = clients.find(c => c.id === id);
-              if (!client?.tel) continue;
-              const msgPersonnalise = smsMessage
-                .replace(/{prenom}/g, client.prenom||'')
-                .replace(/{nom}/g, client.nom||'');
-              try {
-                const res = await fetch('/send-sms', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ to: client.tel, message: msgPersonnalise })
-                });
-                if (res.ok) success++;
-              } catch(e) { console.error(e); }
-            }
-            await supabase.from('sms_envoyes').insert([{
-              message: smsMessage,
-              nb_destinataires: success,
-              destinataires: idsToSend.map(id => {
-                const c = clients.find(x => x.id === id);
-                return { id, nom: c?.nom, prenom: c?.prenom, tel: c?.tel };
-              }),
-              envoye_par: user.email
-            }]);
-            showToast(`📱 ${success} SMS envoyé(s)${fixes.length > 0 ? ` · ${fixes.length} fixe(s) ignoré(s)` : ''} ✓`);
-            setSmsMessage('');
-            setSmsSelected([]);
-            setShowConfirmSms(false);
-            loadSmsHistorique();
-          };
-
-          return (
-            <>
-              <div style={{flex:1, display:'grid', gridTemplateColumns:'240px 260px 1fr', gap:14, padding:'14px 24px 20px', minHeight:0}}>
-
-                {/* Colonne 1 — Ciblage SMS */}
-                <div style={{background:'#fff', borderRadius:12, boxShadow:'0 1px 4px rgba(0,0,0,0.07)', display:'flex', flexDirection:'column', overflow:'hidden'}}>
-                  <div style={{padding:'12px 14px', borderBottom:'1px solid #f0f0f0', flexShrink:0}}>
-                    <span style={{fontSize:11, fontWeight:800, color:'#999', textTransform:'uppercase', letterSpacing:1}}>🎯 Ciblage</span>
-                  </div>
-                  <div style={{flex:1, overflowY:'auto', padding:12}}>
-                    <p style={{fontSize:11, fontWeight:700, color:'#bbb', textTransform:'uppercase', letterSpacing:0.8, margin:'0 0 8px'}}>Genre</p>
-                    <div style={{display:'flex', flexWrap:'wrap', gap:4, marginBottom:16}}>
-                      {[['tous','Tous'],['hommes','Hommes'],['femmes','Femmes'],['entreprises','Entreprises']].map(([val,label]) => (
-                        <button key={val} onClick={()=>setSmsFilter(val)} style={{background:smsFilter===val?'#111':'#f0f0f0', color:smsFilter===val?'#fff':'#666', border:'none', borderRadius:99, padding:'5px 12px', fontSize:11, fontWeight:600, cursor:'pointer'}}>{label}</button>
-                      ))}
-                    </div>
-                    <p style={{fontSize:11, fontWeight:700, color:'#bbb', textTransform:'uppercase', letterSpacing:0.8, margin:'0 0 8px'}}>Jour favori</p>
-                    <div style={{display:'flex', flexWrap:'wrap', gap:5, marginBottom:10}}>
-                      {['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'].map(j => (
-                        <button key={j} onClick={()=>toggleFiltreJour(j)} style={{ padding:'5px 10px', borderRadius:20, fontSize:11, fontWeight:700, cursor:'pointer', border: filtreJours.has(j)?'2px solid #111':'1.5px solid #ddd', background: filtreJours.has(j)?'#111':'#fff', color: filtreJours.has(j)?'#E8C547':'#666', transition:'all 0.15s' }}>{j}</button>
-                      ))}
-                    </div>
-                    <div style={{display:'flex', gap:6, marginBottom:12}}>
-                      <button onClick={()=>toggleFiltreService('midi')} style={{ flex:1, padding:'7px 0', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', border: filtreServices.has('midi')?'2px solid #111':'1.5px solid #ddd', background: filtreServices.has('midi')?'#111':'#fff', color: filtreServices.has('midi')?'#E8C547':'#666', transition:'all 0.15s' }}>☀️ Midi</button>
-                      <button onClick={()=>toggleFiltreService('soir')} style={{ flex:1, padding:'7px 0', borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', border: filtreServices.has('soir')?'2px solid #111':'1.5px solid #ddd', background: filtreServices.has('soir')?'#111':'#fff', color: filtreServices.has('soir')?'#E8C547':'#666', transition:'all 0.15s' }}>🌙 Soir</button>
-                    </div>
-                      {(filtreJours.size > 0 || filtreServices.size > 0) && <p style={{fontSize:11, color:'#666', margin:'0 0 12px', fontStyle:'italic', background:'#f9f9f9', borderRadius:8, padding:'8px 10px'}}>{filtreJours.size > 0 && filtreServices.size > 0 ? `${[...filtreJours].join(', ')} · ${[...filtreServices].map(s=>s==='midi'?'Midi':'Soir').join('/')} dans top 3` : filtreJours.size > 0 ? `${[...filtreJours].join(', ')} dans top 3` : `${[...filtreServices].map(s=>s==='midi'?'Midi':'Soir').join('/')} dans top 3`}</p>}
-                    <div style={{borderTop:'1px solid #f0f0f0', paddingTop:12}}>
-                      <p style={{fontSize:11, fontWeight:700, color:'#bbb', textTransform:'uppercase', letterSpacing:0.8, margin:'0 0 8px'}}>Clients absents</p>
-                      <div style={{display:'flex', alignItems:'center', gap:8, flexWrap:'wrap'}}>
-                        <button onClick={()=>setFiltreAbsentsActif(v=>!v)} style={{ padding:'5px 12px', borderRadius:20, fontSize:11, fontWeight:700, cursor:'pointer', border: filtreAbsentsActif?'2px solid #111':'1.5px solid #ddd', background: filtreAbsentsActif?'#111':'#fff', color: filtreAbsentsActif?'#E8C547':'#666', transition:'all 0.15s' }}>Pas venus depuis</button>
-                        <input type="number" min={1} max={24} value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{width:44, height:28, border:'1.5px solid #ddd', borderRadius:6, textAlign:'center', fontSize:13}} />
-                        <span style={{fontSize:12, color:'#666'}}>mois</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Colonne 2 — Destinataires SMS */}
-                <div style={{background:'#fff', borderRadius:12, boxShadow:'0 1px 4px rgba(0,0,0,0.07)', display:'flex', flexDirection:'column', overflow:'hidden'}}>
-                  <div style={{padding:'12px 14px', borderBottom:'1px solid #f0f0f0', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0}}>
-                    <span style={{fontSize:11, fontWeight:800, color:'#999', textTransform:'uppercase', letterSpacing:1}}>Destinataires</span>
-                    <span style={{fontSize:12, color:'#aaa', fontWeight:600}}>{smsSelected.length} sél.</span>
-                  </div>
-                  <div style={{padding:'8px 12px', borderBottom:'1px solid #f0f0f0', flexShrink:0}}>
-                    <input value={smsSearch} onChange={e=>setSmsSearch(e.target.value)} placeholder="Rechercher nom, prénom, tél…" style={{width:'100%', border:'1px solid #e8e8e8', borderRadius:7, padding:'7px 10px', fontSize:13, outline:'none', boxSizing:'border-box', background:'#fafafa'}} />
-                  </div>
-                  <div style={{padding:'6px 14px', borderBottom:'1px solid #f0f0f0', flexShrink:0}}>
-                    <button onClick={toggleAllSms} style={{background:'none', border:'none', fontSize:12, color:'#4f46e5', fontWeight:600, cursor:'pointer', padding:0}}>
-                      {allSmsSelected ? '☑ Tout désélectionner' : 'Tout sélectionner'} <span style={{color:'#bbb', fontWeight:400}}>({idsMobiles.length})</span>
-                    </button>
-                  </div>
-                  <div style={{flex:1, overflowY:'auto'}}>
-                    {clientsSms.map(c => {
-                      const checked = smsSelected.includes(c.id);
-                      const initial = ((c.prenom||'')[0]||(c.nom||'')[0]||'?').toUpperCase();
-                      const mobile = isNumeroMobile(c.tel);
-                      return (
-                        <label key={c.id} style={{display:'flex', alignItems:'center', gap:10, padding:'9px 14px', cursor:mobile?'pointer':'not-allowed', background:checked?'#fefce8': mobile?'#fff':'#fafafa', borderBottom:'1px solid #f8f8f8', transition:'background 0.1s', opacity:mobile?1:0.4, pointerEvents:mobile?'auto':'none'}}>
-                          <input type="checkbox" checked={checked} onChange={()=>toggleOneSms(c.id)} style={{width:15, height:15, accentColor:'#E8C547', flexShrink:0}} />
-                          <div style={{width:32, height:32, borderRadius:'50%', background:smsAvatarColor(c), color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:12, flexShrink:0}}>{initial}</div>
-                          <div style={{flex:1, minWidth:0}}>
-                            <div style={{display:'flex', alignItems:'center', gap:6, flexWrap:'wrap'}}>
-                              <span style={{fontWeight:600, fontSize:13, color:'#111', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>
-                                {c.genre === 'Entreprise' && c.entreprise ? c.entreprise : `${c.prenom||''} ${c.nom||''}`.trim()}
-                              </span>
-                              {c.genre === 'Entreprise' && <span style={{fontSize:10, background:'#d1fae5', color:'#065f46', borderRadius:4, padding:'1px 5px', fontWeight:600, flexShrink:0}}>Entreprise</span>}
-                              {!mobile && <span style={{fontSize:10, color:'#dc2626', fontWeight:600, background:'#fef2f2', borderRadius:4, padding:'1px 5px', flexShrink:0}}>📞 Fixe</span>}
-                            </div>
-                            {c.genre === 'Entreprise' && (c.nom || c.prenom) && (
-                              <div style={{fontSize:11, color:'#999'}}>Contact : {c.prenom} {c.nom}</div>
-                            )}
-                            <div style={{fontSize:11, color:'#6b7280'}}>{c.tel}</div>
-                          </div>
-                        </label>
-                      );
-                    })}
-                    {clientsSms.length === 0 && (
-                      <div style={{textAlign:'center', padding:'2rem', color:'#bbb', fontSize:13}}>Aucun résultat</div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Colonne 3 — Composer SMS + Historique */}
-                <div style={{display:'flex', flexDirection:'column', gap:12, minHeight:0, overflow:'hidden'}}>
-                <div style={{background:'#fff', borderRadius:12, boxShadow:'0 1px 4px rgba(0,0,0,0.07)', padding:20, flexShrink:0}}>
-                  <div style={{background:'#f8f8f8', borderRadius:8, padding:'8px 12px', marginBottom:14, fontSize:13, color:'#888'}}>
-                    De : <strong style={{color:'#111'}}>Le TED</strong>
-                  </div>
-                  <textarea
-                    ref={smsTextareaRef}
-                    value={smsMessage}
-                    onChange={e=>setSmsMessage(e.target.value.slice(0,smsLimit))}
-                    placeholder="Votre message SMS (160 caractères max)..."
-                    style={{width:'100%', minHeight:120, border:'1.5px solid #eee', borderRadius:8, padding:12, fontSize:14, resize:'none', outline:'none', boxSizing:'border-box', lineHeight:1.6, fontFamily:'inherit'}}
-                  />
-                  <div style={{display:'flex', justifyContent:'space-between', marginBottom:10}}>
-                    <span style={{fontSize:12, color:smsMessage.length > smsLimit * 0.9 ?'#dc2626':'#999', fontWeight:smsMessage.length > smsLimit * 0.9 ?700:400}}>
-                      {smsMessage.length}/{smsLimit} car.
-                      {containsEmoji(smsMessage) && <span style={{color:'#E8C547', marginLeft:6}}>⚠️ 70 max</span>}
-                    </span>
-                    <span style={{fontSize:12, color:'#999'}}>
-                      ~{smsSelected.length} SMS · ~{(smsSelected.length * 0.045).toFixed(2)}€
-                    </span>
-                  </div>
-                  <div style={{display:'flex', gap:6, flexWrap:'wrap', alignItems:'center', marginBottom:14}}>
-                    <span style={{fontSize:11, color:'#bbb', alignSelf:'center'}}>Insérer :</span>
-                    {['{prenom}','{nom}','{tel}','{entreprise}'].map(v => (
-                      <button key={v} onClick={()=>{
-                        const ta = smsTextareaRef.current;
-                        if (!ta) return;
-                        const start = ta.selectionStart;
-                        const newVal = (smsMessage.substring(0, start) + v + smsMessage.substring(start)).slice(0, smsLimit);
-                        setSmsMessage(newVal);
-                        setTimeout(()=>{ ta.focus(); ta.setSelectionRange(start + v.length, start + v.length); }, 0);
-                      }} style={{background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:6, padding:'4px 10px', fontSize:12, fontWeight:600, color:'#111', cursor:'pointer'}}>
-                        {v}
-                      </button>
-                    ))}
-                    {/* Bouton lien résa SMS */}
-                    <button onClick={()=>{
-                      const ta = smsTextareaRef.current;
-                      if (!ta) return;
-                      const start = ta.selectionStart;
-                      const lien = 'https://ted-crm.pages.dev/reserver';
-                      const newVal = (smsMessage.substring(0, start) + lien + smsMessage.substring(start)).slice(0, smsLimit);
-                      setSmsMessage(newVal);
-                      setTimeout(()=>{ ta.focus(); ta.setSelectionRange(start + lien.length, start + lien.length); }, 0);
-                    }} style={{background:'#f0f8ff', border:'1.5px solid #3b82f6', borderRadius:6, padding:'4px 10px', fontSize:12, fontWeight:600, color:'#3b82f6', cursor:'pointer', marginRight:6, marginBottom:6}}>
-                      🔗 Lien résa
-                    </button>
-                    {/* Bouton emoji */}
-                    <div style={{position:'relative', marginLeft:4}}>
-                      <button onClick={()=>setShowSmsEmojiPicker(p=>!p)} style={{background:'#f5f5f5', border:'1px solid #eee', borderRadius:6, padding:'4px 10px', fontSize:16, cursor:'pointer', lineHeight:1}}>😊</button>
-                      {showSmsEmojiPicker && (
-                        <>
-                          <div onClick={()=>setShowSmsEmojiPicker(false)} style={{position:'fixed', inset:0, zIndex:100}} />
-                          <div style={{position:'absolute', bottom:'calc(100% + 8px)', left:0, background:'#fff', border:'1.5px solid #eee', borderRadius:12, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', padding:12, zIndex:101, width:280}}>
-                            {[
-                              {label:'Fêtes', emojis:['🎉','🎊','🥳','🎂','🎁','🎈','🥂','🍾']},
-                              {label:'Restaurant', emojis:['🍽️','🥩','🍷','🍸','🥗','🍕','👨‍🍳','⭐']},
-                              {label:'Communication', emojis:['👋','❤️','🔥','✨','💫','👀','📣','💌']},
-                              {label:'Temps', emojis:['📅','🕐','⏰','🌙','🌟','☀️','🌴']},
-                              {label:'Divers', emojis:['✅','⚠️','💡','🎯','🚀','💎','🏆','👑']},
-                            ].map(group => (
-                              <div key={group.label} style={{marginBottom:8}}>
-                                <div style={{fontSize:10, color:'#bbb', fontWeight:700, textTransform:'uppercase', letterSpacing:0.5, marginBottom:4}}>{group.label}</div>
-                                <div style={{display:'grid', gridTemplateColumns:'repeat(8,1fr)', gap:2}}>
-                                  {group.emojis.map(emoji => (
-                                    <button key={emoji} onClick={()=>{
-                                      const ta = smsTextareaRef.current;
-                                      if (!ta) return;
-                                      const start = ta.selectionStart;
-                                      const end = ta.selectionEnd;
-                                      const newVal = (smsMessage.substring(0, start) + emoji + smsMessage.substring(end)).slice(0, 160);
-                                      setSmsMessage(newVal);
-                                      setShowSmsEmojiPicker(false);
-                                      setTimeout(()=>{ ta.focus(); ta.setSelectionRange(start + emoji.length, start + emoji.length); }, 0);
-                                    }} style={{background:'none', border:'none', borderRadius:4, fontSize:18, cursor:'pointer', padding:'2px', lineHeight:1, textAlign:'center'}}
-                                      onMouseEnter={e=>e.currentTarget.style.background='#fffbea'}
-                                      onMouseLeave={e=>e.currentTarget.style.background='none'}
-                                    >{emoji}</button>
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    disabled={!canSendSms}
-                    onClick={()=>setShowPreview(true)}
-                    style={{width:'100%', height:46, background:canSendSms?'#E8C547':'#f0f0f0', color:canSendSms?'#111':'#bbb', border:'none', borderRadius:10, fontSize:15, fontWeight:800, cursor:canSendSms?'pointer':'not-allowed', display:'flex', alignItems:'center', justifyContent:'center', gap:8}}>
-                    <Eye size={18} strokeWidth={2} /> Prévisualiser ({smsSelected.length})
-                  </button>
-                </div>
-
-                {/* Historique SMS — scrollable */}
-                <div style={{flex:1, background:'#fff', borderRadius:12, boxShadow:'0 1px 4px rgba(0,0,0,0.07)', display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0}}>
-                  <div style={{padding:'12px 16px', borderBottom:'1px solid #f0f0f0', flexShrink:0, display:'flex', alignItems:'center', gap:8}}>
-                    <span style={{fontSize:13, fontWeight:800, color:'#111'}}>📋 Historique SMS</span>
-                    <span style={{background:'#f0f0f0', borderRadius:99, padding:'2px 10px', fontSize:12, fontWeight:600, color:'#666'}}>{smsHistorique.length}</span>
-                  </div>
-                  <div style={{flex:1, overflowY:'auto', padding:'8px 12px'}}>
-                  {smsHistorique.length === 0 && (
-                    <div style={{textAlign:'center', padding:'2rem', color:'#bbb'}}>
-                      <div style={{fontSize:36, marginBottom:8}}>📭</div>
-                      <p style={{fontSize:14}}>Aucun SMS envoyé pour l'instant</p>
-                    </div>
-                  )}
-                  {smsHistorique.map(sms => (
-                    <div key={sms.id} style={{background:'#f9f9f9', borderRadius:10, border:'1.5px solid #f0f0f0', marginBottom:8, overflow:'hidden'}}>
-                      <div onClick={()=>toggleSmsExpanded(sms.id)} style={{padding:'12px 14px', cursor:'pointer', display:'flex', alignItems:'center', gap:10, background:smsExpanded[sms.id]?'#fffbea':'transparent'}}>
-                        <div style={{flex:1, minWidth:0}}>
-                          <p style={{margin:0, fontWeight:700, fontSize:13, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{sms.message}</p>
-                          <p style={{margin:'2px 0 0', fontSize:11, color:'#999'}}>
-                            {new Date(sms.created_at).toLocaleDateString('fr-FR', {day:'2-digit', month:'short', year:'numeric'})} · {sms.nb_destinataires} envoi(s)
-                          </p>
-                        </div>
-                        <span style={{fontSize:16, color:'#bbb', transform:smsExpanded[sms.id]?'rotate(90deg)':'rotate(0)', transition:'transform 0.2s', flexShrink:0}}>›</span>
-                      </div>
-                      {smsExpanded[sms.id] && (
-                        <div style={{padding:'0 14px 12px', borderTop:'1px solid #eee'}}>
-                          <p style={{fontSize:13, color:'#666', fontStyle:'italic', background:'#fff', borderRadius:8, padding:'8px 10px', margin:'10px 0 8px', lineHeight:1.6, whiteSpace:'pre-wrap'}}>{sms.message}</p>
-                          <div style={{display:'flex', flexWrap:'wrap', gap:5}}>
-                            {(sms.destinataires||[]).map((d, i) => (
-                              <div key={i} style={{display:'flex', alignItems:'center', gap:5, background:'#fff', borderRadius:6, padding:'4px 8px', fontSize:11}}>
-                                <div style={{width:20, height:20, borderRadius:'50%', background:'#E8C547', display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, fontWeight:700, color:'#111'}}>
-                                  {(d.prenom||d.nom||'?')[0]?.toUpperCase()}
-                                </div>
-                                <span style={{fontWeight:600, color:'#333'}}>{d.prenom} {d.nom}</span>
-                                <span style={{color:'#999'}}>{d.tel}</span>
-                              </div>
-                            ))}
-                          </div>
-                          <p style={{fontSize:11, color:'#bbb', margin:'8px 0 0', textAlign:'right'}}>Envoyé par {sms.envoye_par}</p>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  </div>
-                </div>
-                </div>
-              </div>
-
-              {/* Modal confirmation SMS */}
-              {showConfirmSms && (
-                <div style={{position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:4000, display:'flex', alignItems:'center', justifyContent:'center'}}>
-                  <div style={{background:'#fff', borderRadius:16, padding:'28px 32px', maxWidth:400, width:'90%', boxShadow:'0 20px 60px rgba(0,0,0,0.2)'}}>
-                    {(() => {
-                      const mobilesModal = smsSelected.filter(id => { const c = clients.find(x=>x.id===id); return c?.tel && isNumeroMobile(c.tel); });
-                      const fixesModal = smsSelected.filter(id => { const c = clients.find(x=>x.id===id); return c?.tel && !isNumeroMobile(c.tel); });
-                      return (<>
-                    <div style={{textAlign:'center', marginBottom:20}}>
-                      <div style={{fontSize:48, marginBottom:12}}>📱</div>
-                      <h3 style={{margin:'0 0 8px', fontSize:18, fontWeight:800, color:'#111'}}>Confirmer l'envoi SMS</h3>
-                      <p style={{margin:0, color:'#666', fontSize:14}}>
-                        Vous allez envoyer <strong>{mobilesModal.length} SMS</strong> (~{(mobilesModal.length * 0.045).toFixed(2)}€)
-                      </p>
-                    </div>
-                    {fixesModal.length > 0 && (
-                      <div style={{background:'#fff8e1', border:'1.5px solid #E8C547', borderRadius:8, padding:'12px 14px', marginBottom:16}}>
-                        <p style={{margin:0, fontSize:13, fontWeight:700, color:'#b45309'}}>⚠️ {fixesModal.length} numéro(s) fixe(s) exclu(s) :</p>
-                        {fixesModal.map(id => {
-                          const c = clients.find(x=>x.id===id);
-                          return <p key={id} style={{margin:'4px 0 0', fontSize:12, color:'#92400e'}}>• {c?.prenom} {c?.nom} — {c?.tel}</p>;
-                        })}
-                        <p style={{margin:'6px 0 0', fontSize:12, color:'#92400e', fontStyle:'italic'}}>Ces numéros ne recevront pas le SMS.</p>
-                      </div>
-                    )}
-                    <div style={{background:'#f9f9f9', borderRadius:8, padding:12, marginBottom:16, maxHeight:120, overflowY:'auto'}}>
-                      {mobilesModal.map(id => {
-                        const c = clients.find(x => x.id === id);
-                        return c ? (
-                          <div key={id} style={{display:'flex', alignItems:'center', gap:8, padding:'4px 0', fontSize:13}}>
-                            <span style={{fontWeight:600}}>{c.prenom} {c.nom}</span>
-                            <span style={{color:'#999', marginLeft:'auto'}}>{c.tel}</span>
-                          </div>
-                        ) : null;
-                      })}
-                    </div>
-                      </>);
-                    })()}
-                    <div style={{display:'flex', gap:10}}>
-                      <button onClick={()=>setShowConfirmSms(false)} style={{flex:1, height:44, border:'1.5px solid #ddd', borderRadius:10, background:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', color:'#666'}}>
-                        Annuler
-                      </button>
-                      <button onClick={doSendSms} style={{flex:2, height:44, border:'none', borderRadius:10, background:'#E8C547', fontSize:14, fontWeight:800, cursor:'pointer', color:'#111'}}>
-                        📱 Envoyer maintenant
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </>
-          );
-        })()}
-
-        {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
-
-        {/* ─── Modal Prévisualisation ─── */}
-        {showPreview && (
-          <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:4000,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
-            <div style={{background:'#fff',borderRadius:20,width:'min(680px,calc(100vw - 48px))',maxHeight:'90vh',display:'flex',flexDirection:'column',boxShadow:'0 32px 80px rgba(0,0,0,0.3)',overflow:'hidden'}}>
-              <div style={{padding:'24px 28px 20px',borderBottom:'1px solid #f0f0f0',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
-                <h2 style={{margin:0,fontSize:20,fontWeight:800,color:'#111'}}>Prévisualisation</h2>
-                <button onClick={()=>setShowPreview(false)} style={{width:36,height:36,borderRadius:'50%',border:'none',background:'#f0f0f0',cursor:'pointer',fontSize:18,color:'#666'}}>✕</button>
-              </div>
-              <div style={{flex:1,overflowY:'auto',padding:'24px 28px'}}>
-                {/* Récap filtres */}
-                <div style={{background:'#f9f9f9',borderRadius:12,padding:16,marginBottom:20}}>
-                  <p style={{fontSize:12,fontWeight:700,color:'#999',textTransform:'uppercase',letterSpacing:1,margin:'0 0 10px'}}>Récapitulatif des filtres</p>
-                  <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
-                    {commFilter && commFilter!=='tous' && <span style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>{commFilter==='hommes'?'Hommes':commFilter==='femmes'?'Femmes':'Entreprises'}</span>}
-                    {filtreAbsentsActif && <span style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>Absents depuis {filtreAbsentsMois} mois</span>}
-                    {filtreJours?.size>0 && [...filtreJours].map(j=><span key={j} style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>{j}</span>)}
-                    {filtreServices?.size>0 && [...filtreServices].map(s=><span key={s} style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>{s==='midi'?'☀️ Midi':'🌙 Soir'}</span>)}
-                    {commFilter==='tous' && !filtreAbsentsActif && !filtreJours?.size && !filtreServices?.size && <span style={{fontSize:13,color:'#999'}}>Aucun filtre — tous les clients</span>}
-                  </div>
-                </div>
-                {/* Nb destinataires */}
-                {(() => {
-                  const ids = commMode==='email' ? commSelected : smsSelected;
-                  const destClients = clients.filter(c => ids.includes(c.id));
-                  const apercu = commMode==='email'
-                    ? (commMessage||'').replace(/{prenom}/g, destClients[0]?.prenom||'{prenom}').replace(/{nom}/g, destClients[0]?.nom||'{nom}').replace(/{tel}/g, destClients[0]?.tel||'{tel}').replace(/{entreprise}/g, destClients[0]?.entreprise||'{entreprise}')
-                    : (smsMessage||'').replace(/{prenom}/g, destClients[0]?.prenom||'{prenom}').replace(/{nom}/g, destClients[0]?.nom||'{nom}').replace(/{tel}/g, destClients[0]?.tel||'{tel}').replace(/{entreprise}/g, destClients[0]?.entreprise||'{entreprise}');
-                  return (<>
-                    <div style={{display:'flex',alignItems:'center',gap:12,background:'#fffbea',border:'1.5px solid #E8C547',borderRadius:12,padding:'14px 16px',marginBottom:20}}>
-                      <Users size={20} strokeWidth={2} color="#111" />
-                      <span style={{fontSize:15,fontWeight:800,color:'#111'}}>{ids.length} destinataire{ids.length>1?'s':''}</span>
-                      <span style={{fontSize:13,color:'#666',marginLeft:4}}>— {destClients.slice(0,3).map(c=>c.prenom).join(', ')}{ids.length>3?` et ${ids.length-3} autres`:''}</span>
-                    </div>
-                    {/* Aperçu message */}
-                    <div style={{border:'1.5px solid #eee',borderRadius:12,overflow:'hidden'}}>
-                      <div style={{background:'#f8f8f8',padding:'12px 16px',borderBottom:'1px solid #eee',fontSize:12,fontWeight:700,color:'#999',textTransform:'uppercase',letterSpacing:1}}>
-                        {commMode==='email'?'Aperçu email':'Aperçu SMS'}
-                      </div>
-                      <div style={{padding:'20px 24px'}}>
-                        {commMode==='email' ? (
-                          <>
-                            <div style={{marginBottom:8,fontSize:13,color:'#666'}}><strong>De :</strong> Le TED &lt;com.astegal@gmail.com&gt;</div>
-                            <div style={{marginBottom:16,fontSize:13,color:'#666'}}><strong>Objet :</strong> {commObjet||'(sans objet)'}</div>
-                            <div style={{borderTop:'1px solid #eee',paddingTop:16,fontSize:14,color:'#333',lineHeight:1.8,whiteSpace:'pre-wrap'}}>{apercu||'(message vide)'}</div>
-                          </>
-                        ) : (
-                          <div style={{background:'#111',borderRadius:16,padding:'16px 20px',maxWidth:320}}>
-                            <p style={{color:'#fff',fontSize:14,lineHeight:1.7,margin:0,whiteSpace:'pre-wrap'}}>{apercu||'(message vide)'}</p>
-                            <p style={{color:'#888',fontSize:11,margin:'8px 0 0',textAlign:'right'}}>{(smsMessage||'').length}/160</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </>);
-                })()}
-              </div>
-              <div style={{flexShrink:0,padding:'16px 28px',borderTop:'1px solid #eee',display:'flex',gap:12}}>
-                <button onClick={()=>setShowPreview(false)} style={{flex:1,height:48,border:'1.5px solid #ddd',borderRadius:12,background:'#fff',fontSize:14,fontWeight:600,cursor:'pointer',color:'#666'}}>Modifier</button>
-                <button onClick={()=>setShowConfirmEnvoi(true)} style={{flex:2,height:48,border:'none',borderRadius:12,background:'#E8C547',fontSize:15,fontWeight:800,cursor:'pointer',color:'#111',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
-                  <Send size={18} strokeWidth={2} /> Envoyer ({commMode==='email'?commSelected.length:smsSelected.length})
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ─── Modal Confirmation envoi ─── */}
-        {showConfirmEnvoi && (
-          <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:5000,display:'flex',alignItems:'center',justifyContent:'center'}}>
-            <div style={{background:'#fff',borderRadius:16,padding:'32px 28px',maxWidth:360,width:'90%',textAlign:'center',boxShadow:'0 20px 60px rgba(0,0,0,0.3)'}}>
-              <div style={{width:64,height:64,borderRadius:'50%',background:'#fffbea',border:'3px solid #E8C547',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',fontSize:28}}>📤</div>
-              <h3 style={{margin:'0 0 8px',fontSize:18,fontWeight:800,color:'#111'}}>Confirmer l'envoi</h3>
-              <p style={{margin:'0 0 24px',fontSize:14,color:'#666',lineHeight:1.6}}>
-                Vous allez envoyer {commMode==='email'?commSelected.length:smsSelected.length} {commMode==='email'?'email':'SMS'}{(commMode==='email'?commSelected.length:smsSelected.length)>1?'s':''}.<br/>Cette action est irréversible.
-              </p>
-              <div style={{display:'flex',gap:10}}>
-                <button onClick={()=>setShowConfirmEnvoi(false)} style={{flex:1,height:48,border:'1.5px solid #ddd',borderRadius:12,background:'#fff',fontSize:14,fontWeight:600,cursor:'pointer',color:'#666'}}>Annuler</button>
-                <button onClick={async()=>{
-                  setShowConfirmEnvoi(false);
-                  setShowPreview(false);
-                  if (commMode==='email') {
-                    const { data: dejaSent } = await supabase.from('emails_envoyes').select('destinataires').eq('objet', commObjet);
-                    const dejaSentIds = new Set((dejaSent||[]).flatMap(e => (e.destinataires||[]).map(d => d.id)));
-                    setDoublons(commSelected.filter(id => dejaSentIds.has(id)));
-                    setShowConfirmComm(true);
-                  } else {
-                    setShowConfirmSms(true);
-                  }
-                }} style={{flex:1,height:48,border:'none',borderRadius:12,background:'#111',fontSize:14,fontWeight:800,cursor:'pointer',color:'#fff'}}>Envoyer</button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {showConfirmComm && (
-          <div style={{position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:4000, display:'flex', alignItems:'center', justifyContent:'center'}}>
-            <div style={{background:'#fff', borderRadius:16, padding:'28px 32px', maxWidth:420, width:'90%', boxShadow:'0 20px 60px rgba(0,0,0,0.2)'}}>
-              <div style={{textAlign:'center', marginBottom:20}}>
-                <div style={{fontSize:48, marginBottom:12}}>📤</div>
-                <h3 style={{margin:'0 0 8px', fontSize:18, fontWeight:800, color:'#111'}}>Confirmer l'envoi</h3>
-                <p style={{margin:0, color:'#666', fontSize:14}}>
-                  Vous allez envoyer <strong style={{color:'#111'}}>{commSelected.length} email(s)</strong> à :
-                </p>
-                <div style={{margin:'12px 0', maxHeight:120, overflowY:'auto'}}>
-                  {commSelected.map(id => {
-                    const c = clients.find(x => x.id === id);
-                    return c ? (
-                      <div key={id} style={{display:'flex', alignItems:'center', gap:8, padding:'6px 0', borderBottom:'1px solid #f0f0f0'}}>
-                        <div style={{width:28, height:28, borderRadius:'50%', background: doublons.includes(id)?'#fca5a5':'#E8C547', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700}}>
-                          {(c.prenom||c.nom||'?')[0].toUpperCase()}
-                        </div>
-                        <span style={{fontSize:13, color:'#333'}}>{c.prenom} {c.nom}</span>
-                        {doublons.includes(id) && <span style={{fontSize:10, color:'#dc2626', fontWeight:700, marginLeft:'auto'}}>déjà reçu</span>}
-                        {!doublons.includes(id) && <span style={{fontSize:11, color:'#999', marginLeft:'auto'}}>{c.mail}</span>}
-                      </div>
-                    ) : null;
-                  })}
-                </div>
-              </div>
-              {doublons.length > 0 && (
-                <div style={{background:'#fef2f2', border:'1px solid #fca5a5', borderRadius:8, padding:'10px 14px', marginBottom:16, fontSize:13, color:'#dc2626'}}>
-                  ⚠️ <strong>{doublons.length} destinataire(s)</strong> ont déjà reçu un email avec cet objet.
-                </div>
-              )}
-              <div style={{display:'flex', flexDirection:'column', gap:8}}>
-                {doublons.length > 0 && (
-                  <button onClick={()=>{
-                    setCommSelected(s => s.filter(id => !doublons.includes(id)));
-                    setShowConfirmComm(false);
-                    setTimeout(()=>{ setShowConfirmComm(true); setDoublons([]); }, 50);
-                  }} style={{height:44, border:'1.5px solid #ddd', borderRadius:10, background:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', color:'#555'}}>
-                    Envoyer uniquement aux nouveaux ({commSelected.length - doublons.length})
-                  </button>
-                )}
-                <div style={{display:'flex', gap:8}}>
-                  <button onClick={()=>{ setShowConfirmComm(false); setDoublons([]); }} style={{flex:1, height:44, border:'1.5px solid #ddd', borderRadius:10, background:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', color:'#666'}}>
-                    Annuler
-                  </button>
-                  <button onClick={()=>{ setShowConfirmComm(false); setDoublons([]); doSendComm(); }} style={{flex:2, height:44, border:'none', borderRadius:10, background:'#E8C547', fontSize:14, fontWeight:800, cursor:'pointer', color:'#111'}}>
-                    {doublons.length > 0 ? '📤 Envoyer à tous quand même' : '📤 Envoyer maintenant'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-        </div>
-    );
-  }
 
   return (
     <div style={{ fontFamily:"'Inter','Segoe UI',Arial,sans-serif", minHeight:"100vh", background:"#f8f8f8", color:"#111" }}>
