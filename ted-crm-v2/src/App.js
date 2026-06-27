@@ -3650,14 +3650,17 @@ function CRMApp({ user, onLogout }) {
                   <tr>
                     <th style={thStyle('nom')} onClick={()=>trierPar('nom')}>Client{sortIndicator('nom')}</th>
                     <th style={thStyle('tel')} onClick={()=>trierPar('tel')}>Téléphone{sortIndicator('tel')}</th>
-                    <th style={thStyle('mail')} onClick={()=>trierPar('mail')}>Email{sortIndicator('mail')}</th>
+                    <th style={{...thStyle('mail'), display: screenWidth < 1200 ? 'none' : 'table-cell'}} onClick={()=>trierPar('mail')}>Email{sortIndicator('mail')}</th>
                     <th style={{...thStyle('resas'), textAlign:'center'}} onClick={()=>trierPar('resas')}>Résa{sortIndicator('resas')}</th>
-                    <th style={thStyle('derniere')} onClick={()=>trierPar('derniere')}>Dernière visite{sortIndicator('derniere')}</th>
+                    <th style={{...thStyle('derniere'), display: screenWidth < 900 ? 'none' : 'table-cell'}} onClick={()=>trierPar('derniere')}>Dernière visite{sortIndicator('derniere')}</th>
+                    <th style={thStyle('prochaine')}>Prochaine résa</th>
                   </tr>
                 </thead>
                 <tbody>
                   {sortedPageClients.map((c) => {
                     const s = statsClients[c.id] || { total:0, derniereVisite:null };
+                    const aujourd2 = new Date().toISOString().split('T')[0];
+                    const prochaineResa = resasData.filter(r => r.client_id===c.id && r.date>aujourd2 && (r.statut==='confirmee'||r.statut==='attente')).sort((a,b)=>a.date.localeCompare(b.date))[0];
                     return (
                       <tr key={c.id} onClick={()=>setModalDetailClient(c)} style={{cursor:'pointer', borderTop:'1px solid #f5f5f5'}}
                         onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'}
@@ -3673,12 +3676,20 @@ function CRMApp({ user, onLogout }) {
                           </div>
                         </td>
                         <td style={{padding:'10px 14px', fontSize:13, color:'#555'}}>{c.tel||'—'}</td>
-                        <td style={{padding:'10px 14px', fontSize:12, color:'#3b82f6', maxWidth:180, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.mail||'—'}</td>
+                        <td style={{padding:'10px 14px', fontSize:12, color:'#3b82f6', maxWidth:180, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', display: screenWidth < 1200 ? 'none' : 'table-cell'}}>{c.mail||'—'}</td>
                         <td style={{padding:'10px 14px', textAlign:'center'}}>
                           {s.total > 0 ? <span style={{background:G, color:'#111', borderRadius:20, padding:'2px 10px', fontSize:12, fontWeight:800}}>{s.total}</span> : <span style={{color:'#ddd'}}>—</span>}
                         </td>
-                        <td style={{padding:'10px 14px', fontSize:12, color:'#999'}}>
+                        <td style={{padding:'10px 14px', fontSize:12, color:'#999', display: screenWidth < 900 ? 'none' : 'table-cell'}}>
                           {s.derniereVisite ? new Date(s.derniereVisite+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}) : <span style={{color:'#ddd'}}>Jamais</span>}
+                        </td>
+                        <td style={{padding:'10px 14px', fontSize:13}}>
+                          {prochaineResa ? (
+                            <div>
+                              <div style={{fontWeight:600, color:'#16a34a'}}>{new Date(prochaineResa.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</div>
+                              <div style={{fontSize:11, color:'#999'}}>{prochaineResa.heure} · {prochaineResa.service==='midi'?'Midi':'Soir'}</div>
+                            </div>
+                          ) : <span style={{color:'#ddd'}}>—</span>}
                         </td>
                       </tr>
                     );
