@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus, UserPlus } from 'lucide-react';
+import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus, UserPlus, Trophy } from 'lucide-react';
 import { supabase } from "./supabase";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -2509,6 +2509,8 @@ function CRMApp({ user, onLogout }) {
   const [page, setPage] = useState(1);
   const [modalAdd, setModalAdd] = useState(false);
   const [addClientForm, setAddClientForm] = useState({});
+  const [filtreGenreClients, setFiltreGenreClients] = useState('Tous');
+  const [rechercheClients, setRechercheClients] = useState('');
   const [showConfirmQuitterClient, setShowConfirmQuitterClient] = useState(false);
   const [modalDetailClient, setModalDetailClient] = useState(null);
   const [ficheClientReadOnly, setFicheClientReadOnly] = useState(false);
@@ -3495,224 +3497,161 @@ function CRMApp({ user, onLogout }) {
       )}
 
       {/* ═══ DESKTOP MAIN ═══ */}
-      {!isMobile && (
-        <main style={{ maxWidth:1400, margin:"0 auto", padding:"20px 16px" }}>
-          {/* Dashboard compact */}
-          <div style={{ background:"#fff", borderRadius:10, border:"1.5px solid #e5e5e5", padding:"10px 18px", marginBottom:16, display:"flex", alignItems:"center", gap:24, flexWrap:"wrap" }}>
-            <span style={{ fontSize:14, fontWeight:700, color:"#111" }}><span style={{ color:"#888", fontWeight:500 }}>Clients :</span> {clients.length}</span>
-            <span style={{ color:"#e5e5e5" }}>|</span>
-            <span style={{ fontSize:14, color:"#111" }}><span style={{ color:"#888", fontWeight:500 }}>Nouveaux ce mois :</span> <span style={{ color:G, fontWeight:700 }}>{newMonth}</span></span>
-            <span style={{ color:"#e5e5e5" }}>|</span>
-            <span style={{ fontSize:12, color:"#bbb" }}>Mise à jour : {new Date().toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"numeric"})}</span>
-            <div style={{ marginLeft:"auto" }}>
-              <button onClick={()=>setModalCorbeille(true)} style={{ background:"transparent", color:"#888", border:"1px solid #ddd", borderRadius:7, padding:"0 10px", height:30, fontSize:12, cursor:"pointer" }}>🗑️ Corbeille</button>
-            </div>
+      {!isMobile && (() => {
+        const aujourd = new Date().toISOString().split('T')[0];
+        const debutMois = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        const debutMoisDernier = new Date(new Date().getFullYear(), new Date().getMonth()-1, 1);
+        const finMoisDernier = new Date(new Date().getFullYear(), new Date().getMonth(), 0);
+
+        const clientsFiltres = clients
+          .filter(c => filtreGenreClients==='Tous' || c.genre===filtreGenreClients)
+          .filter(c => !rechercheClients ||
+            `${c.prenom||''} ${c.nom||''} ${c.tel||''} ${c.mail||''} ${c.entreprise||''} ${c.commentaire||''}`
+              .toLowerCase().includes(rechercheClients.toLowerCase()))
+          .sort((a,b)=>`${a.prenom||''}${a.nom||''}`.localeCompare(`${b.prenom||''}${b.nom||''}`));
+
+        const topClient = clients.map(c=>({
+          ...c,
+          nb: resasData.filter(r=>r.client_id===c.id&&(r.statut==='confirmee'||r.statut==='venue')).length
+        })).sort((a,b)=>b.nb-a.nb)[0];
+
+        const nbCeMois = clients.filter(c=>c.created_at && new Date(c.created_at)>=debutMois).length;
+        const nbMoisDernier = clients.filter(c=>{ if(!c.created_at) return false; const d=new Date(c.created_at); return d>=debutMoisDernier && d<=finMoisDernier; }).length;
+        const pctEvol = nbMoisDernier>0 ? Math.round((nbCeMois-nbMoisDernier)/nbMoisDernier*100) : 0;
+
+        return (
+        <main style={{ padding:'28px 32px' }}>
+          <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20, flexWrap:'wrap', gap:12}}>
+            <h1 style={{fontSize:26, fontWeight:900, color:'#111', margin:0}}>Clients</h1>
+            <button onClick={()=>setModalCorbeille(true)} style={{background:'#fff', color:'#888', border:'1px solid #ddd', borderRadius:8, padding:'0 12px', height:34, fontSize:12, cursor:'pointer'}}>🗑️ Corbeille</button>
           </div>
 
-          {/* Top 300 clients */}
-          {(() => {
-            const today = new Date().toISOString().split('T')[0];
-            const top300 = clients.map(c => {
-              const resasC = resasData.filter(r => r.client_id === c.id && (r.statut === 'confirmee' || r.statut === 'venue'));
-              const total = resasC.length;
-              const derniereVisite = resasC.sort((a,b) => b.date.localeCompare(a.date))[0];
-              return { ...c, totalResas: total, derniereVisite: derniereVisite?.date };
-            }).filter(c => c.totalResas > 0).sort((a,b) => b.totalResas - a.totalResas).slice(0, 300);
-            return (
-              <div style={{background:'#fff', borderRadius:12, border:'1.5px solid #f0f0f0', marginBottom:16, overflow:'hidden'}}>
-                <div onClick={()=>setShowTop300(!showTop300)} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', cursor:'pointer', background:'#fff' }}>
-                  <span style={{fontSize:14, fontWeight:800, color:'#111'}}>🏆 Top clients</span>
-                  <div style={{display:'flex', alignItems:'center', gap:8}}>
-                    <span style={{fontSize:12, color:'#999'}}>{top300.length} client(s)</span>
-                    <span style={{color:'#ccc', fontSize:18, display:'inline-block', transform: showTop300?'rotate(90deg)':'rotate(0deg)', transition:'transform 0.2s'}}>›</span>
-                  </div>
-                </div>
-                {showTop300 && (
-                  <div style={{borderTop:'1px solid #f0f0f0'}}>
-                    <table style={{width:'100%', borderCollapse:'collapse', fontSize:13}}>
-                      <thead>
-                        <tr style={{background:'#f8f8f8'}}>
-                          <th style={{padding:'8px 12px', textAlign:'left', fontWeight:700, color:'#888', fontSize:11, width:40}}>#</th>
-                          <th style={{padding:'8px 12px', textAlign:'left', fontWeight:700, color:'#888', fontSize:11}}>Client</th>
-                          <th style={{padding:'8px 12px', textAlign:'center', fontWeight:700, color:'#888', fontSize:11}}>Réservations</th>
-                          <th style={{padding:'8px 12px', textAlign:'left', fontWeight:700, color:'#888', fontSize:11}}>Dernière visite</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(showTop300 === 'all' ? top300 : top300.slice(0,3)).map((c, i) => (
-                          <tr key={c.id} onClick={()=>setModalDetailClient(c)} style={{cursor:'pointer', borderTop:'1px solid #f5f5f5'}}
-                            onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'}
-                            onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                            <td style={{padding:'10px 12px', color:'#bbb', fontWeight:700}}>#{i+1}</td>
-                            <td style={{padding:'10px 12px'}}>
-                              <div style={{fontWeight:700, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:200}}>
-                                {c.genre==='Entreprise' ? (c.entreprise||c.nom) : `${c.prenom||''} ${c.nom||''}`.trim()}
-                              </div>
-                            </td>
-                            <td style={{padding:'10px 12px', textAlign:'center'}}>
-                              <span style={{background:G, color:'#111', borderRadius:20, padding:'2px 10px', fontSize:12, fontWeight:800}}>{c.totalResas}</span>
-                            </td>
-                            <td style={{padding:'10px 12px', color:'#999', fontSize:12}}>
-                              {c.derniereVisite ? new Date(c.derniereVisite+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}) : 'Jamais'}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    {top300.length > 3 && (
-                      <div style={{padding:'10px 16px', borderTop:'1px solid #f5f5f5', textAlign:'center'}}>
-                        <button onClick={()=>setShowTop300(showTop300==='all'?true:'all')} style={{border:'none', background:'none', color:G, fontWeight:700, fontSize:13, cursor:'pointer'}}>
-                          {showTop300==='all' ? '▲ Réduire' : `▼ Voir tout (${top300.length} clients)`}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-
-          {/* Tabs + Recherche + Filtres — sticky */}
-          <div style={{ position:"sticky", top:0, zIndex:10, background:"#f5f5f5", paddingTop:8, paddingBottom:8, marginBottom:8 }}>
-
-            {/* Tabs */}
-            <div style={{ display:"flex", gap:0, marginBottom:12, background:"#f0f0f0", borderRadius:10, padding:3, width:"fit-content" }}>
-              {[
-                { id:"tous", label:"👥 Tous", count: clients.length },
-                { id:"particuliers", label:"🙍 Particuliers", count: clients.filter(c=>c.genre!=="Entreprise").length },
-                { id:"entreprises", label:"🏢 Entreprises", count: clients.filter(c=>c.genre==="Entreprise").length }
-              ].map(tab => (
-                <button key={tab.id} onClick={()=>{setActiveTab(tab.id);setPage(1)}} style={{
-                  background: activeTab===tab.id ? "#111" : "transparent",
-                  color: activeTab===tab.id ? "#fff" : "#666",
-                  border:"none", borderRadius:8, padding:"8px 16px", fontSize:13,
-                  fontWeight: activeTab===tab.id ? 700 : 400,
-                  cursor:"pointer", whiteSpace:"nowrap", transition:"all 0.15s"
-                }}>
-                  {tab.label} <span style={{ background: activeTab===tab.id ? G : "#ddd", color: activeTab===tab.id ? "#111" : "#888", borderRadius:99, padding:"1px 7px", fontSize:11, fontWeight:700, marginLeft:4 }}>{tab.count}</span>
-                </button>
+          {/* Barre recherche + filtres + bouton */}
+          <div style={{display:'flex', alignItems:'center', gap:12, marginBottom:20, flexWrap:'wrap'}}>
+            <div style={{position:'relative', flex:1, minWidth:200}}>
+              <Search size={16} strokeWidth={2} color="#999" style={{position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', pointerEvents:'none'}}/>
+              <input placeholder="Rechercher un client..." value={rechercheClients} onChange={e=>setRechercheClients(e.target.value)} style={{width:'100%', height:44, border:'1.5px solid #eee', borderRadius:12, padding:'0 14px 0 40px', fontSize:14, outline:'none', background:'#fff', boxSizing:'border-box'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
+              {rechercheClients && <button onClick={()=>setRechercheClients('')} style={{position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'#aaa', fontSize:16, padding:0}}>✕</button>}
+            </div>
+            <div style={{display:'flex', gap:6}}>
+              {[{id:'Tous',label:'Tous'},{id:'Homme',label:'Hommes'},{id:'Femme',label:'Femmes'},{id:'Entreprise',label:'Entreprises'}].map(f=>(
+                <button key={f.id} onClick={()=>setFiltreGenreClients(f.id)} style={{height:44, padding:'0 18px', borderRadius:12, cursor:'pointer', fontSize:14, fontWeight:700, border:'none', background: filtreGenreClients===f.id?'#111':'#fff', color: filtreGenreClients===f.id?'#fff':'#666', boxShadow: filtreGenreClients===f.id?'none':'0 1px 4px rgba(0,0,0,0.06)'}}>{f.label}</button>
               ))}
             </div>
-
-            {/* Search + Add */}
-            <div style={{ display:"flex", flexWrap:"wrap", gap:10, alignItems:"center", marginBottom:10 }}>
-              <div style={{ position:"relative", flex:1, minWidth:220 }}>
-                <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:"#bbb", fontSize:15, pointerEvents:"none" }}>🔍</span>
-                <input style={{ width:"100%", height:40, border:"1.5px solid #ddd", borderRadius:8, padding:"0 36px 0 40px", fontSize:13, background:"#fff", outline:"none", boxSizing:"border-box" }} value={search} onChange={e=>{setSearch(e.target.value);setPage(1)}} placeholder="Rechercher par nom, prénom, téléphone, mail, date, mois, genre ou commentaire…" />
-                {search && <button onClick={()=>{setSearch("");setPage(1)}} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:"#aaa", fontSize:16, padding:2 }}>✕</button>}
-              </div>
-              <button onClick={()=>setModalAdd(true)} style={btnPrimary}>+ Nouveau client</button>
-            </div>
-
-            {/* Filters desktop */}
-            <div style={{ display:"flex", flexWrap:"wrap", gap:8, alignItems:"center" }}>
-              <select style={sel} value={filterGenre} onChange={e=>{setFilterGenre(e.target.value);setPage(1)}}><option value="">Tous les genres</option>{GENRES.map(g=><option key={g}>{g}</option>)}</select>
-              <select style={sel} value={filterMonth} onChange={e=>{setFilterMonth(e.target.value);setPage(1)}}><option value="">Tous les mois</option>{MONTHS_FR.map((m,i)=><option key={i+1} value={i+1}>{m}</option>)}</select>
-              <select style={sel} value={pageSize} onChange={e=>{setPageSize(Number(e.target.value));setPage(1)}}>{PAGE_SIZES.map(n=><option key={n} value={n}>{n} par page</option>)}</select>
-              {(filterGenre||filterMonth||search) && <button onClick={()=>{setFilterGenre("");setFilterMonth("");setSearch("");setPage(1)}} style={{ ...btnSecondary, fontSize:12 }}>✕ Réinitialiser</button>}
-              <div style={{ marginLeft:"auto", position:"relative" }}>
-                <button onClick={()=>setShowExportMenu(v=>!v)} style={btnSecondary}>📥 Importer / Exporter ▾</button>
+            <div style={{display:'flex', gap:8, flexShrink:0}}>
+              <button onClick={()=>setModalAdd(true)} style={{height:44, padding:'0 20px', borderRadius:12, border:'none', background:'#E8C547', color:'#111', fontSize:14, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', gap:8}}>
+                <Plus size={16} strokeWidth={2}/> Nouveau client
+              </button>
+              <div style={{position:'relative'}}>
+                <button onClick={()=>setShowExportMenu(v=>!v)} style={{height:44, padding:'0 14px', borderRadius:12, border:'1.5px solid #eee', background:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', color:'#666', display:'flex', alignItems:'center', gap:6}}>
+                  📥 Import/Export
+                </button>
                 {showExportMenu && (
-                  <div style={{ position:"absolute", right:0, top:"calc(100% + 4px)", background:"#fff", border:"1.5px solid #e5e5e5", borderRadius:10, boxShadow:"0 8px 24px rgba(0,0,0,0.1)", zIndex:200, minWidth:180, overflow:"hidden" }}>
-                    <button onClick={()=>{ exportToCSV(filtered); setShowExportMenu(false); }} style={{ display:"block", width:"100%", textAlign:"left", padding:"10px 16px", border:"none", background:"none", cursor:"pointer", fontSize:13, borderBottom:"1px solid #f5f5f5" }} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>⬇ Exporter CSV</button>
-                    <button onClick={()=>{ exportToXLSX(filtered); setShowExportMenu(false); }} style={{ display:"block", width:"100%", textAlign:"left", padding:"10px 16px", border:"none", background:"none", cursor:"pointer", fontSize:13, borderBottom:"1px solid #f5f5f5" }} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>⬇ Exporter Excel</button>
-                    <button onClick={()=>{ setModalImport(true); setShowExportMenu(false); }} style={{ display:"block", width:"100%", textAlign:"left", padding:"10px 16px", border:"none", background:"none", cursor:"pointer", fontSize:13 }} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>⬆ Importer clients</button>
+                  <div style={{position:'absolute', right:0, top:'calc(100% + 4px)', background:'#fff', border:'1.5px solid #eee', borderRadius:10, boxShadow:'0 8px 24px rgba(0,0,0,0.1)', zIndex:200, minWidth:180, overflow:'hidden'}}>
+                    <button onClick={()=>{exportToCSV(clients);setShowExportMenu(false);}} style={{display:'block',width:'100%',textAlign:'left',padding:'10px 16px',border:'none',background:'none',cursor:'pointer',fontSize:13,borderBottom:'1px solid #f5f5f5'}} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>⬇ Exporter CSV</button>
+                    <button onClick={()=>{exportToXLSX(clients);setShowExportMenu(false);}} style={{display:'block',width:'100%',textAlign:'left',padding:'10px 16px',border:'none',background:'none',cursor:'pointer',fontSize:13,borderBottom:'1px solid #f5f5f5'}} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>⬇ Exporter Excel</button>
+                    <button onClick={()=>{setModalImport(true);setShowExportMenu(false);}} style={{display:'block',width:'100%',textAlign:'left',padding:'10px 16px',border:'none',background:'none',cursor:'pointer',fontSize:13}} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>⬆ Importer clients</button>
                   </div>
                 )}
               </div>
             </div>
-
           </div>
 
-          {/* Tableau clients desktop */}
-          {(() => {
-            const trierPar = (col) => {
-              if (triColonne === col) setTriSens(s => s==='asc'?'desc':'asc');
-              else { setTriColonne(col); setTriSens('asc'); }
-              setPage(1);
-            };
-            const thStyle = (col) => ({ padding:'10px 14px', textAlign:'left', fontWeight:700, fontSize:12, color: triColonne===col?'#111':'#888', background:'#f8f8f8', cursor:'pointer', userSelect:'none', whiteSpace:'nowrap', borderBottom:'2px solid #e5e5e5' });
-            const sortIndicator = (col) => triColonne===col ? (triSens==='asc'?' ▲':' ▼') : '';
-            const sortedPageClients = [...pageClients].sort((a,b) => {
-              let va='', vb='';
-              if (triColonne==='nom') { va=(a.genre==='Entreprise'?a.entreprise:`${a.prenom||''} ${a.nom||''}`).toLowerCase(); vb=(b.genre==='Entreprise'?b.entreprise:`${b.prenom||''} ${b.nom||''}`).toLowerCase(); }
-              else if (triColonne==='tel') { va=a.tel||''; vb=b.tel||''; }
-              else if (triColonne==='mail') { va=a.mail||''; vb=b.mail||''; }
-              else if (triColonne==='resas') { va=statsClients[a.id]?.total||0; vb=statsClients[b.id]?.total||0; return triSens==='asc'?va-vb:vb-va; }
-              else if (triColonne==='derniere') { va=statsClients[a.id]?.derniereVisite||''; vb=statsClients[b.id]?.derniereVisite||''; }
-              return triSens==='asc' ? va.localeCompare(vb) : vb.localeCompare(va);
-            });
-            return (
-          <div style={{ background:"#fff", borderRadius:10, border:"1.5px solid #e5e5e5", overflow:"hidden" }}>
-            {pageClients.length === 0 ? (
-              <div style={{ textAlign:"center", padding:"3rem", color:"#bbb", fontSize:14 }}>{(search||filterGenre||filterMonth)?"Aucun client trouvé":"Aucun client dans la base"}</div>
-            ) : (
-              <table style={{width:'100%', borderCollapse:'collapse'}}>
-                <thead>
-                  <tr>
-                    <th style={thStyle('nom')} onClick={()=>trierPar('nom')}>Client{sortIndicator('nom')}</th>
-                    <th style={thStyle('tel')} onClick={()=>trierPar('tel')}>Téléphone{sortIndicator('tel')}</th>
-                    <th style={{...thStyle('mail'), display: screenWidth < 1200 ? 'none' : 'table-cell'}} onClick={()=>trierPar('mail')}>Email{sortIndicator('mail')}</th>
-                    <th style={{...thStyle('resas'), textAlign:'center'}} onClick={()=>trierPar('resas')}>Résa{sortIndicator('resas')}</th>
-                    <th style={{...thStyle('derniere'), display: screenWidth < 900 ? 'none' : 'table-cell'}} onClick={()=>trierPar('derniere')}>Dernière visite{sortIndicator('derniere')}</th>
-                    <th style={thStyle('prochaine')}>Prochaine résa</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedPageClients.map((c) => {
-                    const s = statsClients[c.id] || { total:0, derniereVisite:null };
-                    const aujourd2 = new Date().toISOString().split('T')[0];
-                    const prochaineResa = resasData.filter(r => r.client_id===c.id && r.date>aujourd2 && (r.statut==='confirmee'||r.statut==='attente')).sort((a,b)=>a.date.localeCompare(b.date))[0];
-                    return (
-                      <tr key={c.id} onClick={()=>setModalDetailClient(c)} style={{cursor:'pointer', borderTop:'1px solid #f5f5f5'}}
-                        onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'}
-                        onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                        <td style={{padding:'10px 14px'}}>
-                          <div style={{display:'flex', alignItems:'center', gap:10}}>
-                            <div style={{width:32, height:32, borderRadius:'50%', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, background:c.genre==='Homme'?'#dbeafe':c.genre==='Femme'?'#fce7f3':'#dcfce7', color:c.genre==='Homme'?'#1d4ed8':c.genre==='Femme'?'#be185d':'#15803d'}}>
-                              {(c.prenom||c.entreprise||'?')[0]?.toUpperCase()}
-                            </div>
-                            <span style={{fontWeight:700, fontSize:13, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:200}}>
-                              {c.genre==='Entreprise' ? (c.entreprise||c.nom||'—') : `${c.prenom||''} ${c.nom||''}`.trim()}
-                            </span>
-                          </div>
-                        </td>
-                        <td style={{padding:'10px 14px', fontSize:13, color:'#555'}}>{c.tel||'—'}</td>
-                        <td style={{padding:'10px 14px', fontSize:12, color:'#3b82f6', maxWidth:180, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', display: screenWidth < 1200 ? 'none' : 'table-cell'}}>{c.mail||'—'}</td>
-                        <td style={{padding:'10px 14px', textAlign:'center'}}>
-                          {s.total > 0 ? <span style={{background:G, color:'#111', borderRadius:20, padding:'2px 10px', fontSize:12, fontWeight:800}}>{s.total}</span> : <span style={{color:'#ddd'}}>—</span>}
-                        </td>
-                        <td style={{padding:'10px 14px', fontSize:12, color:'#999', display: screenWidth < 900 ? 'none' : 'table-cell'}}>
-                          {s.derniereVisite ? new Date(s.derniereVisite+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}) : <span style={{color:'#ddd'}}>Jamais</span>}
-                        </td>
-                        <td style={{padding:'10px 14px', fontSize:13}}>
-                          {prochaineResa ? (
-                            <div>
-                              <div style={{fontWeight:600, color:'#16a34a'}}>{new Date(prochaineResa.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</div>
-                              <div style={{fontSize:11, color:'#999'}}>{prochaineResa.heure} · {prochaineResa.service==='midi'?'Midi':'Soir'}</div>
-                            </div>
-                          ) : <span style={{color:'#ddd'}}>—</span>}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-            {/* Pagination desktop */}
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", borderTop:"1px solid #eee", flexWrap:"wrap", gap:8 }}>
-              <span style={{ fontSize:12, color:"#999" }}>{filtered.length===0?"0 résultat":`${(safePage-1)*pageSize+1}–${Math.min(safePage*pageSize,filtered.length)} sur ${filtered.length} client(s)`}</span>
-              <div style={{ display:"flex", gap:4 }}>
-                {[["«",1],["‹",safePage-1]].map(([label,p])=><button key={label} disabled={safePage<=1} onClick={()=>setPage(p)} style={{ height:30, minWidth:30, border:"1.5px solid #ddd", borderRadius:6, background:"#fff", cursor:safePage<=1?"not-allowed":"pointer", fontSize:12, padding:"0 8px", color:safePage<=1?"#ccc":"#333" }}>{label}</button>)}
-                {Array.from({length:Math.min(5,totalPages)},(_,i)=>{let p=i+1;if(totalPages>5){if(safePage<=3)p=i+1;else if(safePage>=totalPages-2)p=totalPages-4+i;else p=safePage-2+i}return <button key={p} onClick={()=>setPage(p)} style={{ height:30, minWidth:30, border:`1.5px solid ${p===safePage?G:"#ddd"}`, borderRadius:6, background:p===safePage?G:"#fff", cursor:"pointer", fontSize:12, fontWeight:p===safePage?700:400, padding:"0 8px" }}>{p}</button>})}
-                {[["›",safePage+1],["»",totalPages]].map(([label,p])=><button key={label} disabled={safePage>=totalPages} onClick={()=>setPage(p)} style={{ height:30, minWidth:30, border:"1.5px solid #ddd", borderRadius:6, background:"#fff", cursor:safePage>=totalPages?"not-allowed":"pointer", fontSize:12, padding:"0 8px", color:safePage>=totalPages?"#ccc":"#333" }}>{label}</button>)}
+          {/* 3 blocs stats */}
+          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:16, marginBottom:20}}>
+            <div style={{background:'#fff', borderRadius:14, padding:'20px 24px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+              <div>
+                <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 6px'}}>Total clients</p>
+                <p style={{fontSize:32, fontWeight:900, color:'#111', margin:'0 0 4px'}}>{clients.length}</p>
+                <p style={{fontSize:12, color:'#22c55e', fontWeight:600, margin:0}}>+{nbCeMois} ce mois-ci</p>
               </div>
+              <div style={{width:48, height:48, borderRadius:12, background:'#f5f5f5', display:'flex', alignItems:'center', justifyContent:'center'}}><Users size={22} strokeWidth={2} color="#666"/></div>
+            </div>
+            <div style={{background:'#fff', borderRadius:14, padding:'20px 24px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+              <div>
+                <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 6px'}}>Nouveaux ce mois-ci</p>
+                <p style={{fontSize:32, fontWeight:900, color:'#111', margin:'0 0 4px'}}>{nbCeMois}</p>
+                <p style={{fontSize:12, color: pctEvol>=0?'#22c55e':'#dc2626', fontWeight:600, margin:0}}>{pctEvol>=0?'+':''}{pctEvol}% vs mois dernier</p>
+              </div>
+              <div style={{width:48, height:48, borderRadius:12, background:'#f5f5f5', display:'flex', alignItems:'center', justifyContent:'center'}}><UserPlus size={22} strokeWidth={2} color="#666"/></div>
+            </div>
+            <div style={{background:'#fff', borderRadius:14, padding:'20px 24px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+              <div>
+                <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 6px'}}>Top client</p>
+                {topClient && topClient.nb > 0 ? (
+                  <>
+                    <p style={{fontSize:18, fontWeight:900, color:'#111', margin:'0 0 4px'}}>{topClient.genre==='Entreprise'?(topClient.entreprise||topClient.nom):`${topClient.prenom||''} ${topClient.nom||''}`}</p>
+                    <p style={{fontSize:12, color:'#999', fontWeight:600, margin:0}}>{topClient.nb} réservations</p>
+                  </>
+                ) : <p style={{fontSize:14, color:'#bbb', margin:0}}>Aucun</p>}
+              </div>
+              <div style={{width:48, height:48, borderRadius:12, background:'#fffbea', display:'flex', alignItems:'center', justifyContent:'center'}}><Trophy size={22} strokeWidth={2} color="#E8C547"/></div>
             </div>
           </div>
-            );
-          })()}
+
+          {/* Liste clients */}
+          <div style={{background:'#fff', borderRadius:14, overflow:'hidden'}}>
+            {clientsFiltres.length === 0 ? (
+              <div style={{padding:'48px', textAlign:'center', color:'#bbb'}}>
+                <Users size={32} strokeWidth={1.5} color="#ddd" style={{marginBottom:12}}/>
+                <p style={{fontSize:14, margin:0}}>Aucun client trouvé</p>
+              </div>
+            ) : clientsFiltres.map((c, idx) => {
+              const resasClient = resasData.filter(r=>r.client_id===c.id);
+              const total = resasClient.filter(r=>r.statut==='confirmee'||r.statut==='venue').length;
+              const derniereVisite = resasClient.filter(r=>r.date<=aujourd&&(r.statut==='venue'||r.statut==='confirmee')).sort((a,b)=>b.date.localeCompare(a.date))[0];
+              const prochaineResa = resasClient.filter(r=>r.date>aujourd&&(r.statut==='confirmee'||r.statut==='attente')).sort((a,b)=>a.date.localeCompare(b.date))[0];
+              const avatarBg = c.genre==='Homme'?'#dbeafe':c.genre==='Femme'?'#fce7f3':'#dcfce7';
+              const avatarColor = c.genre==='Homme'?'#1d4ed8':c.genre==='Femme'?'#be185d':'#15803d';
+              const initiales = c.genre==='Entreprise'?(c.entreprise||'?').slice(0,2).toUpperCase():`${(c.prenom||'?')[0]}${(c.nom||'')[0]||''}`.toUpperCase();
+              return (
+                <div key={c.id} onClick={()=>setModalDetailClient(c)} style={{display:'flex', alignItems:'center', gap:16, padding:'16px 24px', borderBottom: idx<clientsFiltres.length-1?'1px solid #f5f5f5':'none', cursor:'pointer'}}
+                  onMouseEnter={e=>e.currentTarget.style.background='#fafafa'}
+                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                  <div style={{width:44, height:44, borderRadius:'50%', flexShrink:0, background:avatarBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:800, color:avatarColor}}>{initiales}</div>
+                  <div style={{minWidth:180, flex:'0 0 180px'}}>
+                    <div style={{fontWeight:700, fontSize:15, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.genre==='Entreprise'?c.entreprise:`${c.prenom||''} ${c.nom||''}`}</div>
+                    <div style={{display:'flex', alignItems:'center', gap:4, marginTop:2}}>
+                      <Phone size={12} strokeWidth={2} color="#999"/>
+                      <span style={{fontSize:12, color:'#999'}}>{c.tel||'—'}</span>
+                    </div>
+                  </div>
+                  <div style={{display:'flex', alignItems:'center', gap:8, flex:'0 0 110px'}}>
+                    <CalendarDays size={16} strokeWidth={2} color="#ccc"/>
+                    <div>
+                      <span style={{fontSize:20, fontWeight:800, color:'#111'}}>{total}</span>
+                      <div style={{fontSize:11, color:'#999'}}>réservations</div>
+                    </div>
+                  </div>
+                  <div style={{flex:1, display:'flex', alignItems:'center', gap:8}}>
+                    <Clock size={16} strokeWidth={2} color="#ccc"/>
+                    <div>
+                      {prochaineResa ? (
+                        <>
+                          <div style={{fontSize:11, color:'#999', marginBottom:2}}>Prochaine réservation</div>
+                          <div style={{fontSize:13, fontWeight:700, color:'#16a34a'}}>{new Date(prochaineResa.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})} à {prochaineResa.heure}</div>
+                        </>
+                      ) : derniereVisite ? (
+                        <>
+                          <div style={{fontSize:11, color:'#999', marginBottom:2}}>Dernière visite</div>
+                          <div style={{fontSize:13, fontWeight:700, color:'#111'}}>{new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
+                        </>
+                      ) : (
+                        <>
+                          <div style={{fontSize:11, color:'#999', marginBottom:2}}>Dernière visite</div>
+                          <div style={{fontSize:13, fontWeight:600, color:'#bbb'}}>Jamais</div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <ChevronRight size={18} strokeWidth={2} color="#ddd"/>
+                </div>
+              );
+            })}
+          </div>
         </main>
-      )}
+        );
+      })()}
 
       {/* Barre nav fixe mobile */}
       {isMobile && (
