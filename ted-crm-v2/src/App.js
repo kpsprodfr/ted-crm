@@ -2521,6 +2521,7 @@ function CRMApp({ user, onLogout }) {
   const [topJours, setTopJours] = useState([]);
   const [resasData, setResasData] = useState([]);
   const [modalEdit, setModalEdit] = useState(null);
+  const [editForm, setEditForm] = useState({});
   const [showConfirmDeconnexion, setShowConfirmDeconnexion] = useState(false);
   const [showFormulaireDropdown, setShowFormulaireDropdown] = useState(false);
   const [modalDelete, setModalDelete] = useState(null);
@@ -2637,6 +2638,10 @@ function CRMApp({ user, onLogout }) {
     loadClients();
     loadResaCount();
   }, []);
+
+  useEffect(() => {
+    if (modalEdit) setEditForm({ genre: modalEdit.genre||'', prenom: modalEdit.prenom||'', nom: modalEdit.nom||'', tel: modalEdit.tel||'', mail: modalEdit.mail||'', entreprise: modalEdit.entreprise||'', commentaire: modalEdit.commentaire||'' });
+  }, [modalEdit]);
 
   useEffect(() => {
     const handler = () => setScreenWidth(window.innerWidth);
@@ -2761,6 +2766,11 @@ function CRMApp({ user, onLogout }) {
       showToast("Erreur lors de la modification", "error");
     }
     loadClients(); // toujours recharger pour garantir la sync (BUG 3 : nouveau mail pour emails en attente)
+  }
+
+  async function sauvegarderEditClient() {
+    if (!modalEdit) return;
+    await editClient({ ...modalEdit, ...editForm });
   }
 
   async function deleteClient(id) {
@@ -4016,7 +4026,72 @@ function CRMApp({ user, onLogout }) {
       </div>{/* end marginLeft wrapper */}
 
       {modalAdd && <ClientForm existingClients={clients} onSave={addClient} onCancel={()=>setModalAdd(false)} />}
-      {modalEdit && <ClientForm initial={modalEdit} existingClients={clients} onSave={editClient} onCancel={()=>setModalEdit(null)} reservations={resasData} />}
+      {modalEdit && (() => {
+        const aDesDonnees = editForm.prenom !== (modalEdit.prenom||'') || editForm.nom !== (modalEdit.nom||'') || editForm.tel !== (modalEdit.tel||'') || editForm.mail !== (modalEdit.mail||'') || editForm.genre !== (modalEdit.genre||'') || editForm.entreprise !== (modalEdit.entreprise||'');
+        const fermerEdit = () => {
+          if (aDesDonnees) { setPendingFermer(()=>()=>setModalEdit(null)); setShowConfirmQuitter(true); }
+          else { setModalEdit(null); }
+        };
+        return (
+          <>
+            <div onClick={fermerEdit} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:2999,pointerEvents:'all',cursor:'default'}} />
+            <div style={{position:'fixed',top:'50%',left:'50%',transform:'translate(-50%,-50%)',background:'#fff',borderRadius:20,width:'min(520px,calc(100vw - 48px))',maxHeight:'90vh',display:'flex',flexDirection:'column',boxShadow:'0 32px 80px rgba(0,0,0,0.25)',zIndex:3000,overflow:'hidden'}} onClick={e=>e.stopPropagation()}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'24px 28px 20px',flexShrink:0,borderBottom:'1px solid #f0f0f0'}}>
+                <h2 style={{margin:0,fontSize:22,fontWeight:800,color:'#111'}}>Modifier le client</h2>
+                <button onClick={fermerEdit} style={{width:36,height:36,borderRadius:'50%',border:'none',background:'#f0f0f0',cursor:'pointer',fontSize:18,color:'#666',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+              </div>
+              <div style={{flex:1,overflowY:'auto',padding:'20px 28px',display:'flex',flexDirection:'column',gap:18}}>
+                <div>
+                  <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>Genre</p>
+                  <div style={{display:'flex',gap:8}}>
+                    {['Homme','Femme','Entreprise'].map(g=>(
+                      <button key={g} onClick={()=>setEditForm({...editForm,genre:g})} style={{flex:1,height:44,borderRadius:10,cursor:'pointer',fontSize:13,fontWeight:700,border:'1.5px solid',borderColor:editForm.genre===g?(g==='Homme'?'#3b82f6':g==='Femme'?'#ec4899':'#22c55e'):'#eee',background:editForm.genre===g?(g==='Homme'?'#dbeafe':g==='Femme'?'#fce7f3':'#dcfce7'):'#fff',color:editForm.genre===g?(g==='Homme'?'#1d4ed8':g==='Femme'?'#be185d':'#15803d'):'#666'}}>{g}</button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>Prénom</p>
+                  <input value={editForm.prenom||''} onChange={e=>setEditForm({...editForm,prenom:e.target.value})} style={{width:'100%',height:52,border:'1.5px solid #eee',borderRadius:12,padding:'0 16px',fontSize:15,outline:'none',boxSizing:'border-box'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
+                </div>
+                <div>
+                  <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>Nom</p>
+                  <input value={editForm.nom||''} onChange={e=>setEditForm({...editForm,nom:e.target.value})} style={{width:'100%',height:52,border:'1.5px solid #eee',borderRadius:12,padding:'0 16px',fontSize:15,outline:'none',boxSizing:'border-box'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
+                </div>
+                {editForm.genre==='Entreprise' && (
+                  <div>
+                    <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>Nom de l'entreprise</p>
+                    <input value={editForm.entreprise||''} onChange={e=>setEditForm({...editForm,entreprise:e.target.value})} style={{width:'100%',height:52,border:'1.5px solid #eee',borderRadius:12,padding:'0 16px',fontSize:15,outline:'none',boxSizing:'border-box'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
+                  </div>
+                )}
+                <div>
+                  <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>Téléphone</p>
+                  <div style={{position:'relative'}}>
+                    <Phone size={18} strokeWidth={2} color="#999" style={{position:'absolute',left:16,top:'50%',transform:'translateY(-50%)',pointerEvents:'none'}}/>
+                    <input value={editForm.tel||''} onChange={e=>setEditForm({...editForm,tel:e.target.value})} type="tel" style={{width:'100%',height:52,border:'1.5px solid #eee',borderRadius:12,padding:'0 16px 0 48px',fontSize:15,outline:'none',boxSizing:'border-box'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
+                  </div>
+                </div>
+                <div>
+                  <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>Email</p>
+                  <div style={{position:'relative'}}>
+                    <Mail size={18} strokeWidth={2} color="#999" style={{position:'absolute',left:16,top:'50%',transform:'translateY(-50%)',pointerEvents:'none'}}/>
+                    <input value={editForm.mail||''} onChange={e=>setEditForm({...editForm,mail:e.target.value})} type="email" style={{width:'100%',height:52,border:'1.5px solid #eee',borderRadius:12,padding:'0 16px 0 48px',fontSize:15,outline:'none',boxSizing:'border-box'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
+                  </div>
+                </div>
+                <div>
+                  <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>Commentaire</p>
+                  <textarea value={editForm.commentaire||''} onChange={e=>setEditForm({...editForm,commentaire:e.target.value})} rows={3} style={{width:'100%',border:'1.5px solid #eee',borderRadius:12,padding:'12px 16px',fontSize:14,outline:'none',resize:'vertical',boxSizing:'border-box',fontFamily:'inherit'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
+                </div>
+              </div>
+              <div style={{flexShrink:0,padding:'16px 28px',paddingBottom:'calc(16px + env(safe-area-inset-bottom))',borderTop:'1px solid #eee',background:'#fff',display:'flex',gap:10}}>
+                <button onClick={fermerEdit} style={{flex:1,height:52,border:'1.5px solid #eee',borderRadius:12,background:'#fff',fontSize:15,fontWeight:600,cursor:'pointer',color:'#666'}}>Annuler</button>
+                <button onClick={sauvegarderEditClient} style={{flex:2,height:52,border:'none',borderRadius:12,background:'#E8C547',fontSize:15,fontWeight:800,cursor:'pointer',color:'#111',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+                  <Save size={18} strokeWidth={2}/> Enregistrer
+                </button>
+              </div>
+            </div>
+          </>
+        );
+      })()}
       {modalDelete && <ConfirmModal title={`Supprimer ${modalDelete.genre==='Entreprise'?(modalDelete.entreprise||modalDelete.nom):(`${modalDelete.prenom} ${modalDelete.nom}`)} ?`} msg="Cette action est définitive. Le client sera déplacé dans la corbeille." onOk={()=>deleteClient(modalDelete.id)} onCancel={()=>setModalDelete(null)} okLabel="Supprimer" danger />}
       {modalImport && <ImportModal existingClients={clients} onImport={importClients} onCancel={()=>setModalImport(false)} />}
       {modalComment && <Modal title={`Commentaire — ${modalComment.prenom} ${modalComment.nom}`} onClose={()=>setModalComment(null)}><p style={{fontSize:14,lineHeight:1.7,margin:0}}>{modalComment.commentaire}</p></Modal>}
