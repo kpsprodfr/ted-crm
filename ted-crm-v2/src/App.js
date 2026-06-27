@@ -3914,14 +3914,14 @@ function CRMApp({ user, onLogout }) {
           <div style={{ position:'fixed', inset:0, background:'#f5f5f5', zIndex:500, overflowY:'auto', marginLeft:120 }}>
             <div style={{ maxWidth:1100, margin:'0 auto', padding:'32px 32px' }}>
 
-              <button onClick={fermerFiche} style={{ display:'flex', alignItems:'center', gap:8, background:'none', border:'none', cursor:'pointer', fontSize:14, color:'#666', marginBottom:20, padding:0 }}>
-                <ArrowLeft size={18} strokeWidth={2} color="#666" /> Retour
+              <button onClick={fermerFiche} style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'none', cursor:'pointer', fontSize:14, color:'#666', marginBottom:16, padding:0 }}>
+                <ArrowLeft size={16} strokeWidth={2} color="#666" /> Retour
               </button>
 
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:24 }}>
                 <h1 style={{ margin:0, fontSize:32, fontWeight:900, color:'#111' }}>{nomAffiche}</h1>
                 {!ficheClientReadOnly && (
-                  <button onClick={()=>{ fermerFiche(); setModalDelete(c); }} style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 16px', borderRadius:10, border:'1.5px solid #fca5a5', background:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', color:'#dc2626' }}
+                  <button onClick={()=>{ fermerFiche(); setModalDelete(c); }} style={{ display:'flex', alignItems:'center', gap:6, padding:'8px 14px', borderRadius:10, border:'1.5px solid #fca5a5', background:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', color:'#dc2626', flexShrink:0 }}
                     onMouseEnter={e=>e.currentTarget.style.background='#fef2f2'}
                     onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
                     <Trash2 size={14} strokeWidth={2} color="#dc2626"/> Supprimer
