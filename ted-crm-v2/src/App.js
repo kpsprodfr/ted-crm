@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2 } from 'lucide-react';
+import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send } from 'lucide-react';
 import { supabase } from "./supabase";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -2365,6 +2365,8 @@ function CRMApp({ user, onLogout }) {
   const [modalDetailClient, setModalDetailClient] = useState(null);
   const [ficheClientReadOnly, setFicheClientReadOnly] = useState(false);
   const [showToutesResas, setShowToutesResas] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [showConfirmEnvoi, setShowConfirmEnvoi] = useState(false);
   const [showTop300, setShowTop300] = useState(false);
   const [triColonne, setTriColonne] = useState('nom');
   const [triSens, setTriSens] = useState('asc');
@@ -3045,8 +3047,8 @@ function CRMApp({ user, onLogout }) {
                 </div>
               </div>
               <div style={{padding:'10px 18px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
-                <button onClick={handleSendAll} disabled={!canSend} style={{background:canSend?'#E8C547':'#f0f0f0', color:canSend?'#111':'#aaa', border:'none', borderRadius:9, padding:'10px 24px', fontSize:14, fontWeight:800, cursor:canSend?'pointer':'not-allowed', display:'flex', alignItems:'center', gap:8}}>
-                  {commSending ? 'Envoi en cours…' : '📤 Envoyer'}
+                <button onClick={()=>setShowPreview(true)} disabled={selectedClients.length===0||!commObjet.trim()||!commMessage.trim()} style={{background:(selectedClients.length>0&&commObjet.trim()&&commMessage.trim())?'#E8C547':'#f0f0f0', color:(selectedClients.length>0&&commObjet.trim()&&commMessage.trim())?'#111':'#bbb', border:'none', borderRadius:9, padding:'10px 24px', fontSize:14, fontWeight:800, cursor:(selectedClients.length>0&&commObjet.trim()&&commMessage.trim())?'pointer':'not-allowed', display:'flex', alignItems:'center', gap:8}}>
+                  <Eye size={16} strokeWidth={2} /> Prévisualiser
                 </button>
                 <span style={{fontSize:13, color:'#888'}}>
                   {selectedClients.length > 0 ? <><strong style={{color:'#111'}}>{selectedClients.length}</strong> destinataire(s)</> : <span style={{color:'#ccc'}}>Aucun destinataire</span>}
@@ -3409,9 +3411,9 @@ function CRMApp({ user, onLogout }) {
                   </div>
                   <button
                     disabled={!canSendSms}
-                    onClick={()=>setShowConfirmSms(true)}
-                    style={{width:'100%', height:46, background:canSendSms?'#E8C547':'#f0f0f0', color:canSendSms?'#111':'#bbb', border:'none', borderRadius:10, fontSize:15, fontWeight:800, cursor:canSendSms?'pointer':'not-allowed'}}>
-                    📱 Envoyer à {smsSelected.length} destinataire(s)
+                    onClick={()=>setShowPreview(true)}
+                    style={{width:'100%', height:46, background:canSendSms?'#E8C547':'#f0f0f0', color:canSendSms?'#111':'#bbb', border:'none', borderRadius:10, fontSize:15, fontWeight:800, cursor:canSendSms?'pointer':'not-allowed', display:'flex', alignItems:'center', justifyContent:'center', gap:8}}>
+                    <Eye size={18} strokeWidth={2} /> Prévisualiser ({smsSelected.length})
                   </button>
                 </div>
 
@@ -3517,6 +3519,100 @@ function CRMApp({ user, onLogout }) {
         })()}
 
         {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
+
+        {/* ─── Modal Prévisualisation ─── */}
+        {showPreview && (
+          <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:4000,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
+            <div style={{background:'#fff',borderRadius:20,width:'min(680px,calc(100vw - 48px))',maxHeight:'90vh',display:'flex',flexDirection:'column',boxShadow:'0 32px 80px rgba(0,0,0,0.3)',overflow:'hidden'}}>
+              <div style={{padding:'24px 28px 20px',borderBottom:'1px solid #f0f0f0',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
+                <h2 style={{margin:0,fontSize:20,fontWeight:800,color:'#111'}}>Prévisualisation</h2>
+                <button onClick={()=>setShowPreview(false)} style={{width:36,height:36,borderRadius:'50%',border:'none',background:'#f0f0f0',cursor:'pointer',fontSize:18,color:'#666'}}>✕</button>
+              </div>
+              <div style={{flex:1,overflowY:'auto',padding:'24px 28px'}}>
+                {/* Récap filtres */}
+                <div style={{background:'#f9f9f9',borderRadius:12,padding:16,marginBottom:20}}>
+                  <p style={{fontSize:12,fontWeight:700,color:'#999',textTransform:'uppercase',letterSpacing:1,margin:'0 0 10px'}}>Récapitulatif des filtres</p>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
+                    {commFilter && commFilter!=='tous' && <span style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>{commFilter==='hommes'?'Hommes':commFilter==='femmes'?'Femmes':'Entreprises'}</span>}
+                    {filtreAbsentsActif && <span style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>Absents depuis {filtreAbsentsMois} mois</span>}
+                    {filtreJours?.size>0 && [...filtreJours].map(j=><span key={j} style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>{j}</span>)}
+                    {filtreServices?.size>0 && [...filtreServices].map(s=><span key={s} style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'4px 12px',fontSize:12,fontWeight:700}}>{s==='midi'?'☀️ Midi':'🌙 Soir'}</span>)}
+                    {commFilter==='tous' && !filtreAbsentsActif && !filtreJours?.size && !filtreServices?.size && <span style={{fontSize:13,color:'#999'}}>Aucun filtre — tous les clients</span>}
+                  </div>
+                </div>
+                {/* Nb destinataires */}
+                {(() => {
+                  const ids = commMode==='email' ? commSelected : smsSelected;
+                  const destClients = clients.filter(c => ids.includes(c.id));
+                  const apercu = commMode==='email'
+                    ? (commMessage||'').replace(/{prenom}/g, destClients[0]?.prenom||'{prenom}').replace(/{nom}/g, destClients[0]?.nom||'{nom}').replace(/{tel}/g, destClients[0]?.tel||'{tel}').replace(/{entreprise}/g, destClients[0]?.entreprise||'{entreprise}')
+                    : (smsMessage||'').replace(/{prenom}/g, destClients[0]?.prenom||'{prenom}').replace(/{nom}/g, destClients[0]?.nom||'{nom}').replace(/{tel}/g, destClients[0]?.tel||'{tel}').replace(/{entreprise}/g, destClients[0]?.entreprise||'{entreprise}');
+                  return (<>
+                    <div style={{display:'flex',alignItems:'center',gap:12,background:'#fffbea',border:'1.5px solid #E8C547',borderRadius:12,padding:'14px 16px',marginBottom:20}}>
+                      <Users size={20} strokeWidth={2} color="#111" />
+                      <span style={{fontSize:15,fontWeight:800,color:'#111'}}>{ids.length} destinataire{ids.length>1?'s':''}</span>
+                      <span style={{fontSize:13,color:'#666',marginLeft:4}}>— {destClients.slice(0,3).map(c=>c.prenom).join(', ')}{ids.length>3?` et ${ids.length-3} autres`:''}</span>
+                    </div>
+                    {/* Aperçu message */}
+                    <div style={{border:'1.5px solid #eee',borderRadius:12,overflow:'hidden'}}>
+                      <div style={{background:'#f8f8f8',padding:'12px 16px',borderBottom:'1px solid #eee',fontSize:12,fontWeight:700,color:'#999',textTransform:'uppercase',letterSpacing:1}}>
+                        {commMode==='email'?'Aperçu email':'Aperçu SMS'}
+                      </div>
+                      <div style={{padding:'20px 24px'}}>
+                        {commMode==='email' ? (
+                          <>
+                            <div style={{marginBottom:8,fontSize:13,color:'#666'}}><strong>De :</strong> Le TED &lt;com.astegal@gmail.com&gt;</div>
+                            <div style={{marginBottom:16,fontSize:13,color:'#666'}}><strong>Objet :</strong> {commObjet||'(sans objet)'}</div>
+                            <div style={{borderTop:'1px solid #eee',paddingTop:16,fontSize:14,color:'#333',lineHeight:1.8,whiteSpace:'pre-wrap'}}>{apercu||'(message vide)'}</div>
+                          </>
+                        ) : (
+                          <div style={{background:'#111',borderRadius:16,padding:'16px 20px',maxWidth:320}}>
+                            <p style={{color:'#fff',fontSize:14,lineHeight:1.7,margin:0,whiteSpace:'pre-wrap'}}>{apercu||'(message vide)'}</p>
+                            <p style={{color:'#888',fontSize:11,margin:'8px 0 0',textAlign:'right'}}>{(smsMessage||'').length}/160</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>);
+                })()}
+              </div>
+              <div style={{flexShrink:0,padding:'16px 28px',borderTop:'1px solid #eee',display:'flex',gap:12}}>
+                <button onClick={()=>setShowPreview(false)} style={{flex:1,height:48,border:'1.5px solid #ddd',borderRadius:12,background:'#fff',fontSize:14,fontWeight:600,cursor:'pointer',color:'#666'}}>Modifier</button>
+                <button onClick={()=>setShowConfirmEnvoi(true)} style={{flex:2,height:48,border:'none',borderRadius:12,background:'#E8C547',fontSize:15,fontWeight:800,cursor:'pointer',color:'#111',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+                  <Send size={18} strokeWidth={2} /> Envoyer ({commMode==='email'?commSelected.length:smsSelected.length})
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Modal Confirmation envoi ─── */}
+        {showConfirmEnvoi && (
+          <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:5000,display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <div style={{background:'#fff',borderRadius:16,padding:'32px 28px',maxWidth:360,width:'90%',textAlign:'center',boxShadow:'0 20px 60px rgba(0,0,0,0.3)'}}>
+              <div style={{width:64,height:64,borderRadius:'50%',background:'#fffbea',border:'3px solid #E8C547',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',fontSize:28}}>📤</div>
+              <h3 style={{margin:'0 0 8px',fontSize:18,fontWeight:800,color:'#111'}}>Confirmer l'envoi</h3>
+              <p style={{margin:'0 0 24px',fontSize:14,color:'#666',lineHeight:1.6}}>
+                Vous allez envoyer {commMode==='email'?commSelected.length:smsSelected.length} {commMode==='email'?'email':'SMS'}{(commMode==='email'?commSelected.length:smsSelected.length)>1?'s':''}.<br/>Cette action est irréversible.
+              </p>
+              <div style={{display:'flex',gap:10}}>
+                <button onClick={()=>setShowConfirmEnvoi(false)} style={{flex:1,height:48,border:'1.5px solid #ddd',borderRadius:12,background:'#fff',fontSize:14,fontWeight:600,cursor:'pointer',color:'#666'}}>Annuler</button>
+                <button onClick={async()=>{
+                  setShowConfirmEnvoi(false);
+                  setShowPreview(false);
+                  if (commMode==='email') {
+                    const { data: dejaSent } = await supabase.from('emails_envoyes').select('destinataires').eq('objet', commObjet);
+                    const dejaSentIds = new Set((dejaSent||[]).flatMap(e => (e.destinataires||[]).map(d => d.id)));
+                    setDoublons(commSelected.filter(id => dejaSentIds.has(id)));
+                    setShowConfirmComm(true);
+                  } else {
+                    setShowConfirmSms(true);
+                  }
+                }} style={{flex:1,height:48,border:'none',borderRadius:12,background:'#111',fontSize:14,fontWeight:800,cursor:'pointer',color:'#fff'}}>Envoyer</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {showConfirmComm && (
           <div style={{position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:4000, display:'flex', alignItems:'center', justifyContent:'center'}}>
