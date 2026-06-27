@@ -3930,19 +3930,19 @@ function CRMApp({ user, onLogout }) {
                 </div>
               </div>
 
-              {/* 4 blocs stats */}
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:16 }}>
+              {/* 4 blocs stats — ultra compacts en ligne */}
+              <div style={{ display:'flex', gap:10, marginBottom:16 }}>
                 {[
-                  { icon:<CalendarDays size={20} strokeWidth={2} color="#E8C547"/>, bg:'#fffbea', label:'RÉSERVATIONS TOTALES', value:totalResas, sub:createdAtLabel?`Depuis le ${createdAtLabel}`:'' },
-                  { icon:<UserX size={20} strokeWidth={2} color="#ef4444"/>, bg:'#fef2f2', label:'NO-SHOW', value:noshowResas, sub:`${pct}% des réservations` },
-                  { icon:<Clock size={20} strokeWidth={2} color="#3b82f6"/>, bg:'#eff6ff', label:'DERNIÈRE VISITE', value:derniereVisite?new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'Jamais', sub:derniereVisiteIlYA!==null?`Il y a ${derniereVisiteIlYA} jour${derniereVisiteIlYA>1?'s':''}`:'' },
-                  { icon:<CalendarDays size={20} strokeWidth={2} color="#22c55e"/>, bg:'#f0fdf4', label:'PROCHAINE RÉSERVATION', value:prochaineResa?new Date(prochaineResa.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'Aucune', sub:prochaineResa?`Dans ${Math.ceil((new Date(prochaineResa.date+'T12:00:00')-new Date())/(1000*60*60*24))} jours à ${prochaineResa.heure}`:'' }
+                  { icon:<CalendarDays size={14} strokeWidth={2} color="#E8C547"/>, bg:'#fffbea', label:'RÉSA TOTALES', value:totalResas, sub:createdAtLabel?`Depuis le ${createdAtLabel}`:'' },
+                  { icon:<UserX size={14} strokeWidth={2} color="#ef4444"/>, bg:'#fef2f2', label:'NO-SHOW', value:noshowResas, sub:`${pct}% des résa` },
+                  { icon:<Clock size={14} strokeWidth={2} color="#3b82f6"/>, bg:'#eff6ff', label:'DERNIÈRE VISITE', value:derniereVisite?new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'Jamais', sub:derniereVisiteIlYA!==null?`Il y a ${derniereVisiteIlYA}j`:'' },
+                  { icon:<CalendarDays size={14} strokeWidth={2} color="#22c55e"/>, bg:'#f0fdf4', label:'PROCHAINE RÉSA', value:prochaineResa?new Date(prochaineResa.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'Aucune', sub:prochaineResa?`Dans ${Math.ceil((new Date(prochaineResa.date+'T12:00:00')-new Date())/(1000*60*60*24))}j à ${prochaineResa.heure}`:'' }
                 ].map((stat,i)=>(
-                  <div key={i} style={{ background:'#fff', borderRadius:12, padding:'14px 16px' }}>
-                    <div style={{ width:36, height:36, borderRadius:8, background:stat.bg, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:8 }}>{stat.icon}</div>
-                    <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 3px' }}>{stat.label}</p>
-                    <p style={{ fontSize:18, fontWeight:900, color:'#111', margin:'0 0 2px' }}>{stat.value}</p>
-                    <p style={{ fontSize:11, color:'#999', margin:0 }}>{stat.sub}</p>
+                  <div key={i} style={{ flex:1, background:'#fff', borderRadius:10, padding:'10px 14px' }}>
+                    <div style={{ width:28, height:28, borderRadius:6, background:stat.bg, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:6 }}>{stat.icon}</div>
+                    <p style={{ fontSize:9, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 2px' }}>{stat.label}</p>
+                    <p style={{ fontSize:15, fontWeight:900, color:'#111', margin:'0 0 1px' }}>{stat.value}</p>
+                    <p style={{ fontSize:10, color:'#999', margin:0 }}>{stat.sub}</p>
                   </div>
                 ))}
               </div>
@@ -3963,48 +3963,48 @@ function CRMApp({ user, onLogout }) {
                 </button>
               )}
 
-              {/* Grille historique + jours favoris */}
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 320px', gap:20 }}>
-                <div style={{ background:'#fff', borderRadius:14, padding:24 }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:20 }}>
-                    <CalendarDays size={20} strokeWidth={2} color="#111" />
-                    <h3 style={{ margin:0, fontSize:16, fontWeight:800, color:'#111' }}>Historique des réservations</h3>
+              {/* Grille historique + jours favoris — même hauteur */}
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 320px', gap:16, alignItems:'stretch' }}>
+                <div style={{ background:'#fff', borderRadius:14, padding:20, display:'flex', flexDirection:'column' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16, flexShrink:0 }}>
+                    <CalendarDays size={18} strokeWidth={2} color="#111" />
+                    <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#111' }}>Historique des réservations</h3>
                   </div>
-                  <table style={{ width:'100%', borderCollapse:'collapse' }}>
-                    <thead><tr>{['DATE','SERVICE','COUVERTS','STATUT'].map(h=><th key={h} style={{ padding:'8px 12px', textAlign:'left', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, borderBottom:'1px solid #f0f0f0' }}>{h}</th>)}</tr></thead>
-                    <tbody>
-                      {resasData.filter(r=>r.client_id===c.id).sort((a,b)=>b.date.localeCompare(a.date)).slice(0, showToutesResas?undefined:5).map(r=>{
-                        const sc = statutColors2[r.statut] || statutColors2.confirmee;
-                        return (
-                          <tr key={r.id} style={{ borderBottom:'1px solid #f5f5f5' }}>
-                            <td style={{ padding:'12px 12px' }}>
-                              <div style={{ fontWeight:600, fontSize:14, color:'#111' }}>{new Date(r.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</div>
-                              <div style={{ fontSize:12, color:'#999' }}>{r.heure}</div>
-                            </td>
-                            <td style={{ padding:'12px 12px' }}><span style={{ display:'flex', alignItems:'center', gap:6, fontSize:14, color:'#444' }}>{r.service==='midi'?<Sun size={14} strokeWidth={2} color="#E8C547"/>:<Moon size={14} strokeWidth={2} color="#666"/>}{r.service==='midi'?'Midi':'Soir'}</span></td>
-                            <td style={{ padding:'12px 12px', fontSize:14, color:'#444' }}>{r.nb_personnes} pers.</td>
-                            <td style={{ padding:'12px 12px' }}><span style={{ background:sc.bg, color:sc.color, borderRadius:20, padding:'3px 10px', fontSize:12, fontWeight:700 }}>{sc.label}</span></td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                  <div style={{ flex:1, overflowY:'auto' }}>
+                    <table style={{ width:'100%', borderCollapse:'collapse' }}>
+                      <thead><tr>{['DATE','SERVICE','COUVERTS','STATUT'].map(h=><th key={h} style={{ padding:'8px 12px', textAlign:'left', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, borderBottom:'1px solid #f0f0f0' }}>{h}</th>)}</tr></thead>
+                      <tbody>
+                        {resasData.filter(r=>r.client_id===c.id).sort((a,b)=>b.date.localeCompare(a.date)).slice(0, showToutesResas?undefined:5).map(r=>{
+                          const sc = statutColors2[r.statut] || statutColors2.confirmee;
+                          return (
+                            <tr key={r.id} style={{ borderBottom:'1px solid #f5f5f5' }}>
+                              <td style={{ padding:'12px 12px' }}>
+                                <div style={{ fontWeight:600, fontSize:14, color:'#111' }}>{new Date(r.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</div>
+                                <div style={{ fontSize:12, color:'#999' }}>{r.heure}</div>
+                              </td>
+                              <td style={{ padding:'12px 12px' }}><span style={{ display:'flex', alignItems:'center', gap:6, fontSize:14, color:'#444' }}>{r.service==='midi'?<Sun size={14} strokeWidth={2} color="#E8C547"/>:<Moon size={14} strokeWidth={2} color="#666"/>}{r.service==='midi'?'Midi':'Soir'}</span></td>
+                              <td style={{ padding:'12px 12px', fontSize:14, color:'#444' }}>{r.nb_personnes} pers.</td>
+                              <td style={{ padding:'12px 12px' }}><span style={{ background:sc.bg, color:sc.color, borderRadius:20, padding:'3px 10px', fontSize:12, fontWeight:700 }}>{sc.label}</span></td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                   {resasData.filter(r=>r.client_id===c.id).length > 5 && (
-                    <button onClick={()=>setShowToutesResas(!showToutesResas)} style={{ width:'100%', padding:'12px', marginTop:12, border:'1.5px solid #eee', borderRadius:10, background:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', color:'#666', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-                      {showToutesResas?'Voir moins':'Voir toutes les réservations'} <ChevronRight size={16}/>
+                    <button onClick={()=>setShowToutesResas(!showToutesResas)} style={{ width:'100%', padding:'10px', marginTop:10, flexShrink:0, border:'1.5px solid #eee', borderRadius:8, background:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', color:'#666', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                      {showToutesResas?'Voir moins':'Voir toutes les réservations'} <ChevronRight size={14}/>
                     </button>
                   )}
                 </div>
 
-                <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-                  <div style={{ background:'#fff', borderRadius:14, padding:24 }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
-                      <Star size={18} strokeWidth={2} color="#111" />
-                      <div>
-                        <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#111' }}>Jours favoris</h3>
-                        <p style={{ margin:0, fontSize:12, color:'#999' }}>Basé sur les 6 derniers mois</p>
-                      </div>
-                    </div>
+                <div style={{ background:'#fff', borderRadius:14, padding:20, display:'flex', flexDirection:'column' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6, flexShrink:0 }}>
+                    <Star size={16} strokeWidth={2} color="#111" />
+                    <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#111' }}>Jours favoris</h3>
+                  </div>
+                  <p style={{ fontSize:11, color:'#999', margin:'0 0 14px', flexShrink:0 }}>Basé sur les 6 derniers mois</p>
+                  <div style={{ flex:1 }}>
                     {top3Jours.length > 0 ? top3Jours.map(([key,count],i)=>{
                       const [jour, service] = key.split('|');
                       const abr = joursAbr[joursSemaine2.indexOf(jour)];
@@ -4023,7 +4023,6 @@ function CRMApp({ user, onLogout }) {
                       );
                     }) : <p style={{ fontSize:13, color:'#bbb', margin:0 }}>Pas encore de données</p>}
                   </div>
-
                 </div>
               </div>
             </div>
