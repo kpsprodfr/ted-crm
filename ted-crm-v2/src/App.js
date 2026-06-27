@@ -4059,7 +4059,9 @@ function CRMApp({ user, onLogout }) {
           if (aDesDonnees) { setShowConfirmQuitterClient(true); }
           else { setModalAdd(false); setAddClientForm({}); }
         };
-        const valide = (addClientForm.tel||'').replace(/\s/g,'').length >= 10 && addClientForm.prenom && addClientForm.nom && addClientForm.genre && (addClientForm.mail||'').includes('@');
+        const valide = addClientForm.genre === 'Entreprise'
+          ? (addClientForm.tel||'').replace(/\s/g,'').length >= 10 && addClientForm.entreprise?.trim() && (addClientForm.mail||'').includes('@')
+          : (addClientForm.tel||'').replace(/\s/g,'').length >= 10 && addClientForm.prenom?.trim() && addClientForm.nom?.trim() && addClientForm.genre && (addClientForm.mail||'').includes('@');
         const sauvegarderNouveauClient = () => { if (!valide) return; addClient(addClientForm); setAddClientForm({}); };
         return (
           <>
@@ -4085,19 +4087,23 @@ function CRMApp({ user, onLogout }) {
                     ))}
                   </div>
                 </div>
+                {addClientForm.genre === 'Entreprise' && (
+                  <div>
+                    <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>3. Nom de l'entreprise <span style={{color:'#dc2626'}}>*</span></p>
+                    <input value={addClientForm.entreprise||''} onChange={e=>setAddClientForm({...addClientForm,entreprise:e.target.value})} placeholder="Nom de l'entreprise" style={{width:'100%',height:52,border:'1.5px solid #eee',borderRadius:12,padding:'0 16px',fontSize:15,outline:'none',boxSizing:'border-box'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
+                  </div>
+                )}
                 <div>
-                  <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>3. Prénom et Nom <span style={{color:'#dc2626'}}>*</span></p>
+                  <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>
+                    {addClientForm.genre === 'Entreprise'
+                      ? <>{addClientForm.genre==='Entreprise'?'4.':''} Nom du contact <span style={{fontSize:12,fontWeight:400,color:'#999'}}>(optionnel)</span></>
+                      : <>3. Prénom et Nom <span style={{color:'#dc2626'}}>*</span></>}
+                  </p>
                   <div style={{display:'flex',gap:10}}>
                     <input value={addClientForm.prenom||''} onChange={e=>setAddClientForm({...addClientForm,prenom:e.target.value})} placeholder="Prénom" style={{flex:1,height:52,border:'1.5px solid #eee',borderRadius:12,padding:'0 16px',fontSize:15,outline:'none',boxSizing:'border-box'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
                     <input value={addClientForm.nom||''} onChange={e=>setAddClientForm({...addClientForm,nom:e.target.value})} placeholder="Nom" style={{flex:1,height:52,border:'1.5px solid #eee',borderRadius:12,padding:'0 16px',fontSize:15,outline:'none',boxSizing:'border-box'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
                   </div>
                 </div>
-                {addClientForm.genre==='Entreprise' && (
-                  <div>
-                    <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>Nom de l'entreprise</p>
-                    <input value={addClientForm.entreprise||''} onChange={e=>setAddClientForm({...addClientForm,entreprise:e.target.value})} placeholder="Nom de l'entreprise" style={{width:'100%',height:52,border:'1.5px solid #eee',borderRadius:12,padding:'0 16px',fontSize:15,outline:'none',boxSizing:'border-box'}} onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
-                  </div>
-                )}
                 <div>
                   <p style={{fontSize:14,fontWeight:800,color:'#111',margin:'0 0 10px'}}>4. Email <span style={{color:'#dc2626'}}>*</span></p>
                   <div style={{position:'relative'}}>
@@ -4114,9 +4120,17 @@ function CRMApp({ user, onLogout }) {
                 <button disabled={!valide} onClick={sauvegarderNouveauClient} style={{width:'100%',height:54,background:valide?'#E8C547':'#f0f0f0',color:valide?'#111':'#bbb',border:'none',borderRadius:14,fontSize:16,fontWeight:800,cursor:valide?'pointer':'not-allowed',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
                   <UserPlus size={18} strokeWidth={2}/> Créer le client
                 </button>
-                {!valide && (
+                {!valide && addClientForm.genre && (
                   <p style={{textAlign:'center',fontSize:12,color:'#999',margin:'6px 0 0'}}>
-                    {!(addClientForm.tel||'').replace(/\s/g,'').length>=10?'Renseignez un numéro de téléphone':!addClientForm.genre?'Choisissez un genre':(!addClientForm.prenom||!addClientForm.nom)?'Renseignez le prénom et le nom':!(addClientForm.mail||'').includes('@')?'Renseignez un email valide':''}
+                    {!(addClientForm.tel||'').replace(/\s/g,'').length>=10
+                      ? 'Renseignez un numéro de téléphone'
+                      : addClientForm.genre==='Entreprise' && !addClientForm.entreprise?.trim()
+                      ? "Renseignez le nom de l'entreprise"
+                      : !(addClientForm.mail||'').includes('@')
+                      ? 'Renseignez un email valide'
+                      : addClientForm.genre!=='Entreprise' && (!addClientForm.prenom?.trim()||!addClientForm.nom?.trim())
+                      ? 'Renseignez le prénom et le nom'
+                      : ''}
                   </p>
                 )}
                 <p style={{fontSize:11,color:'#bbb',textAlign:'center',margin:'6px 0 0'}}><span style={{color:'#dc2626'}}>*</span> Champs obligatoires</p>
