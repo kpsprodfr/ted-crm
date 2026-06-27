@@ -3570,51 +3570,56 @@ function CRMApp({ user, onLogout }) {
             );
           })()}
 
-          {/* Tabs */}
-          <div style={{ display:"flex", gap:0, marginBottom:16, background:"#f0f0f0", borderRadius:10, padding:3, width:"fit-content" }}>
-            {[
-              { id:"tous", label:"👥 Tous", count: clients.length },
-              { id:"particuliers", label:"🙍 Particuliers", count: clients.filter(c=>c.genre!=="Entreprise").length },
-              { id:"entreprises", label:"🏢 Entreprises", count: clients.filter(c=>c.genre==="Entreprise").length }
-            ].map(tab => (
-              <button key={tab.id} onClick={()=>{setActiveTab(tab.id);setPage(1)}} style={{
-                background: activeTab===tab.id ? "#111" : "transparent",
-                color: activeTab===tab.id ? "#fff" : "#666",
-                border:"none", borderRadius:8, padding:"8px 16px", fontSize:13,
-                fontWeight: activeTab===tab.id ? 700 : 400,
-                cursor:"pointer", whiteSpace:"nowrap", transition:"all 0.15s"
-              }}>
-                {tab.label} <span style={{ background: activeTab===tab.id ? G : "#ddd", color: activeTab===tab.id ? "#111" : "#888", borderRadius:99, padding:"1px 7px", fontSize:11, fontWeight:700, marginLeft:4 }}>{tab.count}</span>
-              </button>
-            ))}
-          </div>
+          {/* Tabs + Recherche + Filtres — sticky */}
+          <div style={{ position:"sticky", top:0, zIndex:10, background:"#f5f5f5", paddingTop:8, paddingBottom:8, marginBottom:8 }}>
 
-          {/* Search + Add */}
-          <div style={{ display:"flex", flexWrap:"wrap", gap:10, alignItems:"center", marginBottom:12 }}>
-            <div style={{ position:"relative", flex:1, minWidth:220 }}>
-              <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:"#bbb", fontSize:15, pointerEvents:"none" }}>🔍</span>
-              <input style={{ width:"100%", height:40, border:"1.5px solid #ddd", borderRadius:8, padding:"0 36px 0 40px", fontSize:13, background:"#fff", outline:"none", boxSizing:"border-box" }} value={search} onChange={e=>{setSearch(e.target.value);setPage(1)}} placeholder="Rechercher par nom, prénom, téléphone, mail, date, mois, genre ou commentaire…" />
-              {search && <button onClick={()=>{setSearch("");setPage(1)}} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:"#aaa", fontSize:16, padding:2 }}>✕</button>}
+            {/* Tabs */}
+            <div style={{ display:"flex", gap:0, marginBottom:12, background:"#f0f0f0", borderRadius:10, padding:3, width:"fit-content" }}>
+              {[
+                { id:"tous", label:"👥 Tous", count: clients.length },
+                { id:"particuliers", label:"🙍 Particuliers", count: clients.filter(c=>c.genre!=="Entreprise").length },
+                { id:"entreprises", label:"🏢 Entreprises", count: clients.filter(c=>c.genre==="Entreprise").length }
+              ].map(tab => (
+                <button key={tab.id} onClick={()=>{setActiveTab(tab.id);setPage(1)}} style={{
+                  background: activeTab===tab.id ? "#111" : "transparent",
+                  color: activeTab===tab.id ? "#fff" : "#666",
+                  border:"none", borderRadius:8, padding:"8px 16px", fontSize:13,
+                  fontWeight: activeTab===tab.id ? 700 : 400,
+                  cursor:"pointer", whiteSpace:"nowrap", transition:"all 0.15s"
+                }}>
+                  {tab.label} <span style={{ background: activeTab===tab.id ? G : "#ddd", color: activeTab===tab.id ? "#111" : "#888", borderRadius:99, padding:"1px 7px", fontSize:11, fontWeight:700, marginLeft:4 }}>{tab.count}</span>
+                </button>
+              ))}
             </div>
-            <button onClick={()=>setModalAdd(true)} style={btnPrimary}>+ Nouveau client</button>
-          </div>
 
-          {/* Filters desktop */}
-          <div style={{ display:"flex", flexWrap:"wrap", gap:8, alignItems:"center", marginBottom:14 }}>
-            <select style={sel} value={filterGenre} onChange={e=>{setFilterGenre(e.target.value);setPage(1)}}><option value="">Tous les genres</option>{GENRES.map(g=><option key={g}>{g}</option>)}</select>
-            <select style={sel} value={filterMonth} onChange={e=>{setFilterMonth(e.target.value);setPage(1)}}><option value="">Tous les mois</option>{MONTHS_FR.map((m,i)=><option key={i+1} value={i+1}>{m}</option>)}</select>
-            <select style={sel} value={pageSize} onChange={e=>{setPageSize(Number(e.target.value));setPage(1)}}>{PAGE_SIZES.map(n=><option key={n} value={n}>{n} par page</option>)}</select>
-            {(filterGenre||filterMonth||search) && <button onClick={()=>{setFilterGenre("");setFilterMonth("");setSearch("");setPage(1)}} style={{ ...btnSecondary, fontSize:12 }}>✕ Réinitialiser</button>}
-            <div style={{ marginLeft:"auto", position:"relative" }}>
-              <button onClick={()=>setShowExportMenu(v=>!v)} style={btnSecondary}>📥 Importer / Exporter ▾</button>
-              {showExportMenu && (
-                <div style={{ position:"absolute", right:0, top:"calc(100% + 4px)", background:"#fff", border:"1.5px solid #e5e5e5", borderRadius:10, boxShadow:"0 8px 24px rgba(0,0,0,0.1)", zIndex:200, minWidth:180, overflow:"hidden" }}>
-                  <button onClick={()=>{ exportToCSV(filtered); setShowExportMenu(false); }} style={{ display:"block", width:"100%", textAlign:"left", padding:"10px 16px", border:"none", background:"none", cursor:"pointer", fontSize:13, borderBottom:"1px solid #f5f5f5" }} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>⬇ Exporter CSV</button>
-                  <button onClick={()=>{ exportToXLSX(filtered); setShowExportMenu(false); }} style={{ display:"block", width:"100%", textAlign:"left", padding:"10px 16px", border:"none", background:"none", cursor:"pointer", fontSize:13, borderBottom:"1px solid #f5f5f5" }} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>⬇ Exporter Excel</button>
-                  <button onClick={()=>{ setModalImport(true); setShowExportMenu(false); }} style={{ display:"block", width:"100%", textAlign:"left", padding:"10px 16px", border:"none", background:"none", cursor:"pointer", fontSize:13 }} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>⬆ Importer clients</button>
-                </div>
-              )}
+            {/* Search + Add */}
+            <div style={{ display:"flex", flexWrap:"wrap", gap:10, alignItems:"center", marginBottom:10 }}>
+              <div style={{ position:"relative", flex:1, minWidth:220 }}>
+                <span style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", color:"#bbb", fontSize:15, pointerEvents:"none" }}>🔍</span>
+                <input style={{ width:"100%", height:40, border:"1.5px solid #ddd", borderRadius:8, padding:"0 36px 0 40px", fontSize:13, background:"#fff", outline:"none", boxSizing:"border-box" }} value={search} onChange={e=>{setSearch(e.target.value);setPage(1)}} placeholder="Rechercher par nom, prénom, téléphone, mail, date, mois, genre ou commentaire…" />
+                {search && <button onClick={()=>{setSearch("");setPage(1)}} style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:"#aaa", fontSize:16, padding:2 }}>✕</button>}
+              </div>
+              <button onClick={()=>setModalAdd(true)} style={btnPrimary}>+ Nouveau client</button>
             </div>
+
+            {/* Filters desktop */}
+            <div style={{ display:"flex", flexWrap:"wrap", gap:8, alignItems:"center" }}>
+              <select style={sel} value={filterGenre} onChange={e=>{setFilterGenre(e.target.value);setPage(1)}}><option value="">Tous les genres</option>{GENRES.map(g=><option key={g}>{g}</option>)}</select>
+              <select style={sel} value={filterMonth} onChange={e=>{setFilterMonth(e.target.value);setPage(1)}}><option value="">Tous les mois</option>{MONTHS_FR.map((m,i)=><option key={i+1} value={i+1}>{m}</option>)}</select>
+              <select style={sel} value={pageSize} onChange={e=>{setPageSize(Number(e.target.value));setPage(1)}}>{PAGE_SIZES.map(n=><option key={n} value={n}>{n} par page</option>)}</select>
+              {(filterGenre||filterMonth||search) && <button onClick={()=>{setFilterGenre("");setFilterMonth("");setSearch("");setPage(1)}} style={{ ...btnSecondary, fontSize:12 }}>✕ Réinitialiser</button>}
+              <div style={{ marginLeft:"auto", position:"relative" }}>
+                <button onClick={()=>setShowExportMenu(v=>!v)} style={btnSecondary}>📥 Importer / Exporter ▾</button>
+                {showExportMenu && (
+                  <div style={{ position:"absolute", right:0, top:"calc(100% + 4px)", background:"#fff", border:"1.5px solid #e5e5e5", borderRadius:10, boxShadow:"0 8px 24px rgba(0,0,0,0.1)", zIndex:200, minWidth:180, overflow:"hidden" }}>
+                    <button onClick={()=>{ exportToCSV(filtered); setShowExportMenu(false); }} style={{ display:"block", width:"100%", textAlign:"left", padding:"10px 16px", border:"none", background:"none", cursor:"pointer", fontSize:13, borderBottom:"1px solid #f5f5f5" }} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>⬇ Exporter CSV</button>
+                    <button onClick={()=>{ exportToXLSX(filtered); setShowExportMenu(false); }} style={{ display:"block", width:"100%", textAlign:"left", padding:"10px 16px", border:"none", background:"none", cursor:"pointer", fontSize:13, borderBottom:"1px solid #f5f5f5" }} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>⬇ Exporter Excel</button>
+                    <button onClick={()=>{ setModalImport(true); setShowExportMenu(false); }} style={{ display:"block", width:"100%", textAlign:"left", padding:"10px 16px", border:"none", background:"none", cursor:"pointer", fontSize:13 }} onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e=>e.currentTarget.style.background='none'}>⬆ Importer clients</button>
+                  </div>
+                )}
+              </div>
+            </div>
+
           </div>
 
           {/* Tableau clients desktop */}
