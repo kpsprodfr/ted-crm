@@ -3574,7 +3574,7 @@ function CRMApp({ user, onLogout }) {
 
         const topClients = clients.map(c=>({
           ...c,
-          nb: resasData.filter(r=>r.client_id===c.id&&(r.statut==='confirmee'||r.statut==='venue')).length
+          nb: resasData.filter(r=>r.client_id===c.id&&r.statut!=='absente'&&r.statut!=='annulee'&&r.statut!=='refusee').length
         })).filter(c=>c.nb>0).sort((a,b)=>b.nb-a.nb).slice(0,3);
 
         const nbCeMois = clients.filter(c=>c.created_at && new Date(c.created_at)>=debutMois).length;
@@ -3681,7 +3681,7 @@ function CRMApp({ user, onLogout }) {
               </div>
             ) : clientsFiltres.map((c, idx) => {
               const resasClient = resasData.filter(r=>r.client_id===c.id);
-              const total = resasClient.filter(r=>r.statut==='confirmee'||r.statut==='venue').length;
+              const total = resasClient.filter(r=>r.statut!=='absente'&&r.statut!=='annulee'&&r.statut!=='refusee').length;
               const derniereVisite = resasClient.filter(r=>r.date<=aujourd&&(r.statut==='venue'||r.statut==='confirmee')).sort((a,b)=>b.date.localeCompare(a.date))[0];
               const prochaineResa = resasClient.filter(r=>r.date>aujourd&&(r.statut==='confirmee'||r.statut==='attente')).sort((a,b)=>a.date.localeCompare(b.date))[0];
               const avatarBg = c.genre==='Homme'?'#dbeafe':c.genre==='Femme'?'#fce7f3':'#dcfce7';
@@ -3886,7 +3886,7 @@ function CRMApp({ user, onLogout }) {
         // Desktop — full page overlay
         const aujourd = new Date().toISOString().split('T')[0];
         const resasClient = resasData.filter(r => r.client_id === c.id);
-        const totalResas = resasClient.length;
+        const totalResas = resasClient.filter(r => r.statut !== 'absente' && r.statut !== 'annulee' && r.statut !== 'refusee').length;
         const noshowResas = resasClient.filter(r => r.statut === 'absente').length;
         const pct = totalResas > 0 ? Math.round(noshowResas / totalResas * 100) : 0;
         const derniereVisite = resasClient.filter(r => r.date <= aujourd && (r.statut === 'venue' || r.statut === 'confirmee')).sort((a,b) => b.date.localeCompare(a.date))[0];
@@ -4234,7 +4234,7 @@ function CRMApp({ user, onLogout }) {
             </div>
             <div style={{flex:1,overflowY:'auto',padding:'16px 28px'}}>
               {clients
-                .map(c=>({...c, nb:resasData.filter(r=>r.client_id===c.id&&(r.statut==='confirmee'||r.statut==='venue')).length}))
+                .map(c=>({...c, nb:resasData.filter(r=>r.client_id===c.id&&r.statut!=='absente'&&r.statut!=='annulee'&&r.statut!=='refusee').length}))
                 .filter(c=>c.nb>0)
                 .sort((a,b)=>b.nb-a.nb)
                 .slice(0,50)
