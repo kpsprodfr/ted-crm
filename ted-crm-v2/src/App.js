@@ -2740,6 +2740,7 @@ function CRMApp({ user, onLogout }) {
       <div style={{ marginLeft:120, minHeight:'100vh' }}>
         <ReservationsPage inline showToast={showToast} user={user} onResaCountChange={(n)=>{ setResaAttenteCount(n); updateBadge(n); }} />
       </div>
+      {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
     </>
   );
 
