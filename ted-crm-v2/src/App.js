@@ -3802,7 +3802,7 @@ function CRMApp({ user, onLogout }) {
           {/* 1. HEADER — scrolle et disparaît */}
           <div style={{padding:'24px 32px 16px'}}>
             <div style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
-              <h1 style={{fontSize:28, fontWeight:900, color:'#111', margin:0}}>Clients</h1>
+              <h1 style={{fontSize:26, fontWeight:900, color:'#111', margin:0}}>Clients</h1>
               <div style={{display:'flex', gap:8}}>
                 <div style={{position:'relative'}}>
                   <button onClick={()=>setShowExportMenu(v=>!v)} style={{height:38, padding:'0 14px', borderRadius:10, border:'1.5px solid #eee', background:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', color:'#666', display:'flex', alignItems:'center', gap:6}}>
@@ -3838,10 +3838,10 @@ function CRMApp({ user, onLogout }) {
               </div>
               <div style={{display:'flex', gap:6, flexShrink:0}}>
                 {[{id:'Tous',label:'Tous'},{id:'Homme',label:'Hommes'},{id:'Femme',label:'Femmes'},{id:'Entreprise',label:'Entreprises'}].map(f=>(
-                  <button key={f.id} onClick={()=>setFiltreGenreClients(f.id)} style={{height:48, padding:'0 20px', borderRadius:14, cursor:'pointer', fontSize:15, fontWeight:700, border:'none', background: filtreGenreClients===f.id?'#111':'#fff', color: filtreGenreClients===f.id?'#fff':'#666', boxShadow: filtreGenreClients===f.id?'none':'0 1px 4px rgba(0,0,0,0.06)'}}>{f.label}</button>
+                  <button key={f.id} onClick={()=>setFiltreGenreClients(f.id)} style={{height:44, padding:'0 20px', borderRadius:14, cursor:'pointer', fontSize:14, fontWeight:700, border:'none', background: filtreGenreClients===f.id?'#111':'#fff', color: filtreGenreClients===f.id?'#fff':'#666', boxShadow: filtreGenreClients===f.id?'none':'0 1px 4px rgba(0,0,0,0.06)'}}>{f.label}</button>
                 ))}
               </div>
-              <button onClick={()=>setModalAdd(true)} style={{height:48, padding:'0 24px', borderRadius:14, border:'none', background:'#E8C547', color:'#111', fontSize:15, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', gap:8, flexShrink:0, boxShadow:'0 2px 8px rgba(232,197,71,0.3)'}}>
+              <button onClick={()=>setModalAdd(true)} style={{height:44, padding:'0 24px', borderRadius:14, border:'none', background:'#E8C547', color:'#111', fontSize:14, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', gap:8, flexShrink:0, boxShadow:'0 2px 8px rgba(232,197,71,0.3)'}}>
                 <Plus size={18} strokeWidth={2}/> Nouveau client
               </button>
             </div>
@@ -3856,8 +3856,8 @@ function CRMApp({ user, onLogout }) {
               <div style={{background:'#fff', borderRadius:16, padding:'20px 24px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
                 <div>
                   <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px'}}>Total clients</p>
-                  <p style={{fontSize:36, fontWeight:900, color:'#111', margin:'0 0 4px'}}>{clients.length}</p>
-                  <p style={{fontSize:13, color:'#22c55e', fontWeight:600, margin:0}}>+{nbCeMois} ce mois-ci</p>
+                  <p style={{fontSize:28, fontWeight:900, color:'#111', margin:'0 0 4px'}}>{clients.length}</p>
+                  <p style={{fontSize:12, color:'#22c55e', fontWeight:600, margin:0}}>+{nbCeMois} ce mois-ci</p>
                 </div>
                 <div style={{width:52, height:52, borderRadius:14, background:'#f5f5f5', display:'flex', alignItems:'center', justifyContent:'center'}}>
                   <Users size={24} strokeWidth={2} color="#666"/>
@@ -3868,8 +3868,8 @@ function CRMApp({ user, onLogout }) {
               <div style={{background:'#fff', borderRadius:16, padding:'20px 24px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
                 <div>
                   <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px'}}>Nouveaux ce mois-ci</p>
-                  <p style={{fontSize:36, fontWeight:900, color:'#111', margin:'0 0 4px'}}>{nbCeMois}</p>
-                  <p style={{fontSize:13, color:pctEvol>=0?'#22c55e':'#dc2626', fontWeight:600, margin:0}}>{pctEvol>=0?'+':''}{pctEvol}% vs mois dernier</p>
+                  <p style={{fontSize:28, fontWeight:900, color:'#111', margin:'0 0 4px'}}>{nbCeMois}</p>
+                  <p style={{fontSize:12, color:pctEvol>=0?'#22c55e':'#dc2626', fontWeight:600, margin:0}}>{pctEvol>=0?'+':''}{pctEvol}% vs mois dernier</p>
                 </div>
                 <div style={{width:52, height:52, borderRadius:14, background:'#fffbea', display:'flex', alignItems:'center', justifyContent:'center'}}>
                   <UserPlus size={24} strokeWidth={2} color="#E8C547"/>
@@ -3921,33 +3921,33 @@ function CRMApp({ user, onLogout }) {
                 const initiales = c.genre==='Entreprise'?(c.entreprise||'?').slice(0,2).toUpperCase():`${(c.prenom||'?')[0]}${(c.nom||'')[0]||''}`.toUpperCase();
                 return (
                   <div key={c.id} onClick={()=>setModalDetailClient(c)}
-                    style={{display:'flex', alignItems:'center', gap:20, padding:'18px 24px', borderBottom: idx<clientsFiltres.length-1?'1px solid #f5f5f5':'none', cursor:'pointer'}}
+                    style={{display:'flex', alignItems:'center', gap:20, padding:'14px 24px', borderBottom: idx<clientsFiltres.length-1?'1px solid #f5f5f5':'none', cursor:'pointer'}}
                     onMouseEnter={e=>e.currentTarget.style.background='#fafafa'}
                     onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                     <div style={{width:48, height:48, borderRadius:'50%', flexShrink:0, background:avatarBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, fontWeight:800, color:avatarColor}}>{initiales}</div>
                     <div style={{minWidth:200, flex:'0 0 200px'}}>
-                      <div style={{fontWeight:700, fontSize:16, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.genre==='Entreprise'?c.entreprise:`${c.prenom||''} ${c.nom||''}`}</div>
+                      <div style={{fontWeight:700, fontSize:14, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.genre==='Entreprise'?c.entreprise:`${c.prenom||''} ${c.nom||''}`}</div>
                       <div style={{display:'flex', alignItems:'center', gap:4, marginTop:3}}>
                         <Phone size={12} strokeWidth={2} color="#999"/>
-                        <span style={{fontSize:13, color:'#999'}}>{c.tel||'—'}</span>
+                        <span style={{fontSize:12, color:'#999'}}>{c.tel||'—'}</span>
                       </div>
                     </div>
                     <div style={{display:'flex', alignItems:'center', gap:10, flex:'0 0 130px'}}>
                       <CalendarDays size={18} strokeWidth={2} color="#ccc"/>
                       <div>
-                        <span style={{fontSize:24, fontWeight:900, color:'#111'}}>{total}</span>
-                        <div style={{fontSize:12, color:'#999'}}>réservations</div>
+                        <span style={{fontSize:20, fontWeight:900, color:'#111'}}>{total}</span>
+                        <div style={{fontSize:11, color:'#999'}}>réservations</div>
                       </div>
                     </div>
                     <div style={{flex:1, minWidth:0}}>
-                      <div style={{fontSize:12, color:'#999', marginBottom:3}}>Dernière visite</div>
-                      <div style={{fontSize:14, fontWeight:700, color: derniereVisite?'#111':'#ccc', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+                      <div style={{fontSize:11, color:'#999', marginBottom:3}}>Dernière visite</div>
+                      <div style={{fontSize:13, fontWeight:700, color: derniereVisite?'#111':'#ccc', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
                         {derniereVisite ? new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}) : 'Jamais'}
                       </div>
                     </div>
                     <div style={{flex:1, minWidth:0}}>
-                      <div style={{fontSize:12, color:'#999', marginBottom:3}}>Prochaine réservation</div>
-                      <div style={{fontSize:14, fontWeight:700, color: prochaineResa?'#16a34a':'#ccc', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+                      <div style={{fontSize:11, color:'#999', marginBottom:3}}>Prochaine réservation</div>
+                      <div style={{fontSize:13, fontWeight:700, color: prochaineResa?'#16a34a':'#ccc', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
                         {prochaineResa ? `${new Date(prochaineResa.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}${prochaineResa.heure?` à ${prochaineResa.heure}`:''}` : '—'}
                       </div>
                     </div>
