@@ -6,7 +6,27 @@
       "Bash(grep -n \"fontWeight:700, fontSize:16\\\\|c\\\\.nom} {c\\\\.prenom\" /Users/karlsounier/Desktop/Ted_crm/ted-crm-v2/src/App.js)",
       "Bash(git add *)",
       "Bash(git commit *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(npm run *)",
+      "Bash(/usr/local/bin/npm run *)",
+      "Read(//opt/homebrew/bin/**)",
+      "Read(//opt/**)",
+      "Bash(git checkout *)",
+      "Bash(grep -n \"return.*ReservationsPage\\\\|^function [A-Z]\\\\|histOpen\\\\|histori\\\\|\\\\/\\\\/ fin\\\\|<\\\\/div>$\" /Users/karlsounier/Desktop/Ted_crm/ted-crm-v2/src/App.js)",
+      "Bash(node_modules/.bin/react-scripts build *)",
+      "Bash(which node *)",
+      "Bash(find /usr /opt /Users/karlsounier -name \"npm\" -type f 2>/dev/null | head -10)",
+      "Read(//Users/karlsounier/**)",
+      "Bash(/opt/homebrew/bin/npm run *)",
+      "Bash(npm install *)",
+      "Bash(PATH=/opt/homebrew/bin:__TRACKED_VAR__ npx react-scripts build)",
+      "Bash(awk -F: '$1>=2050 && $1<=3200')",
+      "Bash(awk -F: '$1>=1960 && $1<=2100')",
+      "Bash(awk -F: '$1>=1960 && $1<=2060')",
+      "Bash(awk -F: '$1>=1840 && $1<=1970')",
+      "Bash(awk -F: '$1>=1800 && $1<=1840')",
+      "Bash(awk -F: '$1>=1820 && $1<=2060')",
+      "Bash(awk -F: '$1>=3350')"
     ]
   }
 }
