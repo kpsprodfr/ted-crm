@@ -3561,10 +3561,10 @@ function CRMApp({ user, onLogout }) {
               .toLowerCase().includes(rechercheClients.toLowerCase()))
           .sort((a,b)=>`${a.prenom||''}${a.nom||''}`.localeCompare(`${b.prenom||''}${b.nom||''}`));
 
-        const topClient = clients.map(c=>({
+        const topClients = clients.map(c=>({
           ...c,
           nb: resasData.filter(r=>r.client_id===c.id&&(r.statut==='confirmee'||r.statut==='venue')).length
-        })).sort((a,b)=>b.nb-a.nb)[0];
+        })).filter(c=>c.nb>0).sort((a,b)=>b.nb-a.nb).slice(0,3);
 
         const nbCeMois = clients.filter(c=>c.created_at && new Date(c.created_at)>=debutMois).length;
         const nbMoisDernier = clients.filter(c=>{ if(!c.created_at) return false; const d=new Date(c.created_at); return d>=debutMoisDernier && d<=finMoisDernier; }).length;
@@ -3616,17 +3616,35 @@ function CRMApp({ user, onLogout }) {
               </div>
               <div style={{width:48, height:48, borderRadius:12, background:'#f5f5f5', display:'flex', alignItems:'center', justifyContent:'center'}}><UserPlus size={22} strokeWidth={2} color="#666"/></div>
             </div>
-            <div style={{background:'#fff', borderRadius:14, padding:'20px 24px', display:'flex', alignItems:'center', justifyContent:'space-between'}}>
-              <div>
-                <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 6px'}}>Top client</p>
-                {topClient && topClient.nb > 0 ? (
-                  <>
-                    <p style={{fontSize:18, fontWeight:900, color:'#111', margin:'0 0 4px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:180}}>{topClient.genre==='Entreprise'?(topClient.entreprise||topClient.nom):`${topClient.prenom||''} ${topClient.nom||''}`}</p>
-                    <p style={{fontSize:12, color:'#999', fontWeight:600, margin:0}}>{topClient.nb} réservations</p>
-                  </>
-                ) : <p style={{fontSize:14, color:'#bbb', margin:0}}>Aucun</p>}
+            <div style={{background:'#fff', borderRadius:14, padding:'20px 24px'}}>
+              <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14}}>
+                <p style={{fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0}}>Top clients</p>
+                <button onClick={()=>setShowTop300(v=>!v)} style={{fontSize:12, fontWeight:600, color:'#E8C547', background:'none', border:'none', cursor:'pointer', padding:0}}>
+                  {showTop300 ? 'Réduire' : 'Afficher plus'}
+                </button>
               </div>
-              <div style={{width:48, height:48, borderRadius:12, background:'#fffbea', display:'flex', alignItems:'center', justifyContent:'center'}}><Trophy size={22} strokeWidth={2} color="#E8C547"/></div>
+              {topClients.length === 0 ? (
+                <p style={{fontSize:13, color:'#bbb', margin:0}}>Pas encore de données</p>
+              ) : (
+                <div style={{display:'flex', flexDirection:'column', gap:8}}>
+                  {topClients.map((c, i) => {
+                    const avatarBg = c.genre==='Homme'?'#dbeafe':c.genre==='Femme'?'#fce7f3':'#dcfce7';
+                    const avatarColor = c.genre==='Homme'?'#1d4ed8':c.genre==='Femme'?'#be185d':'#15803d';
+                    const initiales = c.genre==='Entreprise'?(c.entreprise||'?').slice(0,2).toUpperCase():`${(c.prenom||'?')[0]}${(c.nom||'')[0]||''}`.toUpperCase();
+                    const medals = ['🥇','🥈','🥉'];
+                    return (
+                      <div key={c.id} onClick={()=>setModalDetailClient(c)} style={{display:'flex', alignItems:'center', gap:10, cursor:'pointer', padding:'6px 0', borderBottom: i<topClients.length-1?'1px solid #f5f5f5':'none'}}>
+                        <span style={{fontSize:18, flexShrink:0}}>{medals[i]}</span>
+                        <div style={{width:32, height:32, borderRadius:'50%', flexShrink:0, background:avatarBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:800, color:avatarColor}}>{initiales}</div>
+                        <div style={{flex:1, minWidth:0}}>
+                          <div style={{fontWeight:700, fontSize:13, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.genre==='Entreprise'?c.entreprise:`${c.prenom||''} ${c.nom||''}`}</div>
+                        </div>
+                        <span style={{background:'#fffbea', color:'#111', borderRadius:20, padding:'2px 10px', fontSize:12, fontWeight:800, flexShrink:0}}>{c.nb} résa</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
           </div>{/* fin stats */}
