@@ -2563,6 +2563,7 @@ function CRMApp({ user, onLogout }) {
   const [showPreview, setShowPreview] = useState(false);
   const [showConfirmEnvoi, setShowConfirmEnvoi] = useState(false);
   const [showTop300, setShowTop300] = useState(false);
+  const [showTopClients, setShowTopClients] = useState(false);
   const [triColonne, setTriColonne] = useState('nom');
   const [triSens, setTriSens] = useState('asc');
   const [showExportMenu, setShowExportMenu] = useState(false);
@@ -3597,57 +3598,48 @@ function CRMApp({ user, onLogout }) {
             </div>
           </div>
 
-          {/* 2. STATS — compactes en ligne */}
-          <div style={{padding:'0 32px 16px'}}>
-          <div style={{display:'flex', gap:12, flexWrap:'wrap'}}>
-            {/* Total clients */}
-            <div style={{background:'#fff', borderRadius:12, padding:'14px 20px', display:'flex', alignItems:'center', gap:14, flex:1, minWidth:160}}>
-              <div style={{width:36, height:36, borderRadius:10, background:'#f5f5f5', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
-                <Users size={18} strokeWidth={2} color="#666"/>
-              </div>
+          {/* 2. STATS — ultra compactes en ligne */}
+          <div style={{padding:'0 32px 14px'}}>
+          <div style={{display:'flex', gap:10}}>
+            {/* Total */}
+            <div style={{background:'#fff', borderRadius:10, padding:'10px 16px', display:'flex', alignItems:'center', gap:10, flex:1}}>
+              <Users size={15} strokeWidth={2} color="#999"/>
               <div>
-                <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 2px'}}>Total clients</p>
-                <p style={{fontSize:22, fontWeight:900, color:'#111', margin:'0 0 1px'}}>{clients.length}</p>
-                <p style={{fontSize:11, color:'#22c55e', fontWeight:600, margin:0}}>+{nbCeMois} ce mois</p>
+                <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 1px'}}>Total</p>
+                <p style={{fontSize:18, fontWeight:900, color:'#111', margin:0}}>{clients.length} <span style={{fontSize:11, color:'#22c55e', fontWeight:600}}>+{nbCeMois}</span></p>
               </div>
             </div>
-            {/* Nouveaux ce mois */}
-            <div style={{background:'#fff', borderRadius:12, padding:'14px 20px', display:'flex', alignItems:'center', gap:14, flex:1, minWidth:160}}>
-              <div style={{width:36, height:36, borderRadius:10, background:'#f5f5f5', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
-                <UserPlus size={18} strokeWidth={2} color="#666"/>
-              </div>
+            {/* Ce mois */}
+            <div style={{background:'#fff', borderRadius:10, padding:'10px 16px', display:'flex', alignItems:'center', gap:10, flex:1}}>
+              <UserPlus size={15} strokeWidth={2} color="#999"/>
               <div>
-                <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 2px'}}>Nouveaux ce mois</p>
-                <p style={{fontSize:22, fontWeight:900, color:'#111', margin:'0 0 1px'}}>{nbCeMois}</p>
-                <p style={{fontSize:11, color: pctEvol>=0?'#22c55e':'#dc2626', fontWeight:600, margin:0}}>{pctEvol>=0?'+':''}{pctEvol}% vs mois dernier</p>
+                <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 1px'}}>Ce mois</p>
+                <p style={{fontSize:18, fontWeight:900, color:'#111', margin:0}}>{nbCeMois} <span style={{fontSize:11, color:pctEvol>=0?'#22c55e':'#dc2626', fontWeight:600}}>{pctEvol>=0?'+':''}{pctEvol}%</span></p>
               </div>
             </div>
-            {/* Top 3 clients */}
-            <div style={{background:'#fff', borderRadius:12, padding:'14px 20px', flex:2, minWidth:280}}>
-              <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10}}>
-                <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0}}>Top clients</p>
-                <button onClick={()=>setShowTop300(v=>!v)} style={{fontSize:11, fontWeight:600, color:'#E8C547', background:'none', border:'none', cursor:'pointer', padding:0}}>Afficher plus</button>
-              </div>
-              {topClients.length === 0 ? (
-                <p style={{fontSize:12, color:'#bbb', margin:0}}>Pas encore de données</p>
-              ) : (
-                <div style={{display:'flex', flexDirection:'column', gap:6}}>
-                  {topClients.map((c, i) => {
-                    const avatarBg = c.genre==='Homme'?'#dbeafe':c.genre==='Femme'?'#fce7f3':'#dcfce7';
-                    const avatarColor = c.genre==='Homme'?'#1d4ed8':c.genre==='Femme'?'#be185d':'#15803d';
-                    const initiales = c.genre==='Entreprise'?(c.entreprise||'?').slice(0,2).toUpperCase():`${(c.prenom||'?')[0]}${(c.nom||'')[0]||''}`.toUpperCase();
+            {/* Top clients */}
+            <div style={{background:'#fff', borderRadius:10, padding:'10px 16px', display:'flex', alignItems:'center', gap:12, flex:3}}>
+              <Trophy size={15} strokeWidth={2} color="#E8C547" style={{flexShrink:0}}/>
+              <div style={{flex:1, minWidth:0}}>
+                <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 4px'}}>Top clients</p>
+                <div style={{display:'flex', gap:16}}>
+                  {topClients.length === 0 ? (
+                    <span style={{fontSize:12, color:'#bbb'}}>Pas encore de données</span>
+                  ) : topClients.map((c, i) => {
                     const medals = ['🥇','🥈','🥉'];
                     return (
-                      <div key={c.id} onClick={()=>setModalDetailClient(c)} style={{display:'flex', alignItems:'center', gap:8, cursor:'pointer'}}>
-                        <span style={{fontSize:14, flexShrink:0}}>{medals[i]}</span>
-                        <div style={{width:26, height:26, borderRadius:'50%', flexShrink:0, background:avatarBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:800, color:avatarColor}}>{initiales}</div>
-                        <span style={{fontSize:13, fontWeight:700, color:'#111', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.genre==='Entreprise'?c.entreprise:`${c.prenom||''} ${c.nom||''}`}</span>
-                        <span style={{fontSize:12, fontWeight:700, color:'#999', flexShrink:0}}>{c.nb} résa</span>
+                      <div key={c.id} style={{display:'flex', alignItems:'center', gap:5}}>
+                        <span style={{fontSize:12}}>{medals[i]}</span>
+                        <span style={{fontSize:12, fontWeight:700, color:'#111', whiteSpace:'nowrap'}}>
+                          {c.genre==='Entreprise'?c.entreprise:`${c.prenom||''} ${c.nom||''}`}
+                        </span>
+                        <span style={{fontSize:11, color:'#999'}}>· {c.nb}</span>
                       </div>
                     );
                   })}
                 </div>
-              )}
+              </div>
+              <button onClick={()=>setShowTopClients(true)} style={{fontSize:11, fontWeight:600, color:'#E8C547', background:'none', border:'none', cursor:'pointer', padding:0, flexShrink:0, whiteSpace:'nowrap'}}>Afficher plus</button>
             </div>
           </div>
           </div>{/* fin stats */}
@@ -4201,6 +4193,49 @@ function CRMApp({ user, onLogout }) {
       {modalImport && <ImportModal existingClients={clients} onImport={importClients} onCancel={()=>setModalImport(false)} />}
       {modalComment && <Modal title={`Commentaire — ${modalComment.prenom} ${modalComment.nom}`} onClose={()=>setModalComment(null)}><p style={{fontSize:14,lineHeight:1.7,margin:0}}>{modalComment.commentaire}</p></Modal>}
       {modalCorbeille && !isMobile && <CorbeilleModal onClose={()=>{ setModalCorbeille(false); loadClients(); }} showToast={showToast} />}
+
+      {/* Modal Top 50 clients */}
+      {showTopClients && (
+        <>
+          <div onMouseDown={e=>{e.preventDefault();e.stopPropagation();}} onClick={()=>setShowTopClients(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:2999,pointerEvents:'all'}}/>
+          <div onClick={e=>e.stopPropagation()} style={{position:'fixed',top:'50%',left:'50%',transform:'translate(-50%,-50%)',background:'#fff',borderRadius:20,width:'min(520px, calc(100vw - 48px))',maxHeight:'80vh',display:'flex',flexDirection:'column',boxShadow:'0 32px 80px rgba(0,0,0,0.25)',zIndex:3000,overflow:'hidden'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'24px 28px 20px',flexShrink:0,borderBottom:'1px solid #f0f0f0'}}>
+              <h2 style={{margin:0,fontSize:20,fontWeight:800,color:'#111'}}>🏆 Classement clients</h2>
+              <button onClick={()=>setShowTopClients(false)} style={{width:36,height:36,borderRadius:'50%',border:'none',background:'#f0f0f0',cursor:'pointer',fontSize:18,color:'#666',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+            </div>
+            <div style={{flex:1,overflowY:'auto',padding:'16px 28px'}}>
+              {clients
+                .map(c=>({...c, nb:resasData.filter(r=>r.client_id===c.id&&(r.statut==='confirmee'||r.statut==='venue')).length}))
+                .filter(c=>c.nb>0)
+                .sort((a,b)=>b.nb-a.nb)
+                .slice(0,50)
+                .map((c,i)=>{
+                  const medals=['🥇','🥈','🥉'];
+                  const avatarBg=c.genre==='Homme'?'#dbeafe':c.genre==='Femme'?'#fce7f3':'#dcfce7';
+                  const avatarColor=c.genre==='Homme'?'#1d4ed8':c.genre==='Femme'?'#be185d':'#15803d';
+                  const initiales=c.genre==='Entreprise'?(c.entreprise||'?').slice(0,2).toUpperCase():`${(c.prenom||'?')[0]}${(c.nom||'')[0]||''}`.toUpperCase();
+                  return (
+                    <div key={c.id} onClick={()=>{setModalDetailClient(c);setShowTopClients(false);}} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 0',borderBottom:'1px solid #f5f5f5',cursor:'pointer'}}
+                      onMouseEnter={e=>e.currentTarget.style.background='#fafafa'}
+                      onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                      <span style={{fontSize:i<3?18:13,minWidth:28,textAlign:'center'}}>{i<3?medals[i]:`#${i+1}`}</span>
+                      <div style={{width:34,height:34,borderRadius:'50%',background:avatarBg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:800,color:avatarColor,flexShrink:0}}>{initiales}</div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontWeight:700,fontSize:14,color:'#111',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{c.genre==='Entreprise'?c.entreprise:`${c.prenom||''} ${c.nom||''}`}</div>
+                        <div style={{fontSize:12,color:'#999'}}>{c.tel}</div>
+                      </div>
+                      <span style={{background:'#fffbea',color:'#111',borderRadius:20,padding:'3px 12px',fontSize:13,fontWeight:800,flexShrink:0}}>{c.nb} résa</span>
+                    </div>
+                  );
+                })}
+            </div>
+            <div style={{flexShrink:0,padding:'16px 28px',borderTop:'1px solid #eee'}}>
+              <button onClick={()=>setShowTopClients(false)} style={{width:'100%',height:48,border:'1.5px solid #eee',borderRadius:12,background:'#fff',fontSize:14,fontWeight:600,cursor:'pointer',color:'#666'}}>Fermer</button>
+            </div>
+          </div>
+        </>
+      )}
+
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
       {showConfirmQuitter && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:9000,display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'all',touchAction:'none'}} onMouseDown={e=>{e.preventDefault();e.stopPropagation();setShowConfirmQuitter(false);}} onClick={()=>setShowConfirmQuitter(false)}>
