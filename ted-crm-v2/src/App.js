@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus, UserPlus, Trophy, ArrowUpDown } from 'lucide-react';
+import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus, UserPlus, Trophy, ArrowUpDown, ThumbsUp } from 'lucide-react';
 import { supabase } from "./supabase";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -2766,6 +2766,7 @@ function CRMApp({ user, onLogout }) {
   const [modalEdit, setModalEdit] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [showConfirmDeconnexion, setShowConfirmDeconnexion] = useState(false);
+  const [showApercuClient, setShowApercuClient] = useState(false);
   const [showFormulaireDropdown, setShowFormulaireDropdown] = useState(false);
   const [modalDelete, setModalDelete] = useState(null);
   const [modalImport, setModalImport] = useState(false);
@@ -3127,6 +3128,7 @@ function CRMApp({ user, onLogout }) {
         { id:'reservations', label:'Réservations', icon:<CalendarDays size={24} strokeWidth={1.8} /> },
         { id:'clients', label:'Clients', icon:<Users size={24} strokeWidth={1.8} /> },
         { id:'communications', label:'Communications', icon:<Megaphone size={24} strokeWidth={1.8} /> },
+        { id:'avis', label:'Avis clients', icon:<Star size={22} strokeWidth={1.8} /> },
       ].map(item => (
         <button key={item.id} onClick={()=>setActiveView(item.id)} style={{ width:'100%', padding:'12px 8px', border:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer', marginBottom:4, borderLeft: activeView===item.id ? '3px solid #E8C547' : '3px solid transparent', background: activeView===item.id ? 'rgba(232,197,71,0.1)' : 'transparent', color: activeView===item.id ? '#E8C547' : '#555' }}>
           {item.icon}
@@ -3162,6 +3164,232 @@ function CRMApp({ user, onLogout }) {
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
     </>
   );
+
+  if (activeView === 'avis') {
+    if (isMobile) return (
+      <>
+        {/* Mobile : page indisponible */}
+        <div style={{ position:'fixed', inset:0, background:'#f5f5f5', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:32, textAlign:'center' }}>
+          <Star size={48} strokeWidth={1.5} color="#E8C547" style={{ marginBottom:16 }}/>
+          <h2 style={{ fontSize:20, fontWeight:900, color:'#111', margin:'0 0 8px' }}>Avis clients</h2>
+          <p style={{ fontSize:14, color:'#999', margin:0, lineHeight:1.6 }}>Cette page est disponible sur iPad et ordinateur uniquement.</p>
+        </div>
+      </>
+    );
+    return (
+      <>
+        {sidebarDesktop}
+        <div style={{ marginLeft:120, minHeight:'100vh', background:'#f5f5f5', padding:'24px 32px', boxSizing:'border-box' }}>
+
+          {/* Header */}
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
+            <h1 style={{ fontSize:22, fontWeight:900, color:'#111', margin:0 }}>Avis clients</h1>
+            <button onClick={()=>setShowApercuClient(true)} style={{ height:36, padding:'0 16px', borderRadius:10, background:'#111', border:'none', fontSize:13, fontWeight:700, cursor:'pointer', color:'#fff', display:'flex', alignItems:'center', gap:6 }}>
+              <Eye size={14} strokeWidth={2} color="#fff"/> Aperçu client
+            </button>
+          </div>
+
+          {/* Stats */}
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:14, marginBottom:20 }}>
+            {[
+              { label:'Note moyenne', value:'4.2', sub:'sur 5 étoiles', icon:<Star size={18} strokeWidth={2} color="#E8C547"/>, bg:'#fffbea' },
+              { label:'Avis total', value:'24', sub:'depuis le début', icon:<MessageSquare size={18} strokeWidth={2} color="#3b82f6"/>, bg:'#eff6ff' },
+              { label:'Avis positifs', value:'18', sub:'4-5 étoiles (75%)', icon:<ThumbsUp size={18} strokeWidth={2} color="#22c55e"/>, bg:'#f0fdf4' },
+              { label:'À traiter', value:'3', sub:'1-3 étoiles', icon:<AlertCircle size={18} strokeWidth={2} color="#dc2626"/>, bg:'#fef2f2' },
+            ].map((s,i) => (
+              <div key={i} style={{ background:'#fff', borderRadius:14, padding:'14px 18px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
+                <div style={{ width:36, height:36, borderRadius:10, background:s.bg, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:10 }}>
+                  {s.icon}
+                </div>
+                <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 4px' }}>{s.label}</p>
+                <p style={{ fontSize:22, fontWeight:900, color:'#111', margin:'0 0 2px' }}>{s.value}</p>
+                <p style={{ fontSize:11, color:'#999', margin:0 }}>{s.sub}</p>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 360px', gap:16 }}>
+
+            {/* Colonne gauche — Liste des avis */}
+            <div>
+              {/* Filtres */}
+              <div style={{ display:'flex', gap:8, marginBottom:14 }}>
+                {[
+                  { id:'tous', label:'Tous les avis' },
+                  { id:'negatifs', label:'⚠️ 1-3 étoiles' },
+                  { id:'positifs', label:'✅ 4-5 étoiles' },
+                ].map((f,i) => (
+                  <button key={f.id} style={{ height:34, padding:'0 14px', borderRadius:9, fontSize:12, fontWeight:700, border:'none', cursor:'pointer', background: i===0?'#111':'#fff', color: i===0?'#fff':'#666', boxShadow:'0 1px 4px rgba(0,0,0,0.06)' }}>{f.label}</button>
+                ))}
+              </div>
+
+              {/* Liste avis */}
+              <div style={{ background:'#fff', borderRadius:14, overflow:'hidden', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
+                {[
+                  { nom:'Karl Sounier', date:'27 juin 2026', etoiles:5, message:'Super soirée, ambiance incroyable ! On reviendra très vite.', statut:'positif' },
+                  { nom:'Pauline Guerrero', date:'26 juin 2026', etoiles:4, message:'Très bonne expérience, service impeccable.', statut:'positif' },
+                  { nom:'Louis Cataldo', date:'25 juin 2026', etoiles:2, message:'Attente trop longue, un peu déçu de la soirée.', statut:'negatif' },
+                  { nom:'Camille Sounier', date:'24 juin 2026', etoiles:5, message:'Parfait comme toujours !', statut:'positif' },
+                  { nom:'Serge Lothos', date:'23 juin 2026', etoiles:3, message:'Bof, pas terrible ce soir-là.', statut:'negatif' },
+                ].map((a, idx) => (
+                  <div key={idx} style={{ display:'flex', alignItems:'flex-start', gap:14, padding:'14px 20px', borderBottom: idx<4?'1px solid #f5f5f5':'none', background: a.statut==='negatif'?'#fffafa':'#fff' }}>
+                    <div style={{ width:36, height:36, borderRadius:'50%', flexShrink:0, background: a.statut==='positif'?'#f0fdf4':'#fef2f2', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, color: a.statut==='positif'?'#16a34a':'#dc2626' }}>
+                      {a.nom[0]}
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
+                        <span style={{ fontSize:13, fontWeight:600, color:'#111' }}>{a.nom}</span>
+                        <span style={{ fontSize:11, color:'#999' }}>{a.date}</span>
+                      </div>
+                      <div style={{ display:'flex', gap:2, marginBottom:6 }}>
+                        {[1,2,3,4,5].map(i => (
+                          <Star key={i} size={13} strokeWidth={2} color={i<=a.etoiles?'#E8C547':'#eee'} fill={i<=a.etoiles?'#E8C547':'#eee'}/>
+                        ))}
+                      </div>
+                      <p style={{ fontSize:13, color:'#444', margin:'0 0 8px', lineHeight:1.5 }}>{a.message}</p>
+                      <div style={{ display:'flex', gap:8 }}>
+                        {a.statut==='negatif' && (
+                          <button style={{ height:28, padding:'0 12px', borderRadius:7, border:'1.5px solid #eee', background:'#fff', fontSize:11, fontWeight:600, cursor:'pointer', color:'#666', display:'flex', alignItems:'center', gap:4 }}>
+                            <Phone size={11} strokeWidth={2}/> Rappeler
+                          </button>
+                        )}
+                        {a.statut==='positif' && (
+                          <button style={{ height:28, padding:'0 12px', borderRadius:7, border:'none', background:'#f0fdf4', fontSize:11, fontWeight:600, cursor:'pointer', color:'#16a34a', display:'flex', alignItems:'center', gap:4 }}>
+                            ✓ Google My Business
+                          </button>
+                        )}
+                        <button style={{ height:28, padding:'0 12px', borderRadius:7, border:'1.5px solid #eee', background:'#fff', fontSize:11, fontWeight:600, cursor:'pointer', color:'#666' }}>
+                          Marquer traité
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Colonne droite — Paramètres automatisation */}
+            <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+
+              {/* Automatisation */}
+              <div style={{ background:'#fff', borderRadius:14, padding:'18px 20px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+                  <div>
+                    <p style={{ fontSize:13, fontWeight:700, color:'#111', margin:'0 0 2px' }}>Demande automatique</p>
+                    <p style={{ fontSize:11, color:'#999', margin:0 }}>Envoi après chaque visite</p>
+                  </div>
+                  <div style={{ width:44, height:24, borderRadius:12, background:'#E8C547', cursor:'pointer', position:'relative' }}>
+                    <div style={{ width:20, height:20, borderRadius:'50%', background:'#fff', position:'absolute', top:2, right:2, boxShadow:'0 1px 4px rgba(0,0,0,0.2)' }}/>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom:12 }}>
+                  <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 6px' }}>Envoyer après</p>
+                  <div style={{ position:'relative' }}>
+                    <select style={{ width:'100%', height:36, border:'1.5px solid #eee', borderRadius:9, padding:'0 30px 0 12px', fontSize:13, outline:'none', background:'#fff', appearance:'none', WebkitAppearance:'none', cursor:'pointer' }}>
+                      <option>2 heures</option>
+                      <option>4 heures</option>
+                      <option>24 heures</option>
+                      <option>48 heures</option>
+                    </select>
+                    <ChevronDown size={13} strokeWidth={2} color="#999" style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }}/>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom:12 }}>
+                  <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 6px' }}>Canal</p>
+                  <div style={{ display:'flex', gap:8 }}>
+                    {['SMS','Email'].map((c,i) => (
+                      <button key={c} style={{ flex:1, height:34, borderRadius:9, border:'1.5px solid', borderColor: i===0?'#111':'#eee', background: i===0?'#111':'#fff', color: i===0?'#fff':'#666', fontSize:12, fontWeight:700, cursor:'pointer' }}>{c}</button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 6px' }}>Message</p>
+                  <textarea defaultValue="Bonjour {prenom}, merci pour votre visite au TED 🙏 Votre avis nous aide à nous améliorer. Donnez-nous une note ici : {lien_avis}"
+                    style={{ width:'100%', height:90, border:'1.5px solid #eee', borderRadius:9, padding:'10px 12px', fontSize:12, resize:'none', outline:'none', fontFamily:'inherit', boxSizing:'border-box', lineHeight:1.6 }}
+                  />
+                  <div style={{ fontSize:10, color:'#999', marginTop:3, textAlign:'right' }}>Variables : {'{prenom}'} {'{lien_avis}'}</div>
+                </div>
+              </div>
+
+              {/* Redirection Google */}
+              <div style={{ background:'#fff', borderRadius:14, padding:'18px 20px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
+                <p style={{ fontSize:13, fontWeight:700, color:'#111', margin:'0 0 4px' }}>Redirection Google</p>
+                <p style={{ fontSize:11, color:'#999', margin:'0 0 12px', lineHeight:1.5 }}>Les clients 4-5 étoiles seront redirigés vers votre page Google My Business</p>
+                <div style={{ background:'#f9f9f9', borderRadius:9, padding:'10px 12px', marginBottom:12 }}>
+                  <p style={{ fontSize:11, color:'#999', margin:'0 0 3px' }}>Lien Google My Business</p>
+                  <p style={{ fontSize:12, fontWeight:600, color:'#3b82f6', margin:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>https://g.page/r/le-ted-chassieu/review</p>
+                </div>
+                <button style={{ width:'100%', height:36, borderRadius:9, border:'1.5px solid #eee', background:'#fff', fontSize:12, fontWeight:600, cursor:'pointer', color:'#666', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                  ✏️ Modifier le lien
+                </button>
+              </div>
+
+              {/* Seuil redirection */}
+              <div style={{ background:'#fff', borderRadius:14, padding:'18px 20px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
+                <p style={{ fontSize:13, fontWeight:700, color:'#111', margin:'0 0 4px' }}>Seuil de redirection</p>
+                <p style={{ fontSize:11, color:'#999', margin:'0 0 12px' }}>À partir de combien d'étoiles on redirige vers Google</p>
+                <div style={{ display:'flex', gap:8 }}>
+                  {[3,4,5].map(n => (
+                    <button key={n} style={{ flex:1, height:36, borderRadius:9, border:'1.5px solid', borderColor: n===4?'#E8C547':'#eee', background: n===4?'#fffbea':'#fff', fontSize:12, fontWeight:700, cursor:'pointer', color: n===4?'#111':'#666', display:'flex', alignItems:'center', justifyContent:'center', gap:4 }}>
+                      {n}+ <Star size={11} strokeWidth={2} color={n===4?'#E8C547':'#999'} fill={n===4?'#E8C547':'none'}/>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Modal Aperçu client */}
+          {showApercuClient && (
+            <>
+              <div onClick={()=>setShowApercuClient(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:2999 }}/>
+              <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#f5f5f5', borderRadius:20, width:'min(400px, calc(100vw - 48px))', maxHeight:'85vh', overflowY:'auto', boxShadow:'0 32px 80px rgba(0,0,0,0.25)', zIndex:3000, padding:'32px 28px' }}>
+                <div style={{ textAlign:'center', marginBottom:24 }}>
+                  <img src="/favicon.png" style={{ width:56, height:56, marginBottom:12 }} alt="TED"/>
+                  <h2 style={{ fontSize:20, fontWeight:900, color:'#111', margin:'0 0 4px' }}>Le TED</h2>
+                  <p style={{ fontSize:13, color:'#999', margin:0 }}>Restaurant & Club — Chassieu</p>
+                </div>
+                <div style={{ background:'#fff', borderRadius:14, padding:'16px 20px', marginBottom:16 }}>
+                  <p style={{ fontSize:14, color:'#444', lineHeight:1.7, margin:0 }}>
+                    Bonjour <strong>Karl</strong>, merci pour votre visite au TED 🙏
+                    <br/><br/>
+                    Votre avis nous aide à nous améliorer. Comment s'est passée votre soirée ?
+                  </p>
+                </div>
+                <div style={{ background:'#fff', borderRadius:14, padding:'20px', marginBottom:16, textAlign:'center' }}>
+                  <p style={{ fontSize:13, fontWeight:700, color:'#111', margin:'0 0 16px' }}>Donnez-nous une note</p>
+                  <div style={{ display:'flex', justifyContent:'center', gap:12, marginBottom:16 }}>
+                    {[1,2,3,4,5].map(i => (
+                      <div key={i} style={{ cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
+                        <Star size={36} strokeWidth={1.5} color={i<=4?'#E8C547':'#eee'} fill={i<=4?'#E8C547':'#eee'}/>
+                        <span style={{ fontSize:10, color:'#999' }}>{i}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p style={{ fontSize:12, color:'#999', margin:0 }}>Appuyez sur une étoile pour noter</p>
+                </div>
+                <div style={{ background:'#fff', borderRadius:14, padding:'16px 20px', marginBottom:16 }}>
+                  <p style={{ fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px' }}>Un commentaire ? <span style={{ fontWeight:400, color:'#999' }}>(optionnel)</span></p>
+                  <textarea placeholder="Partagez votre expérience..." style={{ width:'100%', height:80, border:'1.5px solid #eee', borderRadius:9, padding:'8px 12px', fontSize:13, resize:'none', outline:'none', fontFamily:'inherit', boxSizing:'border-box' }}/>
+                </div>
+                <button style={{ width:'100%', height:52, border:'none', borderRadius:14, background:'#E8C547', color:'#111', fontSize:15, fontWeight:800, cursor:'pointer' }}>
+                  Envoyer mon avis
+                </button>
+                <div style={{ background:'#f0fdf4', borderRadius:12, padding:'12px 16px', marginTop:12, display:'flex', alignItems:'center', gap:10 }}>
+                  <Star size={16} color="#16a34a" strokeWidth={2} fill="#16a34a"/>
+                  <p style={{ fontSize:12, color:'#16a34a', margin:0, fontWeight:500 }}>Avec 4-5 étoiles, vous serez redirigé vers Google pour partager votre avis publiquement 🙏</p>
+                </div>
+                <button onClick={()=>setShowApercuClient(false)} style={{ width:'100%', background:'none', border:'none', color:'#999', fontSize:13, cursor:'pointer', padding:'12px', marginTop:4 }}>Fermer l'aperçu</button>
+              </div>
+            </>
+          )}
+        </div>
+      </>
+    );
+  }
 
   if (activeView === 'communications' && !isMobile) {
     const limiteCommDate = (() => { const d = new Date(); d.setMonth(d.getMonth() - filtreAbsentsMois); return d.toISOString().split('T')[0]; })();
