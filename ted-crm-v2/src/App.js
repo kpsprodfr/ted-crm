@@ -1467,12 +1467,22 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
                 <div style={{ marginBottom:24 }}>
                   <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>5. Nombre de personnes</p>
                   <div style={{ display:'flex', alignItems:'center', gap:16, justifyContent:'center' }}>
-                    <button onClick={()=>setNbPersonnes(n=>{const v=typeof n==='number'&&n>0?n:1;return Math.max(1,v-1);})} style={{ width:52, height:52, borderRadius:12, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', fontSize:24, color:'#111', display:'flex', alignItems:'center', justifyContent:'center' }}>−</button>
-                    <div style={{ textAlign:'center', minWidth:60 }}>
-                      <div style={{ fontSize:32, fontWeight:800, color:'#111' }}>{nbPersonnes||1}</div>
-                      <div style={{ fontSize:12, color:'#999' }}>pers.</div>
+                    <button onClick={()=>setNbPersonnes(n=>{const v=typeof n==='number'&&n>0?n:1;return Math.max(1,v-1);})} style={{ width:52, height:52, borderRadius:12, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', fontSize:24, color:'#111', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:300 }}>−</button>
+                    <div style={{ textAlign:'center', minWidth:80 }}>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        min={1}
+                        max={50}
+                        value={nbPersonnes||1}
+                        onChange={e=>{ const val=parseInt(e.target.value); if(!isNaN(val)&&val>=1&&val<=50){setNbPersonnes(val);}else if(e.target.value===''){setNbPersonnes('');} }}
+                        onBlur={()=>{ if(!nbPersonnes||nbPersonnes<1)setNbPersonnes(1); }}
+                        style={{ width:80, height:52, fontSize:32, fontWeight:800, color:'#111', textAlign:'center', border:'1.5px solid #eee', borderRadius:12, outline:'none', background:'#fff', cursor:'text', MozAppearance:'textfield' }}
+                      />
+                      <div style={{ fontSize:12, color:'#999', marginTop:4 }}>pers.</div>
                     </div>
-                    <button onClick={()=>setNbPersonnes(n=>{const v=typeof n==='number'&&n>0?n:1;return Math.min(999,v+1);})} style={{ width:52, height:52, borderRadius:12, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', fontSize:24, color:'#111', display:'flex', alignItems:'center', justifyContent:'center' }}>+</button>
+                    <button onClick={()=>setNbPersonnes(n=>{const v=typeof n==='number'&&n>0?n:1;return Math.min(50,v+1);})} style={{ width:52, height:52, borderRadius:12, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', fontSize:24, color:'#111', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:300 }}>+</button>
                   </div>
                 </div>
 
