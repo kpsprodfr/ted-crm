@@ -2797,6 +2797,8 @@ function CRMApp({ user, onLogout }) {
   const [filtreJours, setFiltreJours] = useState(new Set());
   const [filtreServices, setFiltreServices] = useState(new Set());
   const [showJoursDropdown, setShowJoursDropdown] = useState(false);
+  const [showSegmentDropdown, setShowSegmentDropdown] = useState(false);
+  const [showServiceDropdown, setShowServiceDropdown] = useState(false);
   function toggleFiltreJour(jour) { setFiltreJours(prev => { const n=new Set(prev); n.has(jour)?n.delete(jour):n.add(jour); return n; }); }
   function toggleFiltreService(service) { setFiltreServices(prev => { const n=new Set(prev); n.has(service)?n.delete(service):n.add(service); return n; }); }
   const [filtreAbsentsMois, setFiltreAbsentsMois] = useState(0);
@@ -3298,24 +3300,47 @@ function CRMApp({ user, onLogout }) {
               <div style={{flex:1, overflowY:'auto', display:'flex', flexDirection:'column', gap:8}}>
                 {/* Segment */}
                 <div style={{flexShrink:0}}>
-                  <p style={{fontSize:15, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Segment</p>
-                  <div onClick={()=>setFiltreGenresComm(new Set())} style={{padding:'10px 14px', borderRadius:8, marginBottom:3, cursor:'pointer', border: filtreGenresComm.size===0?'1.5px solid #E8C547':'1.5px solid #eee', background: filtreGenresComm.size===0?'#fffbea':'#fff', display:'flex', alignItems:'center', gap:8}}>
-                    <div style={{width:16,height:16,borderRadius:4,flexShrink:0,border:'1.5px solid',borderColor:filtreGenresComm.size===0?'#E8C547':'#ddd',background:filtreGenresComm.size===0?'#E8C547':'#fff',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                      {filtreGenresComm.size===0 && <Check size={10} strokeWidth={3} color="#111"/>}
-                    </div>
-                    <span style={{fontSize:14, fontWeight:600, color:'#111', flex:1}}>Tous les clients</span>
-                  </div>
-                  {[{g:'Homme',label:'Hommes'},{g:'Femme',label:'Femmes'},{g:'Entreprise',label:'Entreprises'}].map(({g,label}) => {
-                    const actif = filtreGenresComm.has(g);
-                    return (
-                      <div key={g} onClick={()=>toggleGenreComm(g)} style={{padding:'10px 14px', borderRadius:8, marginBottom:3, cursor:'pointer', border: actif?'1.5px solid #E8C547':'1.5px solid #eee', background: actif?'#fffbea':'#fff', display:'flex', alignItems:'center', gap:8}}>
-                        <div style={{width:16,height:16,borderRadius:4,flexShrink:0,border:'1.5px solid',borderColor:actif?'#E8C547':'#ddd',background:actif?'#E8C547':'#fff',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                          {actif && <Check size={10} strokeWidth={3} color="#111"/>}
+                  <p style={{fontSize:14, fontWeight:700, color:'#111', margin:'0 0 6px'}}>Segment</p>
+                  <div style={{position:'relative'}}>
+                    <button onClick={()=>setShowSegmentDropdown(v=>!v)} style={{width:'100%', height:38, border:'1.5px solid #eee', borderRadius:10, background:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 12px', fontSize:13, color:'#111', fontWeight:500}}>
+                      <span style={{overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1, textAlign:'left'}}>
+                        {filtreGenresComm?.size>0 ? [...filtreGenresComm].join(', ') : 'Tous les clients'}
+                      </span>
+                      <ChevronDown size={14} strokeWidth={2} color="#999" style={{flexShrink:0, marginLeft:6}}/>
+                    </button>
+                    {showSegmentDropdown && (
+                      <>
+                        <div onClick={()=>setShowSegmentDropdown(false)} style={{position:'fixed', inset:0, zIndex:299}}/>
+                        <div style={{position:'absolute', top:'calc(100% + 4px)', left:0, right:0, background:'#fff', borderRadius:12, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', zIndex:300, overflow:'hidden', border:'1.5px solid #eee'}}>
+                          <div onClick={()=>{setFiltreGenresComm(new Set()); setShowSegmentDropdown(false);}}
+                            style={{display:'flex', alignItems:'center', gap:10, padding:'10px 14px', cursor:'pointer', background:filtreGenresComm?.size===0?'#fffbea':'#fff', borderBottom:'1px solid #f5f5f5'}}
+                            onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'}
+                            onMouseLeave={e=>e.currentTarget.style.background=filtreGenresComm?.size===0?'#fffbea':'#fff'}
+                          >
+                            <div style={{width:16,height:16,borderRadius:4,flexShrink:0,border:'1.5px solid',borderColor:filtreGenresComm?.size===0?'#E8C547':'#ddd',background:filtreGenresComm?.size===0?'#E8C547':'#fff',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                              {filtreGenresComm?.size===0 && <Check size={10} strokeWidth={3} color="#111"/>}
+                            </div>
+                            <span style={{fontSize:13, fontWeight:500, color:'#111'}}>Tous les clients</span>
+                          </div>
+                          {[{id:'Homme',label:'Hommes'},{id:'Femme',label:'Femmes'},{id:'Entreprise',label:'Entreprises'}].map(s=>{
+                            const actif = filtreGenresComm?.has(s.id);
+                            return (
+                              <div key={s.id} onClick={()=>toggleGenreComm(s.id)}
+                                style={{display:'flex', alignItems:'center', gap:10, padding:'10px 14px', cursor:'pointer', background:actif?'#fffbea':'#fff', borderBottom:'1px solid #f5f5f5'}}
+                                onMouseEnter={e=>e.currentTarget.style.background=actif?'#fffbea':'#f9f9f9'}
+                                onMouseLeave={e=>e.currentTarget.style.background=actif?'#fffbea':'#fff'}
+                              >
+                                <div style={{width:16,height:16,borderRadius:4,flexShrink:0,border:'1.5px solid',borderColor:actif?'#E8C547':'#ddd',background:actif?'#E8C547':'#fff',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                                  {actif && <Check size={10} strokeWidth={3} color="#111"/>}
+                                </div>
+                                <span style={{fontSize:13, fontWeight:500, color:'#111'}}>{s.label}</span>
+                              </div>
+                            );
+                          })}
                         </div>
-                        <span style={{fontSize:14, fontWeight:600, color:'#111', flex:1}}>{label}</span>
-                      </div>
-                    );
-                  })}
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* Jour favori */}
@@ -3369,25 +3394,63 @@ function CRMApp({ user, onLogout }) {
 
                 {/* Service préféré */}
                 <div style={{flexShrink:0}}>
-                  <p style={{fontSize:15, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Service préféré</p>
-                  <div style={{display:'flex', gap:6}}>
-                    {[{id:'midi',label:'Midi',icon:'☀️'},{id:'soir',label:'Soir',icon:'🌙'}].map(s => (
-                      <button key={s.id} onClick={()=>toggleFiltreService(s.id)} style={{flex:1, height:40, borderRadius:8, fontSize:14, fontWeight:700, cursor:'pointer', border:'1.5px solid', borderColor: filtreServices.has(s.id)?'#111':'#eee', background: filtreServices.has(s.id)?'#111':'#fff', color: filtreServices.has(s.id)?'#E8C547':'#666'}}>{s.icon} {s.label}</button>
-                    ))}
+                  <p style={{fontSize:14, fontWeight:700, color:'#111', margin:'0 0 6px'}}>Service préféré</p>
+                  <div style={{position:'relative'}}>
+                    <button onClick={()=>setShowServiceDropdown(v=>!v)} style={{width:'100%', height:38, border:'1.5px solid #eee', borderRadius:10, background:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 12px', fontSize:13, color:'#111', fontWeight:500}}>
+                      <span style={{overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1, textAlign:'left'}}>
+                        {filtreServices?.size>0 ? [...filtreServices].map(s=>s==='midi'?'☀️ Midi':'🌙 Soir').join(', ') : 'Tous les services'}
+                      </span>
+                      <ChevronDown size={14} strokeWidth={2} color="#999" style={{flexShrink:0, marginLeft:6}}/>
+                    </button>
+                    {showServiceDropdown && (
+                      <>
+                        <div onClick={()=>setShowServiceDropdown(false)} style={{position:'fixed', inset:0, zIndex:299}}/>
+                        <div style={{position:'absolute', top:'calc(100% + 4px)', left:0, right:0, background:'#fff', borderRadius:12, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', zIndex:300, overflow:'hidden', border:'1.5px solid #eee'}}>
+                          <div onClick={()=>{setFiltreServices(new Set()); setShowServiceDropdown(false);}}
+                            style={{display:'flex', alignItems:'center', gap:10, padding:'10px 14px', cursor:'pointer', background:filtreServices?.size===0?'#fffbea':'#fff', borderBottom:'1px solid #f5f5f5'}}
+                            onMouseEnter={e=>e.currentTarget.style.background='#f9f9f9'}
+                            onMouseLeave={e=>e.currentTarget.style.background=filtreServices?.size===0?'#fffbea':'#fff'}
+                          >
+                            <div style={{width:16,height:16,borderRadius:4,flexShrink:0,border:'1.5px solid',borderColor:filtreServices?.size===0?'#E8C547':'#ddd',background:filtreServices?.size===0?'#E8C547':'#fff',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                              {filtreServices?.size===0 && <Check size={10} strokeWidth={3} color="#111"/>}
+                            </div>
+                            <span style={{fontSize:13, fontWeight:500, color:'#111'}}>Tous les services</span>
+                          </div>
+                          {[{id:'midi',label:'☀️ Midi'},{id:'soir',label:'🌙 Soir'}].map(s=>{
+                            const actif = filtreServices?.has(s.id);
+                            return (
+                              <div key={s.id} onClick={()=>toggleFiltreService(s.id)}
+                                style={{display:'flex', alignItems:'center', gap:10, padding:'10px 14px', cursor:'pointer', background:actif?'#fffbea':'#fff', borderBottom:'1px solid #f5f5f5'}}
+                                onMouseEnter={e=>e.currentTarget.style.background=actif?'#fffbea':'#f9f9f9'}
+                                onMouseLeave={e=>e.currentTarget.style.background=actif?'#fffbea':'#fff'}
+                              >
+                                <div style={{width:16,height:16,borderRadius:4,flexShrink:0,border:'1.5px solid',borderColor:actif?'#E8C547':'#ddd',background:actif?'#E8C547':'#fff',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                                  {actif && <Check size={10} strokeWidth={3} color="#111"/>}
+                                </div>
+                                <span style={{fontSize:13, fontWeight:500, color:'#111'}}>{s.label}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
                 {/* Clients absents depuis */}
                 <div style={{flexShrink:0}}>
-                  <p style={{fontSize:15, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Clients absents depuis</p>
-                  <select value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{width:'100%', height:40, border:'1.5px solid #eee', borderRadius:8, padding:'0 10px', fontSize:14, outline:'none', background:'#fff', cursor:'pointer'}}>
-                    <option value={0}>Indifférent</option>
-                    <option value={1}>1 mois</option>
-                    <option value={2}>2 mois</option>
-                    <option value={3}>3 mois</option>
-                    <option value={6}>6 mois</option>
-                    <option value={12}>12 mois</option>
-                  </select>
+                  <p style={{fontSize:14, fontWeight:700, color:'#111', margin:'0 0 6px'}}>Clients absents depuis</p>
+                  <div style={{position:'relative'}}>
+                    <select value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{width:'100%', height:38, border:'1.5px solid #eee', borderRadius:10, padding:'0 32px 0 12px', fontSize:13, color:'#111', fontWeight:500, outline:'none', background:'#fff', cursor:'pointer', appearance:'none', WebkitAppearance:'none'}}>
+                      <option value={0}>Indifférent</option>
+                      <option value={1}>1 mois</option>
+                      <option value={2}>2 mois</option>
+                      <option value={3}>3 mois</option>
+                      <option value={6}>6 mois</option>
+                      <option value={12}>12 mois</option>
+                    </select>
+                    <ChevronDown size={14} strokeWidth={2} color="#999" style={{position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', pointerEvents:'none'}}/>
+                  </div>
                 </div>
               </div>
 
