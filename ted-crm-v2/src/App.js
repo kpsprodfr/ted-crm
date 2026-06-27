@@ -214,106 +214,116 @@ function LoginPage({ onLogin }) {
   }
 
   const carteBlanche = (
-    <div style={{ width:500, maxWidth:'100%', background:'#fff', borderRadius:24, padding:'42px 44px', boxShadow:'0 24px 55px rgba(0,0,0,0.28)' }}>
-      <h2 style={{ fontSize:34, fontWeight:700, color:'#111', margin:'0 0 8px' }}>Connexion</h2>
-      <p style={{ fontSize:16, color:'#777', margin:'0 0 32px' }}>Accédez à votre espace TED CRM</p>
+    <div style={{background:'#fff', borderRadius:20, padding:'48px 48px', display:'flex', flexDirection:'column', justifyContent:'center', gap:20, boxShadow:'0 2px 12px rgba(0,0,0,0.06)', width:'100%'}}>
+      <div style={{marginBottom:4}}>
+        <h2 style={{fontSize:28, fontWeight:900, color:'#111', margin:'0 0 6px'}}>Connexion</h2>
+        <p style={{fontSize:15, color:'#999', margin:0}}>Accédez à votre espace TED CRM</p>
+      </div>
 
       {/* Email */}
-      <div style={{ marginBottom:22 }}>
-        <label style={{ fontSize:15, fontWeight:600, color:'#111', display:'block', marginBottom:8 }}>Email</label>
-        <div style={{ position:'relative' }}>
-          <Mail size={20} color="#aaa" strokeWidth={1.8} style={{ position:'absolute', left:16, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} />
+      <div>
+        <label style={{fontSize:14, fontWeight:700, color:'#111', display:'block', marginBottom:8}}>Email</label>
+        <div style={{position:'relative'}}>
+          <Mail size={18} strokeWidth={1.8} color="#999" style={{position:'absolute', left:16, top:'50%', transform:'translateY(-50%)', pointerEvents:'none'}}/>
           <input type="email" autoComplete="email" placeholder="votre@email.com" value={loginEmail} onChange={e=>setLoginEmail(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleLogin()}
-            style={{ width:'100%', height:60, border:'1px solid #ddd', borderRadius:12, padding:'0 18px 0 48px', fontSize:16, outline:'none', boxSizing:'border-box', background:'#fff', color:'#111', transition:'border-color 0.2s, box-shadow 0.2s' }}
-            onFocus={e=>{ e.target.style.borderColor='#efc434'; e.target.style.boxShadow='0 0 0 4px rgba(239,196,52,0.14)'; }}
-            onBlur={e=>{ e.target.style.borderColor='#ddd'; e.target.style.boxShadow='none'; }} />
+            style={{width:'100%', height:52, border:'1.5px solid #eee', borderRadius:14, padding:'0 16px 0 48px', fontSize:15, outline:'none', background:'#fff', boxSizing:'border-box', transition:'border-color 0.2s'}}
+            onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
         </div>
       </div>
 
       {/* Mot de passe */}
-      <div style={{ marginBottom:28 }}>
-        <label style={{ fontSize:15, fontWeight:600, color:'#111', display:'block', marginBottom:8 }}>Mot de passe</label>
-        <div style={{ position:'relative' }}>
-          <LockKeyhole size={20} color="#aaa" strokeWidth={1.8} style={{ position:'absolute', left:16, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} />
-          <input type={showPassword ? 'text' : 'password'} autoComplete="current-password" placeholder="Votre mot de passe" value={loginPassword} onChange={e=>setLoginPassword(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleLogin()}
-            style={{ width:'100%', height:60, border:'1px solid #ddd', borderRadius:12, padding:'0 48px 0 48px', fontSize:16, outline:'none', boxSizing:'border-box', background:'#fff', color:'#111', transition:'border-color 0.2s, box-shadow 0.2s' }}
-            onFocus={e=>{ e.target.style.borderColor='#efc434'; e.target.style.boxShadow='0 0 0 4px rgba(239,196,52,0.14)'; }}
-            onBlur={e=>{ e.target.style.borderColor='#ddd'; e.target.style.boxShadow='none'; }} />
-          <button onClick={()=>setShowPassword(v=>!v)} aria-label={showPassword ? 'Masquer' : 'Afficher le mot de passe'} style={{ position:'absolute', right:16, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', padding:4, display:'flex', alignItems:'center' }}>
-            {showPassword ? <EyeOff size={20} color="#aaa" strokeWidth={1.8} /> : <Eye size={20} color="#aaa" strokeWidth={1.8} />}
+      <div>
+        <label style={{fontSize:14, fontWeight:700, color:'#111', display:'block', marginBottom:8}}>Mot de passe</label>
+        <div style={{position:'relative'}}>
+          <LockKeyhole size={18} strokeWidth={1.8} color="#999" style={{position:'absolute', left:16, top:'50%', transform:'translateY(-50%)', pointerEvents:'none'}}/>
+          <input type={showPassword?'text':'password'} autoComplete="current-password" placeholder="Votre mot de passe" value={loginPassword} onChange={e=>setLoginPassword(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleLogin()}
+            style={{width:'100%', height:52, border:'1.5px solid #eee', borderRadius:14, padding:'0 48px 0 48px', fontSize:15, outline:'none', background:'#fff', boxSizing:'border-box', transition:'border-color 0.2s'}}
+            onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
+          <button onClick={()=>setShowPassword(v=>!v)} style={{position:'absolute', right:16, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', padding:4, display:'flex', alignItems:'center'}}>
+            {showPassword ? <EyeOff size={18} strokeWidth={1.8} color="#999"/> : <Eye size={18} strokeWidth={1.8} color="#999"/>}
           </button>
         </div>
       </div>
 
+      {/* Délai tentatives */}
+      {enAttente && !loginError && (
+        <div style={{background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:12, padding:'10px 14px', display:'flex', alignItems:'center', gap:8, fontSize:13, color:'#92400e'}}>
+          <AlertCircle size={16} strokeWidth={1.8} color="#E8C547"/>
+          Nouvelle tentative dans <strong>{delaiRestant}s</strong>
+        </div>
+      )}
+
+      {/* Erreur */}
       {loginError && (
-        <div style={{ background:'#fef2f2', border:'1px solid #fca5a5', borderRadius:10, padding:'10px 14px', marginBottom:16, fontSize:14, color:'#d92d20', display:'flex', alignItems:'center', gap:8 }}>
-          <AlertCircle size={16} color="#d92d20" strokeWidth={1.8} style={{ flexShrink:0 }} />
+        <div style={{background:'#fef2f2', border:'1.5px solid #fca5a5', borderRadius:12, padding:'10px 14px', display:'flex', alignItems:'center', gap:8, fontSize:13, color:'#dc2626'}}>
+          <AlertCircle size={16} strokeWidth={1.8} color="#dc2626"/>
           <span>{loginError}{enAttente && <strong> Nouvelle tentative dans {delaiRestant}s.</strong>}</span>
         </div>
       )}
 
-      <button onClick={handleLogin} disabled={loginLoading || enAttente}
-        style={{ width:'100%', height:60, background: enAttente ? '#f0f0f0' : '#efc434', border:'none', borderRadius:12, fontSize:17, fontWeight:700, cursor: (loginLoading || enAttente) ? 'not-allowed' : 'pointer', color: enAttente ? '#999' : '#111', display:'flex', alignItems:'center', justifyContent:'center', gap:10, boxShadow: enAttente ? 'none' : '0 4px 14px rgba(239,196,52,0.28)', transition:'all 0.2s' }}
-        onMouseEnter={e=>{ if(!loginLoading && !enAttente) e.currentTarget.style.background='#ddb226'; }}
-        onMouseLeave={e=>{ if(!loginLoading && !enAttente) e.currentTarget.style.background='#efc434'; }}>
+      {/* Bouton */}
+      <button onClick={handleLogin} disabled={loginLoading||enAttente}
+        style={{width:'100%', height:52, background:enAttente?'#f0f0f0':'#E8C547', border:'none', borderRadius:14, fontSize:16, fontWeight:800, cursor:(loginLoading||enAttente)?'not-allowed':'pointer', color:enAttente?'#999':'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:10, transition:'background 0.2s', boxShadow:enAttente?'none':'0 2px 8px rgba(232,197,71,0.3)'}}
+        onMouseEnter={e=>{ if(!loginLoading&&!enAttente) e.currentTarget.style.background='#ddb226'; }}
+        onMouseLeave={e=>{ if(!loginLoading&&!enAttente) e.currentTarget.style.background='#E8C547'; }}>
         {enAttente ? (
-          <><span>Veuillez patienter</span><span style={{background:'#ddd', color:'#666', borderRadius:20, padding:'2px 10px', fontSize:15, fontWeight:800}}>{delaiRestant}s</span></>
+          <><span>Patientez</span><span style={{background:'#ddd', color:'#666', borderRadius:20, padding:'2px 10px', fontSize:14, fontWeight:800}}>{delaiRestant}s</span></>
         ) : loginLoading ? 'Connexion...' : (
           <><span>Se connecter</span><ArrowRight size={20} strokeWidth={2}/></>
         )}
       </button>
 
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, paddingTop:20, marginTop:22, borderTop:'1px solid #eee' }}>
-        <div style={{ display:'flex', alignItems:'flex-start', gap:10 }}>
-          <LockKeyhole size={20} color="#999" strokeWidth={1.8} style={{ marginTop:1, flexShrink:0 }} />
-          <div><div style={{ fontSize:13, fontWeight:700, color:'#111' }}>Vos données sont protégées.</div><div style={{ fontSize:12, color:'#999' }}>Confidentialité garantie.</div></div>
+      {/* Footer */}
+      <div style={{borderTop:'1px solid #eee', paddingTop:16, display:'grid', gridTemplateColumns:'1fr 1fr', gap:16}}>
+        <div style={{display:'flex', alignItems:'flex-start', gap:10}}>
+          <LockKeyhole size={16} strokeWidth={1.8} color="#999" style={{marginTop:1, flexShrink:0}}/>
+          <div><div style={{fontSize:13, fontWeight:700, color:'#111'}}>Données protégées</div><div style={{fontSize:12, color:'#999'}}>Confidentialité garantie</div></div>
         </div>
-        <div style={{ display:'flex', alignItems:'flex-start', gap:10 }}>
-          <Headphones size={20} color="#999" strokeWidth={1.8} style={{ marginTop:1, flexShrink:0 }} />
-          <div><div style={{ fontSize:13, fontWeight:700, color:'#111' }}>Besoin d'aide ?</div><div style={{ fontSize:12, color:'#999' }}>Contactez votre responsable.</div></div>
+        <div style={{display:'flex', alignItems:'flex-start', gap:10}}>
+          <Headphones size={16} strokeWidth={1.8} color="#999" style={{marginTop:1, flexShrink:0}}/>
+          <div><div style={{fontSize:13, fontWeight:700, color:'#111'}}>Besoin d'aide ?</div><div style={{fontSize:12, color:'#999'}}>Contactez votre responsable</div></div>
         </div>
       </div>
     </div>
   );
 
   if (isMob) return (
-    <div style={{ minHeight:'100vh', background:'#0a0a0a', display:'flex', alignItems:'center', justifyContent:'center', padding:24, boxSizing:'border-box' }}>
+    <div style={{minHeight:'100vh', background:'#111', display:'flex', alignItems:'center', justifyContent:'center', padding:24, boxSizing:'border-box'}}>
       {carteBlanche}
     </div>
   );
 
   return (
-    <div style={{ minHeight:'100vh', background:'#0a0a0a', display:'flex', alignItems:'center', justifyContent:'center', padding:24, boxSizing:'border-box' }}>
-      <div style={{ width:'min(1220px, calc(100vw - 48px))', height:'min(760px, calc(100vh - 48px))', background:'linear-gradient(135deg, #0d0d0d 0%, #151515 100%)', borderRadius:28, overflow:'hidden', boxShadow:'0 24px 60px rgba(0,0,0,0.5)', display:'grid', gridTemplateColumns:'46% 54%' }}>
+    <div style={{minHeight:'100vh', background:'#f5f5f5', display:'flex', alignItems:'center', justifyContent:'center', padding:32, boxSizing:'border-box'}}>
+      <div style={{width:'100%', maxWidth:1100, display:'grid', gridTemplateColumns:'1fr 1fr', gap:24}}>
+
         {/* Colonne gauche */}
-        <div style={{ padding:'44px 52px', display:'flex', flexDirection:'column', justifyContent:'space-between', position:'relative', overflow:'hidden' }}>
-          <img src="/favicon.png" style={{ position:'absolute', left:-20, top:'50%', transform:'translateY(-50%)', width:360, height:360, opacity:0.035, filter:'sepia(1) saturate(4) hue-rotate(355deg)', pointerEvents:'none' }} alt="" />
-          <div style={{ display:'flex', alignItems:'center', gap:12, position:'relative' }}>
-            <img src="/favicon.png" style={{ width:52, height:52 }} alt="TED" />
-            <span style={{ fontSize:36, fontWeight:900, color:'#fff', letterSpacing:0.5 }}>TED <span style={{ color:'#efc434' }}>CRM</span></span>
+        <div style={{background:'#111', borderRadius:20, padding:'48px 52px', display:'flex', flexDirection:'column', justifyContent:'space-between'}}>
+          <div style={{display:'flex', alignItems:'center', gap:14}}>
+            <img src="/favicon.png" style={{width:48, height:48}} alt="TED"/>
+            <span style={{fontSize:32, fontWeight:900, color:'#fff', letterSpacing:1}}>TED <span style={{color:'#E8C547'}}>CRM</span></span>
           </div>
-          <div style={{ position:'relative' }}>
-            <h1 style={{ fontSize:48, fontWeight:700, color:'#fff', margin:'0 0 14px', lineHeight:1.05 }}>Connexion</h1>
-            <p style={{ fontSize:18, color:'rgba(255,255,255,0.62)', margin:0 }}>Accédez à votre espace TED CRM</p>
+          <div>
+            <h1 style={{fontSize:52, fontWeight:900, color:'#fff', margin:'0 0 14px', lineHeight:1.1}}>Connexion</h1>
+            <p style={{fontSize:18, color:'rgba(255,255,255,0.5)', margin:0}}>Accédez à votre espace TED CRM</p>
           </div>
-          <div style={{ display:'flex', position:'relative' }}>
+          <div style={{display:'flex'}}>
             {[
-              { icon:<RefreshCw size={26} color="#efc434" strokeWidth={1.8} />, title:'Synchronisé', sub:'en temps réel' },
-              { icon:<ShieldCheck size={26} color="#efc434" strokeWidth={1.8} />, title:'Sécurisé', sub:'et fiable' },
-              { icon:<MonitorSmartphone size={26} color="#efc434" strokeWidth={1.8} />, title:'iPad / PC / Mobile', sub:'Partout avec vous' },
-            ].map((f, i) => (
-              <div key={i} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'0 12px', borderLeft: i > 0 ? '1px solid rgba(255,255,255,0.08)' : 'none' }}>
+              {icon:<RefreshCw size={22} strokeWidth={1.8} color="#E8C547"/>, title:'Synchronisé', sub:'en temps réel'},
+              {icon:<ShieldCheck size={22} strokeWidth={1.8} color="#E8C547"/>, title:'Sécurisé', sub:'et fiable'},
+              {icon:<MonitorSmartphone size={22} strokeWidth={1.8} color="#E8C547"/>, title:'iPad / PC / Mobile', sub:'Partout avec vous'},
+            ].map((f,i)=>(
+              <div key={i} style={{flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:8, padding:'0 12px', borderLeft:i>0?'1px solid rgba(255,255,255,0.1)':'none'}}>
                 {f.icon}
-                <span style={{ fontSize:14, fontWeight:700, color:'#fff', textAlign:'center' }}>{f.title}</span>
-                <span style={{ fontSize:12, color:'rgba(255,255,255,0.4)', textAlign:'center' }}>{f.sub}</span>
+                <span style={{fontSize:13, fontWeight:700, color:'#fff', textAlign:'center'}}>{f.title}</span>
+                <span style={{fontSize:12, color:'rgba(255,255,255,0.4)', textAlign:'center'}}>{f.sub}</span>
               </div>
             ))}
           </div>
         </div>
+
         {/* Colonne droite */}
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', padding:40, background:'rgba(0,0,0,0.2)' }}>
-          {carteBlanche}
-        </div>
+        {carteBlanche}
       </div>
     </div>
   );
