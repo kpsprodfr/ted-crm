@@ -3260,7 +3260,7 @@ function CRMApp({ user, onLogout }) {
             </button>
           </div>
 
-          <div style={{display:'grid', gridTemplateColumns:'240px 1fr 380px', gap:14, height:'calc(100vh - 110px)', overflow:'hidden'}}>
+          <div style={{display:'grid', gridTemplateColumns:'240px 1fr 380px', gap:16, height:'calc(100vh - 130px)', overflow:'hidden'}}>
 
             {/* ─── Colonne 1 — Ciblage ─── */}
             <div style={{background:'#fff', borderRadius:16, boxShadow:'0 1px 4px rgba(0,0,0,0.04)', padding:14, display:'flex', flexDirection:'column', gap:8, height:'100%', overflow:'hidden'}}>
@@ -3268,21 +3268,21 @@ function CRMApp({ user, onLogout }) {
 
               {/* Segment */}
               <div style={{flexShrink:0}}>
-                <p style={{fontSize:12, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Segment</p>
-                <div onClick={()=>setFiltreGenresComm(new Set())} style={{padding:'7px 10px', borderRadius:8, marginBottom:3, cursor:'pointer', border: filtreGenresComm.size===0?'1.5px solid #E8C547':'1.5px solid #eee', background: filtreGenresComm.size===0?'#fffbea':'#fff', display:'flex', alignItems:'center', gap:8}}>
+                <p style={{fontSize:15, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Segment</p>
+                <div onClick={()=>setFiltreGenresComm(new Set())} style={{padding:'10px 14px', borderRadius:8, marginBottom:3, cursor:'pointer', border: filtreGenresComm.size===0?'1.5px solid #E8C547':'1.5px solid #eee', background: filtreGenresComm.size===0?'#fffbea':'#fff', display:'flex', alignItems:'center', gap:8}}>
                   <div style={{width:16,height:16,borderRadius:4,flexShrink:0,border:'1.5px solid',borderColor:filtreGenresComm.size===0?'#E8C547':'#ddd',background:filtreGenresComm.size===0?'#E8C547':'#fff',display:'flex',alignItems:'center',justifyContent:'center'}}>
                     {filtreGenresComm.size===0 && <Check size={10} strokeWidth={3} color="#111"/>}
                   </div>
-                  <span style={{fontSize:13, fontWeight:600, color:'#111', flex:1}}>Tous les clients</span>
+                  <span style={{fontSize:14, fontWeight:600, color:'#111', flex:1}}>Tous les clients</span>
                 </div>
                 {[{g:'Homme',label:'Hommes'},{g:'Femme',label:'Femmes'},{g:'Entreprise',label:'Entreprises'}].map(({g,label}) => {
                   const actif = filtreGenresComm.has(g);
                   return (
-                    <div key={g} onClick={()=>toggleGenreComm(g)} style={{padding:'7px 10px', borderRadius:8, marginBottom:3, cursor:'pointer', border: actif?'1.5px solid #E8C547':'1.5px solid #eee', background: actif?'#fffbea':'#fff', display:'flex', alignItems:'center', gap:8}}>
+                    <div key={g} onClick={()=>toggleGenreComm(g)} style={{padding:'10px 14px', borderRadius:8, marginBottom:3, cursor:'pointer', border: actif?'1.5px solid #E8C547':'1.5px solid #eee', background: actif?'#fffbea':'#fff', display:'flex', alignItems:'center', gap:8}}>
                       <div style={{width:16,height:16,borderRadius:4,flexShrink:0,border:'1.5px solid',borderColor:actif?'#E8C547':'#ddd',background:actif?'#E8C547':'#fff',display:'flex',alignItems:'center',justifyContent:'center'}}>
                         {actif && <Check size={10} strokeWidth={3} color="#111"/>}
                       </div>
-                      <span style={{fontSize:13, fontWeight:600, color:'#111', flex:1}}>{label}</span>
+                      <span style={{fontSize:14, fontWeight:600, color:'#111', flex:1}}>{label}</span>
                     </div>
                   );
                 })}
@@ -3290,12 +3290,12 @@ function CRMApp({ user, onLogout }) {
 
               {/* Jour favori */}
               <div style={{flexShrink:0}}>
-                <p style={{fontSize:12, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Jour favori</p>
+                <p style={{fontSize:15, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Jour favori</p>
                 <div style={{display:'flex', flexWrap:'wrap', gap:4}}>
                   {['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].map((j,i) => {
                     const jourComplet = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'][i];
                     return (
-                      <button key={j} onClick={()=>toggleFiltreJour(jourComplet)} style={{padding:'4px 9px', borderRadius:20, fontSize:11, fontWeight:700, cursor:'pointer', border:'1.5px solid', borderColor: filtreJours.has(jourComplet)?'#111':'#eee', background: filtreJours.has(jourComplet)?'#111':'#fff', color: filtreJours.has(jourComplet)?'#E8C547':'#666'}}>{j}</button>
+                      <button key={j} onClick={()=>toggleFiltreJour(jourComplet)} style={{padding:'6px 12px', borderRadius:20, fontSize:13, fontWeight:700, cursor:'pointer', border:'1.5px solid', borderColor: filtreJours.has(jourComplet)?'#111':'#eee', background: filtreJours.has(jourComplet)?'#111':'#fff', color: filtreJours.has(jourComplet)?'#E8C547':'#666'}}>{j}</button>
                     );
                   })}
                 </div>
@@ -3303,18 +3303,18 @@ function CRMApp({ user, onLogout }) {
 
               {/* Service préféré */}
               <div style={{flexShrink:0}}>
-                <p style={{fontSize:12, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Service préféré</p>
+                <p style={{fontSize:15, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Service préféré</p>
                 <div style={{display:'flex', gap:6}}>
                   {[{id:'midi',label:'Midi',icon:'☀️'},{id:'soir',label:'Soir',icon:'🌙'}].map(s => (
-                    <button key={s.id} onClick={()=>toggleFiltreService(s.id)} style={{flex:1, height:34, borderRadius:8, fontSize:12, fontWeight:700, cursor:'pointer', border:'1.5px solid', borderColor: filtreServices.has(s.id)?'#111':'#eee', background: filtreServices.has(s.id)?'#111':'#fff', color: filtreServices.has(s.id)?'#E8C547':'#666'}}>{s.icon} {s.label}</button>
+                    <button key={s.id} onClick={()=>toggleFiltreService(s.id)} style={{flex:1, height:40, borderRadius:8, fontSize:14, fontWeight:700, cursor:'pointer', border:'1.5px solid', borderColor: filtreServices.has(s.id)?'#111':'#eee', background: filtreServices.has(s.id)?'#111':'#fff', color: filtreServices.has(s.id)?'#E8C547':'#666'}}>{s.icon} {s.label}</button>
                   ))}
                 </div>
               </div>
 
               {/* Clients absents depuis */}
               <div style={{flexShrink:0}}>
-                <p style={{fontSize:12, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Clients absents depuis</p>
-                <select value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{width:'100%', height:34, border:'1.5px solid #eee', borderRadius:8, padding:'0 10px', fontSize:12, outline:'none', background:'#fff', cursor:'pointer'}}>
+                <p style={{fontSize:15, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Clients absents depuis</p>
+                <select value={filtreAbsentsMois} onChange={e=>setFiltreAbsentsMois(Number(e.target.value))} style={{width:'100%', height:40, border:'1.5px solid #eee', borderRadius:8, padding:'0 10px', fontSize:14, outline:'none', background:'#fff', cursor:'pointer'}}>
                   <option value={0}>Indifférent</option>
                   <option value={1}>1 mois</option>
                   <option value={2}>2 mois</option>
@@ -3338,13 +3338,13 @@ function CRMApp({ user, onLogout }) {
                     {label:'Femmes', value:`${f} (${total?Math.round(f/total*100):0}%)`},
                     {label:'Entreprises', value:`${e} (${total?Math.round(e/total*100):0}%)`},
                   ].map((r,i)=>(
-                    <div key={i} style={{display:'flex', justifyContent:'space-between', fontSize:11, marginBottom:3}}>
+                    <div key={i} style={{display:'flex', justifyContent:'space-between', fontSize:14, marginBottom:3}}>
                       <span style={{color:'#666'}}>{r.label}</span>
                       <span style={{fontWeight:r.bold?800:600, color:'#111'}}>{r.value}</span>
                     </div>
                   ));
                 })()}
-                <button onClick={()=>{ setFiltreGenresComm(new Set()); setFiltreAbsentsMois(0); setFiltreJours(new Set()); setFiltreServices(new Set()); }} style={{width:'100%', marginTop:6, padding:'4px', border:'none', background:'none', fontSize:11, color:'#999', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:4}}>
+                <button onClick={()=>{ setFiltreGenresComm(new Set()); setFiltreAbsentsMois(0); setFiltreJours(new Set()); setFiltreServices(new Set()); }} style={{width:'100%', marginTop:6, padding:'4px', border:'none', background:'none', fontSize:12, color:'#999', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:4}}>
                   <RotateCcw size={10} strokeWidth={2}/> Réinitialiser
                 </button>
               </div>
@@ -3390,8 +3390,8 @@ function CRMApp({ user, onLogout }) {
                         {(c.prenom||c.entreprise||'?')[0]?.toUpperCase()}
                       </div>
                       <div style={{flex:1, minWidth:0}}>
-                        <div style={{fontWeight:700, fontSize:12, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.genre==='Entreprise'?c.entreprise:`${c.prenom} ${c.nom}`}</div>
-                        <div style={{fontSize:11, color:'#999'}}>{c.tel}</div>
+                        <div style={{fontWeight:700, fontSize:15, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{c.genre==='Entreprise'?c.entreprise:`${c.prenom} ${c.nom}`}</div>
+                        <div style={{fontSize:13, color:'#999'}}>{c.tel}</div>
                       </div>
                     </div>
                   );
@@ -3415,25 +3415,25 @@ function CRMApp({ user, onLogout }) {
               {/* Contenu scrollable */}
               <div style={{flex:1, overflowY:'auto', display:'flex', flexDirection:'column', gap:12}}>
                 <div>
-                  <label style={{fontSize:13, fontWeight:700, color:'#111', display:'block', marginBottom:4}}>Nom de la campagne</label>
-                  <input value={nomCampagne} onChange={e=>setNomCampagne(e.target.value.slice(0,100))} placeholder="Ex: Offre spéciale été – Juin 2026" style={{width:'100%', height:36, border:'1.5px solid #eee', borderRadius:8, padding:'0 10px', fontSize:13, outline:'none', boxSizing:'border-box'}}/>
+                  <label style={{fontSize:15, fontWeight:700, color:'#111', display:'block', marginBottom:4}}>Nom de la campagne</label>
+                  <input value={nomCampagne} onChange={e=>setNomCampagne(e.target.value.slice(0,100))} placeholder="Ex: Offre spéciale été – Juin 2026" style={{width:'100%', height:48, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:15, outline:'none', boxSizing:'border-box'}}/>
                   <div style={{textAlign:'right', fontSize:10, color:'#999', marginTop:2}}>{nomCampagne.length}/100</div>
                 </div>
 
                 {commType==='email' && (
                   <div>
-                    <label style={{fontSize:13, fontWeight:700, color:'#111', display:'block', marginBottom:4}}>Objet</label>
-                    <input value={commObjet} onChange={e=>setCommObjet(e.target.value)} placeholder="Objet de l'email..." style={{width:'100%', height:36, border:'1.5px solid #eee', borderRadius:8, padding:'0 10px', fontSize:13, outline:'none', boxSizing:'border-box'}}/>
+                    <label style={{fontSize:15, fontWeight:700, color:'#111', display:'block', marginBottom:4}}>Objet</label>
+                    <input value={commObjet} onChange={e=>setCommObjet(e.target.value)} placeholder="Objet de l'email..." style={{width:'100%', height:48, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:15, outline:'none', boxSizing:'border-box'}}/>
                   </div>
                 )}
 
                 <div>
-                  <label style={{fontSize:13, fontWeight:700, color:'#111', display:'block', marginBottom:4}}>Message</label>
+                  <label style={{fontSize:15, fontWeight:700, color:'#111', display:'block', marginBottom:4}}>Message</label>
                   <textarea
                     value={commType==='sms'?smsMessage:commMessage}
                     onChange={e => { const limit = commType==='sms'?smsLimit:2000; commType==='sms'?setSmsMessage(e.target.value.slice(0,limit)):setCommMessage(e.target.value.slice(0,limit)); }}
                     placeholder="Écrivez votre message..."
-                    style={{width:'100%', height:80, border:'1.5px solid #eee', borderRadius:8, padding:'8px 10px', fontSize:13, outline:'none', resize:'none', boxSizing:'border-box', fontFamily:'inherit'}}
+                    style={{width:'100%', height:80, border:'1.5px solid #eee', borderRadius:8, padding:'8px 12px', fontSize:15, outline:'none', resize:'none', boxSizing:'border-box', fontFamily:'inherit'}}
                   />
                   {commType==='sms' && (
                     <div style={{display:'flex', justifyContent:'space-between', fontSize:10, color:'#999', marginTop:2}}>
@@ -3444,10 +3444,10 @@ function CRMApp({ user, onLogout }) {
                 </div>
 
                 <div>
-                  <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Variables disponibles</p>
+                  <p style={{fontSize:15, fontWeight:700, color:'#111', margin:'0 0 5px'}}>Variables disponibles</p>
                   <div style={{display:'flex', flexWrap:'wrap', gap:5}}>
                     {['{prenom}','{nom}','{tel}','{entreprise}','{lien_resa}'].map(v => (
-                      <button key={v} onClick={()=>{ const setter=commType==='sms'?setSmsMessage:setCommMessage; const val=commType==='sms'?smsMessage:commMessage; setter(val+v); }} style={{padding:'3px 9px', borderRadius:16, fontSize:11, fontWeight:600, background:'#fffbea', border:'1.5px solid #E8C547', color:'#111', cursor:'pointer'}}>{v}</button>
+                      <button key={v} onClick={()=>{ const setter=commType==='sms'?setSmsMessage:setCommMessage; const val=commType==='sms'?smsMessage:commMessage; setter(val+v); }} style={{padding:'5px 12px', borderRadius:16, fontSize:13, fontWeight:600, background:'#fffbea', border:'1.5px solid #E8C547', color:'#111', cursor:'pointer'}}>{v}</button>
                     ))}
                   </div>
                 </div>
