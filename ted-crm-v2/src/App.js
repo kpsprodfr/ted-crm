@@ -2368,11 +2368,12 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                             const estPasse = new Date(iso) < new Date(new Date().setHours(0,0,0,0));
                             return (
                               <button key={i} onClick={() => setCalJourSelectionne(iso)}
-                                style={{ textAlign:'center', height:48, borderRadius:6, cursor:'pointer', position:'relative', border:'none',
-                                  background: isSelected ? '#111' : isToday ? '#fffbeb' : 'transparent',
-                                  outline: isToday && !isSelected ? '1.5px solid #E8C547' : 'none',
+                                style={{ textAlign:'center', height:48, borderRadius:6, cursor:'pointer', position:'relative',
+                                  border: isToday && !isSelected ? '2px solid #E8C547' : '2px solid transparent',
+                                  background: isSelected ? '#111' : isToday ? '#fffbea' : 'transparent',
                                   color: isSelected ? '#fff' : '#111',
-                                  fontWeight: isSelected || isToday ? 800 : 400, fontSize:16,
+                                  fontWeight: isSelected ? 800 : isToday ? 900 : 400, fontSize:16,
+                                  boxSizing:'border-box',
                                   opacity: estPasse ? 0.4 : 1, transition:'background 0.15s' }}>
                                 {d}
                                 {hasResa && <span style={{ display:'block', width:4, height:4, borderRadius:'50%', background:'#E8C547', margin:'2px auto 0' }} />}
