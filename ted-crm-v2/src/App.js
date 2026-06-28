@@ -1343,9 +1343,6 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
                   <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="prenom.nom@gmail.com"
                     style={{width:'100%', height:48, border:'1.5px solid', borderColor: emailValide(email||'')?'#22c55e':'#eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
                     onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=emailValide(email||'')?'#22c55e':'#eee'}/>
-                  {email && !emailValide(email) && (
-                    <p style={{fontSize:11, color:'#dc2626', margin:'4px 0 0'}}>Format invalide — ex: prenom@gmail.com</p>
-                  )}
                 </div>
               )}
               <p style={{fontSize:11, color:'#999', margin:'2px 0 0', textAlign:'right'}}><span style={{color:'#dc2626'}}>*</span> Champs obligatoires</p>
@@ -1426,14 +1423,13 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
             <button onClick={fermerFormulaireResa} style={{ width:36, height:36, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, color:'#666' }}>✕</button>
           </div>
 
+          {/* Contenu scrollable */}
+          <div style={{ flex:1, overflowY:'auto', padding:'0 28px 20px' }}>
           {!resaCree && !isEdit && (
-            <div style={{ margin:'0 28px 12px', background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:10, padding:'10px 14px', flexShrink:0 }}>
+            <div style={{ background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:10, padding:'10px 14px', marginBottom:16 }}>
               <p style={{ margin:0, fontSize:13, color:'#92400e' }}>Cette réservation sera créée comme <strong>demande en attente</strong>.</p>
             </div>
           )}
-
-          {/* Contenu scrollable */}
-          <div style={{ flex:1, overflowY:'auto', padding:'0 28px 20px' }}>
             {resaCree && (
               <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:32, textAlign:'center', minHeight:340 }}>
                 <div style={{ width:72, height:72, borderRadius:'50%', background:'#f0fdf4', border:'3px solid #22c55e', display:'flex', alignItems:'center', justifyContent:'center', fontSize:32, marginBottom:20 }}>✓</div>
@@ -1551,9 +1547,6 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
                           <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="prenom.nom@gmail.com"
                             style={{width:'100%', height:48, border:'1.5px solid', borderColor: emailValide(email||'')?'#22c55e':'#eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
                             onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=emailValide(email||'')?'#22c55e':'#eee'}/>
-                          {email && !emailValide(email) && (
-                            <p style={{fontSize:11, color:'#dc2626', margin:'4px 0 0'}}>Format invalide — ex: prenom@gmail.com</p>
-                          )}
                         </div>
                       )}
                       <p style={{fontSize:11, color:'#999', margin:'2px 0 0', textAlign:'right'}}><span style={{color:'#dc2626'}}>*</span> Champs obligatoires</p>
