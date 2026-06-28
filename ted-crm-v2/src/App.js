@@ -449,7 +449,7 @@ function ClientForm({ initial, onSave, onCancel, existingClients, reservations =
 
           {/* Colonne gauche — liste clients grisée */}
           <div style={{ flex:1, background:'#f5f5f5', padding:'32px', overflowY:'auto', opacity:0.6, pointerEvents:'none' }}>
-            <h2 style={{ fontSize:24, fontWeight:900, color:'#111', margin:'0 0 20px' }}>Clients</h2>
+            <h2 style={{ fontSize:28, fontWeight:900, color:'#111', margin:'0 0 20px' }}>Clients</h2>
             <div style={{ background:'#fff', borderRadius:10, padding:'10px 14px', marginBottom:20, display:'flex', alignItems:'center', gap:8 }}>
               <Search size={16} color="#999" strokeWidth={2}/>
               <span style={{ fontSize:14, color:'#bbb' }}>Rechercher un client...</span>
@@ -4066,7 +4066,7 @@ function CRMApp({ user, onLogout }) {
           {/* 1. HEADER — scrolle et disparaît */}
           <div style={{padding:'24px 32px 16px'}}>
             <div style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
-              <h1 style={{fontSize:22, fontWeight:900, color:'#111', margin:0}}>Clients</h1>
+              <h1 style={{fontSize:28, fontWeight:900, color:'#111', margin:0}}>Clients</h1>
               <div style={{display:'flex', gap:8}}>
                 <div style={{position:'relative'}}>
                   <button onClick={()=>setShowExportMenu(v=>!v)} style={{height:34, padding:'0 12px', borderRadius:8, border:'1.5px solid #eee', background:'#fff', fontSize:12, fontWeight:600, cursor:'pointer', color:'#666', display:'flex', alignItems:'center', gap:6}}>
