@@ -3144,7 +3144,7 @@ function CRMApp({ user, onLogout }) {
         { id:'clients', label:'Clients', icon:<Users size={24} strokeWidth={1.8} /> },
         { id:'communications', label:'Communications', icon:<Megaphone size={24} strokeWidth={1.8} /> },
       ].map(item => {
-        const nbAttenteSidebar = item.id === 'reservations' ? resaList.filter(r=>r.statut==='attente').length : 0;
+        const nbAttenteSidebar = item.id === 'reservations' ? resaAttenteCount : 0;
         return (
           <button key={item.id} onClick={()=>setActiveView(item.id)} style={{ width:'100%', padding:'12px 8px', border:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer', marginBottom:4, borderLeft: activeView===item.id ? '3px solid #E8C547' : '3px solid transparent', background: activeView===item.id ? 'rgba(232,197,71,0.1)' : 'transparent', color: activeView===item.id ? '#E8C547' : '#555', position:'relative' }}>
             {item.icon}
