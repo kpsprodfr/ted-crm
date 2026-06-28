@@ -2653,8 +2653,8 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                       </div>
                       {r.commentaire_client && <div style={{background:'#fffbea',borderRadius:8,padding:'8px 12px',marginBottom:14,fontSize:13,color:'#666',fontStyle:'italic'}}>💬 {r.commentaire_client}</div>}
                       <div style={{display:'flex',gap:10}}>
-                        <button onClick={()=>setRefusResa(r)} style={{flex:1,height:44,border:'1.5px solid #ddd',borderRadius:10,background:'#fff',fontSize:14,fontWeight:700,cursor:'pointer',color:'#666'}}>✕ Refuser</button>
-                        <button onClick={()=>setAcceptResa(r)} style={{flex:2,height:44,border:'none',borderRadius:10,background:'#E8C547',fontSize:14,fontWeight:800,cursor:'pointer',color:'#111'}}>✓ Accepter la réservation</button>
+                        <button onClick={()=>setRefusResa(r)} style={{flex:1,height:44,border:'none',borderRadius:10,background:'#dc2626',fontSize:14,fontWeight:700,cursor:'pointer',color:'#fff'}}>✕ Refuser</button>
+                        <button onClick={()=>setAcceptResa(r)} style={{flex:2,height:44,border:'none',borderRadius:10,background:'#16a34a',fontSize:14,fontWeight:800,cursor:'pointer',color:'#fff'}}>✓ Accepter la réservation</button>
                       </div>
                     </div>
                   );
