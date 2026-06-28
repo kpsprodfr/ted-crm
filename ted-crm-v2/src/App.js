@@ -1146,8 +1146,12 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
     };
   };
 
-  const resaValide = tel?.replace(/\D/g,'').length >= 10 && dateIso && service && heure && nbPersonnes >= 1;
   const showNouveauClient = !clientFound && tel?.replace(/\D/g,'').length >= 10 && !lookingUp;
+  const nouveauClientValide = genre === 'Entreprise'
+    ? !!entreprise?.trim() && email?.includes('@')
+    : !!genre && !!prenom?.trim() && !!nom?.trim() && email?.includes('@');
+  const clientOk = clientFound || (showNouveauClient ? nouveauClientValide : true);
+  const resaValide = clientOk && tel?.replace(/\D/g,'').length >= 10 && dateIso && service && heure && nbPersonnes >= 1;
 
   const calendarJSX = showCalPicker && (() => {
     const anneeP = calPickerDate.getFullYear();
@@ -1294,37 +1298,50 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
             </div>
           )}
           {showNouveauClient && (
-            <div style={{ marginTop:12, display:'flex', flexDirection:'column', gap:12 }}>
+            <div style={{display:'flex', flexDirection:'column', gap:10, marginTop:10}}>
+              <div style={{background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:10, padding:'10px 14px', fontSize:13, color:'#92400e'}}>
+                Nouveau client — renseignez ses informations
+              </div>
               <div>
-                <label style={lbl}>Vous êtes *</label>
-                <div style={{ display:'flex', gap:8 }}>
-                  {['Homme','Femme','Entreprise'].map(g => (
-                    <button key={g} onClick={()=>setGenre(g)} style={btnGenre(g)}>
-                      {g === 'Homme' ? '👤 Homme' : g === 'Femme' ? '👤 Femme' : '🏢 Entreprise'}
-                    </button>
+                <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Genre <span style={{color:'#dc2626'}}>*</span></p>
+                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8}}>
+                  {['Homme','Femme','Entreprise'].map(g=>(
+                    <button key={g} onClick={()=>{setGenre(g); setPrenom(''); setNom(''); setEntreprise('');}} style={{height:44, borderRadius:10, cursor:'pointer', fontSize:14, fontWeight:600, border:'1.5px solid', borderColor: genre===g?'#111':'#eee', background: genre===g?'#111':'#fff', color: genre===g?'#fff':'#666'}}>{g}</button>
                   ))}
                 </div>
               </div>
               {genre === 'Entreprise' && (
                 <div>
-                  <label style={lbl}>Nom de l'entreprise *</label>
-                  <input value={entreprise} onChange={e=>setEntreprise(e.target.value)} placeholder="Nom de l'entreprise" style={inp(false)} />
+                  <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Nom de l'entreprise <span style={{color:'#dc2626'}}>*</span></p>
+                  <input value={entreprise} onChange={e=>setEntreprise(e.target.value)} placeholder="Nom de l'entreprise"
+                    style={{width:'100%', height:48, border:'1.5px solid', borderColor: entreprise?.trim()?'#22c55e':'#eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
+                    onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=entreprise?.trim()?'#22c55e':'#eee'}/>
                 </div>
               )}
-              <div style={{ display:'flex', gap:8 }}>
-                <div style={{ flex:1 }}>
-                  <label style={lbl}>Prénom *</label>
-                  <input value={prenom} onChange={e=>setPrenom(e.target.value)} placeholder="Jean" style={inp(false)} />
+              {genre && (
+                <div>
+                  <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>
+                    {genre==='Entreprise' ? <>Nom du contact <span style={{fontSize:12, fontWeight:400, color:'#999'}}>(optionnel)</span></> : <>Prénom et Nom <span style={{color:'#dc2626'}}>*</span></>}
+                  </p>
+                  <div style={{display:'flex', gap:8}}>
+                    <input value={prenom} onChange={e=>setPrenom(e.target.value)} placeholder="Prénom"
+                      style={{flex:1, height:48, border:'1.5px solid', borderColor: genre!=='Entreprise'&&prenom?.trim()?'#22c55e':'#eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
+                      onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=genre!=='Entreprise'&&prenom?.trim()?'#22c55e':'#eee'}/>
+                    <input value={nom} onChange={e=>setNom(e.target.value)} placeholder="Nom"
+                      style={{flex:1, height:48, border:'1.5px solid', borderColor: genre!=='Entreprise'&&nom?.trim()?'#22c55e':'#eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
+                      onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=genre!=='Entreprise'&&nom?.trim()?'#22c55e':'#eee'}/>
+                  </div>
                 </div>
-                <div style={{ flex:1 }}>
-                  <label style={lbl}>Nom *</label>
-                  <input value={nom} onChange={e=>setNom(e.target.value)} placeholder="Dupont" style={inp(false)} />
+              )}
+              {genre && (
+                <div>
+                  <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Email <span style={{color:'#dc2626'}}>*</span></p>
+                  <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="email@exemple.com"
+                    style={{width:'100%', height:48, border:'1.5px solid', borderColor: email?.includes('@')?'#22c55e':'#eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
+                    onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=email?.includes('@')?'#22c55e':'#eee'}/>
                 </div>
-              </div>
-              <div>
-                <label style={lbl}>Email</label>
-                <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="client@email.fr" type="email" style={inp(false)} />
-              </div>
+              )}
+              <p style={{fontSize:11, color:'#999', margin:'2px 0 0', textAlign:'right'}}><span style={{color:'#dc2626'}}>*</span> Champs obligatoires</p>
             </div>
           )}
         </div>
@@ -1485,20 +1502,50 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
                   )}
 
                   {showNouveauClient && (
-                    <div style={{ marginTop:12, display:'flex', flexDirection:'column', gap:10 }}>
-                      <div style={{ display:'flex', gap:8 }}>
-                        {['Homme','Femme','Entreprise'].map(g=>(
-                          <button key={g} onClick={()=>setGenre(g)} style={btnGenre(g)}>{g}</button>
-                        ))}
+                    <div style={{display:'flex', flexDirection:'column', gap:10, marginTop:10}}>
+                      <div style={{background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:10, padding:'10px 14px', fontSize:13, color:'#92400e'}}>
+                        Nouveau client — renseignez ses informations
+                      </div>
+                      <div>
+                        <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Genre <span style={{color:'#dc2626'}}>*</span></p>
+                        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8}}>
+                          {['Homme','Femme','Entreprise'].map(g=>(
+                            <button key={g} onClick={()=>{setGenre(g); setPrenom(''); setNom(''); setEntreprise('');}} style={{height:44, borderRadius:10, cursor:'pointer', fontSize:14, fontWeight:600, border:'1.5px solid', borderColor: genre===g?'#111':'#eee', background: genre===g?'#111':'#fff', color: genre===g?'#fff':'#666'}}>{g}</button>
+                          ))}
+                        </div>
                       </div>
                       {genre === 'Entreprise' && (
-                        <input value={entreprise} onChange={e=>setEntreprise(e.target.value)} placeholder="Nom de l'entreprise" style={{ width:'100%', height:44, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:14, outline:'none', boxSizing:'border-box' }} />
+                        <div>
+                          <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Nom de l'entreprise <span style={{color:'#dc2626'}}>*</span></p>
+                          <input value={entreprise} onChange={e=>setEntreprise(e.target.value)} placeholder="Nom de l'entreprise"
+                            style={{width:'100%', height:48, border:'1.5px solid', borderColor: entreprise?.trim()?'#22c55e':'#eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
+                            onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=entreprise?.trim()?'#22c55e':'#eee'}/>
+                        </div>
                       )}
-                      <div style={{ display:'flex', gap:8 }}>
-                        <input placeholder="Prénom" value={prenom} onChange={e=>setPrenom(e.target.value)} style={{ flex:1, height:44, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:14, outline:'none' }} />
-                        <input placeholder="Nom" value={nom} onChange={e=>setNom(e.target.value)} style={{ flex:1, height:44, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:14, outline:'none' }} />
-                      </div>
-                      <input placeholder="Email" type="email" value={email} onChange={e=>setEmail(e.target.value)} style={{ width:'100%', height:44, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:14, outline:'none', boxSizing:'border-box' }} />
+                      {genre && (
+                        <div>
+                          <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>
+                            {genre==='Entreprise' ? <>Nom du contact <span style={{fontSize:12, fontWeight:400, color:'#999'}}>(optionnel)</span></> : <>Prénom et Nom <span style={{color:'#dc2626'}}>*</span></>}
+                          </p>
+                          <div style={{display:'flex', gap:8}}>
+                            <input value={prenom} onChange={e=>setPrenom(e.target.value)} placeholder="Prénom"
+                              style={{flex:1, height:48, border:'1.5px solid', borderColor: genre!=='Entreprise'&&prenom?.trim()?'#22c55e':'#eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
+                              onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=genre!=='Entreprise'&&prenom?.trim()?'#22c55e':'#eee'}/>
+                            <input value={nom} onChange={e=>setNom(e.target.value)} placeholder="Nom"
+                              style={{flex:1, height:48, border:'1.5px solid', borderColor: genre!=='Entreprise'&&nom?.trim()?'#22c55e':'#eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
+                              onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=genre!=='Entreprise'&&nom?.trim()?'#22c55e':'#eee'}/>
+                          </div>
+                        </div>
+                      )}
+                      {genre && (
+                        <div>
+                          <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Email <span style={{color:'#dc2626'}}>*</span></p>
+                          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="email@exemple.com"
+                            style={{width:'100%', height:48, border:'1.5px solid', borderColor: email?.includes('@')?'#22c55e':'#eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
+                            onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=email?.includes('@')?'#22c55e':'#eee'}/>
+                        </div>
+                      )}
+                      <p style={{fontSize:11, color:'#999', margin:'2px 0 0', textAlign:'right'}}><span style={{color:'#dc2626'}}>*</span> Champs obligatoires</p>
                     </div>
                   )}
                 </div>
