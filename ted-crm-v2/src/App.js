@@ -2602,30 +2602,48 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
         return (
           <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', height:'100%', display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
             {/* Header fixe */}
-            <div style={{ flexShrink:0, padding:'20px 20px 14px', borderBottom:'1px solid #f5f5f5' }}>
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
-                <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0 }}>Réservations du</p>
-              </div>
-              <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10}}>
-                <h3 style={{ margin:0, fontSize:16, fontWeight:800, color:'#111' }}>
-                  {calJourSelectionne ? new Date(calJourSelectionne+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}) : 'Sélectionner un jour'}
-                  {calServiceSelectionne ? ` — ${calServiceSelectionne==='midi'?'☀️ Midi':'🌙 Soir'}` : ''}
-                </h3>
+            <div style={{padding:'16px 20px 12px', flexShrink:0, borderBottom:'1px solid #f5f5f5'}}>
+              <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8}}>
+                <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0}}>
+                  Réservations du
+                </p>
                 {calJourSelectionne && calServiceSelectionne && (
-                  <button onClick={()=>telechargerTableau(calJourSelectionne, calServiceSelectionne, resasDuJour.filter(r=>r.statut==='confirmee'))} style={{ height:36, padding:'0 14px', background:'#111', color:'#fff', border:'none', borderRadius:10, fontSize:12, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
-                    <Download size={13} strokeWidth={2} color="#fff" /> Télécharger
+                  <button onClick={()=>telechargerTableau(calJourSelectionne, calServiceSelectionne, resasDuJour.filter(r=>r.statut==='confirmee'))} style={{
+                    height:28, padding:'0 12px', borderRadius:8,
+                    border:'1.5px solid #eee', background:'#fff',
+                    fontSize:11, fontWeight:600, cursor:'pointer', color:'#666',
+                    display:'flex', alignItems:'center', gap:5
+                  }}
+                  onMouseEnter={e=>{e.currentTarget.style.background='#f5f5f5';}}
+                  onMouseLeave={e=>{e.currentTarget.style.background='#fff';}}
+                  >
+                    <Download size={12} strokeWidth={2} color="#666"/> Télécharger
                   </button>
                 )}
               </div>
+              <h3 style={{margin:'0 0 8px', fontSize:16, fontWeight:800, color:'#111'}}>
+                {calJourSelectionne ? new Date(calJourSelectionne+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}) : 'Sélectionner un jour'}
+                {calServiceSelectionne ? ` — ${calServiceSelectionne==='midi'?'☀️ Midi':'🌙 Soir'}` : ''}
+              </h3>
               {calJourSelectionne && calServiceSelectionne && (
-                <div style={{ display:'flex', gap:16, marginBottom:12, fontSize:13, color:'#666', alignItems:'center' }}>
-                  <span style={{ display:'flex', alignItems:'center', gap:5 }}><Users size={13} strokeWidth={2} color="#999" /> {resasDuJour.filter(r=>r.statut==='confirmee').length} réservation{resasDuJour.filter(r=>r.statut==='confirmee').length > 1 ? 's' : ''}</span>
-                  <span style={{ display:'flex', alignItems:'center', gap:5 }}><UtensilsCrossed size={13} strokeWidth={2} color="#999" /> {resasDuJour.filter(r=>r.statut==='confirmee').reduce((s,r) => s + (r.nb_personnes||0), 0)} couverts</span>
+                <div style={{display:'flex', gap:16, fontSize:12, color:'#666', marginBottom:10}}>
+                  <span style={{display:'flex', alignItems:'center', gap:4}}>
+                    <Users size={12} strokeWidth={2} color="#999"/>
+                    {resasDuJour.filter(r=>r.statut==='confirmee').length} réservation{resasDuJour.filter(r=>r.statut==='confirmee').length>1?'s':''}
+                  </span>
+                  <span style={{display:'flex', alignItems:'center', gap:4}}>
+                    <UtensilsCrossed size={12} strokeWidth={2} color="#999"/>
+                    {resasDuJour.filter(r=>r.statut==='confirmee').reduce((s,r)=>s+(r.nb_personnes||0),0)} couverts
+                  </span>
                 </div>
               )}
-              <div style={{ position:'relative' }}>
-                <Search size={14} strokeWidth={2} color="#999" style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} />
-                <input value={resaSearchPanel} onChange={e=>setResaSearchPanel(e.target.value)} placeholder="Rechercher une réservation..." style={{ width:'100%', height:40, border:'1.5px solid #eee', borderRadius:12, padding:'0 12px 0 34px', fontSize:13, outline:'none', boxSizing:'border-box' }} />
+              <div style={{position:'relative'}}>
+                <Search size={13} strokeWidth={2} color="#999" style={{position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', pointerEvents:'none'}}/>
+                <input value={resaSearchPanel} onChange={e=>setResaSearchPanel(e.target.value)} placeholder="Rechercher une réservation..." style={{
+                  width:'100%', height:34, border:'1.5px solid #eee',
+                  borderRadius:9, padding:'0 10px 0 30px',
+                  fontSize:12, outline:'none', boxSizing:'border-box'
+                }}/>
               </div>
             </div>
             {/* Liste scrollable */}
