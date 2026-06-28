@@ -1329,11 +1329,11 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
                   </p>
                   <div style={{display:'flex', gap:8}}>
                     <input value={prenom} onChange={e=>setPrenom(e.target.value)} placeholder="Prénom"
-                      style={{flex:1, height:48, border:'1.5px solid', borderColor: genre!=='Entreprise'&&prenom?.trim()?'#22c55e':'#eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
-                      onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=genre!=='Entreprise'&&prenom?.trim()?'#22c55e':'#eee'}/>
+                      style={{flex:1, height:48, border:'1.5px solid #eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
+                      onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
                     <input value={nom} onChange={e=>setNom(e.target.value)} placeholder="Nom"
-                      style={{flex:1, height:48, border:'1.5px solid', borderColor: genre!=='Entreprise'&&nom?.trim()?'#22c55e':'#eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
-                      onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=genre!=='Entreprise'&&nom?.trim()?'#22c55e':'#eee'}/>
+                      style={{flex:1, height:48, border:'1.5px solid #eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
+                      onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
                   </div>
                 </div>
               )}
@@ -1533,11 +1533,11 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
                           </p>
                           <div style={{display:'flex', gap:8}}>
                             <input value={prenom} onChange={e=>setPrenom(e.target.value)} placeholder="Prénom"
-                              style={{flex:1, height:48, border:'1.5px solid', borderColor: genre!=='Entreprise'&&prenom?.trim()?'#22c55e':'#eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
-                              onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=genre!=='Entreprise'&&prenom?.trim()?'#22c55e':'#eee'}/>
+                              style={{flex:1, height:48, border:'1.5px solid #eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
+                              onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
                             <input value={nom} onChange={e=>setNom(e.target.value)} placeholder="Nom"
-                              style={{flex:1, height:48, border:'1.5px solid', borderColor: genre!=='Entreprise'&&nom?.trim()?'#22c55e':'#eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
-                              onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=genre!=='Entreprise'&&nom?.trim()?'#22c55e':'#eee'}/>
+                              style={{flex:1, height:48, border:'1.5px solid #eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
+                              onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
                           </div>
                         </div>
                       )}
