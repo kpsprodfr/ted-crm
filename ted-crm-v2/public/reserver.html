@@ -9,7 +9,7 @@
     html,body{overflow-x:hidden;max-width:100vw;position:relative}
     *{-webkit-tap-highlight-color:transparent;max-width:100%}
     button{touch-action:manipulation}
-    body{font-family:'Inter','Segoe UI',Arial,sans-serif;background:#f8f8f8;color:#111;min-height:100vh}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',Arial,sans-serif;background:#f5f5f5;color:#111;min-height:100vh}
     :root{--g:#E8C547;--r:14px}
 
     /* Header */
@@ -52,10 +52,10 @@
 
     /* Buttons group */
     .btn-group{display:flex;gap:10px;flex-wrap:wrap}
-    .choice-btn{flex:1;min-width:100px;padding:14px 10px;border:2px solid #eee;border-radius:12px;background:#fff;font-size:15px;font-weight:600;cursor:pointer;text-align:center;transition:all 0.15s;color:#555}
-    .choice-btn:hover{border-color:#ddd;background:#f8f8f8}
-    .choice-btn.selected{border-color:var(--g);background:var(--g);color:#111}
-    .choice-btn.heure{flex:initial;padding:12px 16px;font-size:13px;min-width:70px}
+    .choice-btn{flex:1;min-width:100px;height:52px;border:1.5px solid #eee;border-radius:12px;background:#fff;font-size:15px;font-weight:700;cursor:pointer;text-align:center;transition:all 0.15s;color:#555;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px}
+    .choice-btn:hover{border-color:#E8C547}
+    .choice-btn.selected{border-color:#111;background:#111;color:#E8C547}
+    .choice-btn.heure{flex:initial;height:44px;padding:0 14px;font-size:14px;font-weight:600;min-width:70px}
 
     /* Counter */
     .counter{display:flex;align-items:center;gap:0;background:#fff;border:1.5px solid #eee;border-radius:12px;overflow:hidden;width:100%}
@@ -67,9 +67,9 @@
 
     /* Form fields */
     .field{margin-bottom:16px}
-    .label{display:block;font-size:12px;font-weight:700;color:#444;margin-bottom:6px}
+    .label{display:block;font-size:14px;font-weight:700;color:#111;margin-bottom:8px}
     .label span{color:#dc2626}
-    .input{width:100%;height:48px;border:1.5px solid #ddd;border-radius:10px;padding:0 14px;font-size:16px;outline:none;font-family:inherit;transition:border-color 0.15s}
+    .input{width:100%;height:52px;border:1.5px solid #eee;border-radius:12px;padding:0 16px;font-size:15px;outline:none;font-family:inherit;transition:border-color 0.15s}
     .input:focus{border-color:var(--g)}
     .input.error{border-color:#dc2626}
     textarea.input{height:90px;padding:12px 14px;resize:vertical}
@@ -90,11 +90,11 @@
     .recap-val{font-weight:600;color:#111;text-align:right;max-width:60%}
 
     /* Buttons navigation */
-    .btn-back{background:#fff;border:1.5px solid #ddd;border-radius:10px;padding:0 20px;height:48px;font-size:15px;font-weight:600;cursor:pointer;color:#555;display:flex;align-items:center;gap:8px}
+    .btn-back{background:#fff;border:1.5px solid #eee;border-radius:12px;padding:0 20px;height:44px;font-size:14px;font-weight:600;cursor:pointer;color:#666;display:flex;align-items:center;gap:8px;font-family:inherit}
     .btn-back:hover{background:#f8f8f8}
-    .btn-next{background:var(--g);border:none;border-radius:10px;padding:0 24px;height:52px;font-size:16px;font-weight:800;cursor:pointer;color:#111;display:flex;align-items:center;gap:8px;flex:1;justify-content:center;box-shadow:0 4px 16px rgba(232,197,71,0.35);transition:all 0.15s}
-    .btn-next:hover{filter:brightness(1.05);transform:translateY(-1px)}
-    .btn-next:disabled{background:#ddd;color:#999;box-shadow:none;cursor:not-allowed;transform:none}
+    .btn-next{background:var(--g);border:none;border-radius:14px;padding:0 24px;height:54px;font-size:16px;font-weight:800;cursor:pointer;color:#111;display:flex;align-items:center;gap:8px;flex:1;justify-content:center;transition:all 0.15s;font-family:inherit}
+    .btn-next:hover:not(:disabled){filter:brightness(1.05)}
+    .btn-next:disabled{background:#f0f0f0;color:#bbb;cursor:not-allowed}
     .nav-row{display:flex;gap:12px;align-items:center;margin-top:24px}
 
     /* Success */
@@ -330,7 +330,7 @@ function renderStep2() {
     ${heures.length ? `
     <div class="section-label" style="margin-top:22px">Créneau horaire</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;">
-      ${heures.map(h=>`<button onclick="selectHeure('${h}')" style="padding:10px 14px;border-radius:8px;border:1.5px solid ${state.heure===h?'#E8C547':'#ddd'};background:${state.heure===h?'#E8C547':'#fff'};font-size:14px;cursor:pointer;font-weight:${state.heure===h?'700':'400'};color:#111;transition:all 0.15s;">${h}</button>`).join('')}
+      ${heures.map(h=>`<button class="choice-btn heure" onclick="selectHeure('${h}')" style="${state.heure===h?'background:#111;border-color:#111;color:#E8C547;':'background:#fff;border-color:#eee;color:#111;'}">${h}</button>`).join('')}
     </div>` : ''}
 
     <div class="nav-row">
@@ -358,9 +358,11 @@ function renderStep3() {
   const prenomLabel = 'Prénom <span style="color:#dc2626">*</span>';
   const nomLabel    = 'Nom <span style="color:#dc2626">*</span>';
 
+  const GENRE_C = {Homme:{bg:'#dbeafe',color:'#1d4ed8'},Femme:{bg:'#fce7f3',color:'#be185d'},Entreprise:{bg:'#dcfce7',color:'#15803d'}};
   const genreBtn = (val, icon) => {
     const sel = state.genre === val;
-    return `<button type="button" onclick="selectGenre('${val}')" style="flex:1;padding:13px 8px;border:2px solid ${sel?'#111':'#eee'};border-radius:12px;background:${sel?'#111':'#fff'};color:${sel?'#E8C547':'#555'};font-size:14px;font-weight:${sel?700:500};cursor:pointer;transition:all 0.15s">${icon}</button>`;
+    const gc = GENRE_C[val] || {bg:'#f0f0f0',color:'#666'};
+    return `<button type="button" onclick="selectGenre('${val}')" style="flex:1;height:44px;border:1.5px solid ${sel?gc.bg:'#eee'};border-radius:10px;background:${sel?gc.bg:'#fff'};color:${sel?gc.color:'#666'};font-size:14px;font-weight:700;cursor:pointer;transition:all 0.15s;font-family:inherit">${icon}</button>`;
   };
 
   const savedInfo = (() => { try { return localStorage.getItem('ted_client_info'); } catch(e) { return null; } })();
@@ -480,7 +482,7 @@ function renderStep4() {
       ${rows.map(([l,v]) => `<div class="recap-row"><span class="recap-label">${l}</span><span class="recap-val">${v}</span></div>`).join('')}
     </div>
 
-    <div style="background:#fffbeb;border:1.5px solid #E8C547;border-radius:12px;padding:14px 16px;margin-bottom:20px;font-size:13px;color:#92400e;line-height:1.6">
+    <div style="background:#fffbea;border:1.5px solid #E8C547;border-radius:10px;padding:10px 14px;margin-bottom:20px;font-size:13px;color:#92400e;line-height:1.6">
       ⚠️ <strong>Cette demande n'est pas encore une confirmation.</strong> L'équipe du TED vous contactera pour valider votre réservation.
     </div>
 
