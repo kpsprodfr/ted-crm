@@ -877,7 +877,7 @@ function useIsMobile() {
 const FORM_URL = "https://ted-crm.pages.dev/reserver";
 
 const OCCASIONS = ["Anniversaire","EVG — Enterrement de vie de garçon","EVJF — Enterrement de vie de jeune fille","Privatisation","Autre"];
-const HEURES_MIDI = ["12:00","12:15","12:30","12:45","13:00","13:15","13:30","13:45","14:00"];
+const HEURES_MIDI = ["12:00","12:15","12:30","12:45","13:00","13:15","13:30"];
 const HEURES_SOIR = ["19:00","19:15","19:30","19:45","20:00","20:15","20:30","20:45","21:00","21:15","21:30"];
 
 // Génère les 30 prochains jours comme options de select
@@ -1299,14 +1299,15 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
           )}
           {showNouveauClient && (
             <div style={{display:'flex', flexDirection:'column', gap:10, marginTop:10}}>
-              <div style={{background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:10, padding:'10px 14px', fontSize:13, color:'#92400e'}}>
-                Nouveau client — renseignez ses informations
-              </div>
               <div>
                 <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Genre <span style={{color:'#dc2626'}}>*</span></p>
                 <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8}}>
-                  {['Homme','Femme','Entreprise'].map(g=>(
-                    <button key={g} onClick={()=>{setGenre(g); setPrenom(''); setNom(''); setEntreprise('');}} style={{height:44, borderRadius:10, cursor:'pointer', fontSize:14, fontWeight:600, border:'1.5px solid', borderColor: genre===g?'#111':'#eee', background: genre===g?'#111':'#fff', color: genre===g?'#fff':'#666'}}>{g}</button>
+                  {[
+                    {id:'Homme', color:'#1d4ed8', bgActive:'#1d4ed8'},
+                    {id:'Femme', color:'#be185d', bgActive:'#be185d'},
+                    {id:'Entreprise', color:'#15803d', bgActive:'#15803d'},
+                  ].map(g=>(
+                    <button key={g.id} onClick={()=>{setGenre(g.id); setPrenom(''); setNom(''); setEntreprise('');}} style={{height:44, borderRadius:10, cursor:'pointer', fontSize:14, fontWeight:700, border:'1.5px solid', borderColor: genre===g.id?g.bgActive:'#eee', background: genre===g.id?g.bgActive:'#fff', color: genre===g.id?'#fff':g.color, transition:'all 0.15s'}}>{g.id}</button>
                   ))}
                 </div>
               </div>
@@ -1503,14 +1504,15 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
 
                   {showNouveauClient && (
                     <div style={{display:'flex', flexDirection:'column', gap:10, marginTop:10}}>
-                      <div style={{background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:10, padding:'10px 14px', fontSize:13, color:'#92400e'}}>
-                        Nouveau client — renseignez ses informations
-                      </div>
                       <div>
                         <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Genre <span style={{color:'#dc2626'}}>*</span></p>
                         <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8}}>
-                          {['Homme','Femme','Entreprise'].map(g=>(
-                            <button key={g} onClick={()=>{setGenre(g); setPrenom(''); setNom(''); setEntreprise('');}} style={{height:44, borderRadius:10, cursor:'pointer', fontSize:14, fontWeight:600, border:'1.5px solid', borderColor: genre===g?'#111':'#eee', background: genre===g?'#111':'#fff', color: genre===g?'#fff':'#666'}}>{g}</button>
+                          {[
+                            {id:'Homme', color:'#1d4ed8', bgActive:'#1d4ed8'},
+                            {id:'Femme', color:'#be185d', bgActive:'#be185d'},
+                            {id:'Entreprise', color:'#15803d', bgActive:'#15803d'},
+                          ].map(g=>(
+                            <button key={g.id} onClick={()=>{setGenre(g.id); setPrenom(''); setNom(''); setEntreprise('');}} style={{height:44, borderRadius:10, cursor:'pointer', fontSize:14, fontWeight:700, border:'1.5px solid', borderColor: genre===g.id?g.bgActive:'#eee', background: genre===g.id?g.bgActive:'#fff', color: genre===g.id?'#fff':g.color, transition:'all 0.15s'}}>{g.id}</button>
                           ))}
                         </div>
                       </div>
