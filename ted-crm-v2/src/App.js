@@ -1294,7 +1294,9 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
                   <input value={editClientForm.mail||''} onChange={e=>setEditClientForm(f=>({...f,mail:e.target.value}))} placeholder="Email" type="email" style={{ ...inp(false), marginBottom:12 }} />
                   <div style={{ display:'flex', gap:8 }}>
                     <button onClick={()=>setShowEditClientInline(false)} style={{ flex:1, height:40, border:'1.5px solid #ddd', borderRadius:8, background:'#fff', fontSize:13, cursor:'pointer', color:'#666' }}>Annuler</button>
-                    <button onClick={async()=>{ await supabase.from('clients').update(editClientForm).eq('id', clientFound.id); setClientFound(prev=>({...prev,...editClientForm})); setShowEditClientInline(false); showToast('✅ Infos client mises à jour'); }} style={{ flex:2, height:40, background:'#E8C547', border:'none', borderRadius:8, fontSize:13, fontWeight:800, cursor:'pointer', color:'#111' }}>Enregistrer les modifications</button>
+                    {(()=>{ const ok = editClientForm.genre==='Entreprise' ? !!editClientForm.entreprise?.trim()&&emailValide(editClientForm.mail||'') : !!editClientForm.genre&&!!editClientForm.prenom?.trim()&&!!editClientForm.nom?.trim()&&emailValide(editClientForm.mail||''); return (
+                    <button onClick={ok?async()=>{ await supabase.from('clients').update(editClientForm).eq('id', clientFound.id); setClientFound(prev=>({...prev,...editClientForm})); setShowEditClientInline(false); showToast('✅ Infos client mises à jour'); }:undefined} disabled={!ok} style={{ flex:2, height:40, background:ok?'#E8C547':'#f0f0f0', border:'none', borderRadius:8, fontSize:13, fontWeight:800, cursor:ok?'pointer':'not-allowed', color:ok?'#111':'#bbb', transition:'all 0.2s' }}>Enregistrer les modifications</button>
+                    ); })()}
                   </div>
                 </div>
               )}
@@ -1499,7 +1501,9 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
                       <input value={editClientForm.mail||''} onChange={e=>setEditClientForm(f=>({...f,mail:e.target.value}))} placeholder="Email" type="email" style={{ width:'100%', height:44, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:14, outline:'none', boxSizing:'border-box', marginBottom:12 }} />
                       <div style={{ display:'flex', gap:8 }}>
                         <button onClick={()=>setShowEditClientInline(false)} style={{ flex:1, height:40, border:'1.5px solid #ddd', borderRadius:8, background:'#fff', fontSize:13, cursor:'pointer', color:'#666' }}>Annuler</button>
-                        <button onClick={async()=>{ await supabase.from('clients').update(editClientForm).eq('id', clientFound.id); setClientFound(prev=>({...prev,...editClientForm})); setShowEditClientInline(false); showToast('✅ Infos client mises à jour'); }} style={{ flex:2, height:40, background:'#E8C547', border:'none', borderRadius:8, fontSize:13, fontWeight:800, cursor:'pointer', color:'#111' }}>Enregistrer les modifications</button>
+                        {(()=>{ const ok = editClientForm.genre==='Entreprise' ? !!editClientForm.entreprise?.trim()&&emailValide(editClientForm.mail||'') : !!editClientForm.genre&&!!editClientForm.prenom?.trim()&&!!editClientForm.nom?.trim()&&emailValide(editClientForm.mail||''); return (
+                        <button onClick={ok?async()=>{ await supabase.from('clients').update(editClientForm).eq('id', clientFound.id); setClientFound(prev=>({...prev,...editClientForm})); setShowEditClientInline(false); showToast('✅ Infos client mises à jour'); }:undefined} disabled={!ok} style={{ flex:2, height:40, background:ok?'#E8C547':'#f0f0f0', border:'none', borderRadius:8, fontSize:13, fontWeight:800, cursor:ok?'pointer':'not-allowed', color:ok?'#111':'#bbb', transition:'all 0.2s' }}>Enregistrer les modifications</button>
+                        ); })()}
                       </div>
                     </div>
                   )}
