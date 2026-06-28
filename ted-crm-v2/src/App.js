@@ -1148,10 +1148,11 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
     };
   };
 
+  const emailValide = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
   const showNouveauClient = !clientFound && tel?.replace(/\D/g,'').length >= 10 && !lookingUp;
   const nouveauClientValide = genre === 'Entreprise'
-    ? !!entreprise?.trim() && email?.includes('@')
-    : !!genre && !!prenom?.trim() && !!nom?.trim() && email?.includes('@');
+    ? !!entreprise?.trim() && emailValide(email||'')
+    : !!genre && !!prenom?.trim() && !!nom?.trim() && emailValide(email||'');
   const clientOk = clientFound || (showNouveauClient ? nouveauClientValide : true);
   const resaValide = clientOk && tel?.replace(/\D/g,'').length >= 10 && dateIso && service && heure && nbPersonnes >= 1;
 
@@ -1339,9 +1340,12 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
               {genre && (
                 <div>
                   <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Email <span style={{color:'#dc2626'}}>*</span></p>
-                  <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="email@exemple.com"
-                    style={{width:'100%', height:48, border:'1.5px solid', borderColor: email?.includes('@')?'#22c55e':'#eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
-                    onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=email?.includes('@')?'#22c55e':'#eee'}/>
+                  <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="prenom.nom@gmail.com"
+                    style={{width:'100%', height:48, border:'1.5px solid', borderColor: emailValide(email||'')?'#22c55e':'#eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
+                    onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=emailValide(email||'')?'#22c55e':'#eee'}/>
+                  {email && !emailValide(email) && (
+                    <p style={{fontSize:11, color:'#dc2626', margin:'4px 0 0'}}>Format invalide — ex: prenom@gmail.com</p>
+                  )}
                 </div>
               )}
               <p style={{fontSize:11, color:'#999', margin:'2px 0 0', textAlign:'right'}}><span style={{color:'#dc2626'}}>*</span> Champs obligatoires</p>
@@ -1544,9 +1548,12 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
                       {genre && (
                         <div>
                           <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Email <span style={{color:'#dc2626'}}>*</span></p>
-                          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="email@exemple.com"
-                            style={{width:'100%', height:48, border:'1.5px solid', borderColor: email?.includes('@')?'#22c55e':'#eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
-                            onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=email?.includes('@')?'#22c55e':'#eee'}/>
+                          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="prenom.nom@gmail.com"
+                            style={{width:'100%', height:48, border:'1.5px solid', borderColor: emailValide(email||'')?'#22c55e':'#eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
+                            onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=emailValide(email||'')?'#22c55e':'#eee'}/>
+                          {email && !emailValide(email) && (
+                            <p style={{fontSize:11, color:'#dc2626', margin:'4px 0 0'}}>Format invalide — ex: prenom@gmail.com</p>
+                          )}
                         </div>
                       )}
                       <p style={{fontSize:11, color:'#999', margin:'2px 0 0', textAlign:'right'}}><span style={{color:'#dc2626'}}>*</span> Champs obligatoires</p>
