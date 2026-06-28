@@ -2806,21 +2806,12 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                     <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0}}>No-show</p>
                   </div>
                 </div>
-                {/* Dernière visite + Prochaine résa */}
-                <div style={{display:'flex', flexDirection:'column', gap:8}}>
-                  <div style={{display:'flex', alignItems:'center', gap:10, padding:'10px 12px', background:'#f9f9f9', borderRadius:10}}>
-                    <Clock size={15} strokeWidth={2} color="#666" style={{flexShrink:0}}/>
-                    <div>
-                      <span style={{fontSize:11, color:'#999'}}>Dernière visite : </span>
-                      <span style={{fontSize:13, fontWeight:600, color:'#111'}}>{derniereVisite ? new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) : 'Jamais'}</span>
-                    </div>
-                  </div>
-                  <div style={{display:'flex', alignItems:'center', gap:10, padding:'10px 12px', background:'#f9f9f9', borderRadius:10}}>
-                    <CalendarDays size={15} strokeWidth={2} color="#666" style={{flexShrink:0}}/>
-                    <div>
-                      <span style={{fontSize:11, color:'#999'}}>Prochaine résa : </span>
-                      <span style={{fontSize:13, fontWeight:600, color: prochaineResa?'#16a34a':'#111'}}>{prochaineResa ? `${new Date(prochaineResa.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long'})} à ${prochaineResa.heure}` : 'Aucune'}</span>
-                    </div>
+                {/* Dernière visite */}
+                <div style={{display:'flex', alignItems:'center', gap:10, padding:'10px 12px', background:'#f9f9f9', borderRadius:10}}>
+                  <Clock size={15} strokeWidth={2} color="#666" style={{flexShrink:0}}/>
+                  <div>
+                    <span style={{fontSize:11, color:'#999'}}>Dernière visite : </span>
+                    <span style={{fontSize:13, fontWeight:600, color:'#111'}}>{derniereVisite ? new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) : 'Jamais'}</span>
                   </div>
                 </div>
                 {/* Bouton fermer */}
