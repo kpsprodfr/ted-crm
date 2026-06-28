@@ -1669,20 +1669,43 @@ function AccepterModal({ resa, onConfirm, onCancel }) {
   const c = resa.clients || {};
   const nom = c.entreprise ? c.entreprise : `${c.prenom || ''} ${c.nom || ''}`.trim();
   return (
-    <Modal title="✓ Confirmer la réservation" onClose={onCancel} maxW={420} zIndex={4000}
-      footer={[
-        <button key="c" type="button" onClick={onCancel} style={{...btnSecondary}}>Annuler</button>,
-        <button key="o" type="button" onClick={onConfirm} style={{ background:'#16a34a', color:'#fff', border:'none', borderRadius:8, padding:'0 20px', height:40, fontWeight:700, fontSize:14, cursor:'pointer' }}>✓ Confirmer</button>
-      ]}>
-      <div style={{ textAlign:'center', padding:'8px 0 16px' }}>
-        <div style={{ fontSize:22, fontWeight:800, marginBottom:12 }}>{nom || '—'}</div>
-        <div style={{ display:'flex', flexWrap:'wrap', justifyContent:'center', gap:8 }}>
-          <span style={{ background:'#f8f8f8', border:'1.5px solid #eee', borderRadius:8, padding:'6px 14px', fontSize:13, fontWeight:600 }}>{fmtResaDate(resa.date)}</span>
-          <span style={{ background:'#f8f8f8', border:'1.5px solid #eee', borderRadius:8, padding:'6px 14px', fontSize:13, fontWeight:600 }}>{resa.service === 'midi' ? '🌞 Midi' : '🌙 Soir'}{resa.heure ? ` · ${resa.heure}` : ''}</span>
-          <span style={{ background:'#f8f8f8', border:'1.5px solid #eee', borderRadius:8, padding:'6px 14px', fontSize:13, fontWeight:600 }}>👥 {resa.nb_personnes} pers.</span>
+    <>
+      <div onMouseDown={e=>{e.preventDefault();e.stopPropagation();}} onClick={onCancel} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:4999, pointerEvents:'all' }}/>
+      <div onClick={e=>e.stopPropagation()} onMouseDown={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:20, width:'min(440px, calc(100vw - 48px))', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.25)', zIndex:5000, overflow:'hidden' }}>
+        {/* Header */}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'24px 28px 20px', flexShrink:0, borderBottom:'1px solid #f0f0f0' }}>
+          <h2 style={{margin:0, fontSize:20, fontWeight:800, color:'#111'}}>Confirmer la réservation</h2>
+          <button onClick={onCancel} style={{ width:36, height:36, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:18, color:'#666', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
+        </div>
+        {/* Contenu */}
+        <div style={{padding:'20px 28px 24px', display:'flex', flexDirection:'column', gap:14}}>
+          {/* Nom */}
+          <div style={{textAlign:'center', marginBottom:4}}>
+            <h3 style={{fontSize:22, fontWeight:900, color:'#111', margin:0}}>{nom || '—'}</h3>
+          </div>
+          {/* Infos */}
+          <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10}}>
+            {[
+              {label:'Date', value: fmtResaDate(resa.date)},
+              {label:'Service', value: resa.service==='midi'?`☀️ Midi · ${resa.heure}`:`🌙 Soir · ${resa.heure}`},
+              {label:'Personnes', value: `👥 ${resa.nb_personnes} pers.`},
+            ].map((item,i)=>(
+              <div key={i} style={{background:'#f9f9f9', borderRadius:10, padding:'10px 12px', textAlign:'center'}}>
+                <div style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, marginBottom:4}}>{item.label}</div>
+                <div style={{fontSize:13, fontWeight:700, color:'#111'}}>{item.value}</div>
+              </div>
+            ))}
+          </div>
+          {/* Boutons */}
+          <div style={{display:'flex', gap:10, marginTop:4}}>
+            <button onClick={onCancel} style={{ flex:1, height:52, border:'1.5px solid #eee', borderRadius:12, background:'#fff', fontSize:15, fontWeight:600, cursor:'pointer', color:'#666' }}>Annuler</button>
+            <button onClick={onConfirm} style={{ flex:2, height:52, border:'none', borderRadius:12, background:'#E8C547', fontSize:15, fontWeight:800, cursor:'pointer', color:'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+              <Check size={18} strokeWidth={2}/> Confirmer
+            </button>
+          </div>
         </div>
       </div>
-    </Modal>
+    </>
   );
 }
 
