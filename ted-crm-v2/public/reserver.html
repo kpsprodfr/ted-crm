@@ -1,653 +1,592 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Réserver au TED</title>
   <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    html,body{overflow-x:hidden;max-width:100vw;position:relative}
-    *{-webkit-tap-highlight-color:transparent;max-width:100%}
-    button{touch-action:manipulation}
-    body{font-family:'Inter','Segoe UI',Arial,sans-serif;background:#f8f8f8;color:#111;min-height:100vh}
-    :root{--g:#E8C547;--r:14px}
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 20px;
+      width: min(520px, 100%);
+      box-shadow: 0 32px 80px rgba(0,0,0,0.12);
+      overflow: hidden;
+    }
+    .header {
+      background: #111;
+      padding: 24px 28px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .header img { width: 40px; height: 40px; }
+    .header-text h1 { color: #E8C547; font-size: 20px; font-weight: 900; letter-spacing: 2px; }
+    .header-text p { color: rgba(255,255,255,0.4); font-size: 12px; margin-top: 2px; }
 
-    /* Header */
-    .header{background:#111;padding:20px 20px 18px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-bottom:3px solid var(--g);text-align:center}
-    .header-logo{height:42px;filter:brightness(0) invert(1);margin-bottom:8px}
-    .header-title{color:#fff;font-weight:800;font-size:18px;letter-spacing:1px}
+    .steps {
+      display: flex;
+      padding: 16px 28px;
+      gap: 6px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .step-dot {
+      flex: 1; height: 4px; border-radius: 2px;
+      background: #eee; transition: background 0.3s;
+    }
+    .step-dot.active { background: #E8C547; }
+    .step-dot.done { background: #111; }
 
-    /* Progress */
-    .progress-bar{background:#fff;border-bottom:1.5px solid #eee;padding:14px 20px}
-    .progress-steps{display:flex;align-items:center;gap:0;max-width:500px;margin:0 auto}
-    .step-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;transition:all 0.2s}
-    .step-dot.done{background:#111;color:var(--g)}
-    .step-dot.active{background:var(--g);color:#111;box-shadow:0 0 0 3px rgba(232,197,71,0.3)}
-    .step-dot.todo{background:#f0f0f0;color:#bbb}
-    .step-line{flex:1;height:2px;background:#eee}
-    .step-line.done{background:#111}
-    .step-labels{display:flex;justify-content:space-between;margin-top:6px;max-width:500px;margin-left:auto;margin-right:auto}
-    .step-label{font-size:10px;color:#bbb;text-align:center;width:28px;flex-shrink:0}
-    .step-label.active{color:#111;font-weight:700}
+    .content { padding: 24px 28px; }
+    .step-title { font-size: 18px; font-weight: 800; color: #111; margin-bottom: 4px; }
+    .step-sub { font-size: 13px; color: #999; margin-bottom: 20px; }
 
-    /* Container */
-    .container{max-width:540px;margin:0 auto;padding:24px 16px 80px}
-    .step-title{font-size:20px;font-weight:800;margin-bottom:6px}
-    .step-subtitle{font-size:13px;color:#888;margin-bottom:24px}
+    .input-wrap { position: relative; margin-bottom: 12px; }
+    .input-wrap input, .input-wrap select {
+      width: 100%; height: 52px;
+      border: 1.5px solid #eee; border-radius: 12px;
+      padding: 0 16px; font-size: 15px;
+      outline: none; background: #fff;
+      font-family: inherit; transition: border-color 0.2s;
+      appearance: none; -webkit-appearance: none;
+    }
+    .input-wrap input:focus, .input-wrap select:focus { border-color: #E8C547; }
+    .input-wrap .icon {
+      position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+      color: #999; font-size: 16px; pointer-events: none;
+    }
+    .input-wrap.with-icon input { padding-left: 44px; }
+    label { font-size: 13px; font-weight: 700; color: #111; display: block; margin-bottom: 6px; }
 
-    /* Calendar */
-    .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-    .cal-month{font-size:16px;font-weight:700}
-    .cal-btn{background:none;border:1.5px solid #ddd;border-radius:8px;width:36px;height:36px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;color:#555}
-    .cal-btn:hover{background:#f0f0f0}
-    .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-    .cal-day-header{text-align:center;font-size:11px;font-weight:600;color:#bbb;padding:4px 0}
-    .cal-day{aspect-ratio:1;border-radius:8px;border:1.5px solid transparent;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.15s;position:relative}
-    .cal-day.empty{background:none;cursor:default}
-    .cal-day.past{background:#f8f8f8;color:#ccc;cursor:not-allowed;font-weight:400}
-    .cal-day.today{border-color:#111}
-    .cal-day.available:hover{background:#fffbeb;border-color:var(--g)}
-    .cal-day.selected{background:var(--g) !important;color:#111 !important;border-color:var(--g) !important;box-shadow:0 2px 8px rgba(232,197,71,0.4)}
-    .cal-day.available{background:#fff;color:#111;border-color:#eee}
+    .genre-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+    .genre-btn {
+      height: 44px; border-radius: 10px; cursor: pointer;
+      font-size: 14px; font-weight: 700; border: 1.5px solid #eee;
+      background: #fff; color: #666; transition: all 0.15s; font-family: inherit;
+    }
+    .genre-btn.homme.selected { background: #dbeafe; border-color: #dbeafe; color: #1d4ed8; }
+    .genre-btn.femme.selected { background: #fce7f3; border-color: #fce7f3; color: #be185d; }
+    .genre-btn.entreprise.selected { background: #dcfce7; border-color: #dcfce7; color: #15803d; }
 
-    /* Buttons group */
-    .btn-group{display:flex;gap:10px;flex-wrap:wrap}
-    .choice-btn{flex:1;min-width:100px;padding:14px 10px;border:2px solid #eee;border-radius:12px;background:#fff;font-size:15px;font-weight:600;cursor:pointer;text-align:center;transition:all 0.15s;color:#555}
-    .choice-btn:hover{border-color:#ddd;background:#f8f8f8}
-    .choice-btn.selected{border-color:var(--g);background:var(--g);color:#111}
-    .choice-btn.heure{flex:initial;padding:12px 16px;font-size:13px;min-width:70px}
+    .slots-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .slot-btn {
+      height: 44px; border-radius: 10px; cursor: pointer;
+      font-size: 14px; font-weight: 600;
+      border: 1.5px solid #eee; background: #fff; color: #111;
+      transition: all 0.15s; font-family: inherit;
+    }
+    .slot-btn.selected { background: #111; border-color: #111; color: #E8C547; }
+    .slot-btn:hover:not(.selected) { border-color: #E8C547; }
 
-    /* Counter */
-    .counter{display:flex;align-items:center;gap:0;background:#fff;border:1.5px solid #eee;border-radius:12px;overflow:hidden;width:100%}
-    .counter-btn{width:60px;height:60px;flex-shrink:0;border:none;border-radius:0;background:#f8f8f8;font-size:28px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#111;line-height:1;transition:background 0.15s;touch-action:manipulation;-webkit-user-select:none;user-select:none}
-    .counter-btn:hover{background:#f0f0f0}
-    .counter-btn:disabled{color:#ccc;cursor:not-allowed;background:#fafafa}
-    .counter-input{flex:1;height:60px;border:none;border-left:1.5px solid #eee;border-right:1.5px solid #eee;font-size:28px;font-weight:800;text-align:center;outline:none;font-family:inherit;color:#111;background:#fff;-moz-appearance:textfield}
-    .counter-input::-webkit-outer-spin-button,.counter-input::-webkit-inner-spin-button{-webkit-appearance:none}
+    .service-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .service-btn {
+      height: 52px; border-radius: 12px; cursor: pointer;
+      font-size: 15px; font-weight: 700;
+      border: 1.5px solid #eee; background: #fff; color: #111;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: all 0.15s; font-family: inherit;
+    }
+    .service-btn.selected { background: #111; border-color: #111; color: #E8C547; }
 
-    /* Form fields */
-    .field{margin-bottom:16px}
-    .label{display:block;font-size:12px;font-weight:700;color:#444;margin-bottom:6px}
-    .label span{color:#dc2626}
-    .input{width:100%;height:48px;border:1.5px solid #ddd;border-radius:10px;padding:0 14px;font-size:16px;outline:none;font-family:inherit;transition:border-color 0.15s}
-    .input:focus{border-color:var(--g)}
-    .input.error{border-color:#dc2626}
-    textarea.input{height:90px;padding:12px 14px;resize:vertical}
-    .error-msg{font-size:12px;color:#dc2626;margin-top:4px}
-    select.input{background:#fff;cursor:pointer}
+    .personnes-wrap {
+      display: flex; align-items: center; justify-content: center; gap: 16px;
+    }
+    .pers-btn {
+      width: 52px; height: 52px; border-radius: 12px;
+      border: 1.5px solid #eee; background: #fff;
+      font-size: 24px; cursor: pointer; color: #111;
+      display: flex; align-items: center; justify-content: center;
+      font-family: inherit;
+    }
+    .pers-input {
+      width: 80px; height: 52px; text-align: center;
+      font-size: 32px; font-weight: 800; color: #111;
+      border: 1.5px solid #eee; border-radius: 12px; outline: none;
+      -moz-appearance: textfield; font-family: inherit;
+    }
+    .pers-input::-webkit-inner-spin-button { -webkit-appearance: none; }
 
-    /* RGPD */
-    .rgpd-wrap{display:flex;align-items:flex-start;gap:10px;background:#f8f8f8;border:1.5px solid #eee;border-radius:10px;padding:14px}
-    .rgpd-wrap input{width:20px;height:20px;flex-shrink:0;cursor:pointer;accent-color:#111;margin-top:1px}
-    .rgpd-wrap label{font-size:13px;color:#555;line-height:1.5;cursor:pointer}
+    .recap-grid { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+    .recap-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px; background: #f9f9f9; border-radius: 10px;
+    }
+    .recap-label { font-size: 12px; color: #999; }
+    .recap-value { font-size: 14px; font-weight: 700; color: #111; }
 
-    /* Récap */
-    .recap-card{background:#fff;border:1.5px solid #eee;border-radius:14px;padding:20px;margin-bottom:20px}
-    .recap-title{font-size:13px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px}
-    .recap-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f5f5f5;font-size:14px}
-    .recap-row:last-child{border-bottom:none}
-    .recap-label{color:#888}
-    .recap-val{font-weight:600;color:#111;text-align:right;max-width:60%}
+    .btn-main {
+      width: 100%; height: 54px; border: none; border-radius: 14px;
+      background: #E8C547; color: #111; font-size: 16px; font-weight: 800;
+      cursor: pointer; font-family: inherit;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: background 0.2s;
+    }
+    .btn-main:disabled { background: #f0f0f0; color: #bbb; cursor: not-allowed; }
+    .btn-main:hover:not(:disabled) { background: #ddb226; }
 
-    /* Buttons navigation */
-    .btn-back{background:#fff;border:1.5px solid #ddd;border-radius:10px;padding:0 20px;height:48px;font-size:15px;font-weight:600;cursor:pointer;color:#555;display:flex;align-items:center;gap:8px}
-    .btn-back:hover{background:#f8f8f8}
-    .btn-next{background:var(--g);border:none;border-radius:10px;padding:0 24px;height:52px;font-size:16px;font-weight:800;cursor:pointer;color:#111;display:flex;align-items:center;gap:8px;flex:1;justify-content:center;box-shadow:0 4px 16px rgba(232,197,71,0.35);transition:all 0.15s}
-    .btn-next:hover{filter:brightness(1.05);transform:translateY(-1px)}
-    .btn-next:disabled{background:#ddd;color:#999;box-shadow:none;cursor:not-allowed;transform:none}
-    .nav-row{display:flex;gap:12px;align-items:center;margin-top:24px}
+    .btn-secondary {
+      width: 100%; height: 44px; border: 1.5px solid #eee;
+      border-radius: 12px; background: #fff; color: #666;
+      font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+      margin-top: 8px;
+    }
 
-    /* Success */
-    .success-wrap{text-align:center;padding:40px 20px}
-    .success-icon{width:80px;height:80px;border-radius:50%;background:#f0fdf4;border:4px solid #22c55e;display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 20px;animation:popIn 0.4s cubic-bezier(0.34,1.56,0.64,1)}
-    .success-title{font-size:22px;font-weight:800;margin-bottom:8px}
-    .success-sub{font-size:15px;color:#666;line-height:1.6;max-width:380px;margin:0 auto 24px}
-    .success-note{background:#fffbeb;border:1.5px solid var(--g);border-radius:12px;padding:14px 18px;font-size:13px;color:#92400e;line-height:1.6;max-width:380px;margin:0 auto}
+    .footer { padding: 0 28px 24px; }
 
-    @keyframes popIn{0%{opacity:0;transform:scale(0.4)}70%{transform:scale(1.08)}100%{opacity:1;transform:scale(1)}}
-    @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-    .step-panel{animation:fadeIn 0.2s ease}
+    .success-wrap { text-align: center; padding: 32px 28px; }
+    .success-icon {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: #f0fdf4; border: 3px solid #22c55e;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px; margin: 0 auto 20px;
+    }
 
-    .section-label{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:20px}
-    .section-label:first-child{margin-top:0}
+    .info-banner {
+      background: #fffbea; border: 1.5px solid #E8C547;
+      border-radius: 10px; padding: 10px 14px;
+      font-size: 13px; color: #92400e; margin-bottom: 16px;
+    }
+    .info-banner strong { color: #111; }
 
-    @media(max-width:480px){
-      .header{padding:0 14px}
-      .container{padding:16px 12px 80px}
-      .step-title{font-size:18px}
-      .cal-day{font-size:13px}
+    @media (max-width: 480px) {
+      body { padding: 0; align-items: flex-start; }
+      .card { border-radius: 0; min-height: 100vh; box-shadow: none; }
+      .slots-grid { grid-template-columns: repeat(3, 1fr); }
     }
   </style>
 </head>
 <body>
+<div class="card">
 
-<div class="header">
-  <img src="../logo.png" alt="TED" class="header-logo" onerror="this.style.display='none';document.getElementById('logo-fallback').style.display='block'" />
-  <div id="logo-fallback" style="display:none;color:#E8C547;font-weight:900;font-size:26px;letter-spacing:3px;margin-bottom:6px">TED</div>
-  <div class="header-title">Réservation TED</div>
-</div>
+  <div class="header">
+    <img src="/favicon.png" onerror="this.style.display='none'" alt="TED"/>
+    <div class="header-text">
+      <h1>LE TED</h1>
+      <p>Restaurant & Club — Chassieu</p>
+    </div>
+  </div>
 
-<div class="progress-bar">
-  <div class="progress-steps" id="progress-dots"></div>
-  <div class="step-labels" id="progress-labels"></div>
-</div>
+  <div class="steps" id="steps-bar">
+    <div class="step-dot active" id="dot-1"></div>
+    <div class="step-dot" id="dot-2"></div>
+    <div class="step-dot" id="dot-3"></div>
+    <div class="step-dot" id="dot-4"></div>
+    <div class="step-dot" id="dot-5"></div>
+  </div>
 
-<div class="container">
-  <div id="step-1" class="step-panel"></div>
-  <div id="step-2" class="step-panel" style="display:none"></div>
-  <div id="step-3" class="step-panel" style="display:none"></div>
-  <div id="step-4" class="step-panel" style="display:none"></div>
-  <div id="step-success" style="display:none"></div>
+  <!-- ÉTAPE 1 — Téléphone -->
+  <div id="step-1" class="content">
+    <div class="step-title">Votre numéro de téléphone</div>
+    <div class="step-sub">Nous vérifions si vous êtes déjà client</div>
+    <div class="info-banner">
+      Cette réservation sera créée comme <strong>demande en attente</strong> et confirmée par notre équipe.
+    </div>
+    <label>Téléphone *</label>
+    <div class="input-wrap with-icon">
+      <span class="icon">📞</span>
+      <input type="tel" id="tel" placeholder="06 12 34 56 78" inputmode="numeric"/>
+    </div>
+    <div id="client-found-banner" style="display:none; background:#f0fdf4; border:1.5px solid #22c55e; border-radius:10px; padding:12px 14px; margin-top:8px; font-size:14px; font-weight:600; color:#15803d;">
+      ✓ Client trouvé — <span id="client-name"></span>
+    </div>
+  </div>
+
+  <!-- ÉTAPE 2 — Infos client (si nouveau) -->
+  <div id="step-2" class="content" style="display:none">
+    <div class="step-title">Vos informations</div>
+    <div class="step-sub">Première visite — bienvenue !</div>
+    <label>Genre *</label>
+    <div class="genre-grid">
+      <button class="genre-btn homme" onclick="selectGenre('Homme')">Homme</button>
+      <button class="genre-btn femme" onclick="selectGenre('Femme')">Femme</button>
+      <button class="genre-btn entreprise" onclick="selectGenre('Entreprise')">Entreprise</button>
+    </div>
+    <div id="champs-personne">
+      <label>Prénom et Nom *</label>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px">
+        <div class="input-wrap"><input type="text" id="prenom" placeholder="Prénom"/></div>
+        <div class="input-wrap"><input type="text" id="nom" placeholder="Nom"/></div>
+      </div>
+    </div>
+    <div id="champ-entreprise" style="display:none">
+      <label>Nom de l'entreprise *</label>
+      <div class="input-wrap"><input type="text" id="entreprise" placeholder="Nom de l'entreprise"/></div>
+    </div>
+    <label>Email *</label>
+    <div class="input-wrap">
+      <input type="email" id="email" placeholder="prenom.nom@gmail.com"/>
+    </div>
+    <p style="font-size:11px; color:#999; text-align:right; margin-top:4px">* Champs obligatoires</p>
+  </div>
+
+  <!-- ÉTAPE 3 — Date -->
+  <div id="step-3" class="content" style="display:none">
+    <div class="step-title">Choisissez une date</div>
+    <div class="step-sub">Sélectionnez la date souhaitée</div>
+    <label>Date *</label>
+    <div class="input-wrap">
+      <input type="date" id="date"/>
+    </div>
+  </div>
+
+  <!-- ÉTAPE 4 — Service + Heure + Personnes -->
+  <div id="step-4" class="content" style="display:none">
+    <div class="step-title">Service & Heure</div>
+    <div class="step-sub">Choisissez votre créneau</div>
+    <label style="margin-bottom:8px">Service *</label>
+    <div class="service-grid" style="margin-bottom:16px">
+      <button class="service-btn" id="btn-midi" onclick="selectService('midi')">☀️ Midi</button>
+      <button class="service-btn" id="btn-soir" onclick="selectService('soir')">🌙 Soir</button>
+    </div>
+    <div id="slots-wrap" style="display:none">
+      <label style="margin-bottom:8px">Heure *</label>
+      <div class="slots-grid" id="slots-grid" style="margin-bottom:16px"></div>
+    </div>
+    <label style="margin-bottom:8px">Nombre de personnes *</label>
+    <div class="personnes-wrap" style="margin-bottom:16px">
+      <button class="pers-btn" onclick="changePersonnes(-1)">−</button>
+      <div style="text-align:center">
+        <input class="pers-input" type="number" id="nb-personnes" value="2" min="1" max="500"
+          onfocus="this.select()"
+          onchange="var v=parseInt(this.value)||1; if(v<1)v=1; if(v>500)v=500; this.value=v;"/>
+        <div style="font-size:12px; color:#999; margin-top:4px">pers.</div>
+      </div>
+      <button class="pers-btn" onclick="changePersonnes(1)">+</button>
+    </div>
+    <label>Occasion</label>
+    <div class="input-wrap" style="margin-bottom:12px">
+      <select id="occasion">
+        <option value="">— Aucune occasion particulière</option>
+        <option value="Anniversaire">🎂 Anniversaire</option>
+        <option value="EVG">🎉 EVG</option>
+        <option value="EVJF">💍 EVJF</option>
+        <option value="Privatisation">🏠 Privatisation</option>
+        <option value="Autre">✨ Autre</option>
+      </select>
+    </div>
+    <label>Commentaire</label>
+    <textarea id="commentaire" placeholder="Allergies, demandes particulières..."
+      style="width:100%; height:70px; border:1.5px solid #eee; border-radius:12px; padding:10px 14px; font-size:14px; resize:none; outline:none; font-family:inherit; box-sizing:border-box;"
+      onfocus="this.style.borderColor='#E8C547'" onblur="this.style.borderColor='#eee'"></textarea>
+  </div>
+
+  <!-- ÉTAPE 5 — Récapitulatif -->
+  <div id="step-5" class="content" style="display:none">
+    <div class="step-title">Récapitulatif</div>
+    <div class="step-sub">Vérifiez votre demande avant d'envoyer</div>
+    <div class="recap-grid" id="recap-grid"></div>
+    <div class="info-banner">
+      Votre demande sera <strong>confirmée par notre équipe</strong> dans les plus brefs délais.
+    </div>
+  </div>
+
+  <!-- Succès -->
+  <div id="success" class="success-wrap" style="display:none">
+    <div class="success-icon">✅</div>
+    <h2 style="font-size:20px; font-weight:900; color:#111; margin-bottom:8px">Demande envoyée !</h2>
+    <p style="font-size:14px; color:#666; line-height:1.6; margin-bottom:24px">
+      Notre équipe va traiter votre demande et vous confirmera votre réservation au plus vite.
+    </p>
+    <div style="background:#f9f9f9; border-radius:12px; padding:16px; text-align:left" id="success-recap"></div>
+  </div>
+
+  <div class="footer" id="footer">
+    <button class="btn-main" id="btn-next" onclick="nextStep()">Continuer →</button>
+    <button class="btn-secondary" id="btn-back" onclick="prevStep()" style="display:none">← Retour</button>
+  </div>
+
 </div>
 
 <script>
-// ─── Supabase ──────────────────────────────────────────────────────────────────
-const SUPABASE_URL = 'https://mwpfaytccypvdrgapptk.supabase.co';
-const SUPABASE_ANON = 'sb_publishable_4-uVtQtXd0jLGkNAFsx4yw_ni17DzN_';
+  const SUPABASE_URL = 'https://mwpfaytccypvdrgapptk.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_4-uVtQtXd0jLGkNAFsx4yw_ni17DzN_';
 
-async function sbFetch(path, method = 'GET', body = null) {
-  const opts = {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': SUPABASE_ANON,
-      'Authorization': 'Bearer ' + SUPABASE_ANON,
-      'Prefer': (method === 'POST' || method === 'PATCH') ? 'return=representation' : ''
-    }
+  const HEURES_MIDI = ['12:00','12:15','12:30','12:45','13:00','13:15','13:30'];
+  const HEURES_SOIR = ['19:00','19:15','19:30','19:45','20:00','20:15','20:30','20:45','21:00','21:15','21:30','21:45','22:00','22:15','22:30','22:45','23:00','23:15','23:30'];
+
+  let state = {
+    step: 1,
+    tel: '', clientFound: null, isNewClient: false,
+    genre: '', prenom: '', nom: '', entreprise: '', email: '',
+    date: '', service: '', heure: '', nbPersonnes: 2,
+    occasion: '', commentaire: ''
   };
-  if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, opts);
-  const text = await res.text();
-  let data = null;
-  try { data = JSON.parse(text); } catch(e) { data = text; }
-  if (!res.ok) throw new Error((data && data.message) || ('HTTP ' + res.status));
-  return data;
-}
 
-// ─── State ────────────────────────────────────────────────────────────────────
-const state = {
-  step: 1,
-  date: null,         // 'YYYY-MM-DD'
-  calYear: new Date().getFullYear(),
-  calMonth: new Date().getMonth(),
-  nbPersonnes: 2,
-  service: null,      // 'midi' | 'soir'
-  heure: null,
-  genre: '',
-  prenom: '',
-  nom: '',
-  tel: '',
-  email: '',
-  societe: '',
-  occasion: '',
-  commentaire: '',
-  rgpd: false,
-  submitting: false
-};
+  // Date min = aujourd'hui
+  const todayStr = new Date().toISOString().split('T')[0];
+  document.getElementById('date').min = todayStr;
+  document.getElementById('date').value = todayStr;
 
-// ─── Pré-remplissage depuis localStorage ──────────────────────────────────────
-(function() {
+  // Restaure depuis localStorage
   try {
-    const saved = localStorage.getItem('ted_client_info');
-    if (saved) {
-      const infos = JSON.parse(saved);
-      if (infos.prenom) state.prenom = infos.prenom;
-      if (infos.nom) state.nom = infos.nom;
-      if (infos.tel) state.tel = infos.tel;
-      if (infos.email) state.email = infos.email;
-      if (infos.genre) state.genre = infos.genre;
-      if (infos.societe) state.societe = infos.societe;
-    }
+    const saved = JSON.parse(localStorage.getItem('ted_resa_form') || '{}');
+    if (saved.tel) document.getElementById('tel').value = saved.tel;
+    if (saved.email) document.getElementById('email').value = saved.email;
+    if (saved.prenom) document.getElementById('prenom').value = saved.prenom;
+    if (saved.nom) document.getElementById('nom').value = saved.nom;
   } catch(e) {}
-})();
 
-// ─── Utils ────────────────────────────────────────────────────────────────────
-const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-const JOURS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
-const JOURS_LONG = ['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche'];
-const OCCASIONS = ['','Anniversaire','EVG — Enterrement de vie de garçon','EVJF — Enterrement de vie de jeune fille','Privatisation','Autre'];
-
-function fmtDate(iso) {
-  if (!iso) return '';
-  const [y,m,d] = iso.split('-').map(Number);
-  const dt = new Date(y, m-1, d);
-  const jIdx = (dt.getDay() + 6) % 7; // 0=Lun
-  return JOURS_LONG[jIdx] + ' ' + d + ' ' + MOIS[m-1] + ' ' + y;
-}
-
-function normalizeTel(v) {
-  let d = (v || '').replace(/[^\d+]/g, '');
-  if (d.startsWith('+33')) d = '0' + d.substring(3);
-  if (d.startsWith('0033')) d = '0' + d.substring(4);
-  if (/^[6-9]/.test(d) && d.length === 9) d = '0' + d;
-  return d;
-}
-
-function todayStr() {
-  const n = new Date();
-  return n.getFullYear() + '-' + String(n.getMonth()+1).padStart(2,'0') + '-' + String(n.getDate()).padStart(2,'0');
-}
-
-// ─── Progress bar ─────────────────────────────────────────────────────────────
-const STEP_LABELS = ['Date','Détails','Coordonnées','Confirmation'];
-
-function renderProgress() {
-  const dots = document.getElementById('progress-dots');
-  const labels = document.getElementById('progress-labels');
-  let dotsH = '', labelsH = '';
-  for (let i = 1; i <= 4; i++) {
-    let cls = i < state.step ? 'done' : i === state.step ? 'active' : 'todo';
-    let icon = i < state.step ? '✓' : i;
-    dotsH += `<div class="step-dot ${cls}">${icon}</div>`;
-    if (i < 4) dotsH += `<div class="step-line ${i < state.step ? 'done' : ''}"></div>`;
-    labelsH += `<span class="step-label ${i === state.step ? 'active' : ''}" style="flex:${i<4?'1':'0'}">${STEP_LABELS[i-1]}</span>`;
-  }
-  dots.innerHTML = dotsH;
-  labels.innerHTML = labelsH;
-}
-
-// ─── Step 1 — Calendrier visuel ───────────────────────────────────────────────
-function renderStep1() {
-  const el = document.getElementById('step-1');
-  const today = todayStr();
-  const year = state.calYear, month = state.calMonth;
-  const firstDay = new Date(year, month, 1);
-  const lastDay = new Date(year, month + 1, 0).getDate();
-  const startDow = (firstDay.getDay() + 6) % 7; // 0=Lun
-
-  const nowD = new Date();
-  const canPrev = (year > nowD.getFullYear()) || (year === nowD.getFullYear() && month > nowD.getMonth());
-
-  const dayHeaders = ['L','M','M','J','V','S','D'].map(j => `<div class="cal-day-header">${j}</div>`).join('');
-  let cells = '';
-  for (let i = 0; i < startDow; i++) cells += '<div class="cal-day empty"></div>';
-  for (let d = 1; d <= lastDay; d++) {
-    const iso = year + '-' + String(month + 1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-    const isPast = iso < today;
-    const isToday = iso === today;
-    const isSel = iso === state.date;
-    let cls = 'cal-day';
-    if (isPast) cls += ' past';
-    else if (isSel) cls += ' available selected';
-    else cls += ' available';
-    if (isToday && !isPast) cls += ' today';
-    const click = isPast ? '' : `onclick="selectDate('${iso}')"`;
-    cells += `<div class="${cls}" ${click}>${d}</div>`;
+  function saveLocal() {
+    localStorage.setItem('ted_resa_form', JSON.stringify({
+      tel: state.tel, email: state.email,
+      prenom: state.prenom, nom: state.nom
+    }));
   }
 
-  el.innerHTML = `
-    <div class="step-title">📅 Choisissez une date</div>
-    <div class="step-subtitle">Sélectionnez le jour souhaité pour votre réservation</div>
-    <div class="cal-nav">
-      <button class="cal-btn" onclick="prevMonth()" ${!canPrev ? 'disabled style="opacity:0.3;cursor:not-allowed"' : ''}>‹</button>
-      <div class="cal-month">${MOIS[month]} ${year}</div>
-      <button class="cal-btn" onclick="nextMonth()">›</button>
-    </div>
-    <div class="cal-grid">${dayHeaders}${cells}</div>
-    <div class="nav-row">
-      <button class="btn-next" id="next-1" onclick="goStep(2)" ${!state.date ? 'disabled' : ''}>Suivant →</button>
-    </div>
-  `;
-}
-
-function selectDate(iso) {
-  state.date = iso;
-  renderStep1();
-}
-function prevMonth() {
-  if (state.calMonth === 0) { state.calMonth = 11; state.calYear--; } else state.calMonth--;
-  renderStep1();
-}
-function nextMonth() {
-  if (state.calMonth === 11) { state.calMonth = 0; state.calYear++; } else state.calMonth++;
-  renderStep1();
-}
-
-// ─── Step 2 — Détails ─────────────────────────────────────────────────────────
-const HEURES_MIDI = ['12h00','12h15','12h30','12h45','13h00','13h15','13h30'];
-const HEURES_SOIR = ['19h00','19h15','19h30','19h45','20h00','20h15','20h30','20h45','21h00','21h15','21h30'];
-
-function renderStep2() {
-  const el = document.getElementById('step-2');
-  const heures = state.service === 'midi' ? HEURES_MIDI : state.service === 'soir' ? HEURES_SOIR : [];
-  el.innerHTML = `
-    <div class="step-title">🍽 Votre réservation</div>
-    <div class="step-subtitle">${fmtDate(state.date)}</div>
-
-    <div class="section-label">Nombre de personnes</div>
-    <div class="counter">
-      <button class="counter-btn" onclick="changeNb(-1)" ${state.nbPersonnes<=1?'disabled':''}>−</button>
-      <input class="counter-input" type="number" min="1" max="50" value="${state.nbPersonnes}" oninput="setNb(this.value)" onblur="clampNb(this)" />
-      <button class="counter-btn" onclick="changeNb(1)" ${state.nbPersonnes>=50?'disabled':''}>+</button>
-    </div>
-
-    <div class="section-label" style="margin-top:22px">Service</div>
-    <div class="btn-group">
-      <button class="choice-btn ${state.service==='midi'?'selected':''}" onclick="selectService('midi')">🌞 Midi</button>
-      <button class="choice-btn ${state.service==='soir'?'selected':''}" onclick="selectService('soir')">🌙 Soir</button>
-    </div>
-
-    ${heures.length ? `
-    <div class="section-label" style="margin-top:22px">Créneau horaire</div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;">
-      ${heures.map(h=>`<button onclick="selectHeure('${h}')" style="padding:10px 14px;border-radius:8px;border:1.5px solid ${state.heure===h?'#E8C547':'#ddd'};background:${state.heure===h?'#E8C547':'#fff'};font-size:14px;cursor:pointer;font-weight:${state.heure===h?'700':'400'};color:#111;transition:all 0.15s;">${h}</button>`).join('')}
-    </div>` : ''}
-
-    <div class="nav-row">
-      <button class="btn-back" onclick="goStep(1)">← Retour</button>
-      <button class="btn-next" onclick="goStep(3)" ${(!state.service||!state.heure)?'disabled':''}>Suivant →</button>
-    </div>
-  `;
-}
-
-function changeNb(d) { state.nbPersonnes = Math.max(1,Math.min(50,state.nbPersonnes+d)); renderStep2(); }
-function setNb(v) { const n = parseInt(v); if (!isNaN(n) && n >= 1) state.nbPersonnes = Math.min(50, n); }
-function clampNb(el) { state.nbPersonnes = Math.max(1, Math.min(50, parseInt(el.value)||1)); renderStep2(); }
-function selectService(s) { state.service = s; state.heure = null; renderStep2(); }
-function selectHeure(h) { state.heure = h; renderStep2(); }
-
-// ─── Step 3 — Coordonnées ─────────────────────────────────────────────────────
-let step3Errors = {};
-
-function selectGenre(g) { state.genre = g; if (g !== 'Entreprise') state.societe = ''; renderStep3(); }
-
-function renderStep3() {
-  const el = document.getElementById('step-3');
-  const e = step3Errors;
-  const isEntreprise = state.genre === 'Entreprise';
-  const prenomLabel = 'Prénom <span style="color:#dc2626">*</span>';
-  const nomLabel    = 'Nom <span style="color:#dc2626">*</span>';
-
-  const genreBtn = (val, icon) => {
-    const sel = state.genre === val;
-    return `<button type="button" onclick="selectGenre('${val}')" style="flex:1;padding:13px 8px;border:2px solid ${sel?'#111':'#eee'};border-radius:12px;background:${sel?'#111':'#fff'};color:${sel?'#E8C547':'#555'};font-size:14px;font-weight:${sel?700:500};cursor:pointer;transition:all 0.15s">${icon}</button>`;
-  };
-
-  const savedInfo = (() => { try { return localStorage.getItem('ted_client_info'); } catch(e) { return null; } })();
-  const savedBanner = savedInfo ? `<div style="background:#f0fdf4;border:1px solid #22c55e;border-radius:8px;padding:8px 12px;font-size:12px;color:#16a34a;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;"><span>✅ Vos informations ont été mémorisées</span><button onclick="try{localStorage.removeItem('ted_client_info')}catch(e){}location.reload();" style="background:none;border:none;color:#16a34a;font-size:11px;cursor:pointer;text-decoration:underline;">Effacer</button></div>` : '';
-  el.innerHTML = `
-    ${savedBanner}
-    <div class="step-title">👤 Vos coordonnées</div>
-    <div class="step-subtitle">Ces informations nous permettent de vous contacter</div>
-
-    <div class="field">
-      <label class="label">Vous êtes <span style="color:#dc2626">*</span></label>
-      <div style="display:flex;gap:10px">
-        ${genreBtn('Homme',  'Homme')}
-        ${genreBtn('Femme',  'Femme')}
-        ${genreBtn('Entreprise', 'Entreprise')}
-      </div>
-      ${e.genre ? `<div class="error-msg">${e.genre}</div>` : ''}
-    </div>
-
-    ${isEntreprise ? `
-    <div class="field">
-      <label class="label">Nom de l'entreprise <span style="color:#dc2626">*</span></label>
-      <input class="input ${e.societe?'error':''}" type="text" value="${state.societe}" oninput="state.societe=this.value" placeholder="Nom de votre entreprise" />
-      ${e.societe ? `<div class="error-msg">${e.societe}</div>` : ''}
-    </div>` : ''}
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-      <div class="field">
-        <label class="label">${prenomLabel}</label>
-        <input class="input ${e.prenom?'error':''}" value="${state.prenom}" oninput="state.prenom=this.value" placeholder="Jean" />
-        ${e.prenom ? `<div class="error-msg">${e.prenom}</div>` : ''}
-      </div>
-      <div class="field">
-        <label class="label">${nomLabel}</label>
-        <input class="input ${e.nom?'error':''}" value="${state.nom}" oninput="state.nom=this.value" placeholder="Dupont" />
-        ${e.nom ? `<div class="error-msg">${e.nom}</div>` : ''}
-      </div>
-    </div>
-
-    <div class="field">
-      <label class="label">Téléphone <span style="color:#dc2626">*</span></label>
-      <input class="input ${e.tel?'error':''}" value="${state.tel}" oninput="const n=normalizeTel(this.value);state.tel=n;this.value=n;" placeholder="06 12 34 56 78 ou +336…" type="tel" inputmode="tel" autocomplete="tel" />
-      ${e.tel ? `<div class="error-msg">${e.tel}</div>` : ''}
-    </div>
-
-    <div class="field">
-      <label class="label">Email <span style="color:#dc2626">*</span></label>
-      <input class="input ${e.email?'error':''}" value="${state.email}" oninput="state.email=this.value" placeholder="jean@exemple.fr" type="email" inputmode="email" />
-      ${e.email ? `<div class="error-msg">${e.email}</div>` : ''}
-    </div>
-
-    <div class="field">
-      <label class="label">Occasion <span style="color:#999;font-weight:400">(facultatif)</span></label>
-      <select class="input" onchange="state.occasion=this.value">
-        ${OCCASIONS.map(o=>`<option value="${o}" ${state.occasion===o?'selected':''}>${o||'— Aucune occasion particulière'}</option>`).join('')}
-      </select>
-    </div>
-
-    <div class="field">
-      <label class="label">Commentaire <span style="color:#999;font-weight:400">(facultatif)</span></label>
-      <textarea class="input" placeholder="Allergies, demandes particulières…" oninput="state.commentaire=this.value">${state.commentaire}</textarea>
-    </div>
-
-    <div class="rgpd-wrap" style="margin-bottom:8px">
-      <input type="checkbox" id="rgpd" ${state.rgpd?'checked':''} onchange="state.rgpd=this.checked" />
-      <label for="rgpd">J'accepte que mes données soient utilisées par l'établissement pour gérer ma réservation, conformément au RGPD. Ces données ne seront pas transmises à des tiers. <span style="color:#dc2626">*</span></label>
-    </div>
-    ${e.rgpd ? `<div class="error-msg" style="margin-bottom:8px">${e.rgpd}</div>` : ''}
-
-    <div class="nav-row">
-      <button class="btn-back" onclick="goStep(2)">← Retour</button>
-      <button class="btn-next" onclick="validateStep3()">Vérifier →</button>
-    </div>
-  `;
-}
-
-function validateStep3() {
-  const e = {};
-  if (!state.genre) e.genre = 'Veuillez sélectionner une option';
-  if (state.genre === 'Entreprise' && !state.societe.trim()) e.societe = "Nom de l'entreprise obligatoire";
-  if (!state.prenom.trim()) e.prenom = 'Prénom obligatoire';
-  if (!state.nom.trim()) e.nom = 'Nom obligatoire';
-  const tel = normalizeTel(state.tel);
-  if (!tel || !/^0[0-9]{9}$/.test(tel)) e.tel = 'Numéro invalide. Formats acceptés : 0612345678, +33612345678, +336…';
-  if (!state.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email)) e.email = 'Email invalide';
-  if (!state.rgpd) e.rgpd = 'Vous devez accepter la politique de confidentialité';
-  step3Errors = e;
-  if (Object.keys(e).length > 0) { renderStep3(); return; }
-  goStep(4);
-}
-
-// ─── Step 4 — Récapitulatif ───────────────────────────────────────────────────
-function renderStep4() {
-  const el = document.getElementById('step-4');
-  const tel = normalizeTel(state.tel);
-  const rows = [
-    ['Date', fmtDate(state.date)],
-    ['Service', state.service === 'midi' ? '🌞 Midi' : '🌙 Soir'],
-    ['Heure', state.heure],
-    ['Personnes', state.nbPersonnes + ' personne' + (state.nbPersonnes > 1 ? 's' : '')],
-    state.genre ? ['Vous êtes', state.genre] : null,
-    state.societe ? ['Entreprise', state.societe] : null,
-    state.prenom ? ['Prénom', state.prenom] : null,
-    state.nom ? ['Nom', state.nom] : null,
-    ['Téléphone', state.tel],
-    ['Email', state.email],
-    state.occasion ? ['Occasion', state.occasion] : null,
-    state.commentaire ? ['Commentaire', state.commentaire] : null
-  ].filter(Boolean);
-
-  el.innerHTML = `
-    <div class="step-title">✅ Récapitulatif</div>
-    <div class="step-subtitle">Vérifiez votre demande avant d'envoyer</div>
-
-    <div class="recap-card">
-      <div class="recap-title">Votre demande de réservation</div>
-      ${rows.map(([l,v]) => `<div class="recap-row"><span class="recap-label">${l}</span><span class="recap-val">${v}</span></div>`).join('')}
-    </div>
-
-    <div style="background:#fffbeb;border:1.5px solid #E8C547;border-radius:12px;padding:14px 16px;margin-bottom:20px;font-size:13px;color:#92400e;line-height:1.6">
-      ⚠️ <strong>Cette demande n'est pas encore une confirmation.</strong> L'équipe du TED vous contactera pour valider votre réservation.
-    </div>
-
-    <div class="nav-row">
-      <button class="btn-back" onclick="goStep(3)">← Modifier</button>
-      <button class="btn-next" id="btn-submit" onclick="submitForm()" ${state.submitting?'disabled':''}>
-        ${state.submitting ? '⏳ Envoi en cours…' : '📩 Envoyer ma demande'}
-      </button>
-    </div>
-  `;
-}
-
-// ─── Submit ───────────────────────────────────────────────────────────────────
-async function submitForm() {
-  if (state.submitting) return;
-  state.submitting = true;
-  renderStep4();
-
-  try {
-    const telNettoye = normalizeTel(state.tel.trim());
-    const telNormalise = telNettoye.replace(/^0/, '+33');
-    const mailSaisi = state.email.trim().toLowerCase();
-    const nomSaisi = state.nom.trim().toLowerCase();
-    const prenomSaisi = state.prenom.trim().toLowerCase();
-    const prenomC = state.prenom.trim().charAt(0).toUpperCase() + state.prenom.trim().slice(1).toLowerCase();
-    const nomC = state.nom.trim().toUpperCase();
-
-    const payloadNouveauClient = {
-      genre: state.genre || (state.societe ? 'Entreprise' : 'Non renseigné'),
-      nom: nomC, prenom: prenomC,
-      entreprise: state.societe || '',
-      tel: telNettoye, tel_normalise: telNormalise,
-      mail: mailSaisi, email_normalise: mailSaisi,
-      source: 'Formulaire de réservation',
-      nb_reservations: 1, nb_venues: 0, nb_absences: 0, nb_annulations: 0
-    };
-
-    async function creerClient() {
-      const res = await sbFetch('clients', 'POST', payloadNouveauClient);
-      return Array.isArray(res) && res.length > 0 ? res[0].id : null;
+  function updateDots() {
+    const total = state.isNewClient ? 5 : 4;
+    for (let i = 1; i <= 5; i++) {
+      const dot = document.getElementById('dot-' + i);
+      if (!dot) continue;
+      if (i > total) { dot.style.display = 'none'; continue; }
+      dot.style.display = '';
+      const effStep = (!state.isNewClient && state.step >= 3) ? state.step - 1 : state.step;
+      const effI    = (!state.isNewClient && i >= 3) ? i - 1 : i;
+      if (effI < effStep)      dot.className = 'step-dot done';
+      else if (effI === effStep) dot.className = 'step-dot active';
+      else                      dot.className = 'step-dot';
     }
+  }
 
-    // Cherche par tel ET par mail en parallèle
-    const [foundTel, foundMail] = await Promise.all([
-      sbFetch(`clients?or=(tel.eq.${encodeURIComponent(telNettoye)},tel_normalise.eq.${encodeURIComponent(telNormalise)})&select=*&limit=1`),
-      mailSaisi ? sbFetch(`clients?mail=eq.${encodeURIComponent(mailSaisi)}&select=*&limit=1`) : Promise.resolve([])
-    ]);
-    const clientParTel = Array.isArray(foundTel) && foundTel.length > 0 ? foundTel[0] : null;
-    const clientParMail = Array.isArray(foundMail) && foundMail.length > 0 ? foundMail[0] : null;
-
-    let clientId = null;
-
-    // CAS 1 — Tel trouvé
-    if (clientParTel) {
-      const nomMatch = (clientParTel.nom || '').toLowerCase().trim() === nomSaisi;
-      const prenomMatch = (clientParTel.prenom || '').toLowerCase().trim() === prenomSaisi;
-      if (nomMatch && prenomMatch) {
-        if (mailSaisi && mailSaisi !== (clientParTel.mail || '').toLowerCase()) {
-          await sbFetch(`clients?id=eq.${clientParTel.id}`, 'PATCH', { mail: mailSaisi, email_normalise: mailSaisi });
-        }
-        clientId = clientParTel.id;
-      } else {
-        clientId = await creerClient();
-      }
+  function showStep(n) {
+    for (let i = 1; i <= 5; i++) {
+      const el = document.getElementById('step-' + i);
+      if (el) el.style.display = i === n ? 'block' : 'none';
     }
-    // CAS 2 — Mail trouvé
-    else if (clientParMail) {
-      const nomMatch = (clientParMail.nom || '').toLowerCase().trim() === nomSaisi;
-      const prenomMatch = (clientParMail.prenom || '').toLowerCase().trim() === prenomSaisi;
-      if (nomMatch && prenomMatch) {
-        if (telNettoye && telNettoye !== clientParMail.tel) {
-          await sbFetch(`clients?id=eq.${clientParMail.id}`, 'PATCH', { tel: telNettoye, tel_normalise: telNormalise });
-        }
-        clientId = clientParMail.id;
-      } else {
-        clientId = await creerClient();
-      }
-    }
-    // CAS 3 — Nouveau client
-    else {
-      clientId = await creerClient();
-    }
+    document.getElementById('btn-back').style.display = n > 1 ? 'block' : 'none';
+    document.getElementById('btn-next').textContent = n === 5 ? '✓ Envoyer ma demande' : 'Continuer →';
+    updateDots();
+    window.scrollTo(0, 0);
+  }
 
-    // Crée la réservation avec client_id
-    await sbFetch('reservations', 'POST', {
-      client_id: clientId || null,
-      date: state.date,
-      service: state.service,
-      heure: state.heure,
-      nb_personnes: state.nbPersonnes,
-      occasion: state.occasion || null,
-      commentaire_client: state.commentaire || null,
-      statut: 'attente',
-      source: 'formulaire'
-    });
+  function selectGenre(g) {
+    state.genre = g;
+    document.querySelectorAll('.genre-btn').forEach(b => b.classList.remove('selected'));
+    const map = { Homme: 'homme', Femme: 'femme', Entreprise: 'entreprise' };
+    document.querySelector('.genre-btn.' + map[g]).classList.add('selected');
+    document.getElementById('champs-personne').style.display = g === 'Entreprise' ? 'none' : 'block';
+    document.getElementById('champ-entreprise').style.display = g === 'Entreprise' ? 'block' : 'none';
+  }
 
+  function selectService(s) {
+    state.service = s;
+    state.heure = '';
+    document.getElementById('btn-midi').className = 'service-btn' + (s === 'midi' ? ' selected' : '');
+    document.getElementById('btn-soir').className = 'service-btn' + (s === 'soir' ? ' selected' : '');
+    renderSlots();
+    document.getElementById('slots-wrap').style.display = 'block';
+  }
+
+  function renderSlots() {
+    const slots = state.service === 'midi' ? HEURES_MIDI : HEURES_SOIR;
+    document.getElementById('slots-grid').innerHTML = slots.map(h =>
+      `<button class="slot-btn${state.heure === h ? ' selected' : ''}" onclick="selectSlot('${h}')">${h}</button>`
+    ).join('');
+  }
+
+  function selectSlot(h) {
+    state.heure = h;
+    renderSlots();
+  }
+
+  function changePersonnes(d) {
+    const input = document.getElementById('nb-personnes');
+    const v = Math.max(1, Math.min(500, (parseInt(input.value) || 2) + d));
+    input.value = v;
+    state.nbPersonnes = v;
+  }
+
+  function emailValide(e) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e);
+  }
+
+  async function checkTel() {
+    const raw = document.getElementById('tel').value.replace(/\s/g, '');
+    state.tel = raw;
+    if (raw.replace(/\D/g, '').length < 10) {
+      alert('Entrez un numéro valide (10 chiffres)');
+      return false;
+    }
     try {
-      localStorage.setItem('ted_client_info', JSON.stringify({
-        prenom: state.prenom, nom: state.nom, tel: state.tel,
-        email: state.email, genre: state.genre, societe: state.societe
-      }));
-    } catch(e) {}
-    showSuccess();
-  } catch(err) {
-    state.submitting = false;
-    renderStep4();
-    alert('Une erreur est survenue : ' + err.message + '\nVeuillez réessayer ou nous contacter directement.');
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/clients?tel=eq.${encodeURIComponent(raw)}&select=id,genre,prenom,nom,entreprise,mail`,
+        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } }
+      );
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        state.clientFound = data[0];
+        state.isNewClient = false;
+        const name = data[0].genre === 'Entreprise'
+          ? data[0].entreprise
+          : `${data[0].prenom || ''} ${data[0].nom || ''}`.trim();
+        document.getElementById('client-name').textContent = name;
+        document.getElementById('client-found-banner').style.display = 'block';
+      } else {
+        state.clientFound = null;
+        state.isNewClient = true;
+        document.getElementById('client-found-banner').style.display = 'none';
+      }
+    } catch(e) {
+      state.clientFound = null;
+      state.isNewClient = true;
+    }
+    return true;
   }
-}
 
-function showSuccess() {
-  for (let i = 1; i <= 4; i++) document.getElementById('step-' + i).style.display = 'none';
-  const wrap = document.getElementById('step-success');
-  wrap.style.display = 'block';
-  wrap.innerHTML = `
-    <div style="text-align:center;padding:32px 20px;max-width:480px;margin:0 auto;">
-      <div style="width:80px;height:80px;border-radius:50%;background:#f0fdf4;border:3px solid #22c55e;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:36px;">✓</div>
-      <h2 style="font-size:22px;font-weight:800;color:#111;margin:0 0 8px;">Demande envoyée !</h2>
-      <p style="color:#666;font-size:15px;margin:0 0 24px;">Merci <strong id="confirm-prenom"></strong>, votre demande a bien été reçue.</p>
-      <div style="background:#fff;border-radius:14px;border:1.5px solid #f0f0f0;padding:20px;margin-bottom:20px;text-align:left;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
-        <p style="font-size:11px;font-weight:700;color:#999;letter-spacing:1px;text-transform:uppercase;margin:0 0 14px;">Récapitulatif</p>
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:20px;">📅</span><div><p style="margin:0;font-size:11px;color:#999;">Date</p><p style="margin:0;font-weight:700;color:#111;" id="confirm-date"></p></div></div>
-          <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:20px;">🕐</span><div><p style="margin:0;font-size:11px;color:#999;">Heure</p><p style="margin:0;font-weight:700;color:#111;" id="confirm-heure"></p></div></div>
-          <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:20px;">👥</span><div><p style="margin:0;font-size:11px;color:#999;">Personnes</p><p style="margin:0;font-weight:700;color:#111;" id="confirm-nb"></p></div></div>
-          <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:20px;" id="confirm-service-icon">🌙</span><div><p style="margin:0;font-size:11px;color:#999;">Service</p><p style="margin:0;font-weight:700;color:#111;" id="confirm-service"></p></div></div>
-        </div>
-      </div>
-      <div style="background:#fffbea;border:1.5px solid #E8C547;border-radius:12px;padding:14px 16px;margin-bottom:16px;text-align:left;">
-        <p style="margin:0 0 6px;font-weight:700;color:#111;font-size:13px;">⚠️ En attente de confirmation</p>
-        <p style="margin:0;font-size:12px;color:#666;line-height:1.5;">Vous recevrez un email dès validation. L'équipe du TED vous contactera si besoin.</p>
-      </div>
-      <div style="margin-top:20px;padding-top:16px;border-top:1px solid #eee;text-align:center;">
-        <img src="/favicon.png" style="height:28px;margin-bottom:8px;" onerror="this.style.display='none'" />
-        <p style="font-weight:800;color:#111;font-size:14px;margin:0 0 4px;">Le TED — Restaurant & Club</p>
-        <p style="color:#888;font-size:12px;margin:0 0 6px;">📍 28 Av. des Frères Montgolfier, 69680 Chassieu</p>
-        <a href="tel:+33478906780" style="display:inline-flex;align-items:center;gap:6px;background:#E8C547;color:#111;text-decoration:none;padding:10px 20px;border-radius:8px;font-weight:800;font-size:14px;margin-top:4px;">📞 04 78 90 67 80</a>
-      </div>
-    </div>
-  `;
-
-  document.getElementById('confirm-prenom').textContent = state.prenom || '';
-  const [y,m,d] = state.date.split('-').map(Number);
-  document.getElementById('confirm-date').textContent = new Date(y, m-1, d).toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
-  document.getElementById('confirm-heure').textContent = state.heure || '';
-  document.getElementById('confirm-nb').textContent = state.nbPersonnes + ' personne' + (state.nbPersonnes > 1 ? 's' : '');
-  document.getElementById('confirm-service').textContent = state.service === 'midi' ? 'Déjeuner' : 'Dîner';
-  document.getElementById('confirm-service-icon').textContent = state.service === 'midi' ? '☀️' : '🌙';
-}
-
-// ─── Navigation ───────────────────────────────────────────────────────────────
-function goStep(n) {
-  for (let i = 1; i <= 4; i++) {
-    document.getElementById('step-' + i).style.display = i === n ? 'block' : 'none';
+  function buildRecap() {
+    const nom = state.clientFound
+      ? (state.clientFound.genre === 'Entreprise'
+          ? state.clientFound.entreprise
+          : `${state.clientFound.prenom || ''} ${state.clientFound.nom || ''}`.trim())
+      : (state.genre === 'Entreprise' ? state.entreprise : `${state.prenom} ${state.nom}`);
+    const dateObj = new Date(state.date + 'T12:00:00');
+    const dateStr = dateObj.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    const rows = [
+      { label: '👤 Client',    value: nom },
+      { label: '📅 Date',      value: dateStr },
+      { label: state.service === 'midi' ? '☀️ Service' : '🌙 Service', value: state.service === 'midi' ? 'Midi' : 'Soir' },
+      { label: '🕐 Heure',     value: state.heure },
+      { label: '👥 Personnes', value: state.nbPersonnes + ' personne' + (state.nbPersonnes > 1 ? 's' : '') },
+    ];
+    if (state.occasion)    rows.push({ label: '🎉 Occasion',    value: state.occasion });
+    if (state.commentaire) rows.push({ label: '💬 Commentaire', value: state.commentaire });
+    document.getElementById('recap-grid').innerHTML = rows.map(r =>
+      `<div class="recap-row"><span class="recap-label">${r.label}</span><span class="recap-value">${r.value}</span></div>`
+    ).join('');
   }
-  state.step = n;
-  renderProgress();
-  if (n === 1) renderStep1();
-  if (n === 2) renderStep2();
-  if (n === 3) renderStep3();
-  if (n === 4) renderStep4();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
-renderProgress();
-renderStep1();
+  async function nextStep() {
+    if (state.step === 1) {
+      const ok = await checkTel();
+      if (!ok) return;
+      saveLocal();
+      state.step = state.isNewClient ? 2 : 3;
+    } else if (state.step === 2) {
+      state.prenom    = document.getElementById('prenom').value.trim();
+      state.nom       = document.getElementById('nom').value.trim();
+      state.entreprise = document.getElementById('entreprise').value.trim();
+      state.email     = document.getElementById('email').value.trim();
+      if (!state.genre) { alert('Choisissez un genre'); return; }
+      if (state.genre !== 'Entreprise' && (!state.prenom || !state.nom)) { alert('Entrez prénom et nom'); return; }
+      if (state.genre === 'Entreprise' && !state.entreprise) { alert("Entrez le nom de l'entreprise"); return; }
+      if (!emailValide(state.email)) { alert('Email invalide — ex: prenom@gmail.com'); return; }
+      saveLocal();
+      state.step = 3;
+    } else if (state.step === 3) {
+      state.date = document.getElementById('date').value;
+      if (!state.date) { alert('Choisissez une date'); return; }
+      state.step = 4;
+    } else if (state.step === 4) {
+      state.nbPersonnes = parseInt(document.getElementById('nb-personnes').value) || 2;
+      state.occasion    = document.getElementById('occasion').value;
+      state.commentaire = document.getElementById('commentaire').value.trim();
+      if (!state.service) { alert('Choisissez Midi ou Soir'); return; }
+      if (!state.heure)   { alert('Choisissez une heure'); return; }
+      buildRecap();
+      state.step = 5;
+    } else if (state.step === 5) {
+      await submitResa();
+      return;
+    }
+    showStep(state.step);
+  }
+
+  function prevStep() {
+    if (state.step <= 1) return;
+    state.step--;
+    if (state.step === 2 && !state.isNewClient) state.step--;
+    showStep(state.step);
+  }
+
+  async function submitResa() {
+    const btn = document.getElementById('btn-next');
+    btn.disabled = true;
+    btn.textContent = 'Envoi en cours...';
+    try {
+      let clientId = state.clientFound ? state.clientFound.id : null;
+      if (state.isNewClient) {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/clients`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_KEY,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify({
+            tel:        state.tel,
+            genre:      state.genre,
+            prenom:     state.genre !== 'Entreprise' ? state.prenom    : null,
+            nom:        state.genre !== 'Entreprise' ? state.nom       : null,
+            entreprise: state.genre === 'Entreprise' ? state.entreprise : null,
+            mail:       state.email
+          })
+        });
+        const data = await res.json();
+        clientId = data[0]?.id;
+      }
+
+      await fetch(`${SUPABASE_URL}/rest/v1/reservations`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          client_id:         clientId,
+          date:              state.date,
+          service:           state.service,
+          heure:             state.heure,
+          nb_personnes:      state.nbPersonnes,
+          occasion:          state.occasion || null,
+          commentaire_client: state.commentaire || null,
+          statut:            'attente'
+        })
+      });
+
+      // Affiche le succès
+      document.getElementById('footer').style.display = 'none';
+      document.getElementById('steps-bar').style.display = 'none';
+      for (let i = 1; i <= 5; i++) {
+        const el = document.getElementById('step-' + i);
+        if (el) el.style.display = 'none';
+      }
+      const dateObj = new Date(state.date + 'T12:00:00');
+      document.getElementById('success-recap').innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:0">
+          <div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid #eee">
+            <span style="color:#999">Date</span>
+            <strong>${dateObj.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</strong>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0;border-bottom:1px solid #eee">
+            <span style="color:#999">Service</span>
+            <strong>${state.service==='midi'?'☀️ Midi':'🌙 Soir'} · ${state.heure}</strong>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;padding:8px 0">
+            <span style="color:#999">Personnes</span>
+            <strong>${state.nbPersonnes} pers.</strong>
+          </div>
+        </div>`;
+      document.getElementById('success').style.display = 'block';
+      localStorage.removeItem('ted_resa_form');
+    } catch(err) {
+      alert("Erreur lors de l'envoi. Réessayez.");
+      btn.disabled = false;
+      btn.textContent = '✓ Envoyer ma demande';
+    }
+  }
+
+  showStep(1);
 </script>
 </body>
 </html>
