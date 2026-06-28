@@ -2700,30 +2700,60 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
       {ficheClientRP && (() => {
         const c = ficheClientRP;
         const resasC = resaList.filter(r => r.client_id === c.id);
-        const total = resasC.length;
-        const noshow = resasC.filter(r => r.statut === 'absente').length;
         const aujourd = new Date().toISOString().split('T')[0];
+        const total = resasC.filter(r=>r.statut!=='annulee'&&r.statut!=='absente').length;
+        const noshow = resasC.filter(r => r.statut === 'absente').length;
         const derniereVisite = resasC.filter(r => (r.statut==='venue'||r.statut==='confirmee') && r.date <= aujourd).sort((a,b)=>b.date.localeCompare(a.date))[0];
-        const prochaineResa = resasC.filter(r => r.date > aujourd && (r.statut==='confirmee'||r.statut==='attente')).sort((a,b)=>a.date.localeCompare(b.date))[0];
+        const prochaineResa = resasC.filter(r => r.date >= aujourd && (r.statut==='confirmee'||r.statut==='attente')).sort((a,b)=>a.date.localeCompare(b.date))[0];
         const nomAffiche = c.genre==='Entreprise' ? (c.entreprise||c.nom||'—') : `${c.prenom||''} ${c.nom||''}`.trim()||'—';
         return (
-          <Modal title={nomAffiche} onClose={()=>setFicheClientRP(null)} maxW={440} zIndex={6000}
-            footer={<button onClick={()=>setFicheClientRP(null)} style={{ width:'100%', height:44, background:'#fff', border:'1.5px solid #ddd', borderRadius:10, fontSize:14, fontWeight:600, cursor:'pointer', color:'#666' }}>Fermer</button>}>
-            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-              {c.tel && <a href={`tel:${c.tel}`} style={{ display:'flex', alignItems:'center', gap:10, background:'#E8C547', borderRadius:10, padding:'12px 16px', textDecoration:'none', color:'#111', fontWeight:700, fontSize:15 }}>📞 {c.tel}</a>}
-              {c.mail && <a href={`mailto:${c.mail}`} style={{ fontSize:14, color:'#3b82f6', textDecoration:'none' }}>{c.mail}</a>}
-              <div style={{ background:'#f9f9f9', borderRadius:10, padding:14 }}>
-                <div style={{ display:'flex', marginBottom:12 }}>
-                  <div style={{ textAlign:'center', flex:1 }}><div style={{ fontSize:20, fontWeight:800 }}>{total}</div><div style={{ fontSize:10, color:'#999', textTransform:'uppercase' }}>Résa total</div></div>
-                  <div style={{ textAlign:'center', flex:1 }}><div style={{ fontSize:20, fontWeight:800, color: noshow>0?'#dc2626':'#111' }}>{noshow}</div><div style={{ fontSize:10, color:'#999', textTransform:'uppercase' }}>No-show</div></div>
+          <>
+            <div onMouseDown={e=>{e.preventDefault();e.stopPropagation();}} onClick={()=>setFicheClientRP(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:4999, pointerEvents:'all' }}/>
+            <div onClick={e=>e.stopPropagation()} onMouseDown={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:20, width:'min(420px, calc(100vw - 48px))', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.25)', zIndex:5000, overflow:'hidden' }}>
+              {/* Header */}
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'22px 26px 18px', flexShrink:0, borderBottom:'1px solid #f0f0f0' }}>
+                <h2 style={{margin:0, fontSize:18, fontWeight:800, color:'#111'}}>{nomAffiche}</h2>
+                <button onClick={()=>setFicheClientRP(null)} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
+              </div>
+              {/* Contenu */}
+              <div style={{padding:'18px 26px 22px', display:'flex', flexDirection:'column', gap:14}}>
+                {/* Téléphone */}
+                {c.tel && <a href={`tel:${c.tel}`} style={{ display:'flex', alignItems:'center', gap:10, background:'#E8C547', borderRadius:10, padding:'12px 16px', textDecoration:'none', color:'#111', fontWeight:700, fontSize:15 }}><Phone size={16} strokeWidth={2}/> {c.tel}</a>}
+                {/* Email */}
+                {c.mail && <div style={{display:'flex', alignItems:'center', gap:10}}><Mail size={15} strokeWidth={2} color="#3b82f6"/><span style={{fontSize:13, color:'#3b82f6'}}>{c.mail}</span></div>}
+                {/* Stats */}
+                <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:10}}>
+                  <div style={{background:'#f9f9f9', borderRadius:10, padding:'12px 14px', textAlign:'center'}}>
+                    <p style={{fontSize:22, fontWeight:900, color:'#111', margin:'0 0 3px'}}>{total}</p>
+                    <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0}}>Résa total</p>
+                  </div>
+                  <div style={{background:'#fef2f2', borderRadius:10, padding:'12px 14px', textAlign:'center'}}>
+                    <p style={{fontSize:22, fontWeight:900, color:'#dc2626', margin:'0 0 3px'}}>{noshow}</p>
+                    <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0}}>No-show</p>
+                  </div>
                 </div>
-                <div style={{ fontSize:13, color:'#666' }}>
-                  <div style={{ marginBottom:4 }}>🕐 Dernière visite : <strong>{derniereVisite ? new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) : 'Jamais'}</strong></div>
-                  {prochaineResa && <div>📅 Prochaine résa : <strong>{new Date(prochaineResa.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long'})}{prochaineResa.heure ? ` à ${prochaineResa.heure}` : ''}</strong></div>}
+                {/* Dernière visite + Prochaine résa */}
+                <div style={{display:'flex', flexDirection:'column', gap:8}}>
+                  <div style={{display:'flex', alignItems:'center', gap:10, padding:'10px 12px', background:'#f9f9f9', borderRadius:10}}>
+                    <Clock size={15} strokeWidth={2} color="#666" style={{flexShrink:0}}/>
+                    <div>
+                      <span style={{fontSize:11, color:'#999'}}>Dernière visite : </span>
+                      <span style={{fontSize:13, fontWeight:600, color:'#111'}}>{derniereVisite ? new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) : 'Jamais'}</span>
+                    </div>
+                  </div>
+                  <div style={{display:'flex', alignItems:'center', gap:10, padding:'10px 12px', background:'#f9f9f9', borderRadius:10}}>
+                    <CalendarDays size={15} strokeWidth={2} color="#666" style={{flexShrink:0}}/>
+                    <div>
+                      <span style={{fontSize:11, color:'#999'}}>Prochaine résa : </span>
+                      <span style={{fontSize:13, fontWeight:600, color: prochaineResa?'#16a34a':'#111'}}>{prochaineResa ? `${new Date(prochaineResa.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long'})} à ${prochaineResa.heure}` : 'Aucune'}</span>
+                    </div>
+                  </div>
                 </div>
+                {/* Bouton fermer */}
+                <button onClick={()=>setFicheClientRP(null)} style={{ width:'100%', height:48, border:'1.5px solid #eee', borderRadius:12, background:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', color:'#666', marginTop:4 }}>Fermer</button>
               </div>
             </div>
-          </Modal>
+          </>
         );
       })()}
       {showConfirmDecoRP && (
