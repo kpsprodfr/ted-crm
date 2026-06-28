@@ -3182,11 +3182,15 @@ function CRMApp({ user, onLogout }) {
             <span style={{ fontSize:10, fontWeight:600, textAlign:'center', lineHeight:1.2 }}>{item.label}</span>
             {nbAttenteSidebar > 0 && (
               <div className="notif-badge-alarm" style={{
-                position:'absolute', top:6, right:16,
-                width:10, height:10, borderRadius:'50%',
-                background:'#dc2626', border:'2px solid #111',
-                boxShadow:'0 0 6px rgba(220,38,38,0.8)'
-              }}/>
+                position:'absolute', top:4, right:8,
+                width:18, height:18, borderRadius:'50%',
+                background:'#dc2626', border:'2.5px solid #111',
+                boxShadow:'0 0 10px rgba(220,38,38,0.9)',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                fontSize:10, fontWeight:900, color:'#fff'
+              }}>
+                {nbAttenteSidebar}
+              </div>
             )}
           </button>
         );
