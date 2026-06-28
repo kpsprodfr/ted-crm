@@ -2833,6 +2833,14 @@ function CRMApp({ user, onLogout }) {
   const [smsExpanded, setSmsExpanded] = useState({});
   const smsTextareaRef = useRef(null);
   const [notifResa, setNotifResa] = useState(null);
+  const [showNotifPrePrompt, setShowNotifPrePrompt] = useState(false);
+
+  useEffect(()=>{
+    const notifAsked = localStorage.getItem('ted_notif_asked');
+    if (!notifAsked && typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      setTimeout(()=>setShowNotifPrePrompt(true), 3000);
+    }
+  }, []);
 
   async function initOneSignal() {
     if (typeof window.OneSignalDeferred === 'undefined') window.OneSignalDeferred = [];
@@ -3135,12 +3143,23 @@ function CRMApp({ user, onLogout }) {
         { id:'reservations', label:'Réservations', icon:<CalendarDays size={24} strokeWidth={1.8} /> },
         { id:'clients', label:'Clients', icon:<Users size={24} strokeWidth={1.8} /> },
         { id:'communications', label:'Communications', icon:<Megaphone size={24} strokeWidth={1.8} /> },
-      ].map(item => (
-        <button key={item.id} onClick={()=>setActiveView(item.id)} style={{ width:'100%', padding:'12px 8px', border:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer', marginBottom:4, borderLeft: activeView===item.id ? '3px solid #E8C547' : '3px solid transparent', background: activeView===item.id ? 'rgba(232,197,71,0.1)' : 'transparent', color: activeView===item.id ? '#E8C547' : '#555' }}>
-          {item.icon}
-          <span style={{ fontSize:10, fontWeight:600, textAlign:'center', lineHeight:1.2 }}>{item.label}</span>
-        </button>
-      ))}
+      ].map(item => {
+        const nbAttenteSidebar = item.id === 'reservations' ? resaList.filter(r=>r.statut==='attente').length : 0;
+        return (
+          <button key={item.id} onClick={()=>setActiveView(item.id)} style={{ width:'100%', padding:'12px 8px', border:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer', marginBottom:4, borderLeft: activeView===item.id ? '3px solid #E8C547' : '3px solid transparent', background: activeView===item.id ? 'rgba(232,197,71,0.1)' : 'transparent', color: activeView===item.id ? '#E8C547' : '#555', position:'relative' }}>
+            {item.icon}
+            <span style={{ fontSize:10, fontWeight:600, textAlign:'center', lineHeight:1.2 }}>{item.label}</span>
+            {nbAttenteSidebar > 0 && (
+              <div className="notif-badge-alarm" style={{
+                position:'absolute', top:6, right:16,
+                width:10, height:10, borderRadius:'50%',
+                background:'#dc2626', border:'2px solid #111',
+                boxShadow:'0 0 6px rgba(220,38,38,0.8)'
+              }}/>
+            )}
+          </button>
+        );
+      })}
       <div style={{ flex:1 }} />
       <button onClick={()=>setShowConfirmDeconnexion(true)} style={{ width:'100%', padding:'12px 8px', border:'none', background:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer', color:'#555' }}>
         <LogOut size={22} strokeWidth={1.8} />
@@ -3161,6 +3180,59 @@ function CRMApp({ user, onLogout }) {
     </div>
   ) : null;
 
+  const notifPrePromptModal = showNotifPrePrompt ? (
+    <>
+      <div onClick={()=>setShowNotifPrePrompt(false)} style={{
+        position:'fixed', inset:0, background:'rgba(0,0,0,0.4)',
+        zIndex:8000, pointerEvents:'all'
+      }}/>
+      <div onClick={e=>e.stopPropagation()} style={{
+        position:'fixed', top:'50%', left:'50%',
+        transform:'translate(-50%,-50%)',
+        background:'#fff', borderRadius:20,
+        width:'min(380px, calc(100vw - 48px))',
+        padding:'32px 28px', textAlign:'center',
+        boxShadow:'0 32px 80px rgba(0,0,0,0.25)',
+        zIndex:8001
+      }}>
+        <div style={{
+          width:64, height:64, borderRadius:'50%',
+          background:'#fffbea', border:'3px solid #E8C547',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          margin:'0 auto 20px', fontSize:28
+        }}>
+          🔔
+        </div>
+        <h2 style={{fontSize:20, fontWeight:900, color:'#111', margin:'0 0 10px'}}>
+          Activer les notifications
+        </h2>
+        <p style={{fontSize:14, color:'#666', lineHeight:1.6, margin:'0 0 24px'}}>
+          Soyez alerté instantanément quand une nouvelle réservation arrive, même si l'app est en arrière-plan.
+        </p>
+        <button onClick={async()=>{
+          localStorage.setItem('ted_notif_asked', 'true');
+          setShowNotifPrePrompt(false);
+          await Notification.requestPermission();
+        }} style={{
+          width:'100%', height:50, border:'none', borderRadius:14,
+          background:'#E8C547', color:'#111',
+          fontSize:15, fontWeight:800, cursor:'pointer', marginBottom:10
+        }}>
+          🔔 Activer les notifications
+        </button>
+        <button onClick={()=>{
+          localStorage.setItem('ted_notif_asked', 'true');
+          setShowNotifPrePrompt(false);
+        }} style={{
+          width:'100%', background:'none', border:'none',
+          color:'#999', fontSize:13, cursor:'pointer', padding:'8px'
+        }}>
+          Plus tard
+        </button>
+      </div>
+    </>
+  ) : null;
+
   if (!isMobile && activeView === 'reservations') return (
     <>
       {sidebarDesktop}
@@ -3168,6 +3240,7 @@ function CRMApp({ user, onLogout }) {
         <ReservationsPage inline showToast={showToast} user={user} onResaCountChange={(n)=>{ setResaAttenteCount(n); updateBadge(n); }} />
       </div>
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
+      {notifPrePromptModal}
     </>
   );
 
@@ -3770,6 +3843,7 @@ function CRMApp({ user, onLogout }) {
 
         </div>
         {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
+        {notifPrePromptModal}
       </>
     );
   }
@@ -4657,6 +4731,7 @@ function CRMApp({ user, onLogout }) {
       )}
 
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
+      {notifPrePromptModal}
       {showConfirmQuitter && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:9000,display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'all',touchAction:'none'}} onMouseDown={e=>{e.preventDefault();e.stopPropagation();setShowConfirmQuitter(false);}} onClick={()=>setShowConfirmQuitter(false)}>
           <div style={{background:'#fff',borderRadius:16,padding:'28px 24px',maxWidth:320,width:'90%',textAlign:'center'}} onMouseDown={e=>e.stopPropagation()} onClick={e=>e.stopPropagation()}>
