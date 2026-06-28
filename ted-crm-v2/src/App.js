@@ -2040,7 +2040,11 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
   const [calSlideDir, setCalSlideDir] = useState(null);
   const [calAnimating, setCalAnimating] = useState(false);
   const [calMensuelOuvert, setCalMensuelOuvert] = useState(false);
-  const [calJourSelectionne, setCalJourSelectionne] = useState(new Date().toISOString().split('T')[0]);
+  const now0 = new Date();
+  const todayLocal = `${now0.getFullYear()}-${String(now0.getMonth()+1).padStart(2,'0')}-${String(now0.getDate()).padStart(2,'0')}`;
+  const [calJourSelectionne, setCalJourSelectionne] = useState(todayLocal);
+  const [joursOffset, setJoursOffset] = useState(0);
+  const touchStartJoursX = useRef(null);
   const [calServiceSelectionne, setCalServiceSelectionne] = useState(new Date().getHours() < 15 ? 'midi' : 'soir');
   const [resaSearchPanel, setResaSearchPanel] = useState('');
 const [showDemandesAttente, setShowDemandesAttente] = useState(false);
@@ -2316,13 +2320,22 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
 
         {/* ── Bloc unique : 7 jours + calendrier + Midi/Soir ── */}
         {(() => {
-          const joursSemaine7 = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
-          const moisCourt = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
-          const sept7Jours = Array.from({length:7}, (_,i) => {
-            const d = new Date(); d.setDate(d.getDate() + i);
-            return d.toISOString().split('T')[0];
+          const nowLocal = new Date();
+          const todayStr = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth()+1).padStart(2,'0')}-${String(nowLocal.getDate()).padStart(2,'0')}`;
+          const sixJours = Array.from({length:6}, (_,i) => {
+            const d = new Date(); d.setDate(d.getDate() + joursOffset + i);
+            const str = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            return { date:str, jour:d.toLocaleDateString('fr-FR',{weekday:'short'}).toUpperCase().replace('.',''), num:d.getDate(), mois:d.toLocaleDateString('fr-FR',{month:'short'}), isAujourd: str===todayStr };
           });
-          const todayStr = new Date().toISOString().split('T')[0];
+          function handleJoursTouchStart(e) { touchStartJoursX.current = e.touches[0].clientX; }
+          function handleJoursTouchEnd(e) {
+            if (touchStartJoursX.current===null) return;
+            const delta = e.changedTouches[0].clientX - touchStartJoursX.current;
+            if (Math.abs(delta) < 40) return;
+            if (delta < 0) setJoursOffset(prev => Math.min(prev+1, 9));
+            else if (delta > 0) setJoursOffset(prev => Math.max(prev-1, 0));
+            touchStartJoursX.current = null;
+          }
           const JOURS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
           const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
           const annee = calDate.getFullYear();
@@ -2345,32 +2358,28 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           const couvertsSoir = calJourSelectionne ? resaList.filter(r => r.date === calJourSelectionne && r.service === 'soir' && r.statut === 'confirmee').reduce((sum, r) => sum + (r.nb_personnes || 0), 0) : 0;
           return (
             <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', padding:14, flex:1, display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
-              {/* 1. 7 rectangles */}
-              <div style={{ display:'flex', gap:6, marginBottom:10, overflowX:'auto', flexShrink:0 }}>
-                {sept7Jours.map(dateStr => {
-                  const d = new Date(dateStr+'T12:00:00');
-                  const totalCouverts = resaList.filter(r => r.date === dateStr && r.statut === 'confirmee').reduce((sum, r) => sum + (r.nb_personnes || 0), 0);
-                  const estSelectionne = calJourSelectionne === dateStr;
-                  const estAujourdhui = dateStr === todayStr;
+              {/* 1. 6 rectangles swipables */}
+              <div onTouchStart={handleJoursTouchStart} onTouchEnd={handleJoursTouchEnd}
+                style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:8, marginBottom:8, flexShrink:0, userSelect:'none', WebkitUserSelect:'none' }}>
+                {sixJours.map(j => {
+                  const totalCouverts = resaList.filter(r => r.date===j.date && r.statut==='confirmee').reduce((sum,r)=>sum+(r.nb_personnes||0),0);
+                  const isSelected = calJourSelectionne === j.date;
                   return (
-                    <div key={dateStr} onClick={()=>setCalJourSelectionne(dateStr)}
-                      style={{ flex:1, minWidth:0, padding:'8px 4px', borderRadius:10,
-                        border: estSelectionne ? '2px solid #E8C547' : '1.5px solid #eee',
-                        background: estSelectionne ? '#fffbea' : '#fff',
-                        cursor:'pointer', textAlign:'center',
-                        boxShadow: estSelectionne ? '0 2px 8px rgba(232,197,71,0.3)' : '0 1px 4px rgba(0,0,0,0.05)' }}>
-                      <div style={{ fontSize:10, fontWeight:700, color: estAujourdhui ? '#E8C547' : '#999', textTransform:'uppercase', letterSpacing:0.5 }}>
-                        {estAujourdhui ? 'Auj.' : joursSemaine7[d.getDay()]}
-                      </div>
-                      <div style={{ fontSize:20, fontWeight:800, color:'#111', margin:'3px 0' }}>{d.getDate()}</div>
-                      <div style={{ fontSize:10, color:'#999', marginBottom:3 }}>{moisCourt[d.getMonth()]}</div>
-                      <div style={{ fontSize:12, fontWeight:700, color: totalCouverts > 0 ? '#111' : '#ccc' }}>
-                        {totalCouverts > 0 ? totalCouverts : '—'}
-                      </div>
-                      {totalCouverts > 0 && <div style={{ fontSize:9, color:'#999' }}>pers</div>}
+                    <div key={j.date} onClick={()=>{ setCalJourSelectionne(j.date); const d=new Date(j.date+'T12:00:00'); setCalDate(new Date(d.getFullYear(),d.getMonth(),1)); }}
+                      style={{ borderRadius:12, padding:'10px 4px', textAlign:'center', cursor:'pointer', border:'1.5px solid', borderColor: isSelected?'#111': j.isAujourd?'#E8C547':'#eee', background: isSelected?'#111': j.isAujourd?'#fffbea':'#fff', transition:'all 0.15s' }}>
+                      <div style={{ fontSize:10, fontWeight:700, color: isSelected?'#E8C547': j.isAujourd?'#E8C547':'#999', marginBottom:4 }}>{j.isAujourd?'AUJ.':j.jour}</div>
+                      <div style={{ fontSize:18, fontWeight:900, color: isSelected?'#fff':'#111', marginBottom:2 }}>{j.num}</div>
+                      <div style={{ fontSize:10, color: isSelected?'rgba(255,255,255,0.6)':'#999', marginBottom:4 }}>{j.mois}</div>
+                      <div style={{ fontSize:11, fontWeight:700, color: isSelected?'#E8C547': totalCouverts>0?'#111':'#ccc' }}>{totalCouverts>0?`${totalCouverts} p.`:'—'}</div>
                     </div>
                   );
                 })}
+              </div>
+              {/* Indicateur dots navigation */}
+              <div style={{ display:'flex', justifyContent:'center', gap:4, marginBottom:10, flexShrink:0 }}>
+                {Array.from({length:10},(_,i)=>(
+                  <div key={i} onClick={()=>setJoursOffset(i)} style={{ width:i===joursOffset?16:6, height:6, borderRadius:3, transition:'all 0.2s', background:i===joursOffset?'#111':'#eee', cursor:'pointer' }}/>
+                ))}
               </div>
               <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? '3fr 2fr' : undefined, gap: !isMobile ? 16 : 0, marginTop: !isMobile ? 16 : 0, flex: !isMobile ? 1 : undefined, minHeight: !isMobile ? 0 : undefined, overflow: !isMobile ? 'hidden' : undefined }}>
                 {/* Colonne calendrier */}
