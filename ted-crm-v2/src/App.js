@@ -1305,11 +1305,11 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
                 <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Genre <span style={{color:'#dc2626'}}>*</span></p>
                 <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8}}>
                   {[
-                    {id:'Homme', color:'#1d4ed8', bgActive:'#1d4ed8'},
-                    {id:'Femme', color:'#be185d', bgActive:'#be185d'},
-                    {id:'Entreprise', color:'#15803d', bgActive:'#15803d'},
+                    {id:'Homme', activeColor:'#1d4ed8', activeBg:'#dbeafe'},
+                    {id:'Femme', activeColor:'#be185d', activeBg:'#fce7f3'},
+                    {id:'Entreprise', activeColor:'#15803d', activeBg:'#dcfce7'},
                   ].map(g=>(
-                    <button key={g.id} onClick={()=>{setGenre(g.id); setPrenom(''); setNom(''); setEntreprise('');}} style={{height:44, borderRadius:10, cursor:'pointer', fontSize:14, fontWeight:700, border:'1.5px solid', borderColor: genre===g.id?g.bgActive:'#eee', background: genre===g.id?g.bgActive:'#fff', color: genre===g.id?'#fff':g.color, transition:'all 0.15s'}}>{g.id}</button>
+                    <button key={g.id} onMouseDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation(); setGenre(g.id); setPrenom(''); setNom(''); setEntreprise('');}} style={{height:44, borderRadius:10, cursor:'pointer', fontSize:14, fontWeight:700, border:'1.5px solid', borderColor: genre===g.id?g.activeBg:'#eee', background: genre===g.id?g.activeBg:'#fff', color: genre===g.id?g.activeColor:'#666', transition:'all 0.15s'}}>{g.id}</button>
                   ))}
                 </div>
               </div>
@@ -1364,7 +1364,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
           {service && (
             <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:10 }}>
               {heures.map(h => (
-                <button key={h} onClick={()=>{ setHeure(heure===h?'':h); setHeureError(false); }} style={{ padding:'8px 14px', borderRadius:20, border:`1.5px solid ${heure===h?'#111':heureError?'#dc2626':'#eee'}`, background:heure===h?'#111':'#f8f8f8', color:heure===h?'#fff':'#555', fontWeight:700, fontSize:13, cursor:'pointer' }}>{h}</button>
+                <button key={h} onMouseDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation(); setHeure(heure===h?'':h); setHeureError(false);}} style={{ padding:'8px 14px', borderRadius:20, border:`1.5px solid ${heure===h?'#111':heureError?'#dc2626':'#eee'}`, background:heure===h?'#111':'#f8f8f8', color:heure===h?'#fff':'#555', fontWeight:700, fontSize:13, cursor:'pointer' }}>{h}</button>
               ))}
             </div>
           )}
@@ -1510,11 +1510,11 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
                         <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Genre <span style={{color:'#dc2626'}}>*</span></p>
                         <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8}}>
                           {[
-                            {id:'Homme', color:'#1d4ed8', bgActive:'#1d4ed8'},
-                            {id:'Femme', color:'#be185d', bgActive:'#be185d'},
-                            {id:'Entreprise', color:'#15803d', bgActive:'#15803d'},
+                            {id:'Homme', activeColor:'#1d4ed8', activeBg:'#dbeafe'},
+                            {id:'Femme', activeColor:'#be185d', activeBg:'#fce7f3'},
+                            {id:'Entreprise', activeColor:'#15803d', activeBg:'#dcfce7'},
                           ].map(g=>(
-                            <button key={g.id} onClick={()=>{setGenre(g.id); setPrenom(''); setNom(''); setEntreprise('');}} style={{height:44, borderRadius:10, cursor:'pointer', fontSize:14, fontWeight:700, border:'1.5px solid', borderColor: genre===g.id?g.bgActive:'#eee', background: genre===g.id?g.bgActive:'#fff', color: genre===g.id?'#fff':g.color, transition:'all 0.15s'}}>{g.id}</button>
+                            <button key={g.id} onMouseDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation(); setGenre(g.id); setPrenom(''); setNom(''); setEntreprise('');}} style={{height:44, borderRadius:10, cursor:'pointer', fontSize:14, fontWeight:700, border:'1.5px solid', borderColor: genre===g.id?g.activeBg:'#eee', background: genre===g.id?g.activeBg:'#fff', color: genre===g.id?g.activeColor:'#666', transition:'all 0.15s'}}>{g.id}</button>
                           ))}
                         </div>
                       </div>
@@ -1586,7 +1586,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
                     <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>4. Heure</p>
                     <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8 }}>
                       {heures.map(h=>(
-                        <button key={h} onClick={()=>{ setHeure(heure===h?'':h); setHeureError(false); }} style={{ height:44, borderRadius:10, cursor:'pointer', fontSize:14, fontWeight:600, border:`1.5px solid ${heure===h?'#111':heureError?'#dc2626':'#eee'}`, background:heure===h?'#111':'#fff', color:heure===h?'#E8C547':'#111' }}>{h}</button>
+                        <button key={h} onMouseDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation(); setHeure(heure===h?'':h); setHeureError(false);}} style={{ height:44, borderRadius:10, cursor:'pointer', fontSize:14, fontWeight:600, border:`1.5px solid ${heure===h?'#111':heureError?'#dc2626':'#eee'}`, background:heure===h?'#111':'#fff', color:heure===h?'#E8C547':'#111' }}>{h}</button>
                       ))}
                     </div>
                     {heureError && <p style={{ fontSize:12, color:'#dc2626', marginTop:6 }}>* Sélectionnez un créneau horaire</p>}
