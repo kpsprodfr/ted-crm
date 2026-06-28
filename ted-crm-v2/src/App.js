@@ -996,10 +996,12 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
   async function handleSave() {
     if (submitLockRef.current) return;
     if (!tel.trim()) { showToast('Téléphone requis', 'error'); return; }
-    if (!genre) { showToast('Genre requis', 'error'); return; }
-    if (!prenom.trim()) { showToast('Prénom requis', 'error'); return; }
-    if (!nom.trim()) { showToast('Nom requis', 'error'); return; }
-    if (genre === 'Entreprise' && !entreprise.trim()) { showToast('Nom d\'entreprise requis', 'error'); return; }
+    if (!clientFound) {
+      if (!genre) { showToast('Genre requis', 'error'); return; }
+      if (genre !== 'Entreprise' && !prenom.trim()) { showToast('Prénom requis', 'error'); return; }
+      if (genre !== 'Entreprise' && !nom.trim()) { showToast('Nom requis', 'error'); return; }
+      if (genre === 'Entreprise' && !entreprise.trim()) { showToast("Nom d'entreprise requis", 'error'); return; }
+    }
     if (!heure) { setHeureError(true); return; }
     submitLockRef.current = true;
     setSaving(true);
