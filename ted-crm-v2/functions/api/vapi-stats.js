@@ -1,5 +1,11 @@
 export async function onRequest(context) {
   const { env } = context;
+
+  const token = (context.request.headers.get('Authorization')||'').replace('Bearer ','');
+  if (token !== env.BACKUP_SECRET) {
+    return new Response(JSON.stringify({ error: 'Non autorisé' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+  }
+
   const SUPA_URL = env.REACT_APP_SUPABASE_URL;
   const SUPA_KEY = env.SUPABASE_SERVICE_KEY;
   const res = await fetch(`${SUPA_URL}/rest/v1/reservations?statut=eq.attente&select=id,date,heure,nb_personnes,clients(prenom,nom)&order=created_at.desc`, {

@@ -15,7 +15,7 @@ export async function onRequest(context) {
   // Protection par token simple
   const authHeader = request.headers.get('Authorization') || '';
   const token = authHeader.replace('Bearer ', '');
-  if (token !== env.BACKUP_SECRET && env.BACKUP_SECRET) {
+  if (token !== env.BACKUP_SECRET) {
     return new Response(JSON.stringify({ error: 'Non autorisé' }), { status: 401, headers });
   }
 
