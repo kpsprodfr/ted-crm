@@ -13,34 +13,32 @@ export async function onRequest(context) {
 
   const body = await request.json();
   const { tel } = body;
+  const SUPA_URL = env.REACT_APP_SUPABASE_URL;
+  const SUPA_KEY = env.SUPABASE_SERVICE_KEY || env.REACT_APP_SUPABASE_KEY;
 
-  let telNormalise = tel.replace(/[\s.\-()]/g, '');
-  if (telNormalise.startsWith('+33')) {
-    telNormalise = '0' + telNormalise.slice(3);
+  const chiffres = tel.replace(/\D/g, '');
+
+  const res = await fetch(
+    `${SUPA_URL}/rest/v1/clients?select=id,prenom,nom,tel,genre,entreprise&limit=1000`,
+    {
+      headers: {
+        'apikey': SUPA_KEY,
+        'Authorization': `Bearer ${SUPA_KEY}`
+      }
+    }
+  );
+
+  const clients = await res.json();
+
+  if (!Array.isArray(clients)) {
+    return new Response(JSON.stringify({ found: false, error: 'Supabase error', raw: clients }), { headers });
   }
-  const telInternational = telNormalise.startsWith('0')
-    ? '+33' + telNormalise.slice(1)
-    : telNormalise;
 
-  const [res1, res2] = await Promise.all([
-    fetch(`${env.REACT_APP_SUPABASE_URL}/rest/v1/clients?tel=eq.${telNormalise}&select=*`, {
-      headers: {
-        'apikey': env.REACT_APP_SUPABASE_KEY,
-        'Authorization': `Bearer ${env.REACT_APP_SUPABASE_KEY}`
-      }
-    }),
-    fetch(`${env.REACT_APP_SUPABASE_URL}/rest/v1/clients?tel_normalise=eq.${telInternational}&select=*`, {
-      headers: {
-        'apikey': env.REACT_APP_SUPABASE_KEY,
-        'Authorization': `Bearer ${env.REACT_APP_SUPABASE_KEY}`
-      }
-    })
-  ]);
-
-  const [clients1, clients2] = await Promise.all([res1.json(), res2.json()]);
-  const client = (clients1 && clients1.length > 0) ? clients1[0]
-               : (clients2 && clients2.length > 0) ? clients2[0]
-               : null;
+  const client = clients.find(c => {
+    if (!c.tel) return false;
+    const clientChiffres = c.tel.replace(/\D/g, '');
+    return clientChiffres.slice(-9) === chiffres.slice(-9);
+  });
 
   if (client) {
     return new Response(JSON.stringify({
@@ -52,5 +50,5 @@ export async function onRequest(context) {
     }), { headers });
   }
 
-  return new Response(JSON.stringify({ found: false }), { headers });
+  return new Response(JSON.stringify({ found: false, total_clients: clients.length }), { headers });
 }
