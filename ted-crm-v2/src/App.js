@@ -3431,7 +3431,7 @@ function CRMApp({ user, onLogout }) {
   if (!isMobile && activeView === 'reservations') return (
     <>
       {sidebarDesktop}
-      <div style={{ marginLeft:120, minHeight:'100vh' }}>
+      <div style={{ marginLeft:120, height:'100vh', overflow:'hidden' }}>
         <ReservationsPage inline showToast={showToast} user={user} onResaCountChange={(n)=>{ setResaAttenteCount(n); updateBadge(n); }} />
       </div>
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
@@ -3596,7 +3596,7 @@ function CRMApp({ user, onLogout }) {
     return (
       <>
         {sidebarDesktop}
-        <div style={{marginLeft:120, minHeight:'100vh', background:'#f5f5f5', padding:'24px 32px', boxSizing:'border-box'}}>
+        <div style={{marginLeft:120, height:'100vh', background:'#f5f5f5', padding:'24px 32px', boxSizing:'border-box', display:'flex', flexDirection:'column', overflow:'hidden'}}>
 
           {/* Header */}
           <div style={{display:'flex', alignItems:'center', gap:16, marginBottom:20, flexShrink:0}}>
@@ -3606,7 +3606,7 @@ function CRMApp({ user, onLogout }) {
             </button>
           </div>
 
-          <div style={{display:'grid', gridTemplateColumns:'240px 1fr 380px', gap:16, height:'calc(100vh - 130px)', overflow:'hidden'}}>
+          <div style={{display:'grid', gridTemplateColumns:'240px 1fr 380px', gap:16, flex:1, minHeight:0, overflow:'hidden'}}>
 
             {/* ─── Colonne 1 — Ciblage ─── */}
             <div style={{background:'#fff', borderRadius:16, boxShadow:'0 1px 4px rgba(0,0,0,0.04)', padding:14, display:'flex', flexDirection:'column', height:'100%', overflow:'hidden'}}>
