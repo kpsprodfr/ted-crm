@@ -3106,6 +3106,8 @@ function CRMApp({ user, onLogout }) {
 
   useEffect(() => {
     if (activeView === 'communications') { loadEmailsHistorique(); loadSmsHistorique(); }
+    setModalDetailClient(null);
+    setFicheClientReadOnly(false);
   }, [activeView]);
 
   useEffect(() => { if (user) initOneSignal(); }, [user]);
