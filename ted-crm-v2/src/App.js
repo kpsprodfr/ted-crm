@@ -3534,8 +3534,10 @@ function CRMApp({ user, onLogout }) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ to: tel, message: msg })
           });
-          if (res.ok) { success++; } else { errors++; }
-        } catch(err) { errors++; }
+          const json = await res.json().catch(()=>({}));
+          if (res.ok && json.success) { success++; }
+          else { errors++; console.error('Brevo erreur:', json); }
+        } catch(err) { errors++; console.error('Fetch erreur:', err); }
         await new Promise(r => setTimeout(r, 100));
       }
 
