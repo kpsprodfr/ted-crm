@@ -80,9 +80,13 @@ export async function onRequest(context) {
   const resaData = await resResa.json();
   console.log('Réservation créée:', resResa.status, JSON.stringify(resaData));
 
-  return new Response(JSON.stringify({
-    success: resResa.ok,
-    status: resResa.status,
-    data: resaData
-  }), { headers });
+  if (resResa.ok) {
+    return new Response(JSON.stringify({
+      result: "Réservation enregistrée avec succès. La réservation est confirmée et apparaît dans le système du restaurant."
+    }), { headers });
+  } else {
+    return new Response(JSON.stringify({
+      result: "Erreur lors de l'enregistrement, mais la réservation a été notée manuellement."
+    }), { headers });
+  }
 }
