@@ -24,10 +24,21 @@ export async function onRequest(context) {
     anonCount = Array.isArray(d) ? d.length : JSON.stringify(d);
   }
 
+  // Liste les 5 dernières réservations TOUS statuts (service key bypasse RLS)
+  let dernieres = 'N/A';
+  if (serviceKey) {
+    const r = await fetch(
+      `${SUPA_URL}/rest/v1/reservations?select=id,date,heure,statut,source,created_at&order=created_at.desc&limit=5`,
+      { headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` } }
+    );
+    dernieres = await r.json();
+  }
+
   return new Response(JSON.stringify({
     serviceKeyPresent: !!serviceKey,
     anonKeyPresent: !!anonKey,
     serviceCount_attente: serviceCount,
-    anonCount_attente: anonCount
-  }), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
+    anonCount_attente: anonCount,
+    dernieres_toutes: dernieres
+  }, null, 2), { headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } });
 }
