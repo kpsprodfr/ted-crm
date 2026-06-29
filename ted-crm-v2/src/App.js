@@ -3163,12 +3163,12 @@ function CRMApp({ user, onLogout }) {
     updateBadge(n);
   }
 
-  async function loadClients() {
-    setLoading(true);
+  async function loadClients(silent = false) {
+    if (!silent) setLoading(true);
     const { data, error } = await supabase.from("clients").select("*").is("deleted_at", null).order("created_at", { ascending: false });
     if (error) { showToast("Erreur de chargement", "error"); }
     else { setClients(data || []); }
-    setLoading(false);
+    if (!silent) setLoading(false);
     chargerToutesStatsClients();
   }
 
@@ -4896,7 +4896,7 @@ function CRMApp({ user, onLogout }) {
       )}
       {modalImport && <ImportModal existingClients={clients} onImport={importClients} onCancel={()=>setModalImport(false)} />}
       {modalComment && <Modal title={`Commentaire — ${modalComment.prenom} ${modalComment.nom}`} onClose={()=>setModalComment(null)}><p style={{fontSize:14,lineHeight:1.7,margin:0}}>{modalComment.commentaire}</p></Modal>}
-      {modalCorbeille && !isMobile && <CorbeilleModal onClose={()=>{ setModalCorbeille(false); loadClients(); }} showToast={showToast} />}
+      {modalCorbeille && !isMobile && <CorbeilleModal onClose={()=>{ setModalCorbeille(false); loadClients(true); }} showToast={showToast} />}
 
       {/* Modal Top 50 clients */}
       {showTopClients && (
