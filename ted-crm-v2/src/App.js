@@ -2415,11 +2415,12 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                   const isSelected = calJourSelectionne === j.date;
                   return (
                     <div key={j.date} onClick={()=>{ setCalJourSelectionne(j.date); const d=new Date(j.date+'T12:00:00'); setCalDate(new Date(d.getFullYear(),d.getMonth(),1)); }}
-                      style={{ borderRadius:12, padding:'10px 6px', textAlign:'center', cursor:'pointer', border:'2px solid', borderColor: isSelected?'#E8C547': j.isAujourd?'#E8C547':'#eee', background: isSelected?'#fffbea':'#fff', transition:'all 0.15s' }}>
-                      <div style={{ fontSize:10, fontWeight:700, color: isSelected?'#E8C547': j.isAujourd?'#E8C547':'#999', marginBottom:4, textTransform:'uppercase' }}>{j.isAujourd?'AUJ.':j.jour}</div>
-                      <div style={{ fontSize:20, fontWeight:900, color:'#111', marginBottom:2 }}>{j.num}</div>
+                      style={{ borderRadius:12, padding:'10px 6px', textAlign:'center', cursor:'pointer', border:'2px solid', borderColor: isSelected?'#E8C547':'#eee', background: isSelected?'#fffbea':'#fff', transition:'all 0.15s' }}>
+                      <div style={{ fontSize:10, fontWeight:700, marginBottom:4, color: isSelected?'#E8C547': j.isAujourd?'#E8C547':'#999' }}>{j.isAujourd?'AUJ.':j.jour}</div>
+                      <div style={{ fontSize:20, fontWeight:900, marginBottom:2, color:'#111' }}>{j.num}</div>
                       <div style={{ fontSize:10, color:'#999', marginBottom:4 }}>{j.mois}</div>
                       <div style={{ fontSize:11, fontWeight:700, color: totalCouverts>0?'#111':'#ccc' }}>{totalCouverts>0?`${totalCouverts} pers.`:'—'}</div>
+                      {j.isAujourd && <div style={{ width:5, height:5, borderRadius:'50%', background:'#E8C547', margin:'4px auto 0' }}/>}
                     </div>
                   );
                 })}
