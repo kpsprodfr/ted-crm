@@ -13,22 +13,7 @@
     :root{--g:#E8C547;--r:14px}
 
     /* Header */
-    .header{background:#111;padding:20px 20px 18px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-bottom:3px solid var(--g);text-align:center}
-    .header-logo{height:42px;filter:brightness(0) invert(1);margin-bottom:8px}
-    .header-title{color:#fff;font-weight:800;font-size:18px;letter-spacing:1px}
-
-    /* Progress */
-    .progress-bar{background:#fff;border-bottom:1.5px solid #eee;padding:14px 20px}
-    .progress-steps{display:flex;align-items:center;gap:0;max-width:500px;margin:0 auto}
-    .step-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;transition:all 0.2s}
-    .step-dot.done{background:#111;color:var(--g)}
-    .step-dot.active{background:var(--g);color:#111;box-shadow:0 0 0 3px rgba(232,197,71,0.3)}
-    .step-dot.todo{background:#f0f0f0;color:#bbb}
-    .step-line{flex:1;height:2px;background:#eee}
-    .step-line.done{background:#111}
-    .step-labels{display:flex;justify-content:space-between;margin-top:6px;max-width:500px;margin-left:auto;margin-right:auto}
-    .step-label{font-size:10px;color:#bbb;text-align:center;width:28px;flex-shrink:0}
-    .step-label.active{color:#111;font-weight:700}
+    .header{background:#111;padding:16px 24px;display:flex;align-items:center;gap:12px;border-radius:20px 20px 0 0}
 
     /* Container */
     .container{max-width:540px;margin:0 auto;padding:24px 16px 80px}
@@ -54,7 +39,7 @@
     .btn-group{display:flex;gap:10px;flex-wrap:wrap}
     .choice-btn{flex:1;min-width:100px;height:52px;border:1.5px solid #eee;border-radius:12px;background:#fff;font-size:15px;font-weight:700;cursor:pointer;text-align:center;transition:all 0.15s;color:#555;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px}
     .choice-btn:hover{border-color:#E8C547}
-    .choice-btn.selected{border-color:#111;background:#111;color:#E8C547}
+    .choice-btn.selected{background:#E8C547;border:2px solid #fff;color:#111;box-shadow:0 0 0 2px #E8C547}
     .choice-btn.heure{flex:initial;height:44px;padding:0 14px;font-size:14px;font-weight:600;min-width:70px}
 
     /* Counter */
@@ -122,14 +107,13 @@
 <body>
 
 <div class="header">
-  <img src="../logo.png" alt="TED" class="header-logo" onerror="this.style.display='none';document.getElementById('logo-fallback').style.display='block'" />
-  <div id="logo-fallback" style="display:none;color:#E8C547;font-weight:900;font-size:26px;letter-spacing:3px;margin-bottom:6px">TED</div>
-  <div class="header-title">Réservation TED</div>
-</div>
-
-<div class="progress-bar">
-  <div class="progress-steps" id="progress-dots"></div>
-  <div class="step-labels" id="progress-labels"></div>
+  <img src="https://leted.fr/wp-content/uploads/2023/01/logo-Le-TED.png"
+    onerror="this.src='/favicon.png'"
+    style="width:44px;height:44px;object-fit:contain"/>
+  <div>
+    <div style="color:#E8C547;font-size:18px;font-weight:900;letter-spacing:2px">LE TED</div>
+    <div style="color:rgba(255,255,255,0.4);font-size:11px">Restaurant & Club — Chassieu</div>
+  </div>
 </div>
 
 <div class="container">
@@ -276,7 +260,7 @@ function renderStep1() {
   }
 
   el.innerHTML = `
-    <div class="step-title">📅 Choisissez une date</div>
+    <div class="step-title">Choisissez une date</div>
     <div class="step-subtitle">Sélectionnez le jour souhaité pour votre réservation</div>
     <div class="cal-nav">
       <button class="cal-btn" onclick="prevMonth()" ${!canPrev ? 'disabled style="opacity:0.3;cursor:not-allowed"' : ''}>‹</button>
@@ -311,7 +295,7 @@ function renderStep2() {
   const el = document.getElementById('step-2');
   const heures = state.service === 'midi' ? HEURES_MIDI : state.service === 'soir' ? HEURES_SOIR : [];
   el.innerHTML = `
-    <div class="step-title">🍽 Votre réservation</div>
+    <div class="step-title">Votre réservation</div>
     <div class="step-subtitle">${fmtDate(state.date)}</div>
 
     <div class="section-label">Nombre de personnes</div>
@@ -323,14 +307,14 @@ function renderStep2() {
 
     <div class="section-label" style="margin-top:22px">Service</div>
     <div class="btn-group">
-      <button class="choice-btn ${state.service==='midi'?'selected':''}" onclick="selectService('midi')">🌞 Midi</button>
+      <button class="choice-btn ${state.service==='midi'?'selected':''}" onclick="selectService('midi')">☀️ Midi</button>
       <button class="choice-btn ${state.service==='soir'?'selected':''}" onclick="selectService('soir')">🌙 Soir</button>
     </div>
 
     ${heures.length ? `
     <div class="section-label" style="margin-top:22px">Créneau horaire</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;">
-      ${heures.map(h=>`<button class="choice-btn heure" onclick="selectHeure('${h}')" style="${state.heure===h?'background:#111;border-color:#111;color:#E8C547;':'background:#fff;border-color:#eee;color:#111;'}">${h}</button>`).join('')}
+      ${heures.map(h=>`<button class="choice-btn heure${state.heure===h?' selected':''}" onclick="selectHeure('${h}')">${h}</button>`).join('')}
     </div>` : ''}
 
     <div class="nav-row">
@@ -358,18 +342,16 @@ function renderStep3() {
   const prenomLabel = 'Prénom <span style="color:#dc2626">*</span>';
   const nomLabel    = 'Nom <span style="color:#dc2626">*</span>';
 
-  const GENRE_C = {Homme:{bg:'#dbeafe',color:'#1d4ed8'},Femme:{bg:'#fce7f3',color:'#be185d'},Entreprise:{bg:'#dcfce7',color:'#15803d'}};
   const genreBtn = (val, icon) => {
     const sel = state.genre === val;
-    const gc = GENRE_C[val] || {bg:'#f0f0f0',color:'#666'};
-    return `<button type="button" onclick="selectGenre('${val}')" style="flex:1;height:44px;border:1.5px solid ${sel?gc.bg:'#eee'};border-radius:10px;background:${sel?gc.bg:'#fff'};color:${sel?gc.color:'#666'};font-size:14px;font-weight:700;cursor:pointer;transition:all 0.15s;font-family:inherit">${icon}</button>`;
+    return `<button type="button" onclick="selectGenre('${val}')" style="flex:1;height:44px;border:${sel?'2px solid #fff':'1.5px solid #eee'};border-radius:10px;background:${sel?'#E8C547':'#fff'};color:#111;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.15s;font-family:inherit;${sel?'box-shadow:0 0 0 2px #E8C547;':''}">${icon}</button>`;
   };
 
   const savedInfo = (() => { try { return localStorage.getItem('ted_client_info'); } catch(e) { return null; } })();
   const savedBanner = savedInfo ? `<div style="background:#f0fdf4;border:1px solid #22c55e;border-radius:8px;padding:8px 12px;font-size:12px;color:#16a34a;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;"><span>✅ Vos informations ont été mémorisées</span><button onclick="try{localStorage.removeItem('ted_client_info')}catch(e){}location.reload();" style="background:none;border:none;color:#16a34a;font-size:11px;cursor:pointer;text-decoration:underline;">Effacer</button></div>` : '';
   el.innerHTML = `
     ${savedBanner}
-    <div class="step-title">👤 Vos coordonnées</div>
+    <div class="step-title">Vos coordonnées</div>
     <div class="step-subtitle">Ces informations nous permettent de vous contacter</div>
 
     <div class="field">
@@ -417,7 +399,12 @@ function renderStep3() {
     <div class="field">
       <label class="label">Occasion <span style="color:#999;font-weight:400">(facultatif)</span></label>
       <select class="input" onchange="state.occasion=this.value">
-        ${OCCASIONS.map(o=>`<option value="${o}" ${state.occasion===o?'selected':''}>${o||'— Aucune occasion particulière'}</option>`).join('')}
+        <option value="" ${state.occasion===''?'selected':''}>— Aucune occasion</option>
+        <option value="Anniversaire" ${state.occasion==='Anniversaire'?'selected':''}>Anniversaire</option>
+        <option value="EVG — Enterrement de vie de garçon" ${state.occasion==='EVG — Enterrement de vie de garçon'?'selected':''}>EVG</option>
+        <option value="EVJF — Enterrement de vie de jeune fille" ${state.occasion==='EVJF — Enterrement de vie de jeune fille'?'selected':''}>EVJF</option>
+        <option value="Privatisation" ${state.occasion==='Privatisation'?'selected':''}>Privatisation</option>
+        <option value="Autre" ${state.occasion==='Autre'?'selected':''}>Autre</option>
       </select>
     </div>
 
@@ -460,7 +447,7 @@ function renderStep4() {
   const tel = normalizeTel(state.tel);
   const rows = [
     ['Date', fmtDate(state.date)],
-    ['Service', state.service === 'midi' ? '🌞 Midi' : '🌙 Soir'],
+    ['Service', state.service === 'midi' ? '☀️ Midi' : '🌙 Soir'],
     ['Heure', state.heure],
     ['Personnes', state.nbPersonnes + ' personne' + (state.nbPersonnes > 1 ? 's' : '')],
     state.genre ? ['Vous êtes', state.genre] : null,
@@ -474,7 +461,7 @@ function renderStep4() {
   ].filter(Boolean);
 
   el.innerHTML = `
-    <div class="step-title">✅ Récapitulatif</div>
+    <div class="step-title">Récapitulatif</div>
     <div class="step-subtitle">Vérifiez votre demande avant d'envoyer</div>
 
     <div class="recap-card">
@@ -483,13 +470,13 @@ function renderStep4() {
     </div>
 
     <div style="background:#fffbea;border:1.5px solid #E8C547;border-radius:10px;padding:10px 14px;margin-bottom:20px;font-size:13px;color:#92400e;line-height:1.6">
-      ⚠️ <strong>Cette demande n'est pas encore une confirmation.</strong> L'équipe du TED vous contactera pour valider votre réservation.
+      <strong>Cette demande n'est pas encore une confirmation.</strong> L'équipe du TED vous contactera pour valider votre réservation.
     </div>
 
     <div class="nav-row">
       <button class="btn-back" onclick="goStep(3)">← Modifier</button>
       <button class="btn-next" id="btn-submit" onclick="submitForm()" ${state.submitting?'disabled':''}>
-        ${state.submitting ? '⏳ Envoi en cours…' : '📩 Envoyer ma demande'}
+        ${state.submitting ? 'Envoi en cours…' : 'Envoyer ma demande'}
       </button>
     </div>
   `;
@@ -605,21 +592,21 @@ function showSuccess() {
       <div style="background:#fff;border-radius:14px;border:1.5px solid #f0f0f0;padding:20px;margin-bottom:20px;text-align:left;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
         <p style="font-size:11px;font-weight:700;color:#999;letter-spacing:1px;text-transform:uppercase;margin:0 0 14px;">Récapitulatif</p>
         <div style="display:flex;flex-direction:column;gap:10px;">
-          <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:20px;">📅</span><div><p style="margin:0;font-size:11px;color:#999;">Date</p><p style="margin:0;font-weight:700;color:#111;" id="confirm-date"></p></div></div>
-          <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:20px;">🕐</span><div><p style="margin:0;font-size:11px;color:#999;">Heure</p><p style="margin:0;font-weight:700;color:#111;" id="confirm-heure"></p></div></div>
-          <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:20px;">👥</span><div><p style="margin:0;font-size:11px;color:#999;">Personnes</p><p style="margin:0;font-weight:700;color:#111;" id="confirm-nb"></p></div></div>
+          <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:20px;">📆</span><div><p style="margin:0;font-size:11px;color:#999;">Date</p><p style="margin:0;font-weight:700;color:#111;" id="confirm-date"></p></div></div>
+          <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:20px;">⏰</span><div><p style="margin:0;font-size:11px;color:#999;">Heure</p><p style="margin:0;font-weight:700;color:#111;" id="confirm-heure"></p></div></div>
+          <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:20px;">🪑</span><div><p style="margin:0;font-size:11px;color:#999;">Personnes</p><p style="margin:0;font-weight:700;color:#111;" id="confirm-nb"></p></div></div>
           <div style="display:flex;align-items:center;gap:12px;"><span style="font-size:20px;" id="confirm-service-icon">🌙</span><div><p style="margin:0;font-size:11px;color:#999;">Service</p><p style="margin:0;font-weight:700;color:#111;" id="confirm-service"></p></div></div>
         </div>
       </div>
       <div style="background:#fffbea;border:1.5px solid #E8C547;border-radius:12px;padding:14px 16px;margin-bottom:16px;text-align:left;">
-        <p style="margin:0 0 6px;font-weight:700;color:#111;font-size:13px;">⚠️ En attente de confirmation</p>
+        <p style="margin:0 0 6px;font-weight:700;color:#111;font-size:13px;">En attente de confirmation</p>
         <p style="margin:0;font-size:12px;color:#666;line-height:1.5;">Vous recevrez un email dès validation. L'équipe du TED vous contactera si besoin.</p>
       </div>
       <div style="margin-top:20px;padding-top:16px;border-top:1px solid #eee;text-align:center;">
         <img src="/favicon.png" style="height:28px;margin-bottom:8px;" onerror="this.style.display='none'" />
         <p style="font-weight:800;color:#111;font-size:14px;margin:0 0 4px;">Le TED — Restaurant & Club</p>
-        <p style="color:#888;font-size:12px;margin:0 0 6px;">📍 28 Av. des Frères Montgolfier, 69680 Chassieu</p>
-        <a href="tel:+33478906780" style="display:inline-flex;align-items:center;gap:6px;background:#E8C547;color:#111;text-decoration:none;padding:10px 20px;border-radius:8px;font-weight:800;font-size:14px;margin-top:4px;">📞 04 78 90 67 80</a>
+        <p style="color:#888;font-size:12px;margin:0 0 6px;">28 Av. des Frères Montgolfier, 69680 Chassieu</p>
+        <a href="tel:+33478906780" style="display:inline-flex;align-items:center;gap:6px;background:#E8C547;color:#111;text-decoration:none;padding:10px 20px;border-radius:8px;font-weight:800;font-size:14px;margin-top:4px;">04 78 90 67 80</a>
       </div>
     </div>
   `;
@@ -639,7 +626,6 @@ function goStep(n) {
     document.getElementById('step-' + i).style.display = i === n ? 'block' : 'none';
   }
   state.step = n;
-  renderProgress();
   if (n === 1) renderStep1();
   if (n === 2) renderStep2();
   if (n === 3) renderStep3();
@@ -648,7 +634,6 @@ function goStep(n) {
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
-renderProgress();
 renderStep1();
 </script>
 </body>
