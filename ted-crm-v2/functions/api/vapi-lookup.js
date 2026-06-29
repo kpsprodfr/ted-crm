@@ -14,7 +14,7 @@ export async function onRequest(context) {
   const body = await request.json();
   const { tel } = body;
 
-  let telNormalise = tel.replace(/\s/g, '');
+  let telNormalise = tel.replace(/[\s.\-()]/g, '');
   if (telNormalise.startsWith('+33')) {
     telNormalise = '0' + telNormalise.slice(3);
   }
