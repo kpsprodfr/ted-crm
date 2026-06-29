@@ -3493,6 +3493,12 @@ function CRMApp({ user, onLogout }) {
     const containsEmoji = (str) => /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/u.test(str);
     const smsLimit = containsEmoji(smsMessage) ? 70 : 160;
     const doSendSms = async () => {
+      const BREVO_KEY = process.env.REACT_APP_BREVO_API_KEY;
+      console.log('🚀 doSendSms — début');
+      console.log('smsSelected:', smsSelected);
+      console.log('smsMessage:', smsMessage);
+      console.log('BREVO_KEY:', BREVO_KEY ? `OK (${BREVO_KEY.slice(0,12)}...)` : 'MANQUANTE ❌');
+
       const { data: dejaSent } = await supabase.from('sms_envoyes').select('destinataires, message').eq('message', smsMessage);
       const dejaSentIds = new Set((dejaSent||[]).flatMap(s => (s.destinataires||[]).map(d => d.id)));
       const doublonsSms = smsSelected.filter(id => dejaSentIds.has(id));
@@ -3505,8 +3511,8 @@ function CRMApp({ user, onLogout }) {
         setSmsSelected(nouveaux);
       }
       const idsToSend = (doublonsSms.length > 0 ? nouveaux : smsSelected).filter(id => { const c = clients.find(x=>x.id===id); return c?.tel && isNumeroMobile(c.tel); });
+      console.log('idsToSend:', idsToSend.length, idsToSend);
       let success = 0; let errors = 0;
-      const BREVO_KEY = process.env.REACT_APP_BREVO_API_KEY;
       for (const id of idsToSend) {
         const client = clients.find(c=>c.id===id);
         if (!client?.tel) { errors++; continue; }
@@ -3517,16 +3523,22 @@ function CRMApp({ user, onLogout }) {
           .replace(/{entreprise}/g, client.entreprise || '')
           .replace(/{lien_resa}/g, 'https://ted-crm.pages.dev/reserver');
         const telFormate = client.tel.replace(/\s/g, '').replace(/^0/, '+33');
+        console.log(`📤 Envoi à ${client.prenom} ${client.nom} — tel: ${telFormate}`);
+        const payload = { sender: 'LETED', recipient: telFormate, content: msgPerso, type: 'marketing', unicodeEnabled: true };
+        console.log('Payload Brevo:', payload);
         try {
           const res = await fetch('https://api.brevo.com/v3/transactionalSMS/sms', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
-            body: JSON.stringify({ sender: 'Le TED', recipient: telFormate, content: msgPerso, type: 'marketing', unicodeEnabled: true })
+            body: JSON.stringify(payload)
           });
-          if (res.ok) { success++; } else { const err = await res.json(); console.error('Brevo SMS error:', err); errors++; }
+          const data = await res.json();
+          console.log(`Réponse Brevo — status ${res.status}:`, data);
+          if (res.ok) { success++; } else { errors++; }
         } catch(e) { console.error('Brevo SMS exception:', e); errors++; }
         await new Promise(r => setTimeout(r, 100));
       }
+      console.log(`✅ Résultat: ${success} succès, ${errors} erreurs`);
       await supabase.from('sms_envoyes').insert([{ message:smsMessage, nb_destinataires:success, destinataires:idsToSend.map(id => { const c = clients.find(x=>x.id===id); return {id, nom:c?.nom, prenom:c?.prenom, tel:c?.tel}; }), envoye_par:user.email }]);
       if (errors === 0) { showToast(`📱 ${success} SMS envoyé${success>1?'s':''} avec succès`); }
       else if (success > 0) { showToast(`⚠️ ${success} SMS envoyés, ${errors} échec${errors>1?'s':''}`); }
