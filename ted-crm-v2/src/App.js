@@ -3505,15 +3505,32 @@ function CRMApp({ user, onLogout }) {
         setSmsSelected(nouveaux);
       }
       const idsToSend = (doublonsSms.length > 0 ? nouveaux : smsSelected).filter(id => { const c = clients.find(x=>x.id===id); return c?.tel && isNumeroMobile(c.tel); });
-      let success = 0;
+      let success = 0; let errors = 0;
+      const BREVO_KEY = process.env.REACT_APP_BREVO_API_KEY;
       for (const id of idsToSend) {
         const client = clients.find(c=>c.id===id);
-        if (!client?.tel) continue;
-        const msgPerso = smsMessage.replace(/{prenom}/g, client.prenom||'').replace(/{nom}/g, client.nom||'');
-        try { const res = await fetch('/send-sms', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({to:client.tel, message:msgPerso}) }); if (res.ok) success++; } catch(e) {}
+        if (!client?.tel) { errors++; continue; }
+        const msgPerso = smsMessage
+          .replace(/{prenom}/g, client.prenom || client.entreprise || '')
+          .replace(/{nom}/g, client.nom || '')
+          .replace(/{tel}/g, client.tel || '')
+          .replace(/{entreprise}/g, client.entreprise || '')
+          .replace(/{lien_resa}/g, 'https://ted-crm.pages.dev/reserver');
+        const telFormate = client.tel.replace(/\s/g, '').replace(/^0/, '+33');
+        try {
+          const res = await fetch('https://api.brevo.com/v3/transactionalSMS/sms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
+            body: JSON.stringify({ sender: 'Le TED', recipient: telFormate, content: msgPerso, type: 'marketing', unicodeEnabled: true })
+          });
+          if (res.ok) { success++; } else { const err = await res.json(); console.error('Brevo SMS error:', err); errors++; }
+        } catch(e) { console.error('Brevo SMS exception:', e); errors++; }
+        await new Promise(r => setTimeout(r, 100));
       }
       await supabase.from('sms_envoyes').insert([{ message:smsMessage, nb_destinataires:success, destinataires:idsToSend.map(id => { const c = clients.find(x=>x.id===id); return {id, nom:c?.nom, prenom:c?.prenom, tel:c?.tel}; }), envoye_par:user.email }]);
-      showToast(`📱 ${success} SMS envoyé(s) ✓`);
+      if (errors === 0) { showToast(`📱 ${success} SMS envoyé${success>1?'s':''} avec succès`); }
+      else if (success > 0) { showToast(`⚠️ ${success} SMS envoyés, ${errors} échec${errors>1?'s':''}`); }
+      else { showToast(`❌ Échec de l'envoi — vérifiez votre compte Brevo`); }
       setSmsMessage(''); setSmsSelected([]); setNomCampagne(''); setShowConfirmSms(false);
       loadSmsHistorique();
     };
