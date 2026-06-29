@@ -4024,7 +4024,7 @@ function CRMApp({ user, onLogout }) {
                 {/* Boutons */}
                 <div style={{flexShrink:0,padding:'16px 32px',borderTop:'1px solid #eee',display:'flex',gap:12}}>
                   <button onClick={()=>setShowConfirmEnvoi(false)} style={{flex:1,height:50,border:'1.5px solid #ddd',borderRadius:12,background:'#fff',fontSize:15,fontWeight:600,cursor:'pointer',color:'#666'}}>Modifier</button>
-                  <button onClick={async()=>{ setShowConfirmEnvoi(false); if(commType==='email'){await handleSendAll();}else{await doSendSms();} }} style={{flex:2,height:50,border:'none',borderRadius:12,background:'#E8C547',fontSize:15,fontWeight:800,cursor:'pointer',color:'#111',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+                  <button onClick={async()=>{ console.log('🔍 commType au moment du clic:', commType); console.log('🔍 selectedComm:', selectedComm); setShowConfirmEnvoi(false); if(commType==='email'){console.log('→ Envoi EMAIL'); await handleSendAll();}else{console.log('→ Envoi SMS'); await doSendSms();} }} style={{flex:2,height:50,border:'none',borderRadius:12,background:'#E8C547',fontSize:15,fontWeight:800,cursor:'pointer',color:'#111',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
                     <Send size={18} strokeWidth={2}/> Confirmer l'envoi ({selectedComm.length})
                   </button>
                 </div>
