@@ -966,6 +966,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
     setTel(val);
     setClientFound(null);
     setStatsClient(null);
+    setGenre(''); setPrenom(''); setNom(''); setEmail(''); setEntreprise('');
     const digits = val.replace(/\D/g, '');
     if (digits.length < 10) return;
     setLookingUp(true);
@@ -1355,11 +1356,11 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
                 <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Genre <span style={{color:'#dc2626'}}>*</span></p>
                 <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8}}>
                   {[
-                    {id:'Homme', activeColor:'#1d4ed8', activeBg:'#dbeafe'},
-                    {id:'Femme', activeColor:'#be185d', activeBg:'#fce7f3'},
-                    {id:'Entreprise', activeColor:'#15803d', activeBg:'#dcfce7'},
+                    {id:'Homme', label:'M. Monsieur', activeColor:'#1d4ed8', activeBg:'#dbeafe'},
+                    {id:'Femme', label:'Mme Madame', activeColor:'#be185d', activeBg:'#fce7f3'},
+                    {id:'Entreprise', label:'Entreprise', activeColor:'#15803d', activeBg:'#dcfce7'},
                   ].map(g=>(
-                    <button key={g.id} onMouseDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation(); setGenre(g.id); setPrenom(''); setNom(''); setEntreprise('');}} style={{height:44, borderRadius:10, cursor:'pointer', fontSize:14, fontWeight:700, border:'1.5px solid', borderColor: genre===g.id?g.activeBg:'#eee', background: genre===g.id?g.activeBg:'#fff', color: genre===g.id?g.activeColor:'#666', transition:'all 0.15s'}}>{g.id}</button>
+                    <button key={g.id} onMouseDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation(); setGenre(g.id); setPrenom(''); setNom(''); setEntreprise('');}} style={{height:44, borderRadius:10, cursor:'pointer', fontSize:13, fontWeight:700, border:'1.5px solid', borderColor: genre===g.id?g.activeBg:'#eee', background: genre===g.id?g.activeBg:'#fff', color: genre===g.id?g.activeColor:'#666', transition:'all 0.15s'}}>{g.label}</button>
                   ))}
                 </div>
               </div>
@@ -1390,8 +1391,8 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
                 <div>
                   <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Email <span style={{color:'#dc2626'}}>*</span></p>
                   <input ref={refEmail} type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="prenom.nom@gmail.com"
-                    style={{width:'100%', height:48, border:'1.5px solid', borderColor: emailValide(email||'')?'#22c55e':'#eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
-                    onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=emailValide(email||'')?'#22c55e':'#eee'}/>
+                    style={{width:'100%', height:48, border:'1.5px solid', borderColor:'#eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
+                    onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
                 </div>
               )}
               <p style={{fontSize:11, color:'#999', margin:'2px 0 0', textAlign:'right'}}><span style={{color:'#dc2626'}}>*</span> Champs obligatoires</p>
@@ -1561,11 +1562,11 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
                         <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Genre <span style={{color:'#dc2626'}}>*</span></p>
                         <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8}}>
                           {[
-                            {id:'Homme', activeColor:'#1d4ed8', activeBg:'#dbeafe'},
-                            {id:'Femme', activeColor:'#be185d', activeBg:'#fce7f3'},
-                            {id:'Entreprise', activeColor:'#15803d', activeBg:'#dcfce7'},
+                            {id:'Homme', label:'M. Monsieur', activeColor:'#1d4ed8', activeBg:'#dbeafe'},
+                            {id:'Femme', label:'Mme Madame', activeColor:'#be185d', activeBg:'#fce7f3'},
+                            {id:'Entreprise', label:'Entreprise', activeColor:'#15803d', activeBg:'#dcfce7'},
                           ].map(g=>(
-                            <button key={g.id} onMouseDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation(); setGenre(g.id); setPrenom(''); setNom(''); setEntreprise('');}} style={{height:44, borderRadius:10, cursor:'pointer', fontSize:14, fontWeight:700, border:'1.5px solid', borderColor: genre===g.id?g.activeBg:'#eee', background: genre===g.id?g.activeBg:'#fff', color: genre===g.id?g.activeColor:'#666', transition:'all 0.15s'}}>{g.id}</button>
+                            <button key={g.id} onMouseDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation(); setGenre(g.id); setPrenom(''); setNom(''); setEntreprise('');}} style={{height:44, borderRadius:10, cursor:'pointer', fontSize:13, fontWeight:700, border:'1.5px solid', borderColor: genre===g.id?g.activeBg:'#eee', background: genre===g.id?g.activeBg:'#fff', color: genre===g.id?g.activeColor:'#666', transition:'all 0.15s'}}>{g.label}</button>
                           ))}
                         </div>
                       </div>
