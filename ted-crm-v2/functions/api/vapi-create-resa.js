@@ -81,9 +81,6 @@ export async function onRequest(context) {
   console.log('Réservation créée:', resResa.status, JSON.stringify(resaData));
 
   return new Response(JSON.stringify({
-    result: resResa.ok ? "Réservation enregistrée." : "Erreur enregistrement.",
-    debug_status: resResa.status,
-    debug_clientId: clientId,
-    debug_resaData: resaData
+    result: resResa.ok ? "Réservation enregistrée avec succès." : "Erreur lors de l'enregistrement."
   }), { headers });
 }
