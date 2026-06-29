@@ -4007,7 +4007,7 @@ function CRMApp({ user, onLogout }) {
                 {/* Boutons */}
                 <div style={{flexShrink:0,padding:'16px 32px',borderTop:'1px solid #eee',display:'flex',gap:12}}>
                   <button onClick={()=>setShowConfirmEnvoi(false)} style={{flex:1,height:50,border:'1.5px solid #ddd',borderRadius:12,background:'#fff',fontSize:15,fontWeight:600,cursor:'pointer',color:'#666'}}>Modifier</button>
-                  <button onClick={async()=>{ setShowConfirmEnvoi(false); if(commType==='email'){ await handleSendAll(); }else{ await doSendSms(); } }} style={{flex:2,height:50,border:'none',borderRadius:12,background:'#E8C547',fontSize:15,fontWeight:800,cursor:'pointer',color:'#111',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+                  <button onClick={async()=>{ setShowConfirmEnvoi(false); if(commType==='email'){ await doSendComm(); }else{ await doSendSms(); } }} style={{flex:2,height:50,border:'none',borderRadius:12,background:'#E8C547',fontSize:15,fontWeight:800,cursor:'pointer',color:'#111',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
                     <Send size={18} strokeWidth={2}/> Confirmer l'envoi ({selectedComm.length})
                   </button>
                 </div>
@@ -4017,20 +4017,6 @@ function CRMApp({ user, onLogout }) {
 
 
           {/* ─── Modal Confirmation Email doublons ─── */}
-          {showConfirmComm && (
-            <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:5000,display:'flex',alignItems:'center',justifyContent:'center',padding:24,pointerEvents:'all',cursor:'default',touchAction:'none'}} onMouseDown={e=>{e.preventDefault();e.stopPropagation();setShowConfirmComm(false);}} onClick={(e)=>{if(e.target===e.currentTarget)setShowConfirmComm(false);}}>
-              <div style={{background:'#fff',borderRadius:20,width:'min(480px,calc(100vw-48px))',padding:32}} onClick={e=>e.stopPropagation()}>
-                <h2 style={{margin:'0 0 12px',fontSize:18,fontWeight:800,color:'#111'}}>Confirmer l'envoi email</h2>
-                {doublons.length > 0 && <p style={{fontSize:13,color:'#dc2626',margin:'0 0 16px'}}>⚠️ {doublons.length} destinataire(s) ont déjà reçu un email avec le même objet.</p>}
-                <div style={{display:'flex',gap:12}}>
-                  <button onClick={()=>{ setShowConfirmComm(false); setDoublons([]); }} style={{flex:1,height:44,border:'1.5px solid #ddd',borderRadius:10,background:'#fff',fontSize:14,fontWeight:600,cursor:'pointer',color:'#666'}}>Annuler</button>
-                  <button onClick={()=>{ setShowConfirmComm(false); setDoublons([]); doSendComm(); }} style={{flex:2,height:44,border:'none',borderRadius:10,background:'#E8C547',fontSize:14,fontWeight:800,cursor:'pointer',color:'#111'}}>
-                    {doublons.length > 0 ? '📤 Envoyer à tous quand même' : '📤 Envoyer maintenant'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
         </div>
         {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}

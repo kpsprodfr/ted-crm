@@ -1,6 +1,6 @@
 export async function onRequestPost(context) {
   const { to, toName, subject, html } = await context.request.json();
-  const apiKey = context.env.REACT_APP_BREVO_API_KEY;
+  const apiKey = context.env.BREVO_API_KEY;
 
   const res = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
