@@ -2095,6 +2095,8 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
   const [calJourSelectionne, setCalJourSelectionne] = useState(todayLocal);
   const [joursOffset, setJoursOffset] = useState(0);
   const touchStartJoursX = useRef(null);
+  const [joursIsDragging, setJoursIsDragging] = useState(false);
+  const [joursDragX, setJoursDragX] = useState(0);
   const [calServiceSelectionne, setCalServiceSelectionne] = useState(new Date().getHours() < 15 ? 'midi' : 'soir');
   const [resaSearchPanel, setResaSearchPanel] = useState('');
 const [showDemandesAttente, setShowDemandesAttente] = useState(false);
@@ -2377,13 +2379,25 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
             const str = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
             return { date:str, jour:d.toLocaleDateString('fr-FR',{weekday:'short'}).toUpperCase().replace('.',''), num:d.getDate(), mois:d.toLocaleDateString('fr-FR',{month:'short'}), isAujourd: str===todayStr };
           });
-          function handleJoursTouchStart(e) { touchStartJoursX.current = e.touches[0].clientX; }
+          function handleJoursTouchStart(e) {
+            touchStartJoursX.current = e.touches[0].clientX;
+            setJoursIsDragging(true);
+            setJoursDragX(0);
+          }
+          function handleJoursTouchMove(e) {
+            if (touchStartJoursX.current === null) return;
+            const delta = e.touches[0].clientX - touchStartJoursX.current;
+            setJoursDragX(Math.max(-80, Math.min(80, delta)));
+          }
           function handleJoursTouchEnd(e) {
-            if (touchStartJoursX.current===null) return;
+            if (touchStartJoursX.current === null) return;
             const delta = e.changedTouches[0].clientX - touchStartJoursX.current;
-            if (Math.abs(delta) < 40) return;
-            if (delta < 0) setJoursOffset(prev => Math.min(prev+1, 9));
-            else if (delta > 0) setJoursOffset(prev => Math.max(prev-1, 0));
+            setJoursIsDragging(false);
+            setJoursDragX(0);
+            if (Math.abs(delta) >= 40) {
+              if (delta < 0 && joursOffset + 6 < 15) setJoursOffset(prev => Math.min(prev + 1, 9));
+              else if (delta > 0 && joursOffset > 0) setJoursOffset(prev => Math.max(prev - 1, 0));
+            }
             touchStartJoursX.current = null;
           }
           const JOURS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
@@ -2409,8 +2423,8 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           return (
             <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', padding:14, flex:1, display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
               {/* 1. 6 rectangles swipables */}
-              <div onTouchStart={handleJoursTouchStart} onTouchEnd={handleJoursTouchEnd}
-                style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:8, marginBottom:8, flexShrink:0, userSelect:'none', WebkitUserSelect:'none' }}>
+              <div onTouchStart={handleJoursTouchStart} onTouchMove={handleJoursTouchMove} onTouchEnd={handleJoursTouchEnd}
+                style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:8, marginBottom:8, flexShrink:0, userSelect:'none', WebkitUserSelect:'none', transform:`translateX(${joursDragX}px)`, transition: joursIsDragging ? 'none' : 'transform 0.2s ease', touchAction:'pan-y' }}>
                 {sixJours.map(j => {
                   const totalCouverts = resaList.filter(r => r.date===j.date && r.statut==='confirmee').reduce((sum,r)=>sum+(r.nb_personnes||0),0);
                   const isSelected = calJourSelectionne === j.date;
