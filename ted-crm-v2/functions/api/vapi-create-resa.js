@@ -14,6 +14,7 @@ export async function onRequest(context) {
 
   const body = await request.json();
   const { client_id, tel, prenom, nom, date, heure, nb_personnes } = body;
+  console.log('vapi-create-resa reçu:', JSON.stringify({ client_id, tel, prenom, nom, date, heure, nb_personnes }));
 
   let clientId = client_id;
 
@@ -23,34 +24,31 @@ export async function onRequest(context) {
       {
         method: 'POST',
         headers: {
-          'apikey': env.REACT_APP_SUPABASE_KEY,
-          'Authorization': `Bearer ${env.REACT_APP_SUPABASE_KEY}`,
+          'apikey': env.SUPABASE_SERVICE_KEY,
+          'Authorization': `Bearer ${env.SUPABASE_SERVICE_KEY}`,
           'Content-Type': 'application/json',
           'Prefer': 'return=representation'
         },
-        body: JSON.stringify({
-          tel,
-          prenom,
-          nom,
-          genre: 'Homme'
-        })
+        body: JSON.stringify({ tel, prenom, nom, genre: 'Homme' })
       }
     );
     const newClient = await resClient.json();
+    console.log('Création client:', resClient.status, JSON.stringify(newClient));
     clientId = newClient[0]?.id;
   }
 
   const heureNum = parseInt(heure.split(':')[0]);
   const service = heureNum < 15 ? 'midi' : 'soir';
 
-  await fetch(
+  const resResa = await fetch(
     `${env.REACT_APP_SUPABASE_URL}/rest/v1/reservations`,
     {
       method: 'POST',
       headers: {
-        'apikey': env.REACT_APP_SUPABASE_KEY,
-        'Authorization': `Bearer ${env.REACT_APP_SUPABASE_KEY}`,
-        'Content-Type': 'application/json'
+        'apikey': env.SUPABASE_SERVICE_KEY,
+        'Authorization': `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
       },
       body: JSON.stringify({
         client_id: clientId,
@@ -63,5 +61,12 @@ export async function onRequest(context) {
     }
   );
 
-  return new Response(JSON.stringify({ success: true }), { headers });
+  const resaData = await resResa.json();
+  console.log('Réponse Supabase réservation:', resResa.status, JSON.stringify(resaData));
+
+  return new Response(JSON.stringify({
+    success: resResa.ok,
+    status: resResa.status,
+    data: resaData
+  }), { headers });
 }
