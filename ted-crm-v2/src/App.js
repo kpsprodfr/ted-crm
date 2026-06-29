@@ -2085,6 +2085,9 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
   const [calDate, setCalDate] = useState(new Date());
   const [calDragX, setCalDragX] = useState(0);
   const [calIsDragging, setCalIsDragging] = useState(false);
+  const [calNoTransition, setCalNoTransition] = useState(false);
+  const [calDragDir, setCalDragDir] = useState(null);
+  const calContainerRef = useRef(null);
   const calSwipeTouchStartX = useRef(null);
   const calTouchStartY = useRef(null);
   const [calSlideDir, setCalSlideDir] = useState(null);
@@ -2450,9 +2453,49 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                       setCalSlideDir(direction > 0 ? 'right' : 'left');
                       setTimeout(() => { setCalSlideDir(null); setCalAnimating(false); }, 300);
                     };
+                    // Mois adjacent pour le swipe (visible pendant le drag)
+                    const adjDate = calDragDir === 'left' ? new Date(annee, mois+1, 1)
+                                  : calDragDir === 'right' ? new Date(annee, mois-1, 1) : null;
+                    let adjCases = [];
+                    if (adjDate) {
+                      const aA = adjDate.getFullYear(), aM = adjDate.getMonth();
+                      const aPremier = new Date(aA, aM, 1), aDernier = new Date(aA, aM+1, 0);
+                      const aDebut = (aPremier.getDay() + 6) % 7;
+                      for (let i=0; i<aDebut; i++) adjCases.push(null);
+                      for (let d=1; d<=aDernier.getDate(); d++) adjCases.push(d);
+                      while (adjCases.length % 7 !== 0) adjCases.push(null);
+                    }
+                    const containerW = calContainerRef.current?.offsetWidth || 320;
+                    const calTransition = (calIsDragging || calNoTransition) ? 'none' : 'transform 0.28s cubic-bezier(0.4,0,0.2,1)';
+                    const renderCalGrid = (gridCases, gridAnnee, gridMois, dx) => (
+                      <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:3, transform:`translateX(${dx}px)`, transition:calTransition, willChange:'transform', touchAction:'pan-y', position:'absolute', top:0, left:0, width:'100%' }}>
+                        {gridCases.map((d, i) => {
+                          if (!d) return <div key={i} />;
+                          const iso = `${gridAnnee}-${String(gridMois+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                          const hasResa = !!confirmeesParJour[iso];
+                          const isToday2 = today.getFullYear()===gridAnnee && today.getMonth()===gridMois && today.getDate()===d;
+                          const isSelected2 = calJourSelectionne === iso;
+                          const estPasse2 = new Date(iso) < new Date(new Date().setHours(0,0,0,0));
+                          return (
+                            <button key={i} onClick={() => setCalJourSelectionne(iso)}
+                              style={{ textAlign:'center', height:48, borderRadius:6, cursor:'pointer', position:'relative',
+                                border: isToday2 && !isSelected2 ? '2px solid #E8C547' : '2px solid transparent',
+                                background: isSelected2 ? '#111' : isToday2 ? '#fffbea' : 'transparent',
+                                color: isSelected2 ? '#fff' : '#111',
+                                fontWeight: isSelected2 ? 800 : isToday2 ? 900 : 400, fontSize:16,
+                                boxSizing:'border-box', opacity: estPasse2 ? 0.4 : 1, transition:'background 0.15s' }}>
+                              {d}
+                              {hasResa && <span style={{ display:'block', width:4, height:4, borderRadius:'50%', background:'#E8C547', margin:'2px auto 0' }} />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    );
                     const handleCalTouchStart = (e) => {
+                      if (calAnimating) return;
                       calSwipeTouchStartX.current = e.touches[0].clientX;
                       calTouchStartY.current = e.touches[0].clientY;
+                      setCalDragDir(null);
                       setCalIsDragging(false);
                       setCalDragX(0);
                     };
@@ -2462,17 +2505,29 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                       const dy = e.touches[0].clientY - calTouchStartY.current;
                       if (!calIsDragging && Math.abs(dy) > Math.abs(dx)) return;
                       e.preventDefault();
+                      if (!calDragDir && Math.abs(dx) > 8) setCalDragDir(dx < 0 ? 'left' : 'right');
                       setCalIsDragging(true);
-                      setCalDragX(Math.max(-150, Math.min(150, dx)));
+                      setCalDragX(dx);
                     };
                     const handleCalTouchEnd = (e) => {
                       if (calSwipeTouchStartX.current === null) return;
                       const dx = e.changedTouches[0].clientX - calSwipeTouchStartX.current;
                       const dy = e.changedTouches[0].clientY - calTouchStartY.current;
                       setCalIsDragging(false);
-                      setCalDragX(0);
-                      if (Math.abs(dy) <= Math.abs(dx) && Math.abs(dx) > 60) {
-                        changerMois(dx < 0 ? 1 : -1);
+                      if (Math.abs(dy) <= Math.abs(dx) && Math.abs(dx) > containerW * 0.28) {
+                        const dir = dx < 0 ? 1 : -1;
+                        const target = dx < 0 ? -containerW : containerW;
+                        setCalDragX(target); // anime la sortie
+                        setTimeout(() => {
+                          setCalNoTransition(true);
+                          setCalDate(new Date(annee, mois+dir, 1));
+                          setCalDragDir(null);
+                          setCalDragX(0);
+                          setTimeout(() => setCalNoTransition(false), 30);
+                        }, 280);
+                      } else {
+                        setCalDragX(0);
+                        setCalDragDir(null);
                       }
                       calSwipeTouchStartX.current = null;
                     };
@@ -2486,38 +2541,14 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                       <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2, marginBottom:4 }}>
                         {JOURS.map(j => <div key={j} style={{ textAlign:'center', fontSize:13, fontWeight:700, color:'#999', padding:'8px 0' }}>{j}</div>)}
                       </div>
-                      <div
+                      <div ref={calContainerRef}
                         onTouchStart={handleCalTouchStart}
                         onTouchMove={handleCalTouchMove}
                         onTouchEnd={handleCalTouchEnd}
-                        style={{ overflow:'hidden', position:'relative' }}
+                        style={{ overflow:'hidden', position:'relative', height: `${Math.ceil(cases.length/7)*51}px` }}
                       >
-                        <div
-                          className={calSlideDir==='right' ? 'cal-enter-right' : calSlideDir==='left' ? 'cal-enter-left' : ''}
-                          style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:3, transform: calSlideDir ? undefined : `translateX(${calDragX}px)`, transition: calIsDragging ? 'none' : calSlideDir ? undefined : 'transform 0.25s cubic-bezier(0.4,0,0.2,1)', willChange:'transform', userSelect:'none', WebkitUserSelect:'none', touchAction:'pan-y' }}
-                        >
-                          {cases.map((d, i) => {
-                            if (!d) return <div key={i} />;
-                            const iso = `${annee}-${String(mois+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-                            const hasResa = !!confirmeesParJour[iso];
-                            const isToday = today.getFullYear()===annee && today.getMonth()===mois && today.getDate()===d;
-                            const isSelected = calJourSelectionne === iso;
-                            const estPasse = new Date(iso) < new Date(new Date().setHours(0,0,0,0));
-                            return (
-                              <button key={i} onClick={() => setCalJourSelectionne(iso)}
-                                style={{ textAlign:'center', height:48, borderRadius:6, cursor:'pointer', position:'relative',
-                                  border: isToday && !isSelected ? '2px solid #E8C547' : '2px solid transparent',
-                                  background: isSelected ? '#111' : isToday ? '#fffbea' : 'transparent',
-                                  color: isSelected ? '#fff' : '#111',
-                                  fontWeight: isSelected ? 800 : isToday ? 900 : 400, fontSize:16,
-                                  boxSizing:'border-box',
-                                  opacity: estPasse ? 0.4 : 1, transition:'background 0.15s' }}>
-                                {d}
-                                {hasResa && <span style={{ display:'block', width:4, height:4, borderRadius:'50%', background:'#E8C547', margin:'2px auto 0' }} />}
-                              </button>
-                            );
-                          })}
-                        </div>
+                        {renderCalGrid(cases, annee, mois, calDragX)}
+                        {adjDate && renderCalGrid(adjCases, adjDate.getFullYear(), adjDate.getMonth(), calDragX + (calDragDir==='left' ? containerW : -containerW))}
                       </div>
                     </div>
                     );
