@@ -938,6 +938,12 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
   const isMobile = useIsMobile();
   const calPickerRef = useRef(null);
   const submitLockRef = useRef(false);
+  const refTel = useRef(null);
+  const refDate = useRef(null);
+  const refService = useRef(null);
+  const refHeure = useRef(null);
+  const refGenre = useRef(null);
+  const refEmail = useRef(null);
 
   useEffect(() => {
     if (showCalPicker) {
@@ -1156,6 +1162,33 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
   const clientOk = clientFound || (showNouveauClient ? nouveauClientValide : true);
   const resaValide = clientOk && tel?.replace(/\D/g,'').length >= 10 && dateIso && service && heure && nbPersonnes >= 1;
 
+  const telValide = tel?.replace(/\D/g,'').length >= 10;
+  const getConsigne = () => {
+    if (!telValide)
+      return { msg: 'Entrez un numéro de téléphone valide', ref: refTel, invalide: false };
+    if (!clientFound && !genre)
+      return { msg: 'Choisissez un genre', ref: refGenre, invalide: false };
+    if (!clientFound && genre !== 'Entreprise' && !prenom?.trim())
+      return { msg: 'Entrez un prénom', ref: refGenre, invalide: false };
+    if (!clientFound && genre !== 'Entreprise' && !nom?.trim())
+      return { msg: 'Entrez un nom', ref: refGenre, invalide: false };
+    if (!clientFound && genre === 'Entreprise' && !entreprise?.trim())
+      return { msg: "Entrez le nom de l'entreprise", ref: refGenre, invalide: false };
+    if (!clientFound && email && !emailValide(email))
+      return { msg: 'Email invalide — ex: prenom@gmail.com', ref: refEmail, invalide: true };
+    if (!clientFound && !emailValide(email||''))
+      return { msg: 'Entrez un email valide', ref: refEmail, invalide: false };
+    if (!dateIso)
+      return { msg: 'Choisissez une date', ref: refDate, invalide: false };
+    if (!service)
+      return { msg: 'Choisissez Midi ou Soir', ref: refService, invalide: false };
+    if (!heure)
+      return { msg: 'Choisissez une heure', ref: refHeure, invalide: false };
+    return null;
+  };
+  const consigne = getConsigne();
+  const formValide = !consigne;
+
   const calendarJSX = showCalPicker && (() => {
     const anneeP = calPickerDate.getFullYear();
     const moisP = calPickerDate.getMonth();
@@ -1199,6 +1232,18 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
     );
   })();
 
+  function handleClickBoutonDisabled() {
+    if (!consigne) return;
+    consigne.ref.current?.scrollIntoView({ behavior:'smooth', block:'center' });
+    const el = consigne.ref.current;
+    if (el) {
+      el.style.borderColor = '#E8C547';
+      el.style.boxShadow = '0 0 0 3px rgba(232,197,71,0.3)';
+      el.style.transition = 'all 0.3s';
+      setTimeout(()=>{ el.style.borderColor = '#eee'; el.style.boxShadow = 'none'; }, 2000);
+    }
+  }
+
   const fermerFormulaireResa = () => {
     const aDesDonnees = tel || prenom || nom || (heure && heure !== '') || (dateIso && dateIso !== (DATE_OPTS[0]?.iso));
     if (aDesDonnees && !resaCree) { setShowConfirmQuitter(true); } else { onClose(); }
@@ -1206,14 +1251,16 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
 
   const ctaFooter = !resaCree ? (
     <div style={{ width:'100%' }}>
-      <button onClick={handleSave} disabled={saving || !resaValide} style={{ width:'100%', height:56, background: resaValide ? '#E8C547' : '#f0f0f0', color: resaValide ? '#111' : '#bbb', border:'none', borderRadius:14, fontSize:17, fontWeight:800, cursor: resaValide ? 'pointer' : 'not-allowed', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity: saving ? 0.6 : 1 }}>
-        {saving ? 'Enregistrement…' : (isEdit ? '✏️ Modifier la réservation' : '📅 Créer la réservation')}
+      <button onClick={formValide ? handleSave : handleClickBoutonDisabled} disabled={saving} style={{ width:'100%', height:56, background: formValide ? '#E8C547' : '#f0f0f0', color: formValide ? '#111' : '#bbb', border:'none', borderRadius:14, fontSize:17, fontWeight:800, cursor: formValide ? 'pointer' : 'not-allowed', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity: saving ? 0.6 : 1, transition:'all 0.3s', boxShadow: formValide ? '0 2px 8px rgba(232,197,71,0.3)' : 'none' }}>
+        {saving ? 'Enregistrement…' : (isEdit ? '✏️ Modifier la réservation' : (formValide ? '✓ Créer la réservation' : 'Créer la réservation'))}
       </button>
-      {!resaValide && (
-        <p style={{ textAlign:'center', fontSize:12, color:'#999', margin:'6px 0 0' }}>
-          {tel?.replace(/\D/g,'').length < 10 ? 'Entrez un numéro de téléphone' : !dateIso ? 'Choisissez une date' : !service ? 'Choisissez Midi ou Soir' : !heure ? 'Choisissez une heure' : 'Remplissez tous les champs'}
-        </p>
-      )}
+      <div style={{ textAlign:'center', fontSize:12, marginTop:8, minHeight:20, transition:'opacity 0.2s' }}>
+        {consigne && (
+          <span style={{ color: consigne.invalide ? '#dc2626' : '#999' }}>
+            {consigne.invalide ? '⚠️ ' : '→ '}{consigne.msg}
+          </span>
+        )}
+      </div>
       <button onClick={fermerFormulaireResa} style={{ width:'100%', background:'none', border:'none', color:'#999', fontSize:14, cursor:'pointer', padding:'8px', marginTop:4 }}>Annuler</button>
     </div>
   ) : null;
@@ -1256,7 +1303,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
       <div style={{ display:'flex', flexDirection:'column', gap:20, paddingBottom:8 }}>
 
         {/* ── Section 1 : Téléphone ── */}
-        <div>
+        <div ref={refTel}>
           <div style={{ fontSize:13, fontWeight:800, color:'#555', marginBottom:8, textTransform:'uppercase', letterSpacing:0.5 }}>1. Téléphone du client</div>
           <div style={{ position:'relative' }}>
             <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', fontSize:16, pointerEvents:'none' }}>📞</span>
@@ -1303,7 +1350,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
             </div>
           )}
           {showNouveauClient && (
-            <div style={{display:'flex', flexDirection:'column', gap:10, marginTop:10}}>
+            <div ref={refGenre} style={{display:'flex', flexDirection:'column', gap:10, marginTop:10}}>
               <div>
                 <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Genre <span style={{color:'#dc2626'}}>*</span></p>
                 <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8}}>
@@ -1342,7 +1389,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
               {genre && (
                 <div>
                   <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Email <span style={{color:'#dc2626'}}>*</span></p>
-                  <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="prenom.nom@gmail.com"
+                  <input ref={refEmail} type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="prenom.nom@gmail.com"
                     style={{width:'100%', height:48, border:'1.5px solid', borderColor: emailValide(email||'')?'#22c55e':'#eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
                     onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=emailValide(email||'')?'#22c55e':'#eee'}/>
                 </div>
@@ -1353,19 +1400,19 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
         </div>
 
         {/* ── Section 2 : Quand ? ── */}
-        <div>
+        <div ref={refDate}>
           <div style={{ fontSize:13, fontWeight:800, color:'#555', marginBottom:8, textTransform:'uppercase', letterSpacing:0.5 }}>2. Quand ?</div>
           <button onPointerDown={()=>setShowCalPicker(!showCalPicker)} style={{ width:'100%', height:48, border:`1.5px solid ${showCalPicker ? '#E8C547' : '#ddd'}`, borderRadius:10, background:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', textAlign:'left', padding:'0 14px', color: dateIso ? '#111' : '#aaa', display:'flex', alignItems:'center', justifyContent:'space-between', touchAction:'manipulation', WebkitTapHighlightColor:'transparent' }}>
             <span>📅 {dateIso ? new Date(dateIso+'T12:00:00').toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'}) : 'Choisir une date'}</span>
             <span style={{ color:'#ccc', fontSize:20 }}>›</span>
           </button>
           {calendarJSX}
-          <div style={{ display:'flex', gap:8, marginTop:10 }}>
+          <div ref={refService} style={{ display:'flex', gap:8, marginTop:10 }}>
             <button style={btnSvc('midi')} onClick={()=>{ setService('midi'); setHeure(''); setHeureError(false); }}>☀️ Midi</button>
             <button style={btnSvc('soir')} onClick={()=>{ setService('soir'); setHeure(''); setHeureError(false); }}>🌙 Soir</button>
           </div>
           {service && (
-            <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:10 }}>
+            <div ref={refHeure} style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:10 }}>
               {heures.map(h => (
                 <button key={h} onMouseDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation(); setHeure(heure===h?'':h); setHeureError(false);}} style={{ padding:'8px 14px', borderRadius:20, border:`1.5px solid ${heure===h?'#111':heureError?'#dc2626':'#eee'}`, background:heure===h?'#111':'#f8f8f8', color:heure===h?'#fff':'#555', fontWeight:700, fontSize:13, cursor:'pointer' }}>{h}</button>
               ))}
@@ -1454,7 +1501,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
               <div style={{ display:'flex', flexDirection:'column', gap:0 }}>
 
                 {/* 1. Téléphone */}
-                <div style={{ marginBottom:24, marginTop:8 }}>
+                <div ref={refTel} style={{ marginBottom:24, marginTop:8 }}>
                   <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>1. Téléphone du client</p>
                   <div style={{ position:'relative' }}>
                     <Phone size={18} strokeWidth={2} color="#999" style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} />
@@ -1509,7 +1556,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
                   )}
 
                   {showNouveauClient && (
-                    <div style={{display:'flex', flexDirection:'column', gap:10, marginTop:10}}>
+                    <div ref={refGenre} style={{display:'flex', flexDirection:'column', gap:10, marginTop:10}}>
                       <div>
                         <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Genre <span style={{color:'#dc2626'}}>*</span></p>
                         <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8}}>
@@ -1548,7 +1595,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
                       {genre && (
                         <div>
                           <p style={{fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px'}}>Email <span style={{color:'#dc2626'}}>*</span></p>
-                          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="prenom.nom@gmail.com"
+                          <input ref={refEmail} type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="prenom.nom@gmail.com"
                             style={{width:'100%', height:48, border:'1.5px solid', borderColor: emailValide(email||'')?'#22c55e':'#eee', borderRadius:10, padding:'0 14px', fontSize:14, outline:'none', boxSizing:'border-box'}}
                             onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=emailValide(email||'')?'#22c55e':'#eee'}/>
                         </div>
@@ -1559,7 +1606,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
                 </div>
 
                 {/* 2. Date */}
-                <div style={{ marginBottom:24 }}>
+                <div ref={refDate} style={{ marginBottom:24 }}>
                   <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>2. Date</p>
                   <button onPointerDown={()=>setShowCalPicker(!showCalPicker)} style={{ width:'100%', height:52, border:`1.5px solid ${showCalPicker?'#E8C547':'#eee'}`, borderRadius:12, background:'#fff', display:'flex', alignItems:'center', gap:12, padding:'0 16px', cursor:'pointer', boxSizing:'border-box', touchAction:'manipulation' }}>
                     <CalendarDays size={18} strokeWidth={2} color="#999" />
@@ -1572,7 +1619,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
                 </div>
 
                 {/* 3. Service */}
-                <div style={{ marginBottom:24 }}>
+                <div ref={refService} style={{ marginBottom:24 }}>
                   <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>3. Service</p>
                   <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
                     <button onClick={()=>{ setService('midi'); setHeure(''); setHeureError(false); }} style={{ height:52, borderRadius:12, cursor:'pointer', fontSize:15, fontWeight:700, border:`1.5px solid ${service==='midi'?'#E8C547':'#eee'}`, background:service==='midi'?'#fffbea':'#fff', color:'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
@@ -1586,7 +1633,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
 
                 {/* 4. Heure */}
                 {service && (
-                  <div style={{ marginBottom:24 }}>
+                  <div ref={refHeure} style={{ marginBottom:24 }}>
                     <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>4. Heure</p>
                     <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8 }}>
                       {heures.map(h=>(
@@ -1637,14 +1684,16 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
           {/* Footer fixe */}
           {!resaCree && (
             <div style={{ flexShrink:0, padding:'16px 28px', borderTop:'1px solid #eee', background:'#fff' }}>
-              <button disabled={!resaValide||saving} onClick={handleSave} style={{ width:'100%', height:54, background:resaValide?'#E8C547':'#f0f0f0', color:resaValide?'#111':'#bbb', border:'none', borderRadius:14, fontSize:16, fontWeight:800, cursor:resaValide?'pointer':'not-allowed' }}>
-                {saving ? 'Enregistrement...' : (isEdit ? '✏️ Modifier la réservation' : 'Créer la réservation')}
+              <button onClick={formValide ? handleSave : handleClickBoutonDisabled} disabled={saving} style={{ width:'100%', height:54, background:formValide?'#E8C547':'#f0f0f0', color:formValide?'#111':'#bbb', border:'none', borderRadius:14, fontSize:16, fontWeight:800, cursor:formValide?'pointer':'not-allowed', transition:'all 0.3s', boxShadow:formValide?'0 2px 8px rgba(232,197,71,0.3)':'none' }}>
+                {saving ? 'Enregistrement...' : (isEdit ? '✏️ Modifier la réservation' : (formValide ? '✓ Créer la réservation' : 'Créer la réservation'))}
               </button>
-              {!resaValide && (
-                <p style={{ textAlign:'center', fontSize:12, color:'#999', margin:'6px 0 0' }}>
-                  {tel?.replace(/\D/g,'').length < 10 ? 'Entrez un numéro de téléphone' : !dateIso ? 'Choisissez une date' : !service ? 'Choisissez Midi ou Soir' : !heure ? 'Choisissez une heure' : 'Remplissez tous les champs'}
-                </p>
-              )}
+              <div style={{ textAlign:'center', fontSize:12, marginTop:8, minHeight:20, transition:'opacity 0.2s' }}>
+                {consigne && (
+                  <span style={{ color: consigne.invalide ? '#dc2626' : '#999' }}>
+                    {consigne.invalide ? '⚠️ ' : '→ '}{consigne.msg}
+                  </span>
+                )}
+              </div>
             </div>
           )}
         </div>
