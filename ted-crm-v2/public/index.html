@@ -34,6 +34,10 @@
       .cal-slide-from-left  { animation: slideFromLeft  0.28s cubic-bezier(0.4,0,0.2,1) forwards; }
       .cal-slide-to-left    { animation: slideToLeft    0.28s cubic-bezier(0.4,0,0.2,1) forwards; }
       .cal-slide-to-right   { animation: slideToRight   0.28s cubic-bezier(0.4,0,0.2,1) forwards; }
+      @keyframes slideInRight { from { opacity:0; transform:translateX(100%); } to { opacity:1; transform:translateX(0); } }
+      @keyframes slideInLeft  { from { opacity:0; transform:translateX(-100%); } to { opacity:1; transform:translateX(0); } }
+      .cal-enter-right { animation: slideInRight 0.28s cubic-bezier(0.4,0,0.2,1) forwards; }
+      .cal-enter-left  { animation: slideInLeft  0.28s cubic-bezier(0.4,0,0.2,1) forwards; }
       input[type=number]::-webkit-inner-spin-button,
       input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
       input[type=number] { -moz-appearance: textfield; }

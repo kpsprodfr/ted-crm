@@ -2095,6 +2095,8 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
   const [calJourSelectionne, setCalJourSelectionne] = useState(todayLocal);
   const [joursOffset, setJoursOffset] = useState(0);
   const touchStartJoursX = useRef(null);
+  const joursTouchStartY = useRef(null);
+  const joursContainerRef = useRef(null);
   const [joursIsDragging, setJoursIsDragging] = useState(false);
   const [joursDragX, setJoursDragX] = useState(0);
   const [calServiceSelectionne, setCalServiceSelectionne] = useState(new Date().getHours() < 15 ? 'midi' : 'soir');
@@ -2381,22 +2383,27 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           });
           function handleJoursTouchStart(e) {
             touchStartJoursX.current = e.touches[0].clientX;
-            setJoursIsDragging(true);
+            joursTouchStartY.current = e.touches[0].clientY;
+            setJoursIsDragging(false);
             setJoursDragX(0);
           }
           function handleJoursTouchMove(e) {
             if (touchStartJoursX.current === null) return;
-            const delta = e.touches[0].clientX - touchStartJoursX.current;
-            setJoursDragX(Math.max(-80, Math.min(80, delta)));
+            const deltaX = e.touches[0].clientX - touchStartJoursX.current;
+            const deltaY = e.touches[0].clientY - joursTouchStartY.current;
+            if (!joursIsDragging && Math.abs(deltaY) > Math.abs(deltaX)) return;
+            e.preventDefault();
+            setJoursIsDragging(true);
+            setJoursDragX(deltaX);
           }
           function handleJoursTouchEnd(e) {
             if (touchStartJoursX.current === null) return;
-            const delta = e.changedTouches[0].clientX - touchStartJoursX.current;
+            const deltaX = e.changedTouches[0].clientX - touchStartJoursX.current;
             setJoursIsDragging(false);
             setJoursDragX(0);
-            if (Math.abs(delta) >= 40) {
-              if (delta < 0 && joursOffset + 6 < 15) setJoursOffset(prev => Math.min(prev + 1, 9));
-              else if (delta > 0 && joursOffset > 0) setJoursOffset(prev => Math.max(prev - 1, 0));
+            if (Math.abs(deltaX) > 50) {
+              if (deltaX < 0 && joursOffset < 9) setJoursOffset(prev => prev + 1);
+              else if (deltaX > 0 && joursOffset > 0) setJoursOffset(prev => prev - 1);
             }
             touchStartJoursX.current = null;
           }
@@ -2423,8 +2430,8 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           return (
             <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', padding:14, flex:1, display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
               {/* 1. 6 rectangles swipables */}
-              <div onTouchStart={handleJoursTouchStart} onTouchMove={handleJoursTouchMove} onTouchEnd={handleJoursTouchEnd}
-                style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:8, marginBottom:8, flexShrink:0, userSelect:'none', WebkitUserSelect:'none', transform:`translateX(${joursDragX}px)`, transition: joursIsDragging ? 'none' : 'transform 0.2s ease', touchAction:'pan-y' }}>
+              <div ref={joursContainerRef} onTouchStart={handleJoursTouchStart} onTouchMove={handleJoursTouchMove} onTouchEnd={handleJoursTouchEnd}
+                style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:8, marginBottom:16, flexShrink:0, userSelect:'none', WebkitUserSelect:'none', transform:`translateX(${joursDragX}px)`, transition: joursIsDragging ? 'none' : 'transform 0.25s cubic-bezier(0.4,0,0.2,1)', touchAction:'pan-y' }}>
                 {sixJours.map(j => {
                   const totalCouverts = resaList.filter(r => r.date===j.date && r.statut==='confirmee').reduce((sum,r)=>sum+(r.nb_personnes||0),0);
                   const isSelected = calJourSelectionne === j.date;
@@ -2439,12 +2446,6 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                     </div>
                   );
                 })}
-              </div>
-              {/* Indicateur dots navigation */}
-              <div style={{ display:'flex', justifyContent:'center', gap:4, marginBottom:10, flexShrink:0 }}>
-                {Array.from({length:10},(_,i)=>(
-                  <div key={i} onClick={()=>setJoursOffset(i)} style={{ width:i===joursOffset?16:6, height:6, borderRadius:3, transition:'all 0.2s', background:i===joursOffset?'#111':'#eee', cursor:'pointer' }}/>
-                ))}
               </div>
               <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? '3fr 2fr' : undefined, gap: !isMobile ? 16 : 0, marginTop: !isMobile ? 16 : 0, flex: !isMobile ? 1 : undefined, minHeight: !isMobile ? 0 : undefined, overflow: !isMobile ? 'hidden' : undefined }}>
                 {/* Colonne calendrier */}
@@ -2471,24 +2472,35 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                     const handleCalTouchStart = (e) => {
                       calSwipeTouchStartX.current = e.touches[0].clientX;
                       calTouchStartY.current = e.touches[0].clientY;
-                      setCalIsDragging(true);
+                      setCalIsDragging(false);
                       setCalDragX(0);
                     };
                     const handleCalTouchMove = (e) => {
                       if (calSwipeTouchStartX.current === null) return;
                       const dx = e.touches[0].clientX - calSwipeTouchStartX.current;
                       const dy = e.touches[0].clientY - calTouchStartY.current;
-                      if (Math.abs(dy) > Math.abs(dx)) return;
-                      setCalDragX(Math.max(-120, Math.min(120, dx)));
+                      if (!calIsDragging && Math.abs(dy) > Math.abs(dx)) return;
+                      e.preventDefault();
+                      setCalIsDragging(true);
+                      setCalDragX(Math.max(-150, Math.min(150, dx)));
                     };
                     const handleCalTouchEnd = (e) => {
                       if (calSwipeTouchStartX.current === null) return;
                       const dx = e.changedTouches[0].clientX - calSwipeTouchStartX.current;
                       const dy = e.changedTouches[0].clientY - calTouchStartY.current;
                       setCalIsDragging(false);
-                      setCalDragX(0);
-                      if (Math.abs(dy) > Math.abs(dx) || Math.abs(dx) < 50) { calSwipeTouchStartX.current = null; return; }
-                      changerMois(dx < 0 ? 1 : -1);
+                      if (Math.abs(dy) > Math.abs(dx)) { setCalDragX(0); calSwipeTouchStartX.current = null; return; }
+                      if (Math.abs(dx) > 60) {
+                        const dir = dx < 0 ? 1 : -1;
+                        setCalDragX(dx < 0 ? -300 : 300);
+                        setTimeout(() => {
+                          setCalDate(new Date(annee, mois + dir, 1));
+                          setCalDragX(dx < 0 ? 300 : -300);
+                          setTimeout(() => setCalDragX(0), 20);
+                        }, 180);
+                      } else {
+                        setCalDragX(0);
+                      }
                       calSwipeTouchStartX.current = null;
                     };
                     return (
@@ -2508,8 +2520,8 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                         style={{ overflow:'hidden', position:'relative' }}
                       >
                         <div
-                          className={calSlideDir==='left' ? 'cal-slide-from-right' : calSlideDir==='right' ? 'cal-slide-from-left' : ''}
-                          style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:3, transform: calIsDragging ? `translateX(${calDragX}px)` : 'translateX(0)', transition: calIsDragging ? 'none' : calSlideDir ? 'none' : 'transform 0.2s ease', willChange:'transform', touchAction:'pan-y' }}
+                          className={calSlideDir==='left' ? 'cal-enter-right' : calSlideDir==='right' ? 'cal-enter-left' : ''}
+                          style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:3, transform:`translateX(${calDragX}px)`, transition: calIsDragging ? 'none' : 'transform 0.25s cubic-bezier(0.4,0,0.2,1)', willChange:'transform', userSelect:'none', WebkitUserSelect:'none', touchAction:'pan-y', overflow:'hidden' }}
                         >
                           {cases.map((d, i) => {
                             if (!d) return <div key={i} />;
