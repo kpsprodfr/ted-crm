@@ -3493,57 +3493,83 @@ function CRMApp({ user, onLogout }) {
     const containsEmoji = (str) => /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/u.test(str);
     const smsLimit = containsEmoji(smsMessage) ? 70 : 160;
     const doSendSms = async () => {
+      console.log('🚀 doSendSms démarré');
       const BREVO_KEY = process.env.REACT_APP_BREVO_API_KEY;
-      console.log('🚀 doSendSms — début');
+      console.log('BREVO_KEY:', BREVO_KEY ? 'OK ✅' : 'MANQUANTE ❌');
       console.log('smsSelected:', smsSelected);
       console.log('smsMessage:', smsMessage);
-      console.log('BREVO_KEY:', BREVO_KEY ? `OK (${BREVO_KEY.slice(0,12)}...)` : 'MANQUANTE ❌');
 
-      const { data: dejaSent } = await supabase.from('sms_envoyes').select('destinataires, message').eq('message', smsMessage);
-      const dejaSentIds = new Set((dejaSent||[]).flatMap(s => (s.destinataires||[]).map(d => d.id)));
-      const doublonsSms = smsSelected.filter(id => dejaSentIds.has(id));
-      const nouveaux = smsSelected.filter(id => !dejaSentIds.has(id));
-      if (doublonsSms.length > 0 && nouveaux.length === 0) { showToast('⚠️ Ce message a déjà été envoyé à tous ces destinataires', 'error'); return; }
-      if (doublonsSms.length > 0) {
-        const noms = doublonsSms.map(id => { const c = clients.find(x=>x.id===id); return `${c?.prenom} ${c?.nom}`; }).join(', ');
-        const ok = window.confirm(`⚠️ ${doublonsSms.length} personne(s) ont déjà reçu ce message :\n${noms}\n\nEnvoyer uniquement aux autres ?`);
-        if (!ok) return;
-        setSmsSelected(nouveaux);
+      // Vérification doublons — sécurisée, on continue même si ça plante
+      let destinatairesFinaux = [...smsSelected];
+      try {
+        const { data: dejaSent, error: errDoublons } = await supabase.from('sms_envoyes').select('destinataires, message').eq('message', smsMessage);
+        console.log('Doublons check:', errDoublons ? 'ERREUR: '+errDoublons.message : (dejaSent?.length||0)+' entrées trouvées');
+        if (!errDoublons) {
+          const dejaSentIds = new Set((dejaSent||[]).flatMap(s => (s.destinataires||[]).map(d => d.id)));
+          const doublons = smsSelected.filter(id => dejaSentIds.has(id));
+          const nouveaux = smsSelected.filter(id => !dejaSentIds.has(id));
+          if (doublons.length > 0 && nouveaux.length === 0) { showToast('Ces clients ont déjà reçu ce message', 'error'); return; }
+          if (doublons.length > 0) { destinatairesFinaux = nouveaux; }
+        }
+      } catch(e) { console.log('Erreur doublons (ignorée):', e); }
+
+      console.log('Destinataires finaux:', destinatairesFinaux.length);
+
+      // Filtre mobiles avec log par numéro
+      const destinatairesMobiles = destinatairesFinaux.filter(id => {
+        const client = clients.find(c => c.id === id);
+        const tel = client?.tel?.replace(/[\s.\-()]/g, '');
+        const ok = /^(06|07|\+336|\+337)/.test(tel||'');
+        console.log('Tel:', client?.tel, '→', tel, ok ? '✅' : '❌ pas mobile');
+        return ok;
+      });
+
+      console.log('Mobiles valides:', destinatairesMobiles.length);
+
+      if (destinatairesMobiles.length === 0) {
+        showToast('Aucun numéro mobile valide (06/07)', 'error');
+        return;
       }
-      const idsToSend = (doublonsSms.length > 0 ? nouveaux : smsSelected).filter(id => { const c = clients.find(x=>x.id===id); return c?.tel && isNumeroMobile(c.tel); });
-      console.log('idsToSend:', idsToSend.length, idsToSend);
-      let success = 0; let errors = 0;
-      for (const id of idsToSend) {
-        const client = clients.find(c=>c.id===id);
+
+      let success = 0, errors = 0;
+      for (const id of destinatairesMobiles) {
+        const client = clients.find(c => c.id === id);
         if (!client?.tel) { errors++; continue; }
-        const msgPerso = smsMessage
+        const tel = client.tel.replace(/[\s.\-()]/g, '').replace(/^0/, '+33');
+        const msg = smsMessage
           .replace(/{prenom}/g, client.prenom || client.entreprise || '')
           .replace(/{nom}/g, client.nom || '')
           .replace(/{tel}/g, client.tel || '')
           .replace(/{entreprise}/g, client.entreprise || '')
-          .replace(/{lien_resa}/g, 'https://ted-crm.pages.dev/reserver');
-        const telFormate = client.tel.replace(/[\s.\-()]/g, '').replace(/^0/, '+33');
-        console.log(`📤 Envoi à ${client.prenom} ${client.nom} — tel: ${telFormate}`);
-        const payload = { sender: 'LETED', recipient: telFormate, content: msgPerso, type: 'marketing', unicodeEnabled: true };
-        console.log('Payload Brevo:', payload);
+          .replace(/{lien_resa}/g, 'https://ted-crm.pages.dev/reserver.html');
+        console.log('Envoi SMS à:', tel, '| Message:', msg.slice(0,30)+'...');
         try {
           const res = await fetch('https://api.brevo.com/v3/transactionalSMS/sms', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
-            body: JSON.stringify(payload)
+            body: JSON.stringify({ sender: 'LETED', recipient: tel, content: msg, type: 'marketing' })
           });
           const data = await res.json();
-          console.log(`Réponse Brevo — status ${res.status}:`, data);
+          console.log('Réponse Brevo:', res.status, JSON.stringify(data));
           if (res.ok) { success++; } else { errors++; }
-        } catch(e) { console.error('Brevo SMS exception:', e); errors++; }
+        } catch(err) { console.error('Erreur fetch Brevo:', err); errors++; }
         await new Promise(r => setTimeout(r, 100));
       }
-      console.log(`✅ Résultat: ${success} succès, ${errors} erreurs`);
-      await supabase.from('sms_envoyes').insert([{ message:smsMessage, nb_destinataires:success, destinataires:idsToSend.map(id => { const c = clients.find(x=>x.id===id); return {id, nom:c?.nom, prenom:c?.prenom, tel:c?.tel}; }), envoye_par:user.email }]);
-      if (errors === 0) { showToast(`📱 ${success} SMS envoyé${success>1?'s':''} avec succès`); }
-      else if (success > 0) { showToast(`⚠️ ${success} SMS envoyés, ${errors} échec${errors>1?'s':''}`); }
-      else { showToast(`❌ Échec de l'envoi — vérifiez votre compte Brevo`); }
+
+      console.log('Résultat final:', success, 'succès,', errors, 'erreurs');
+
+      // Enregistrement Supabase groupé
+      await supabase.from('sms_envoyes').insert([{
+        message: smsMessage, nb_destinataires: success,
+        destinataires: destinatairesMobiles.map(id => { const c = clients.find(x=>x.id===id); return {id, nom:c?.nom, prenom:c?.prenom, tel:c?.tel}; }),
+        envoye_par: user.email
+      }]);
+
+      if (success > 0) { showToast(`📱 ${success} SMS envoyé${success>1?'s':''} avec succès`); }
+      else { showToast('❌ Échec envoi SMS — voir console', 'error'); }
+
       setSmsMessage(''); setSmsSelected([]); setNomCampagne('');
+      setShowConfirmEnvoi(false);
       loadSmsHistorique();
     };
 
