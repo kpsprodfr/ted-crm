@@ -15,8 +15,13 @@ export async function onRequest(context) {
   const body = await request.json();
   const { tel } = body;
 
+  let telNormalise = tel.replace(/\s/g, '');
+  if (telNormalise.startsWith('+33')) {
+    telNormalise = '0' + telNormalise.slice(3);
+  }
+
   const res = await fetch(
-    `${env.REACT_APP_SUPABASE_URL}/rest/v1/clients?tel=eq.${tel}&select=*`,
+    `${env.REACT_APP_SUPABASE_URL}/rest/v1/clients?tel=eq.${telNormalise}&select=*`,
     {
       headers: {
         'apikey': env.REACT_APP_SUPABASE_KEY,
