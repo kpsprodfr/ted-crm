@@ -3493,17 +3493,11 @@ function CRMApp({ user, onLogout }) {
     const containsEmoji = (str) => /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/u.test(str);
     const smsLimit = containsEmoji(smsMessage) ? 70 : 160;
     const doSendSms = async () => {
-      console.log('🚀 doSendSms démarré');
       const BREVO_KEY = process.env.REACT_APP_BREVO_API_KEY;
-      console.log('BREVO_KEY:', BREVO_KEY ? 'OK ✅' : 'MANQUANTE ❌');
-      console.log('smsSelected:', smsSelected);
-      console.log('smsMessage:', smsMessage);
 
-      // Vérification doublons — sécurisée, on continue même si ça plante
       let destinatairesFinaux = [...smsSelected];
       try {
         const { data: dejaSent, error: errDoublons } = await supabase.from('sms_envoyes').select('destinataires, message').eq('message', smsMessage);
-        console.log('Doublons check:', errDoublons ? 'ERREUR: '+errDoublons.message : (dejaSent?.length||0)+' entrées trouvées');
         if (!errDoublons) {
           const dejaSentIds = new Set((dejaSent||[]).flatMap(s => (s.destinataires||[]).map(d => d.id)));
           const doublons = smsSelected.filter(id => dejaSentIds.has(id));
@@ -3511,20 +3505,12 @@ function CRMApp({ user, onLogout }) {
           if (doublons.length > 0 && nouveaux.length === 0) { showToast('Ces clients ont déjà reçu ce message', 'error'); return; }
           if (doublons.length > 0) { destinatairesFinaux = nouveaux; }
         }
-      } catch(e) { console.log('Erreur doublons (ignorée):', e); }
+      } catch(e) {}
 
-      console.log('Destinataires finaux:', destinatairesFinaux.length);
-
-      // Filtre mobiles avec log par numéro
       const destinatairesMobiles = destinatairesFinaux.filter(id => {
         const client = clients.find(c => c.id === id);
-        const tel = client?.tel?.replace(/[\s.\-()]/g, '');
-        const ok = /^(06|07|\+336|\+337)/.test(tel||'');
-        console.log('Tel:', client?.tel, '→', tel, ok ? '✅' : '❌ pas mobile');
-        return ok;
+        return /^(06|07|\+336|\+337)/.test((client?.tel||'').replace(/[\s.\-()]/g, ''));
       });
-
-      console.log('Mobiles valides:', destinatairesMobiles.length);
 
       if (destinatairesMobiles.length === 0) {
         showToast('Aucun numéro mobile valide (06/07)', 'error');
@@ -3542,23 +3528,17 @@ function CRMApp({ user, onLogout }) {
           .replace(/{tel}/g, client.tel || '')
           .replace(/{entreprise}/g, client.entreprise || '')
           .replace(/{lien_resa}/g, 'https://ted-crm.pages.dev/reserver.html');
-        console.log('Envoi SMS à:', tel, '| Message:', msg.slice(0,30)+'...');
         try {
-          const res = await fetch('https://api.brevo.com/v3/transactionalSMS/sms', {
+          const res = await fetch('/send-sms', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
-            body: JSON.stringify({ sender: 'LETED', recipient: tel, content: msg, type: 'marketing' })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ to: tel, message: msg })
           });
-          const data = await res.json();
-          console.log('Réponse Brevo:', res.status, JSON.stringify(data));
           if (res.ok) { success++; } else { errors++; }
-        } catch(err) { console.error('Erreur fetch Brevo:', err); errors++; }
+        } catch(err) { errors++; }
         await new Promise(r => setTimeout(r, 100));
       }
 
-      console.log('Résultat final:', success, 'succès,', errors, 'erreurs');
-
-      // Enregistrement Supabase groupé
       await supabase.from('sms_envoyes').insert([{
         message: smsMessage, nb_destinataires: success,
         destinataires: destinatairesMobiles.map(id => { const c = clients.find(x=>x.id===id); return {id, nom:c?.nom, prenom:c?.prenom, tel:c?.tel}; }),
@@ -3566,7 +3546,7 @@ function CRMApp({ user, onLogout }) {
       }]);
 
       if (success > 0) { showToast(`📱 ${success} SMS envoyé${success>1?'s':''} avec succès`); }
-      else { showToast('❌ Échec envoi SMS — voir console', 'error'); }
+      else { showToast('Échec envoi SMS', 'error'); }
 
       setSmsMessage(''); setSmsSelected([]); setNomCampagne('');
       setShowConfirmEnvoi(false);
@@ -3926,7 +3906,7 @@ function CRMApp({ user, onLogout }) {
           {/* ─── Modal Récap + Confirmation envoi ─── */}
           {showConfirmEnvoi && (
             <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:4000,display:'flex',alignItems:'center',justifyContent:'center',padding:24,pointerEvents:'all',cursor:'default',touchAction:'none'}} onMouseDown={e=>{e.preventDefault();e.stopPropagation();setShowConfirmEnvoi(false);}} onClick={(e)=>{if(e.target===e.currentTarget)setShowConfirmEnvoi(false);}}>
-              <div style={{background:'#fff',borderRadius:20,width:'min(720px,calc(100vw-48px))',maxHeight:'88vh',display:'flex',flexDirection:'column',boxShadow:'0 32px 80px rgba(0,0,0,0.3)',overflow:'hidden'}} onClick={e=>e.stopPropagation()}>
+              <div style={{background:'#fff',borderRadius:20,width:'min(720px,calc(100vw-48px))',maxHeight:'88vh',display:'flex',flexDirection:'column',boxShadow:'0 32px 80px rgba(0,0,0,0.3)',overflow:'hidden'}} onClick={e=>e.stopPropagation()} onMouseDown={e=>e.stopPropagation()}>
 
                 {/* Header */}
                 <div style={{padding:'24px 32px 20px',borderBottom:'1px solid #f0f0f0',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
@@ -4024,7 +4004,7 @@ function CRMApp({ user, onLogout }) {
                 {/* Boutons */}
                 <div style={{flexShrink:0,padding:'16px 32px',borderTop:'1px solid #eee',display:'flex',gap:12}}>
                   <button onClick={()=>setShowConfirmEnvoi(false)} style={{flex:1,height:50,border:'1.5px solid #ddd',borderRadius:12,background:'#fff',fontSize:15,fontWeight:600,cursor:'pointer',color:'#666'}}>Modifier</button>
-                  <button onClick={async()=>{ console.log('🔍 commType au moment du clic:', commType); console.log('🔍 selectedComm:', selectedComm); setShowConfirmEnvoi(false); if(commType==='email'){console.log('→ Envoi EMAIL'); await handleSendAll();}else{console.log('→ Envoi SMS'); await doSendSms();} }} style={{flex:2,height:50,border:'none',borderRadius:12,background:'#E8C547',fontSize:15,fontWeight:800,cursor:'pointer',color:'#111',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+                  <button onClick={async()=>{ setShowConfirmEnvoi(false); if(commType==='email'){ await handleSendAll(); }else{ await doSendSms(); } }} style={{flex:2,height:50,border:'none',borderRadius:12,background:'#E8C547',fontSize:15,fontWeight:800,cursor:'pointer',color:'#111',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
                     <Send size={18} strokeWidth={2}/> Confirmer l'envoi ({selectedComm.length})
                   </button>
                 </div>
