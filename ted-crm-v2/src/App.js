@@ -3414,7 +3414,7 @@ function CRMApp({ user, onLogout }) {
     const limiteCommDate = (() => { const d = new Date(); d.setMonth(d.getMonth() - filtreAbsentsMois); return d.toISOString().split('T')[0]; })();
     const il6MoisComm = new Date(Date.now() - 180*24*60*60*1000).toISOString().split('T')[0];
     const joursSem = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
-    const isNumeroMobile = (tel) => /^(\+336|\+337|06|07)/.test((tel||'').replace(/\s/g,''));
+    const isNumeroMobile = (tel) => /^(\+336|\+337|06|07)/.test((tel||'').replace(/[\s.\-()]/g,''));
 
     // Filtre unifié pour les deux modes
     const clientsFiltresComm = clients.filter(c => {
@@ -3522,7 +3522,7 @@ function CRMApp({ user, onLogout }) {
           .replace(/{tel}/g, client.tel || '')
           .replace(/{entreprise}/g, client.entreprise || '')
           .replace(/{lien_resa}/g, 'https://ted-crm.pages.dev/reserver');
-        const telFormate = client.tel.replace(/\s/g, '').replace(/^0/, '+33');
+        const telFormate = client.tel.replace(/[\s.\-()]/g, '').replace(/^0/, '+33');
         console.log(`📤 Envoi à ${client.prenom} ${client.nom} — tel: ${telFormate}`);
         const payload = { sender: 'LETED', recipient: telFormate, content: msgPerso, type: 'marketing', unicodeEnabled: true };
         console.log('Payload Brevo:', payload);
