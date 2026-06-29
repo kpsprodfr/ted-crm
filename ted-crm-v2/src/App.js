@@ -2462,12 +2462,12 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                     const changerMois = (direction) => {
                       if (calAnimating) return;
                       setCalAnimating(true);
-                      setCalSlideDir(direction > 0 ? 'left' : 'right');
-                      setTimeout(() => {
-                        setCalDate(new Date(annee, mois + direction, 1));
-                        setCalSlideDir(null);
-                        setCalAnimating(false);
-                      }, 280);
+                      setCalDragX(0);
+                      // Change le mois immédiatement → le nouveau mois entre en animation
+                      setCalDate(new Date(annee, mois + direction, 1));
+                      // direction > 0 = mois suivant → entre depuis la droite
+                      setCalSlideDir(direction > 0 ? 'right' : 'left');
+                      setTimeout(() => { setCalSlideDir(null); setCalAnimating(false); }, 300);
                     };
                     const handleCalTouchStart = (e) => {
                       calSwipeTouchStartX.current = e.touches[0].clientX;
@@ -2489,17 +2489,9 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                       const dx = e.changedTouches[0].clientX - calSwipeTouchStartX.current;
                       const dy = e.changedTouches[0].clientY - calTouchStartY.current;
                       setCalIsDragging(false);
-                      if (Math.abs(dy) > Math.abs(dx)) { setCalDragX(0); calSwipeTouchStartX.current = null; return; }
-                      if (Math.abs(dx) > 60) {
-                        const dir = dx < 0 ? 1 : -1;
-                        setCalDragX(dx < 0 ? -300 : 300);
-                        setTimeout(() => {
-                          setCalDate(new Date(annee, mois + dir, 1));
-                          setCalDragX(dx < 0 ? 300 : -300);
-                          setTimeout(() => setCalDragX(0), 20);
-                        }, 180);
-                      } else {
-                        setCalDragX(0);
+                      setCalDragX(0);
+                      if (Math.abs(dy) <= Math.abs(dx) && Math.abs(dx) > 60) {
+                        changerMois(dx < 0 ? 1 : -1);
                       }
                       calSwipeTouchStartX.current = null;
                     };
@@ -2520,8 +2512,8 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                         style={{ overflow:'hidden', position:'relative' }}
                       >
                         <div
-                          className={calSlideDir==='left' ? 'cal-enter-right' : calSlideDir==='right' ? 'cal-enter-left' : ''}
-                          style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:3, transform:`translateX(${calDragX}px)`, transition: calIsDragging ? 'none' : 'transform 0.25s cubic-bezier(0.4,0,0.2,1)', willChange:'transform', userSelect:'none', WebkitUserSelect:'none', touchAction:'pan-y', overflow:'hidden' }}
+                          className={calSlideDir==='right' ? 'cal-enter-right' : calSlideDir==='left' ? 'cal-enter-left' : ''}
+                          style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:3, transform: calSlideDir ? undefined : `translateX(${calDragX}px)`, transition: calIsDragging ? 'none' : calSlideDir ? undefined : 'transform 0.25s cubic-bezier(0.4,0,0.2,1)', willChange:'transform', userSelect:'none', WebkitUserSelect:'none', touchAction:'pan-y' }}
                         >
                           {cases.map((d, i) => {
                             if (!d) return <div key={i} />;
