@@ -77,7 +77,7 @@
     const service = p.get('service') || 'soir';
 
     document.getElementById('details').textContent =
-      `${new Date(date).toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'})} à ${heure} — ${nb} personne(s)`;
+      `${new Date(date + 'T12:00:00').toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'})} à ${heure} — ${nb} personne(s)`;
 
     const dateStr = date.replace(/-/g,'');
     const [hStart, mStart] = heure.split(':');
@@ -89,13 +89,13 @@
     const desc = encodeURIComponent(`Réservation au TED pour ${nb} personne(s)`);
 
     document.getElementById('google-btn').href =
-      `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titre}&dates=${calStart}/${calEnd}&location=${lieu}&details=${desc}`;
+      `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titre}&dates=${calStart}/${calEnd}&location=${lieu}&details=${desc}&ctz=Europe%2FParis`;
 
     document.getElementById('apple-btn').href =
       `https://ted-crm.pages.dev/ical.html?date=${date}&heure=${encodeURIComponent(heure)}&nb=${nb}`;
 
     document.getElementById('outlook-btn').href =
-      `https://outlook.live.com/calendar/0/deeplink/compose?subject=${titre}&startdt=${date}T${hStart}:${mStart}:00&enddt=${date}T${hEnd}:${mStart}:00&location=${lieu}`;
+      `https://outlook.live.com/calendar/0/deeplink/compose?subject=${titre}&startdt=${date}T${hStart}:${mStart}:00&enddt=${date}T${hEnd}:${mStart}:00&location=${lieu}&body=${desc}&timeZone=Europe/Paris`;
   </script>
 </body>
 </html>
