@@ -2093,12 +2093,7 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
   const now0 = new Date();
   const todayLocal = `${now0.getFullYear()}-${String(now0.getMonth()+1).padStart(2,'0')}-${String(now0.getDate()).padStart(2,'0')}`;
   const [calJourSelectionne, setCalJourSelectionne] = useState(todayLocal);
-  const [joursOffset, setJoursOffset] = useState(0);
-  const touchStartJoursX = useRef(null);
-  const joursTouchStartY = useRef(null);
-  const joursContainerRef = useRef(null);
-  const [joursIsDragging, setJoursIsDragging] = useState(false);
-  const [joursDragX, setJoursDragX] = useState(0);
+  const joursScrollRef = useRef(null);
   const [calServiceSelectionne, setCalServiceSelectionne] = useState(new Date().getHours() < 15 ? 'midi' : 'soir');
   const [resaSearchPanel, setResaSearchPanel] = useState('');
 const [showDemandesAttente, setShowDemandesAttente] = useState(false);
@@ -2115,6 +2110,18 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
   }, [showFormDropdown]);
 
   useEffect(() => { loadResa(); }, []);
+
+  // Sync calendrier quand le jour sélectionné change de mois
+  useEffect(() => {
+    if (!calJourSelectionne) return;
+    const d = new Date(calJourSelectionne + 'T12:00:00');
+    if (d.getFullYear() !== calDate.getFullYear() || d.getMonth() !== calDate.getMonth()) {
+      const dir = d > calDate ? 1 : -1;
+      setCalDate(new Date(d.getFullYear(), d.getMonth(), 1));
+      setCalSlideDir(dir > 0 ? 'right' : 'left');
+      setTimeout(() => setCalSlideDir(null), 300);
+    }
+  }, [calJourSelectionne]);
 
   useEffect(() => {
     const ch = supabase
@@ -2376,37 +2383,11 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
         {(() => {
           const nowLocal = new Date();
           const todayStr = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth()+1).padStart(2,'0')}-${String(nowLocal.getDate()).padStart(2,'0')}`;
-          const sixJours = Array.from({length:6}, (_,i) => {
-            const d = new Date(); d.setDate(d.getDate() + joursOffset + i);
+          const quinzeJours = Array.from({length:15}, (_,i) => {
+            const d = new Date(); d.setDate(d.getDate() + i);
             const str = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
             return { date:str, jour:d.toLocaleDateString('fr-FR',{weekday:'short'}).toUpperCase().replace('.',''), num:d.getDate(), mois:d.toLocaleDateString('fr-FR',{month:'short'}), isAujourd: str===todayStr };
           });
-          function handleJoursTouchStart(e) {
-            touchStartJoursX.current = e.touches[0].clientX;
-            joursTouchStartY.current = e.touches[0].clientY;
-            setJoursIsDragging(false);
-            setJoursDragX(0);
-          }
-          function handleJoursTouchMove(e) {
-            if (touchStartJoursX.current === null) return;
-            const deltaX = e.touches[0].clientX - touchStartJoursX.current;
-            const deltaY = e.touches[0].clientY - joursTouchStartY.current;
-            if (!joursIsDragging && Math.abs(deltaY) > Math.abs(deltaX)) return;
-            e.preventDefault();
-            setJoursIsDragging(true);
-            setJoursDragX(deltaX);
-          }
-          function handleJoursTouchEnd(e) {
-            if (touchStartJoursX.current === null) return;
-            const deltaX = e.changedTouches[0].clientX - touchStartJoursX.current;
-            setJoursIsDragging(false);
-            setJoursDragX(0);
-            if (Math.abs(deltaX) > 50) {
-              if (deltaX < 0 && joursOffset < 9) setJoursOffset(prev => prev + 1);
-              else if (deltaX > 0 && joursOffset > 0) setJoursOffset(prev => prev - 1);
-            }
-            touchStartJoursX.current = null;
-          }
           const JOURS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
           const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
           const annee = calDate.getFullYear();
@@ -2429,19 +2410,19 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           const couvertsSoir = calJourSelectionne ? resaList.filter(r => r.date === calJourSelectionne && r.service === 'soir' && r.statut === 'confirmee').reduce((sum, r) => sum + (r.nb_personnes || 0), 0) : 0;
           return (
             <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', padding:14, flex:1, display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
-              {/* 1. 6 rectangles swipables */}
-              <div ref={joursContainerRef} onTouchStart={handleJoursTouchStart} onTouchMove={handleJoursTouchMove} onTouchEnd={handleJoursTouchEnd}
-                style={{ display:'grid', gridTemplateColumns:'repeat(6,1fr)', gap:8, marginBottom:16, flexShrink:0, userSelect:'none', WebkitUserSelect:'none', transform:`translateX(${joursDragX}px)`, transition: joursIsDragging ? 'none' : 'transform 0.25s cubic-bezier(0.4,0,0.2,1)', touchAction:'pan-y' }}>
-                {sixJours.map(j => {
+              {/* 1. 15 jours scroll natif */}
+              <div ref={joursScrollRef} className="jours-strip"
+                style={{ display:'flex', gap:8, overflowX:'scroll', marginBottom:16, flexShrink:0, WebkitOverflowScrolling:'touch', scrollSnapType:'x mandatory', userSelect:'none', WebkitUserSelect:'none' }}>
+                {quinzeJours.map(j => {
                   const totalCouverts = resaList.filter(r => r.date===j.date && r.statut==='confirmee').reduce((sum,r)=>sum+(r.nb_personnes||0),0);
                   const isSelected = calJourSelectionne === j.date;
                   return (
-                    <div key={j.date} onClick={()=>{ setCalJourSelectionne(j.date); const d=new Date(j.date+'T12:00:00'); setCalDate(new Date(d.getFullYear(),d.getMonth(),1)); }}
-                      style={{ borderRadius:12, padding:'10px 6px', textAlign:'center', cursor:'pointer', border:'2px solid', borderColor: isSelected?'#E8C547':'#eee', background: isSelected?'#fffbea':'#fff', transition:'all 0.15s' }}>
+                    <div key={j.date} onClick={()=>setCalJourSelectionne(j.date)}
+                      style={{ borderRadius:12, padding:'10px 6px', textAlign:'center', cursor:'pointer', border:'2px solid', borderColor: isSelected?'#E8C547':'#eee', background: isSelected?'#fffbea':'#fff', transition:'border-color 0.15s, background 0.15s', flexShrink:0, width:'calc((100% - 40px) / 6)', scrollSnapAlign:'start' }}>
                       <div style={{ fontSize:10, fontWeight:700, marginBottom:4, color: isSelected?'#E8C547': j.isAujourd?'#E8C547':'#999' }}>{j.isAujourd?'AUJ.':j.jour}</div>
                       <div style={{ fontSize:20, fontWeight:900, marginBottom:2, color:'#111' }}>{j.num}</div>
                       <div style={{ fontSize:10, color:'#999', marginBottom:4 }}>{j.mois}</div>
-                      <div style={{ fontSize:11, fontWeight:700, color: totalCouverts>0?'#111':'#ccc' }}>{totalCouverts>0?`${totalCouverts} pers.`:'—'}</div>
+                      <div style={{ fontSize:11, fontWeight:700, color: totalCouverts>0?'#111':'#ccc' }}>{totalCouverts>0?`${totalCouverts} p.`:'—'}</div>
                       {j.isAujourd && <div style={{ width:5, height:5, borderRadius:'50%', background:'#E8C547', margin:'4px auto 0' }}/>}
                     </div>
                   );
