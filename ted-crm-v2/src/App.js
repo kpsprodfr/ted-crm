@@ -3503,7 +3503,7 @@ function CRMApp({ user, onLogout }) {
       const dejaSentIds = new Set((dejaSent||[]).flatMap(s => (s.destinataires||[]).map(d => d.id)));
       const doublonsSms = smsSelected.filter(id => dejaSentIds.has(id));
       const nouveaux = smsSelected.filter(id => !dejaSentIds.has(id));
-      if (doublonsSms.length > 0 && nouveaux.length === 0) { showToast('⚠️ Ce message a déjà été envoyé à tous ces destinataires', 'error'); setShowConfirmSms(false); return; }
+      if (doublonsSms.length > 0 && nouveaux.length === 0) { showToast('⚠️ Ce message a déjà été envoyé à tous ces destinataires', 'error'); return; }
       if (doublonsSms.length > 0) {
         const noms = doublonsSms.map(id => { const c = clients.find(x=>x.id===id); return `${c?.prenom} ${c?.nom}`; }).join(', ');
         const ok = window.confirm(`⚠️ ${doublonsSms.length} personne(s) ont déjà reçu ce message :\n${noms}\n\nEnvoyer uniquement aux autres ?`);
@@ -3543,7 +3543,7 @@ function CRMApp({ user, onLogout }) {
       if (errors === 0) { showToast(`📱 ${success} SMS envoyé${success>1?'s':''} avec succès`); }
       else if (success > 0) { showToast(`⚠️ ${success} SMS envoyés, ${errors} échec${errors>1?'s':''}`); }
       else { showToast(`❌ Échec de l'envoi — vérifiez votre compte Brevo`); }
-      setSmsMessage(''); setSmsSelected([]); setNomCampagne(''); setShowConfirmSms(false);
+      setSmsMessage(''); setSmsSelected([]); setNomCampagne('');
       loadSmsHistorique();
     };
 
@@ -3998,7 +3998,7 @@ function CRMApp({ user, onLogout }) {
                 {/* Boutons */}
                 <div style={{flexShrink:0,padding:'16px 32px',borderTop:'1px solid #eee',display:'flex',gap:12}}>
                   <button onClick={()=>setShowConfirmEnvoi(false)} style={{flex:1,height:50,border:'1.5px solid #ddd',borderRadius:12,background:'#fff',fontSize:15,fontWeight:600,cursor:'pointer',color:'#666'}}>Modifier</button>
-                  <button onClick={async()=>{ setShowConfirmEnvoi(false); if(commType==='email'){await handleSendAll();}else{setShowConfirmSms(true);} }} style={{flex:2,height:50,border:'none',borderRadius:12,background:'#E8C547',fontSize:15,fontWeight:800,cursor:'pointer',color:'#111',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+                  <button onClick={async()=>{ setShowConfirmEnvoi(false); if(commType==='email'){await handleSendAll();}else{await doSendSms();} }} style={{flex:2,height:50,border:'none',borderRadius:12,background:'#E8C547',fontSize:15,fontWeight:800,cursor:'pointer',color:'#111',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
                     <Send size={18} strokeWidth={2}/> Confirmer l'envoi ({selectedComm.length})
                   </button>
                 </div>
@@ -4006,18 +4006,6 @@ function CRMApp({ user, onLogout }) {
             </div>
           )}
 
-          {/* ─── Modal Confirmation SMS doublons ─── */}
-          {showConfirmSms && (
-            <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:5000,display:'flex',alignItems:'center',justifyContent:'center',padding:24,pointerEvents:'all',cursor:'default',touchAction:'none'}} onMouseDown={e=>{e.preventDefault();e.stopPropagation();setShowConfirmSms(false);}} onClick={(e)=>{if(e.target===e.currentTarget)setShowConfirmSms(false);}}>
-              <div style={{background:'#fff',borderRadius:20,width:'min(420px,calc(100vw-48px))',padding:32}} onClick={e=>e.stopPropagation()}>
-                <h2 style={{margin:'0 0 16px',fontSize:18,fontWeight:800,color:'#111'}}>Envoyer les SMS ?</h2>
-                <div style={{display:'flex',gap:12}}>
-                  <button onClick={()=>setShowConfirmSms(false)} style={{flex:1,height:44,border:'1.5px solid #ddd',borderRadius:10,background:'#fff',fontSize:14,fontWeight:600,cursor:'pointer',color:'#666'}}>Annuler</button>
-                  <button onClick={doSendSms} style={{flex:2,height:44,border:'none',borderRadius:10,background:'#E8C547',fontSize:14,fontWeight:800,cursor:'pointer',color:'#111'}}>📱 Envoyer maintenant</button>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* ─── Modal Confirmation Email doublons ─── */}
           {showConfirmComm && (
