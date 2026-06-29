@@ -3543,14 +3543,16 @@ function CRMApp({ user, onLogout }) {
           .replace(/{entreprise}/g, client.entreprise || '')
           .replace(/{lien_resa}/g, 'https://ted-crm.pages.dev/reserver.html');
         try {
-          const res = await fetch('/send-sms', {
+          const res = await fetch('https://api.brevo.com/v3/transactionalSMS/sms', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ to: tel, message: msg })
+            headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
+            body: JSON.stringify({ sender: 'LETED', recipient: tel, content: msg, type: 'marketing' })
           });
-          const json = await res.json().catch(()=>({}));
-          if (res.ok && json.success) { success++; }
-          else { errors++; console.error('Brevo erreur:', json); }
+          const data = await res.json();
+          console.log('Status Brevo:', res.status);
+          console.log('Réponse Brevo complète:', JSON.stringify(data));
+          if (!res.ok) { console.error('ERREUR Brevo:', data.message || data.error || JSON.stringify(data)); errors++; }
+          else { success++; }
         } catch(err) { errors++; console.error('Fetch erreur:', err); }
         await new Promise(r => setTimeout(r, 100));
       }
