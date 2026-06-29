@@ -2931,6 +2931,84 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
   );
 }
 
+// ─── Sending Progress Modal ───────────────────────────────────────────────────
+
+function SendingProgressModal({ type, total, done, successCount, onClose }) {
+  const [progress, setProgress] = useState(0);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  useEffect(() => {
+    const steps = 200;
+    const target = 88;
+    let step = 0;
+    const timer = setInterval(() => {
+      step++;
+      const eased = target * (1 - Math.pow(1 - step / steps, 2.5));
+      setProgress(Math.min(eased, target));
+      if (step >= steps) clearInterval(timer);
+    }, 50);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!done) return;
+    setProgress(100);
+    const t = setTimeout(() => {
+      setShowSuccess(true);
+      setTimeout(onClose, 2200);
+    }, 500);
+    return () => clearTimeout(t);
+  }, [done]);
+
+  const isEmail = type === 'email';
+  const emoji = isEmail ? '✉️' : '📱';
+  const label = isEmail ? 'email' : 'SMS';
+  const labelP = isEmail ? 'emails' : 'SMS';
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', backdropFilter:'blur(6px)', WebkitBackdropFilter:'blur(6px)' }}>
+      <div style={{ background:'#fff', borderRadius:28, padding:'44px 52px', width:'min(460px,calc(100vw - 48px))', textAlign:'center', boxShadow:'0 40px 100px rgba(0,0,0,0.25)', position:'relative', overflow:'hidden' }}>
+        {/* Fond décoratif */}
+        <div style={{ position:'absolute', top:-60, right:-60, width:200, height:200, borderRadius:'50%', background:'rgba(232,197,71,0.08)', pointerEvents:'none' }}/>
+        <div style={{ position:'absolute', bottom:-40, left:-40, width:140, height:140, borderRadius:'50%', background:'rgba(232,197,71,0.05)', pointerEvents:'none' }}/>
+
+        {!showSuccess ? (
+          <>
+            <div style={{ fontSize:44, marginBottom:18, filter:'drop-shadow(0 4px 8px rgba(0,0,0,0.12))' }}>{emoji}</div>
+            <h2 style={{ margin:'0 0 6px', fontSize:22, fontWeight:900, color:'#111', letterSpacing:-0.5 }}>Envoi en cours…</h2>
+            <p style={{ margin:'0 0 32px', fontSize:14, color:'#999', fontWeight:500 }}>
+              {total} destinataire{total > 1 ? 's' : ''}
+            </p>
+
+            {/* Barre principale */}
+            <div style={{ background:'#f0f0f0', borderRadius:99, height:12, overflow:'hidden', marginBottom:10, position:'relative' }}>
+              <div style={{ height:'100%', borderRadius:99, background:'linear-gradient(90deg, #E8C547 0%, #f5d76e 60%, #ffe680 100%)', width:`${progress}%`, transition:'width 0.08s linear', boxShadow:'0 0 16px rgba(232,197,71,0.6)', position:'relative' }}>
+                {/* Shimmer */}
+                <div style={{ position:'absolute', top:0, right:0, bottom:0, width:40, background:'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)', animation:'shimmer 1.2s infinite' }}/>
+              </div>
+            </div>
+
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+              <p style={{ fontSize:12, color:'#bbb', margin:0, fontWeight:500 }}>
+                {isEmail ? 'Connexion au serveur d\'envoi…' : 'Transmission vers les opérateurs…'}
+              </p>
+              <p style={{ fontSize:13, fontWeight:800, color:'#E8C547', margin:0 }}>{Math.round(progress)}%</p>
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ width:72, height:72, borderRadius:'50%', background:'linear-gradient(135deg, #22c55e, #16a34a)', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px', boxShadow:'0 8px 24px rgba(34,197,94,0.35)', fontSize:32 }}>✓</div>
+            <h2 style={{ margin:'0 0 8px', fontSize:24, fontWeight:900, color:'#111', letterSpacing:-0.5 }}>
+              {successCount} {successCount > 1 ? labelP : label} envoyé{successCount > 1 ? 's' : ''} !
+            </h2>
+            <p style={{ margin:0, fontSize:14, color:'#999' }}>Livraison en cours chez les destinataires</p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main CRM App ─────────────────────────────────────────────────────────────
 
 function CRMApp({ user, onLogout }) {
@@ -2953,6 +3031,7 @@ function CRMApp({ user, onLogout }) {
   const [showToutesResas, setShowToutesResas] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showConfirmEnvoi, setShowConfirmEnvoi] = useState(false);
+  const [sendingModal, setSendingModal] = useState(null); // { type, total, done, successCount }
   const [showTop300, setShowTop300] = useState(false);
   const [showTopClients, setShowTopClients] = useState(false);
   const [triColonne, setTriColonne] = useState('nom');
@@ -3500,6 +3579,7 @@ function CRMApp({ user, onLogout }) {
     };
     const doSendComm = async () => {
       setCommSending(true);
+      setSendingModal({ type:'email', total: selectedClients.length, done: false, successCount: 0 });
       let sent = 0;
       for (const client of selectedClients) {
         try {
@@ -3510,7 +3590,7 @@ function CRMApp({ user, onLogout }) {
       }
       await supabase.from('emails_envoyes').insert([{ objet:commObjet, message:commMessage, nb_destinataires:commSelected.length, destinataires:commSelected.map(id => { const c = clients.find(x=>x.id===id); return {id, nom:c?.nom, prenom:c?.prenom, mail:c?.mail}; }), envoye_par:user.email, statut:'envoye' }]);
       setCommSending(false);
-      showToast(`📧 ${sent} email(s) envoyé(s) ✓`);
+      setSendingModal(prev => prev ? { ...prev, done: true, successCount: sent } : null);
       setCommObjet(''); setCommMessage(''); setCommSelected([]); setNomCampagne('');
       loadEmailsHistorique();
     };
@@ -3528,6 +3608,7 @@ function CRMApp({ user, onLogout }) {
       const BREVO_KEY = process.env.REACT_APP_BREVO_API_KEY;
 
       let destinatairesFinaux = [...smsSelected];
+      setSendingModal(null); // reset au cas où
       try {
         const { data: dejaSent, error: errDoublons } = await supabase.from('sms_envoyes').select('destinataires, message').eq('message', smsMessage);
         if (!errDoublons) {
@@ -3549,6 +3630,7 @@ function CRMApp({ user, onLogout }) {
         return;
       }
 
+      setSendingModal({ type:'sms', total: destinatairesMobiles.length, done: false, successCount: 0 });
       let success = 0, errors = 0;
       for (const id of destinatairesMobiles) {
         const client = clients.find(c => c.id === id);
@@ -3581,8 +3663,7 @@ function CRMApp({ user, onLogout }) {
         envoye_par: user.email
       }]);
 
-      if (success > 0) { showToast(`📱 ${success} SMS envoyé${success>1?'s':''} avec succès`); }
-      else { showToast('Échec envoi SMS', 'error'); }
+      setSendingModal(prev => prev ? { ...prev, done: true, successCount: success } : null);
 
       setSmsMessage(''); setSmsSelected([]); setNomCampagne('');
       setShowConfirmEnvoi(false);
@@ -4054,6 +4135,7 @@ function CRMApp({ user, onLogout }) {
         </div>
         {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
         {notifPrePromptModal}
+        {sendingModal && <SendingProgressModal type={sendingModal.type} total={sendingModal.total} done={sendingModal.done} successCount={sendingModal.successCount} onClose={()=>setSendingModal(null)} />}
       </>
     );
   }
@@ -4942,6 +5024,7 @@ function CRMApp({ user, onLogout }) {
 
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
       {notifPrePromptModal}
+      {sendingModal && <SendingProgressModal type={sendingModal.type} total={sendingModal.total} done={sendingModal.done} successCount={sendingModal.successCount} onClose={()=>setSendingModal(null)} />}
       {showConfirmQuitter && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:9000,display:'flex',alignItems:'center',justifyContent:'center',pointerEvents:'all',touchAction:'none'}} onMouseDown={e=>{e.preventDefault();e.stopPropagation();setShowConfirmQuitter(false);}} onClick={()=>setShowConfirmQuitter(false)}>
           <div style={{background:'#fff',borderRadius:16,padding:'28px 24px',maxWidth:320,width:'90%',textAlign:'center'}} onMouseDown={e=>e.stopPropagation()} onClick={e=>e.stopPropagation()}>
