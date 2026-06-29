@@ -3564,7 +3564,7 @@ function CRMApp({ user, onLogout }) {
           const res = await fetch('https://api.brevo.com/v3/transactionalSMS/sms', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
-            body: JSON.stringify({ sender: 'LETED', recipient: tel, content: msg, type: 'marketing' })
+            body: JSON.stringify({ sender: 'LE TED', recipient: tel, content: msg, type: 'marketing' })
           });
           const data = await res.json();
           console.log('Status Brevo:', res.status);
