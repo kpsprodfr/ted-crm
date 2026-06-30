@@ -247,8 +247,7 @@
   </div>
   <div id="header-underline"></div>
   <div id="carte-tabs">
-    <button class="carte-tab active" id="tab-restaurant" data-carte="restaurant" onclick="switchCarte('restaurant')">Restaurant</button>
-    <button class="carte-tab" id="tab-brasero" data-carte="brasero" onclick="switchCarte('brasero')">Brasero</button>
+    <!-- Généré dynamiquement depuis menu_cartes -->
   </div>
   <div id="cats-bar"></div>
 </div>
@@ -277,11 +276,41 @@
 
   // ── État ────────────────────────────────────────────────────────────────────
   let carteActive = 'restaurant';
+  let allCartes = [{ slug:'restaurant', nom:'Restaurant' }, { slug:'brasero', nom:'Brasero' }];
   let allCategories = [];
   let allProduits = [];
   let platJour = null;
   let dessertJour = null;
   let suggestionJour = null;
+
+  // ── Cartes dynamiques depuis menu_cartes ────────────────────────────────────
+  async function loadCartes() {
+    try {
+      const r = await fetch(
+        `${SUPA_URL}/rest/v1/menu_cartes?select=nom,slug,ordre&visible=eq.true&order=ordre`,
+        { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
+      );
+      if (r.ok) {
+        const data = await r.json();
+        if (data && data.length > 0) allCartes = data;
+      }
+    } catch(e) {} // silencieux — fallback hardcodé
+    renderCarteTabs();
+  }
+
+  function renderCarteTabs() {
+    const container = document.getElementById('carte-tabs');
+    container.innerHTML = '';
+    allCartes.forEach(c => {
+      const btn = document.createElement('button');
+      btn.className = 'carte-tab' + (c.slug === carteActive ? ' active' : '');
+      btn.id = 'tab-' + c.slug;
+      btn.dataset.carte = c.slug;
+      btn.textContent = c.nom;
+      btn.onclick = () => switchCarte(c.slug);
+      container.appendChild(btn);
+    });
+  }
 
   function formatPrix(p) {
     if (!p) return '';
@@ -308,8 +337,6 @@
   function applyLangUI() {
     document.getElementById('lang-btn').textContent = lang.toUpperCase();
     document.querySelectorAll('.lang-opt').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase() === lang));
-    document.getElementById('tab-restaurant').textContent = tUI('restaurant');
-    document.getElementById('tab-brasero').textContent    = tUI('brasero');
     document.getElementById('brasero-banner').textContent = tUI('brasero_banner');
     if (allCategories.length) renderMenu();
   }
@@ -606,11 +633,12 @@
   const urlCarte = urlParams.get('carte');
   const fromAccueil = urlParams.get('from') === 'accueil';
 
-  if (urlCarte === 'brasero') {
-    carteActive = 'brasero';
-    document.querySelectorAll('.carte-tab').forEach(t => t.classList.toggle('active', t.dataset.carte === 'brasero'));
-    document.getElementById('brasero-banner').classList.add('visible');
+  if (urlCarte) {
+    carteActive = urlCarte;
+    document.getElementById('brasero-banner').classList.toggle('visible', urlCarte === 'brasero');
   }
+
+  loadCartes();
 
   // Animation d'entrée si on vient de accueil.html
   if (fromAccueil && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {

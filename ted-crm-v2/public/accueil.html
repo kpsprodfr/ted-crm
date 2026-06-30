@@ -220,6 +220,42 @@
   const SUPA_KEY = 'sb_publishable_4-uVtQtXd0jLGkNAFsx4yw_ni17DzN_';
   const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // ── Cartes dynamiques ───────────────────────────────────────────────────────
+  let cartesPublic = []; // chargé depuis menu_cartes
+
+  async function loadCartesPublic() {
+    try {
+      const r = await fetch(
+        `${SUPA_URL}/rest/v1/menu_cartes?select=nom,slug,ordre&visible=eq.true&order=ordre`,
+        { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
+      );
+      if (!r.ok) return;
+      const data = await r.json();
+      if (!data || !data.length) return;
+      cartesPublic = data;
+
+      // Carte principale (1ère) — lien du bouton "Consulter la carte"
+      const main   = data[0];
+      const second = data[1];
+
+      // Met à jour les hrefs avec les vrais slugs
+      const btnC = document.getElementById('btn-consulter');
+      btnC.href = `/menu.html?from=accueil`;
+      btnC.dataset.dest = `/menu.html?from=accueil`;
+
+      const btnB = document.getElementById('btn-brasero');
+      if (second) {
+        btnB.href = `/menu.html?carte=${second.slug}&from=accueil`;
+        btnB.dataset.dest = `/menu.html?carte=${second.slug}&from=accueil`;
+        // Surcharge le nom dans toutes les langues avec le vrai nom de la carte
+        Object.keys(UI).forEach(l => { UI[l].carte_brasero = second.nom; });
+        applyLangUI();
+      } else {
+        btnB.style.display = 'none'; // une seule carte → masque le 2e bouton
+      }
+    } catch(e) {} // silencieux — les labels hardcodés restent
+  }
+
   // ── Langue ──────────────────────────────────────────────────────────────────
   const UI = {
     fr: { nos_soirees:'Nos soirées', consulter:'Consulter la carte', carte_brasero:'Carte Brasero', reserver:'Réserver une table' },
@@ -399,6 +435,8 @@
   }
 
   // ── Chargement Supabase ─────────────────────────────────────────────────────
+  loadCartesPublic();
+
   (function loadSoirees() {
     const hit = soireesFromCache();
     if (hit) {
