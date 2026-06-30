@@ -84,13 +84,11 @@
 
     /* ── Pills catégories ─────────────────────────────────────────────────── */
     #cats-bar {
-      position: sticky; top: 94px; z-index: 99;
-      background: #fff; border-bottom: 1px solid #f0f0f0;
+      background: #fff; border-top: 1px solid #222;
       padding: 8px 16px; display: flex; gap: 10px;
       overflow-x: auto; scrollbar-width: none;
-      transition: top 220ms ease;
+      margin: 0 -20px; /* déborde sur les bords du header */
     }
-    #header.compact ~ #cats-bar { top: 66px; }
     #cats-bar::-webkit-scrollbar { display: none; }
     .cat-pill {
       flex-shrink: 0; padding: 10px 18px; border-radius: 20px; font-size: 13px;
@@ -203,9 +201,8 @@
     <button class="carte-tab active" data-carte="restaurant" onclick="switchCarte('restaurant')">Restaurant</button>
     <button class="carte-tab" data-carte="brasero" onclick="switchCarte('brasero')">Brasero</button>
   </div>
+  <div id="cats-bar"></div>
 </div>
-
-<div id="cats-bar"></div>
 
 <div id="plat-jour-container" style="display:none;padding:12px 16px 0;max-width:680px;margin:0 auto;"></div>
 
