@@ -3445,7 +3445,7 @@ function MenuPage({ showToast }) {
             <button key={c.id} onClick={() => setCarte(c.id)} style={{ padding:'7px 18px', borderRadius:20, fontWeight:700, fontSize:13, cursor:'pointer', border:'none', background: carte===c.id ? '#E8C547' : '#efefef', color: carte===c.id ? '#111' : '#888', transition:'all 0.15s' }}>{c.l}</button>
           ))}
         </div>
-        <a href="/menu.html" target="_blank" rel="noopener noreferrer" style={{ fontSize:12, color:'#888', display:'flex', alignItems:'center', gap:4, textDecoration:'none', border:'1px solid #ddd', borderRadius:8, padding:'5px 10px', background:'#fff' }}>
+        <a href="/accueil.html" target="_blank" rel="noopener noreferrer" style={{ fontSize:12, color:'#888', display:'flex', alignItems:'center', gap:4, textDecoration:'none', border:'1px solid #ddd', borderRadius:8, padding:'5px 10px', background:'#fff' }}>
           <ExternalLink size={12} strokeWidth={2} /> Carte client
         </a>
       </div>
