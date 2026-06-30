@@ -230,8 +230,13 @@
 
     .special-card-body { padding: 12px 14px; background: #fff; display: flex; flex-direction: column; gap: 8px; }
 
+    .special-row-block { padding: 5px 0; border-bottom: 1px solid #f5f5f5; }
+    .special-row-block:last-of-type { border-bottom: none; }
     .special-row {
       display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+    }
+    .special-row-desc {
+      font-size: 11px; color: #999; font-style: italic; padding: 2px 0 0 60px;
     }
     .special-row-label {
       font-size: 10px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: 0.8px;
@@ -554,10 +559,13 @@
         <div class="special-card-body">`;
       menuRows.forEach(({ label, icon, item }) => {
         if (!item || !item.actif || !item.nom) return;
-        html += `<div class="special-row">
-          <span class="special-row-label">${icon} ${label}</span>
-          <span class="special-row-nom">${esc(item.nom)}</span>
-          ${item.prix ? `<span class="special-row-prix">${esc(formatPrix(item.prix))}</span>` : ''}
+        html += `<div class="special-row-block">
+          <div class="special-row">
+            <span class="special-row-label">${icon} ${label}</span>
+            <span class="special-row-nom">${esc(item.nom)}</span>
+            ${item.prix ? `<span class="special-row-prix">${esc(formatPrix(item.prix))}</span>` : ''}
+          </div>
+          ${item.description ? `<div class="special-row-desc">${esc(item.description)}</div>` : ''}
         </div>`;
       });
       if (formuleJour && formuleJour.prix) {

@@ -4173,61 +4173,100 @@ function MenuPage({ showToast }) {
 
       {/* ── Encarts Menu du jour + Suggestion ─────────────────────────── */}
       {(() => {
-        const menuActif = !!(entreeJour?.actif || platJour?.actif || dessertJour?.actif);
+        const anyActif = !!(entreeJour?.actif || platJour?.actif || dessertJour?.actif);
+        const allActif = !!(entreeJour?.actif && platJour?.actif && dessertJour?.actif);
 
         async function saveField(item, setter, field, value) {
           setter(p => p ? ({ ...p, [field]: value }) : p);
           await supabase.from('menu_plat_jour').update({ [field]: value, updated_at: new Date().toISOString() }).eq('id', item.id);
         }
 
-        async function toggleMenuJour() {
-          const v = !menuActif;
-          const items = [entreeJour, platJour, dessertJour].filter(Boolean);
-          [setEntreeJour, setPlatJour, setDessertJour].forEach((s, i) => { if (items[i]) s(p => ({...p, actif:v})); });
-          await Promise.all(items.map(it => supabase.from('menu_plat_jour').update({ actif:v, updated_at:new Date().toISOString() }).eq('id', it.id)));
+        async function toggleAll() {
+          // Si au moins un est actif → tout désactiver. Sinon → tout activer.
+          const v = !anyActif;
+          const items = [
+            { it: entreeJour,  s: setEntreeJour },
+            { it: platJour,    s: setPlatJour },
+            { it: dessertJour, s: setDessertJour },
+          ].filter(x => x.it);
+          items.forEach(({ it, s }) => s(p => ({...p, actif:v})));
+          await Promise.all(items.map(({ it }) => supabase.from('menu_plat_jour').update({ actif:v, updated_at:new Date().toISOString() }).eq('id', it.id)));
+        }
+
+        async function toggleItem(item, setter) {
+          const v = !item.actif;
+          setter(p => ({...p, actif:v}));
+          await supabase.from('menu_plat_jour').update({ actif:v, updated_at:new Date().toISOString() }).eq('id', item.id);
         }
 
         const rows = [
-          { item: entreeJour, setter: setEntreeJour, label: 'Entrée', icon: '🥗' },
-          { item: platJour,   setter: setPlatJour,   label: 'Plat',   icon: '🍽' },
-          { item: dessertJour,setter: setDessertJour, label: 'Dessert',icon: '🍮' },
+          { item: entreeJour,  setter: setEntreeJour,  label: 'Entrée',  icon: '🥗', ph: "de l'entrée" },
+          { item: platJour,    setter: setPlatJour,    label: 'Plat',    icon: '🍽', ph: 'du plat' },
+          { item: dessertJour, setter: setDessertJour, label: 'Dessert', icon: '🍮', ph: 'du dessert' },
         ];
 
         const inpStyle = { height:34, border:'1px solid #eee', borderRadius:8, padding:'0 10px', fontSize:13, outline:'none', background:'#fafafa', width:'100%', transition:'border-color 0.15s' };
-        const prixStyle = { ...inpStyle, width:90, flexShrink:0, textAlign:'right' };
+        const descStyle = { ...inpStyle, height:30, fontSize:12, color:'#666' };
+        const prixStyle = { ...inpStyle, width:84, flexShrink:0, textAlign:'right' };
 
         return (
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, marginBottom:24 }}>
 
             {/* Encart 1 — Menu du jour */}
-            <div style={{ background:'#fff', borderRadius:16, border:`2px solid ${menuActif ? '#E8C547' : '#eee'}`, overflow:'hidden', transition:'border-color 0.2s' }}>
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 16px', borderBottom:'1px solid #f5f5f5' }}>
+            <div style={{ background:'#fff', borderRadius:16, border:`2px solid ${anyActif ? '#E8C547' : '#eee'}`, overflow:'hidden', transition:'border-color 0.2s' }}>
+              {/* Header global */}
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'11px 16px', borderBottom:'1px solid #f5f5f5', background: anyActif ? '#fffdf0' : '#fff' }}>
                 <span style={{ fontSize:12, fontWeight:800, color:'#111', textTransform:'uppercase', letterSpacing:1 }}>🍽 Menu du jour</span>
-                <MenuToggle value={menuActif} onChange={toggleMenuJour} />
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <span style={{ fontSize:10, color:'#bbb' }}>Tout</span>
+                  <MenuToggle value={anyActif} onChange={toggleAll} />
+                </div>
               </div>
-              <div style={{ padding:'12px 16px', display:'flex', flexDirection:'column', gap:10 }}>
-                {rows.map(({ item, setter, label, icon }) => (
-                  <div key={label} style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    <span style={{ fontSize:11, fontWeight:700, color:'#aaa', width:52, flexShrink:0 }}>{icon} {label}</span>
-                    <input
-                      value={item?.nom || ''}
-                      onChange={e => setter(p => p ? ({...p, nom: e.target.value}) : p)}
-                      onBlur={e => item && saveField(item, setter, 'nom', e.target.value)}
-                      placeholder={`Nom du ${label.toLowerCase()}…`}
-                      style={{ ...inpStyle, flex:1 }}
-                      onFocus={e => e.target.style.borderColor='#E8C547'}
-                    />
-                    <input
-                      value={item?.prix || ''}
-                      onChange={e => setter(p => p ? ({...p, prix: e.target.value}) : p)}
-                      onBlur={e => item && saveField(item, setter, 'prix', e.target.value)}
-                      placeholder="Prix"
-                      style={prixStyle}
-                      onFocus={e => e.target.style.borderColor='#E8C547'}
-                    />
-                  </div>
-                ))}
-                {/* Séparateur + prix formule */}
+
+              {/* Lignes Entrée / Plat / Dessert */}
+              <div style={{ padding:'10px 16px', display:'flex', flexDirection:'column', gap:12 }}>
+                {rows.map(({ item, setter, label, icon, ph }) => {
+                  const active = !!item?.actif;
+                  return (
+                    <div key={label} style={{ borderRadius:10, border:`1px solid ${active ? '#f0e88a' : '#f0f0f0'}`, padding:'10px 12px', background: active ? '#fffef5' : '#fafafa', transition:'all 0.15s' }}>
+                      {/* Ligne nom + prix + toggle */}
+                      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:7 }}>
+                        <MenuToggle value={active} onChange={() => item && toggleItem(item, setter)} />
+                        <span style={{ fontSize:11, fontWeight:700, color: active ? '#888' : '#ccc', width:48, flexShrink:0 }}>{icon} {label}</span>
+                        <input
+                          value={item?.nom || ''}
+                          onChange={e => setter(p => p ? ({...p, nom: e.target.value}) : p)}
+                          onBlur={e => item && saveField(item, setter, 'nom', e.target.value)}
+                          placeholder={`Nom ${ph}…`}
+                          style={{ ...inpStyle, flex:1, opacity: active ? 1 : 0.5 }}
+                          onFocus={e => e.target.style.borderColor='#E8C547'}
+                          onBlurCapture={e => e.target.style.borderColor='#eee'}
+                        />
+                        <input
+                          value={item?.prix || ''}
+                          onChange={e => setter(p => p ? ({...p, prix: e.target.value}) : p)}
+                          onBlur={e => item && saveField(item, setter, 'prix', e.target.value)}
+                          placeholder="Prix"
+                          style={{ ...prixStyle, opacity: active ? 1 : 0.5 }}
+                          onFocus={e => e.target.style.borderColor='#E8C547'}
+                          onBlurCapture={e => e.target.style.borderColor='#eee'}
+                        />
+                      </div>
+                      {/* Description */}
+                      <input
+                        value={item?.description || ''}
+                        onChange={e => setter(p => p ? ({...p, description: e.target.value}) : p)}
+                        onBlur={e => item && saveField(item, setter, 'description', e.target.value)}
+                        placeholder={`Description courte (optionnel)…`}
+                        style={{ ...descStyle, opacity: active ? 1 : 0.4 }}
+                        onFocus={e => e.target.style.borderColor='#E8C547'}
+                        onBlurCapture={e => e.target.style.borderColor='#eee'}
+                      />
+                    </div>
+                  );
+                })}
+
+                {/* Prix formule */}
                 <div style={{ borderTop:'1px solid #f0f0f0', paddingTop:10, display:'flex', alignItems:'center', gap:8 }}>
                   <span style={{ fontSize:11, fontWeight:700, color:'#E8C547', flex:1 }}>Prix formule</span>
                   <input
@@ -4237,6 +4276,7 @@ function MenuPage({ showToast }) {
                     placeholder="ex: 22 €"
                     style={{ ...prixStyle }}
                     onFocus={e => e.target.style.borderColor='#E8C547'}
+                    onBlurCapture={e => e.target.style.borderColor='#eee'}
                   />
                 </div>
               </div>
@@ -4244,7 +4284,7 @@ function MenuPage({ showToast }) {
 
             {/* Encart 2 — Suggestion du chef */}
             <div style={{ background:'#fff', borderRadius:16, border:`2px solid ${suggestionJour?.actif ? '#333' : '#eee'}`, overflow:'hidden', transition:'border-color 0.2s' }}>
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 16px', borderBottom:'1px solid #f5f5f5' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'11px 16px', borderBottom:'1px solid #f5f5f5' }}>
                 <span style={{ fontSize:12, fontWeight:800, color:'#111', textTransform:'uppercase', letterSpacing:1 }}>👨‍🍳 Suggestion du chef</span>
                 <MenuToggle value={!!suggestionJour?.actif} onChange={async () => {
                   const v = !suggestionJour?.actif;
@@ -4261,6 +4301,7 @@ function MenuPage({ showToast }) {
                     placeholder="Nom de la suggestion…"
                     style={{ ...inpStyle, flex:1 }}
                     onFocus={e => e.target.style.borderColor='#333'}
+                    onBlurCapture={e => e.target.style.borderColor='#eee'}
                   />
                   <input
                     value={suggestionJour?.prix || ''}
@@ -4269,19 +4310,18 @@ function MenuPage({ showToast }) {
                     placeholder="Prix"
                     style={{ ...prixStyle }}
                     onFocus={e => e.target.style.borderColor='#333'}
+                    onBlurCapture={e => e.target.style.borderColor='#eee'}
                   />
                 </div>
-                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  <span style={{ fontSize:11, fontWeight:600, color:'#aaa' }}>Description</span>
-                  <input
-                    value={suggestionJour?.description || ''}
-                    onChange={e => setSuggestionJour(p => p ? ({...p, description: e.target.value}) : p)}
-                    onBlur={e => suggestionJour && saveField(suggestionJour, setSuggestionJour, 'description', e.target.value)}
-                    placeholder="Courte description (optionnel)…"
-                    style={{ ...inpStyle, flex:1 }}
-                    onFocus={e => e.target.style.borderColor='#333'}
-                  />
-                </div>
+                <input
+                  value={suggestionJour?.description || ''}
+                  onChange={e => setSuggestionJour(p => p ? ({...p, description: e.target.value}) : p)}
+                  onBlur={e => suggestionJour && saveField(suggestionJour, setSuggestionJour, 'description', e.target.value)}
+                  placeholder="Courte description (optionnel)…"
+                  style={{ ...descStyle, flex:1 }}
+                  onFocus={e => e.target.style.borderColor='#333'}
+                  onBlurCapture={e => e.target.style.borderColor='#eee'}
+                />
               </div>
             </div>
 
