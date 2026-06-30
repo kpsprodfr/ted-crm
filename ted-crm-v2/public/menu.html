@@ -207,6 +207,8 @@
 
 <div id="cats-bar"></div>
 
+<div id="plat-jour-container" style="display:none;padding:12px 16px 0;max-width:680px;margin:0 auto;"></div>
+
 <div id="loading">Chargement de la carte...</div>
 <div id="error" style="display:none"></div>
 <div id="content" style="display:none"></div>
@@ -286,32 +288,25 @@
   function renderMenu() {
     const content = document.getElementById('content');
     const catsBar = document.getElementById('cats-bar');
+    const platContainer = document.getElementById('plat-jour-container');
     content.style.display = 'block';
 
-    const cats = allCategories.filter(c => c.visible !== false && (c.carte === carteActive || c.carte === 'les-deux'));
-    const FOOD_CATS = ['Plat du jour','Formules midi','Tapas','Nos planches','Salades','Plats froids','Plats signatures','Suggestions','Fromages','Desserts'];
+    // Exclure les catégories nommées "Plat du jour" ou "Dessert du jour" — gérées séparément
+    const isPlatJourCat = (nom) => /plat du jour|dessert du jour/i.test(nom);
+    const cats = allCategories.filter(c =>
+      c.visible !== false &&
+      (c.carte === carteActive || c.carte === 'les-deux') &&
+      !isPlatJourCat(c.nom)
+    );
+
+    const FOOD_CATS = ['Formules midi','Tapas','Nos planches','Salades','Plats froids','Plats signatures','Suggestions','Fromages','Desserts'];
     const isFoodSection = (nom) => FOOD_CATS.some(f => nom.toLowerCase().includes(f.toLowerCase()) || f.toLowerCase().includes(nom.toLowerCase()));
 
-    // Pills
-    let pillsHtml = '';
+    // ── Bloc plat du jour (hors contenu, avant la barre) ──
     if (platJour || dessertJour) {
-      pillsHtml += `<button class="cat-pill" onclick="scrollToId('plat-jour-section')">Plat du jour</button>`;
-    }
-    cats.forEach(cat => {
-      const ps = allProduits.filter(p => p.categorie_id === cat.id && (p.carte === carteActive || p.carte === 'les-deux'));
-      if (ps.length === 0) return;
-      pillsHtml += `<button class="cat-pill" onclick="scrollToId('cat-${cat.id}')" id="pill-${cat.id}">${cat.nom}</button>`;
-    });
-    catsBar.innerHTML = pillsHtml;
-
-    // Content
-    let html = '';
-
-    // Plat du jour
-    if (platJour || dessertJour) {
-      html += `<div class="section" id="plat-jour-section">`;
+      let pjHtml = '';
       if (platJour) {
-        html += `<div class="plat-jour-card">
+        pjHtml += `<div class="plat-jour-card">
           <div class="plat-jour-label">Plat du jour</div>
           ${platJour.nom ? `<div class="plat-jour-nom">${esc(platJour.nom)}</div>` : ''}
           ${platJour.description ? `<div class="plat-jour-desc">${esc(platJour.description)}</div>` : ''}
@@ -319,17 +314,31 @@
         </div>`;
       }
       if (dessertJour) {
-        html += `<div class="plat-jour-card" style="margin-top:8px">
+        pjHtml += `<div class="plat-jour-card" style="margin-top:8px">
           <div class="plat-jour-label">Dessert du jour</div>
           ${dessertJour.nom ? `<div class="plat-jour-nom">${esc(dessertJour.nom)}</div>` : ''}
           ${dessertJour.description ? `<div class="plat-jour-desc">${esc(dessertJour.description)}</div>` : ''}
           ${dessertJour.prix ? `<div class="plat-jour-prix">${esc(dessertJour.prix)}</div>` : ''}
         </div>`;
       }
-      html += `</div>`;
+      platContainer.innerHTML = pjHtml;
+      platContainer.style.display = 'block';
+    } else {
+      platContainer.innerHTML = '';
+      platContainer.style.display = 'none';
     }
 
-    // Catégories
+    // ── Pills (sans "Plat du jour") ──
+    let pillsHtml = '';
+    cats.forEach(cat => {
+      const ps = allProduits.filter(p => p.categorie_id === cat.id && (p.carte === carteActive || p.carte === 'les-deux'));
+      if (ps.length === 0) return;
+      pillsHtml += `<button class="cat-pill" onclick="scrollToId('cat-${cat.id}')" id="pill-${cat.id}">${cat.nom}</button>`;
+    });
+    catsBar.innerHTML = pillsHtml;
+
+    // ── Catégories ──
+    let html = '';
     let hasFood = false;
     cats.forEach(cat => {
       const ps = allProduits.filter(p => p.categorie_id === cat.id && (p.carte === carteActive || p.carte === 'les-deux'));
