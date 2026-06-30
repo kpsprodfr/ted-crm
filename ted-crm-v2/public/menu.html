@@ -464,11 +464,32 @@
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  // Lire le paramètre ?carte= dans l'URL
-  const urlCarte = new URLSearchParams(window.location.search).get('carte');
+  // Lire les paramètres URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlCarte = urlParams.get('carte');
+  const fromAccueil = urlParams.get('from') === 'accueil';
+
   if (urlCarte === 'brasero') {
     carteActive = 'brasero';
     document.querySelectorAll('.carte-tab').forEach(t => t.classList.toggle('active', t.dataset.carte === 'brasero'));
+  }
+
+  // Animation d'entrée si on vient de accueil.html
+  if (fromAccueil && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.body.style.opacity = '0';
+    document.body.style.transform = 'translateY(10px)';
+    document.body.style.transition = 'none';
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.body.style.transition = 'opacity 300ms ease, transform 300ms ease';
+        document.body.style.opacity = '1';
+        document.body.style.transform = 'translateY(0)';
+      });
+    });
+    // Nettoie le paramètre ?from= de l'URL sans recharger
+    const clean = new URL(window.location.href);
+    clean.searchParams.delete('from');
+    window.history.replaceState({}, '', clean.toString());
   }
 
   loadData();

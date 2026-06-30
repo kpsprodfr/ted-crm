@@ -165,8 +165,8 @@
   </div>
 
   <div id="cta-bar">
-    <a href="/menu.html" class="btn-cta btn-primary">Consulter la carte</a>
-    <a href="/menu.html?carte=brasero" class="btn-cta btn-outline">Carte Brasero</a>
+    <a href="/menu.html?from=accueil" class="btn-cta btn-primary" data-dest="/menu.html?from=accueil">Consulter la carte</a>
+    <a href="/menu.html?carte=brasero&from=accueil" class="btn-cta btn-outline" data-dest="/menu.html?carte=brasero&from=accueil">Carte Brasero</a>
   </div>
 
 <script>
@@ -220,6 +220,21 @@
   function esc(str) {
     return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
+
+  // ── Transition de sortie ────────────────────────────────────────────────────
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  document.querySelectorAll('.btn-cta[data-dest]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      const dest = btn.dataset.dest;
+      if (prefersReduced) { window.location.href = dest; return; }
+      e.preventDefault();
+      document.body.style.transition = 'opacity 300ms ease, transform 300ms ease';
+      document.body.style.opacity = '0';
+      document.body.style.transform = 'translateY(-10px)';
+      setTimeout(() => { window.location.href = dest; }, 300);
+    });
+  });
 
   loadSoirees();
 </script>
