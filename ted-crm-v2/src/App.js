@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus, UserPlus, Trophy, ArrowUpDown } from 'lucide-react';
+import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus, UserPlus, Trophy, ArrowUpDown, LayoutGrid, Settings } from 'lucide-react';
 import { supabase } from "./supabase";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -3666,10 +3666,16 @@ function MenuPage({ showToast }) {
           <h1 style={{ margin:0, fontSize:24, fontWeight:900, color:'#111' }}>Menu</h1>
           <p style={{ margin:'3px 0 0', fontSize:13, color:'#aaa' }}>Gérez la carte en temps réel</p>
         </div>
-        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-<button onClick={() => setShowCartesSheet(true)} style={{ background:'none', border:'none', cursor:'pointer', color:'#888', fontSize:18, padding:'6px', borderRadius:8, display:'flex', alignItems:'center' }} title="Gérer les cartes">🗂</button>
-          <button onClick={() => setShowGererCats(true)} style={{ background:'none', border:'none', cursor:'pointer', color:'#888', fontSize:20, padding:'6px', borderRadius:8, display:'flex', alignItems:'center' }} title="Gérer les catégories">⚙️</button>
-          <button onClick={() => catsFiltered.length > 0 ? setCatPickerOpen(true) : setEditProduit({ carte, disponible: true, mise_en_avant: false, badges: [], allergenes: [] })} style={{ ...btnPrimary, height:38, fontSize:13 }}>+ Ajouter</button>
+        <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+          <button onClick={() => setShowCartesSheet(true)} style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'1px solid #e5e5e5', cursor:'pointer', color:'#666', fontSize:13, fontWeight:600, padding:'7px 12px', borderRadius:8 }}>
+            <LayoutGrid size={14} /> Gérer vos cartes
+          </button>
+          <button onClick={() => setShowGererCats(true)} style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'1px solid #e5e5e5', cursor:'pointer', color:'#666', fontSize:13, fontWeight:600, padding:'7px 12px', borderRadius:8 }}>
+            <Settings size={14} /> Gérer les catégories
+          </button>
+          <button onClick={() => catsFiltered.length > 0 ? setCatPickerOpen(true) : setEditProduit({ carte, disponible: true, mise_en_avant: false, badges: [], allergenes: [] })} style={{ ...btnPrimary, height:36, fontSize:13, display:'flex', alignItems:'center', gap:6 }}>
+            <Plus size={15} /> Ajouter un produit
+          </button>
         </div>
       </div>
 
