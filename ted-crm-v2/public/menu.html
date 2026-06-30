@@ -428,6 +428,13 @@
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
+  // Lire le paramètre ?carte= dans l'URL
+  const urlCarte = new URLSearchParams(window.location.search).get('carte');
+  if (urlCarte === 'brasero') {
+    carteActive = 'brasero';
+    document.querySelectorAll('.carte-tab').forEach(t => t.classList.toggle('active', t.dataset.carte === 'brasero'));
+  }
+
   loadData();
 </script>
 </body>

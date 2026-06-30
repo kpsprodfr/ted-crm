@@ -3267,12 +3267,21 @@ function MenuPage({ showToast }) {
   const dragProd = useRef(null);
   const dragOverProd = useRef(null);
 
+  // Soirées
+  const [soirees, setSoirees] = useState([]);
+  const [soireeSheet, setSoireeSheet] = useState(null); // {} pour new, {...s} pour edit
+  const [confirmDeleteSoiree, setConfirmDeleteSoiree] = useState(null);
+  const dragSoiree = useRef(null);
+  const dragOverSoiree = useRef(null);
+
   useEffect(() => { loadMenu(); setMenuSearch(''); setOpenCats(new Set()); }, [carte]);
+  useEffect(() => { loadSoirees(); }, []);
 
   useEffect(() => {
     const ch = supabase.channel('menu-rt')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_produits' }, () => loadMenu())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_categories' }, () => loadMenu())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_soirees' }, () => loadSoirees())
       .subscribe();
     return () => supabase.removeChannel(ch);
   }, []);
@@ -3283,6 +3292,49 @@ function MenuPage({ showToast }) {
     document.addEventListener('pointerdown', handle);
     return () => document.removeEventListener('pointerdown', handle);
   }, [ctxMenu]);
+
+  async function loadSoirees() {
+    const { data } = await supabase.from('menu_soirees').select('*').order('ordre');
+    setSoirees(data || []);
+  }
+
+  async function saveSoiree(data) {
+    const { _new, ...clean } = data;
+    if (clean.id) {
+      await supabase.from('menu_soirees').update(clean).eq('id', clean.id);
+      setSoirees(prev => prev.map(s => s.id === clean.id ? { ...s, ...clean } : s));
+    } else {
+      const ordre = soirees.length > 0 ? Math.max(...soirees.map(s => s.ordre || 0)) + 1 : 1;
+      const { data: newS } = await supabase.from('menu_soirees').insert({ ...clean, ordre }).select().single();
+      if (newS) setSoirees(prev => [...prev, newS]);
+    }
+    setSoireeSheet(null);
+    showToast('Soirée enregistrée ✓');
+  }
+
+  async function deleteSoiree(id) {
+    await supabase.from('menu_soirees').delete().eq('id', id);
+    setSoirees(prev => prev.filter(s => s.id !== id));
+    setConfirmDeleteSoiree(null);
+    showToast('Soirée supprimée');
+  }
+
+  async function toggleSoireeVisible(s) {
+    const val = !s.visible;
+    setSoirees(prev => prev.map(x => x.id === s.id ? { ...x, visible: val } : x));
+    await supabase.from('menu_soirees').update({ visible: val }).eq('id', s.id);
+  }
+
+  async function dropSoiree() {
+    if (dragSoiree.current === null || dragOverSoiree.current === null || dragSoiree.current === dragOverSoiree.current) { dragSoiree.current=null; dragOverSoiree.current=null; return; }
+    const next = [...soirees];
+    const [moved] = next.splice(dragSoiree.current, 1);
+    next.splice(dragOverSoiree.current, 0, moved);
+    const updated = next.map((s, i) => ({ ...s, ordre: i + 1 }));
+    setSoirees(updated);
+    await Promise.all(updated.map(s => supabase.from('menu_soirees').update({ ordre: s.ordre }).eq('id', s.id)));
+    dragSoiree.current=null; dragOverSoiree.current=null;
+  }
 
   async function loadMenu() {
     const [cR, pR, jR] = await Promise.all([
@@ -3547,6 +3599,86 @@ function MenuPage({ showToast }) {
           onClose={() => { setShowGererCats(false); loadMenu(); }}
           showToast={showToast}
           carte={carte}
+        />
+      )}
+
+      {/* ── Section Soirées ── */}
+      <div style={{ marginTop:40, paddingTop:32, borderTop:'2px solid #f0f0f0' }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+          <div>
+            <h2 style={{ margin:0, fontSize:20, fontWeight:800, color:'#111' }}>Nos soirées</h2>
+            <p style={{ margin:'2px 0 0', fontSize:12, color:'#aaa' }}>Affiché sur la page d'accueil</p>
+          </div>
+          <button onClick={() => setSoireeSheet({ nom:'', jour:'', horaire:'', description:'', visible:true })} style={{ ...btnPrimary, height:36, fontSize:12 }}>+ Ajouter</button>
+        </div>
+
+        {soirees.length === 0 ? (
+          <div style={{ textAlign:'center', padding:'32px 0', color:'#ccc', fontSize:14 }}>Aucune soirée configurée</div>
+        ) : (
+          <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+            {soirees.map((s, i) => (
+              <div key={s.id}
+                draggable
+                onDragStart={() => { dragSoiree.current = i; }}
+                onDragEnter={() => { dragOverSoiree.current = i; }}
+                onDragEnd={dropSoiree}
+                onDragOver={e => e.preventDefault()}
+                style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 14px', background:'#fff', borderRadius:12, border:'1px solid #eee', opacity: s.visible ? 1 : 0.45, transition:'opacity 0.15s', cursor:'grab', userSelect:'none' }}
+              >
+                <span style={{ color:'#ddd', fontSize:15, flexShrink:0 }}>⠿</span>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontWeight:600, fontSize:14, color:'#111' }}>{s.nom}</div>
+                  {(s.jour || s.horaire) && (
+                    <div style={{ fontSize:12, color:'#aaa', marginTop:1 }}>
+                      {[s.jour, s.horaire].filter(Boolean).join(' · ')}
+                    </div>
+                  )}
+                </div>
+                <MenuToggle value={!!s.visible} onChange={() => toggleSoireeVisible(s)} />
+                <button onClick={() => setSoireeSheet({ ...s })} style={{ background:'none', border:'none', cursor:'pointer', color:'#aaa', display:'flex', padding:4 }}><Pencil size={14}/></button>
+                <button onClick={() => setConfirmDeleteSoiree(s.id)} style={{ background:'none', border:'none', cursor:'pointer', color:'#ddd', display:'flex', padding:4 }}><Trash2 size={14}/></button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Sheet soirée */}
+      {soireeSheet && (
+        <MenuBottomSheet
+          title={soireeSheet.id ? 'Modifier la soirée' : 'Nouvelle soirée'}
+          onClose={() => setSoireeSheet(null)}
+          footer={<>
+            <button onClick={() => setSoireeSheet(null)} style={{ ...btnSecondary, flex:1 }}>Annuler</button>
+            <button onClick={() => saveSoiree(soireeSheet)} disabled={!soireeSheet.nom?.trim()} style={{ ...btnPrimary, flex:2 }}>Enregistrer</button>
+          </>}
+        >
+          <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+            <div><label style={lbl}>Nom *</label><input value={soireeSheet.nom||''} onChange={e=>setSoireeSheet(p=>({...p,nom:e.target.value}))} style={inp(false)} placeholder="Ex : La Bringue" autoFocus /></div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+              <div><label style={lbl}>Jour</label><input value={soireeSheet.jour||''} onChange={e=>setSoireeSheet(p=>({...p,jour:e.target.value}))} style={inp(false)} placeholder="Ex : Vendredi" /></div>
+              <div><label style={lbl}>Horaire</label><input value={soireeSheet.horaire||''} onChange={e=>setSoireeSheet(p=>({...p,horaire:e.target.value}))} style={inp(false)} placeholder="Ex : 22h00" /></div>
+            </div>
+            <div><label style={lbl}>Description</label><textarea value={soireeSheet.description||''} onChange={e=>setSoireeSheet(p=>({...p,description:e.target.value}))} style={{...inp(false),height:70,resize:'vertical',padding:'10px 12px'}} placeholder="Description optionnelle" /></div>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'2px 0' }}>
+              <span style={{ fontSize:14, fontWeight:500, color:'#333' }}>Visible sur la page d'accueil</span>
+              <MenuToggle value={!!soireeSheet.visible} onChange={() => setSoireeSheet(p=>({...p,visible:!p.visible}))} />
+            </div>
+            {soireeSheet.id && (
+              <button onClick={() => { setConfirmDeleteSoiree(soireeSheet.id); setSoireeSheet(null); }} style={{ ...btnDanger, marginTop:4 }}>Supprimer cette soirée</button>
+            )}
+          </div>
+        </MenuBottomSheet>
+      )}
+
+      {/* Confirmation suppression soirée */}
+      {confirmDeleteSoiree && (
+        <ConfirmModal
+          title="Supprimer cette soirée ?"
+          msg="Elle disparaîtra de la page d'accueil."
+          danger okLabel="Supprimer"
+          onOk={() => deleteSoiree(confirmDeleteSoiree)}
+          onCancel={() => setConfirmDeleteSoiree(null)}
         />
       )}
     </div>
