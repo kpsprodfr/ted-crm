@@ -191,7 +191,7 @@
 
     /* Zone haute — fond crème, contient la roue ou le résultat visuel */
     #roue-zone-haute {
-      background: #faf7ef;
+      background: radial-gradient(ellipse at 50% 15%, #FFE033 0%, #F5B800 60%, #E8A000 100%);
       padding: 28px 20px 20px;
       text-align: center;
       position: relative;
@@ -234,6 +234,11 @@
       z-index: 5;
     }
     #roue-canvas { display: block; }
+    #roue-socle {
+      width: 72px; height: 18px; background: #CC1111;
+      border: 2.5px solid #E8C547; border-top: none;
+      border-radius: 0 0 10px 10px; margin: -1px auto 0;
+    }
 
     /* Résultat visuel dans zone haute */
     #roue-visuel-result {
@@ -405,6 +410,7 @@
           <div id="roue-pointer-tri"></div>
           <canvas id="roue-canvas" width="320" height="320"></canvas>
         </div>
+        <div id="roue-socle"></div>
 
         <!-- Résultat visuel (phase 1+) -->
         <div id="roue-visuel-result">
@@ -757,15 +763,17 @@
     let currentAngle = 0;
 
     // Canvas 320×320
-    const CS     = 320;  // canvas size
-    const CX     = 160;  // center
-    const R_SEG  = 144;  // segments fill to here
-    const R_RING = 154;  // gold outer ring
-    const R_BUMP = 154;  // bump dots sit on ring
-    const R_TEXT = 90;   // text anchor radius
-    const R_CTR  = 22;   // central circle
-    const N_BUMP = 18;   // number of decorative dots
-    const COLS   = ['#E8C547', '#111111']; // alternating gold / black
+    const CS     = 320;
+    const CX     = 160;
+    const R_SEG  = 136;
+    const R_RING = 144;
+    const R_BUMP = 152;
+    const R_TEXT = 84;
+    const R_CTR  = 26;
+    const N_BUMP = 16;
+    const VIVID  = ['#E63946','#2196F3','#4CAF50','#FF9800','#9C27B0','#B71C1C','#00897B','#F57F17'];
+    const CREAM  = '#FFF5D6';
+    function getSegColor(i) { return i % 2 === 0 ? VIVID[Math.floor(i / 2) % VIVID.length] : CREAM; }
 
     const canvas = document.getElementById('roue-canvas');
     const ctx    = canvas.getContext('2d');
@@ -796,15 +804,14 @@
       const total = totalProba();
       let start   = rotAngle;
 
-      // Segments
+      // Segments multicolores vifs + crème alternés
       recompenses.forEach((r, i) => {
         const slice = (parseFloat(r.probabilite || 1) / total) * 2 * Math.PI;
         const end   = start + slice;
         const mid   = start + slice / 2;
-        const bg    = COLS[i % 2];           // alternance or/noir
-        const tc    = bg === '#E8C547' ? '#111' : '#fff'; // texte contrasté
+        const bg    = getSegColor(i);
+        const tc    = bg === CREAM ? '#333' : '#fff';
 
-        // Remplissage segment
         ctx.beginPath();
         ctx.moveTo(CX, CX);
         ctx.arc(CX, CX, R_SEG, start, end);
@@ -812,16 +819,11 @@
         ctx.fillStyle = bg;
         ctx.fill();
 
-        // Séparateur blanc fin
-        ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+        ctx.lineWidth = 1.2;
         ctx.stroke();
 
-        // Texte tangentiel (perpendiculaire au rayon)
-        // Après rotate(mid + π/2), l'axe X pointe tangentiellement,
-        // la position (0, -R_TEXT) est au milieu du segment sur le rayon.
-        // Ainsi le texte est horizontal quand le segment est en haut (position gagnant).
-        const maxW  = Math.max(22, slice * (R_TEXT - 10) - 2); // largeur max approx
+        const maxW   = Math.max(22, slice * (R_TEXT - 10) - 2);
         const nomStr = trunc(r.nom, 15);
 
         ctx.save();
@@ -831,53 +833,72 @@
         ctx.textBaseline = 'middle';
         ctx.fillStyle    = tc;
 
-        // Emoji (ligne extérieure)
         ctx.font = '14px serif';
         ctx.fillText(r.emoji || '', 0, -(R_TEXT + 9), maxW);
 
-        // Nom (ligne intérieure)
-        ctx.font = `bold 9px 'Segoe UI', Arial, sans-serif`;
-        ctx.fillText(nomStr, 0, -(R_TEXT - 8), maxW);
+        ctx.font = `bold 9.5px 'Segoe UI', Arial, sans-serif`;
+        ctx.fillText(nomStr, 0, -(R_TEXT - 7), maxW);
 
         ctx.restore();
         start = end;
       });
 
-      // Anneau décoratif extérieur (fixe, au-dessus des segments)
+      // Anneau rouge épais
       ctx.beginPath();
       ctx.arc(CX, CX, R_RING, 0, 2 * Math.PI);
-      ctx.strokeStyle = '#E8C547';
-      ctx.lineWidth   = 7;
+      ctx.strokeStyle = '#CC1111';
+      ctx.lineWidth   = 14;
       ctx.stroke();
 
-      // Petits points décoratifs (ampoules) alternés sur l'anneau
+      // Bordures dorées de l'anneau
+      [R_RING - 7, R_RING + 7].forEach(rr => {
+        ctx.beginPath();
+        ctx.arc(CX, CX, rr, 0, 2 * Math.PI);
+        ctx.strokeStyle = '#E8C547';
+        ctx.lineWidth   = 1.5;
+        ctx.stroke();
+      });
+
+      // Ampoules dorées avec halo
       for (let i = 0; i < N_BUMP; i++) {
         const a  = (i / N_BUMP) * 2 * Math.PI;
         const bx = CX + R_BUMP * Math.cos(a);
         const by = CX + R_BUMP * Math.sin(a);
         ctx.beginPath();
-        ctx.arc(bx, by, 4, 0, 2 * Math.PI);
-        ctx.fillStyle   = i % 2 === 0 ? '#fff' : '#111';
+        ctx.arc(bx, by, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = 'rgba(232,197,71,0.25)';
         ctx.fill();
-        ctx.strokeStyle = '#c9a93a';
-        ctx.lineWidth   = 0.8;
+        ctx.beginPath();
+        ctx.arc(bx, by, 3.8, 0, 2 * Math.PI);
+        ctx.fillStyle   = '#E8C547';
+        ctx.fill();
+        ctx.strokeStyle = '#b8930a';
+        ctx.lineWidth   = 1;
         ctx.stroke();
       }
 
-      // Cercle central (décoratif, sous le bouton HTML)
+      // Cercle central rouge avec bordure dorée + texte JOUER
+      ctx.shadowColor = 'rgba(0,0,0,0.35)';
+      ctx.shadowBlur  = 8;
       ctx.beginPath();
       ctx.arc(CX, CX, R_CTR, 0, 2 * Math.PI);
-      ctx.fillStyle   = '#111';
+      ctx.fillStyle = '#CC1111';
       ctx.fill();
+      ctx.shadowBlur  = 0;
+      ctx.shadowColor = 'transparent';
       ctx.strokeStyle = '#E8C547';
       ctx.lineWidth   = 3;
       ctx.stroke();
-      // Étoile centrale
-      ctx.font         = '16px serif';
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.lineWidth   = 1.5;
+      ctx.beginPath();
+      ctx.arc(CX, CX, R_CTR - 6, 0, 2 * Math.PI);
+      ctx.stroke();
+      ctx.font         = `bold 8px 'Segoe UI', Arial, sans-serif`;
       ctx.textAlign    = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle    = '#E8C547';
-      ctx.fillText('★', CX, CX + 1);
+      ctx.fillStyle    = '#fff';
+      ctx.fillText('JOUER', CX, CX + 1);
     }
 
     // ── Tirage pondéré ──────────────────────────────────────────────────────────
@@ -1169,6 +1190,7 @@
       });
 
       document.getElementById('roue-jouer-btn').onclick = lancer;
+      canvas.onclick = () => { if (!spinning) lancer(); };
 
       document.getElementById('roue-recuperer-btn').onclick = () => {
         document.getElementById('roue-content-result').style.display = 'none';
