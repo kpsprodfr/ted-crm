@@ -86,16 +86,17 @@
     #cats-bar {
       position: sticky; top: 94px; z-index: 99;
       background: #fff; border-bottom: 1px solid #f0f0f0;
-      padding: 8px 16px; display: flex; gap: 8px;
+      padding: 8px 16px; display: flex; gap: 10px;
       overflow-x: auto; scrollbar-width: none;
       transition: top 220ms ease;
     }
     #header.compact ~ #cats-bar { top: 66px; }
     #cats-bar::-webkit-scrollbar { display: none; }
     .cat-pill {
-      flex-shrink: 0; padding: 4px 13px; border-radius: 20px; font-size: 12px;
+      flex-shrink: 0; padding: 10px 18px; border-radius: 20px; font-size: 13px;
       font-weight: 600; cursor: pointer; border: 1.5px solid #eee;
-      background: #fff; color: #555; white-space: nowrap;
+      background: #fff; color: #555; white-space: nowrap; min-height: 40px;
+      display: inline-flex; align-items: center;
       transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
     }
     .cat-pill:hover { background: #f5f5f5; }
