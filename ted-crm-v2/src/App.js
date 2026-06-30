@@ -3274,6 +3274,293 @@ function CartesSheet({ onClose, showToast, produits }) {
   );
 }
 
+// ── PDF Import ────────────────────────────────────────────────────────────────
+
+const PDFJS_VERSION = '3.11.174';
+const PDFJS_CDN     = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.min.js`;
+const PDFJS_WORKER  = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VERSION}/pdf.worker.min.js`;
+
+function loadPdfJs() {
+  return new Promise((resolve, reject) => {
+    if (window.pdfjsLib) { resolve(window.pdfjsLib); return; }
+    const s = document.createElement('script');
+    s.src = PDFJS_CDN;
+    s.onload = () => {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+      resolve(window.pdfjsLib);
+    };
+    s.onerror = () => reject(new Error('Impossible de charger pdf.js'));
+    document.head.appendChild(s);
+  });
+}
+
+async function extractLinesFromPdf(source) {
+  const lib = await loadPdfJs();
+  const loadingTask = lib.getDocument(
+    typeof source === 'string' ? { url: source, withCredentials: false } : { data: source }
+  );
+  const pdf = await loadingTask.promise;
+  const allLines = [];
+
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page   = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    const byY    = {};
+    for (const item of content.items) {
+      const y = Math.round(item.transform[5]);
+      if (!byY[y]) byY[y] = [];
+      byY[y].push({ x: item.transform[4], str: item.str });
+    }
+    const ys = Object.keys(byY).map(Number).sort((a, b) => b - a);
+    for (const y of ys) {
+      const txt = byY[y].sort((a,b) => a.x - b.x).map(i => i.str).join(' ').trim();
+      if (txt) allLines.push(txt);
+    }
+  }
+  return allLines;
+}
+
+const PRIX_RE      = /(\d{1,3}(?:[,. ]\d{2,3})?)\s*[€$£]|[€$£]\s*(\d{1,3}(?:[,. ]\d{2,3})?)/g;
+const MULTI_PRIX_RE = /\d+\s*(?:cl|g|pers|boule).*\d[,.]?\d*\s*[€$£]/i;
+
+function hasPrix(s)    { PRIX_RE.lastIndex = 0; return PRIX_RE.test(s); }
+function isCategory(s) {
+  if (hasPrix(s) || s.length > 40 || /[.!?]$/.test(s)) return false;
+  if (s.toUpperCase() === s && s.replace(/\s/g,'').length >= 3) return true;
+  if (/^[A-ZÀÂÄÉÈÊËÏÎÔÙÛÜ]/.test(s) && s.split(' ').length <= 6 && !/\d/.test(s)) return true;
+  return false;
+}
+function extractPrix(line) {
+  if (MULTI_PRIX_RE.test(line)) return { name: '', prix: '', prix_detail: line.trim() };
+  PRIX_RE.lastIndex = 0;
+  const m = PRIX_RE.exec(line);
+  if (!m) return null;
+  const val  = (m[1] || m[2]).replace(/[, ]/g,'.').replace(/\.(\d{3})$/,'$1'); // fix 1.200 → 12.00 edge
+  const name = line.replace(m[0],'').replace(/\s*[|–—-]\s*$/,'').trim();
+  return { name, prix: val, prix_detail: '' };
+}
+
+function parseMenuLines(lines) {
+  const cats = [];
+  let cur = null;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line     = lines[i];
+    const nextLine = lines[i+1] || '';
+
+    if (isCategory(line)) {
+      cur = { nom: line, produits: [], checked: true };
+      cats.push(cur);
+      continue;
+    }
+
+    if (hasPrix(line)) {
+      const ex = extractPrix(line);
+      if (!ex) continue;
+      const prod = { nom: ex.name || line, prix: ex.prix, prix_detail: ex.prix_detail, description: '', checked: true };
+      if (!hasPrix(nextLine) && !isCategory(nextLine) && nextLine.length > 2 && !/^[\d]/.test(nextLine)) {
+        prod.description = nextLine; i++;
+      }
+      if (!cur) { cur = { nom: 'Non classé', produits: [], checked: true }; cats.push(cur); }
+      cur.produits.push(prod);
+      continue;
+    }
+
+    // Product name on one line, prix on next
+    if (!isCategory(line) && hasPrix(nextLine) && line.length > 1 && line.length < 60) {
+      const ex = extractPrix(nextLine);
+      if (ex) {
+        if (!cur) { cur = { nom: 'Non classé', produits: [], checked: true }; cats.push(cur); }
+        cur.produits.push({ nom: line, prix: ex.prix, prix_detail: ex.prix_detail, description: '', checked: true });
+        i++;
+      }
+    }
+  }
+
+  return cats.filter(c => c.produits.length > 0);
+}
+
+function PdfImportSheet({ onClose, showToast, cartes, categories, produits: existingProduits }) {
+  const [step,       setStep]       = useState('input');
+  const [mode,       setMode]       = useState('file');
+  const [url,        setUrl]        = useState('');
+  const [loading,    setLoading]    = useState(false);
+  const [error,      setError]      = useState('');
+  const [parsed,     setParsed]     = useState(null);
+  const [targetCarte, setTargetCarte] = useState(cartes[0]?.id || 'restaurant');
+  const [importing,  setImporting]  = useState(false);
+
+  async function processSource(source) {
+    setLoading(true); setError('');
+    try {
+      const lines = await extractLinesFromPdf(source);
+      if (lines.length === 0) { setError('Ce PDF ne contient pas de texte extractible — essayez un export PDF natif plutôt qu\'un scan, ou saisissez manuellement.'); setLoading(false); return; }
+      const result = parseMenuLines(lines);
+      if (result.length === 0) { setError('Aucun produit détecté. Vérifiez que le PDF contient bien du texte structuré avec des prix (ex: 12€, 13,50 €).'); setLoading(false); return; }
+      setParsed(result);
+      setStep('preview');
+    } catch(e) {
+      setError(e.message || 'Erreur lors de la lecture du PDF.');
+    }
+    setLoading(false);
+  }
+
+  async function handleFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (ev) => { await processSource(new Uint8Array(ev.target.result)); };
+    reader.readAsArrayBuffer(file);
+  }
+
+  async function handleUrl() {
+    if (!url.trim()) return;
+    await processSource(url.trim());
+  }
+
+  function toggleCat(ci)     { setParsed(p => p.map((c,i)=>i===ci?{...c,checked:!c.checked,produits:c.produits.map(pr=>({...pr,checked:!c.checked}))}:c)); }
+  function toggleProd(ci,pi) { setParsed(p => p.map((c,i)=>i===ci?{...c,produits:c.produits.map((pr,j)=>j===pi?{...pr,checked:!pr.checked}:pr)}:c)); }
+  function editCat(ci,nom)   { setParsed(p => p.map((c,i)=>i===ci?{...c,nom}:c)); }
+  function editProd(ci,pi,field,val) { setParsed(p => p.map((c,i)=>i===ci?{...c,produits:c.produits.map((pr,j)=>j===pi?{...pr,[field]:val}:pr)}:c)); }
+
+  async function doImport() {
+    setImporting(true);
+    let prodCount = 0;
+    const catMap  = {};
+
+    for (const cat of parsed.filter(c => c.checked)) {
+      const checkedProds = cat.produits.filter(pr => pr.checked);
+      if (!checkedProds.length) continue;
+
+      // Find or create category
+      const existing = categories.find(c => c.nom.toLowerCase() === cat.nom.toLowerCase() && (c.carte === targetCarte || c.carte === 'les-deux'));
+      let catId = existing?.id;
+      if (!catId) {
+        const ordre = categories.filter(c => c.carte === targetCarte || c.carte === 'les-deux').length + Object.keys(catMap).length + 1;
+        const { data: newCat } = await supabase.from('menu_categories').insert({ nom: cat.nom, carte: targetCarte, ordre, visible: true }).select().single();
+        catId = newCat?.id;
+        if (catId) catMap[cat.nom] = catId;
+      }
+      if (!catId) continue;
+
+      for (const prod of checkedProds) {
+        const ordre = existingProduits.filter(p => p.categorie_id === catId).length + prodCount + 1;
+        await supabase.from('menu_produits').insert({
+          nom: prod.nom, prix: prod.prix, prix_detail: prod.prix_detail || null,
+          description: prod.description || null,
+          categorie_id: catId, carte: targetCarte,
+          disponible: true, mise_en_avant: false, ordre, badges: [], allergenes: [],
+        });
+        prodCount++;
+      }
+    }
+
+    showToast(`${prodCount} produit${prodCount>1?'s':''} importé${prodCount>1?'s':''} ✓`);
+    setImporting(false);
+    onClose();
+  }
+
+  const totalCats  = parsed?.filter(c => c.checked).length || 0;
+  const totalProds = parsed?.flatMap(c => c.produits.filter(pr => pr.checked)).length || 0;
+  const tooMany    = parsed?.reduce((s,c)=>s+c.produits.length,0) > 200;
+
+  const inputStyle = { width:'100%', height:40, border:'1.5px solid #ddd', borderRadius:8, padding:'0 12px', fontSize:13, outline:'none', boxSizing:'border-box' };
+  const tabBtn = (active) => ({ flex:1, padding:'9px 0', border:'none', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:700, background: active ? '#111' : '#f0f0f0', color: active ? '#E8C547' : '#888', transition:'all 0.15s' });
+
+  return (
+    <MenuBottomSheet title="📄 Importer depuis un PDF" onClose={onClose}
+      footer={step==='preview' ? (
+        <div style={{ display:'flex', flexDirection:'column', gap:8, width:'100%' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            <span style={{ fontSize:13, color:'#666', whiteSpace:'nowrap' }}>Importer dans :</span>
+            <select value={targetCarte} onChange={e=>setTargetCarte(e.target.value)} style={{ flex:1, height:38, border:'1.5px solid #ddd', borderRadius:8, padding:'0 10px', fontSize:13, outline:'none' }}>
+              {cartes.map(c => <option key={c.id} value={c.id}>{c.l}</option>)}
+            </select>
+          </div>
+          <div style={{ display:'flex', gap:8 }}>
+            <button onClick={() => setStep('input')} style={{ ...btnSecondary, flex:1 }}>← Retour</button>
+            <button onClick={doImport} disabled={importing || totalProds === 0} style={{ ...btnPrimary, flex:2 }}>
+              {importing ? 'Importation...' : `Importer ${totalProds} produit${totalProds>1?'s':''}`}
+            </button>
+          </div>
+        </div>
+      ) : null}
+    >
+      {step === 'input' && (
+        <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+          <div style={{ display:'flex', gap:6 }}>
+            <button onClick={()=>setMode('file')} style={tabBtn(mode==='file')}>📁 Fichier PDF</button>
+            <button onClick={()=>setMode('url')}  style={tabBtn(mode==='url')}>🔗 URL</button>
+          </div>
+
+          {mode === 'file' ? (
+            <div>
+              <label style={{ display:'block', border:'2px dashed #ddd', borderRadius:12, padding:'32px 20px', textAlign:'center', cursor:'pointer', color:'#aaa', fontSize:14 }}>
+                <div style={{ fontSize:32, marginBottom:8 }}>📄</div>
+                <div style={{ fontWeight:600, color:'#555', marginBottom:4 }}>Cliquez pour choisir un PDF</div>
+                <div style={{ fontSize:12 }}>ou glissez-déposez ici</div>
+                <input type="file" accept=".pdf,application/pdf" style={{ display:'none' }} onChange={handleFile} />
+              </label>
+            </div>
+          ) : (
+            <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+              <input value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://exemple.com/carte.pdf" style={inputStyle} onKeyDown={e=>e.key==='Enter'&&handleUrl()} />
+              <p style={{ fontSize:11, color:'#bbb', margin:0 }}>⚠️ Certains serveurs bloquent l'accès direct (CORS). Si ça échoue, téléchargez le PDF puis utilisez l'option Fichier.</p>
+              <button onClick={handleUrl} disabled={loading || !url.trim()} style={{ ...btnPrimary, height:40 }}>Extraire le texte</button>
+            </div>
+          )}
+
+          {loading && (
+            <div style={{ textAlign:'center', padding:'20px 0', color:'#888', fontSize:14 }}>
+              <div style={{ fontSize:28, marginBottom:8 }}>⏳</div>
+              Lecture du PDF en cours…
+            </div>
+          )}
+          {error && (
+            <div style={{ background:'#fef2f2', border:'1.5px solid #fca5a5', borderRadius:10, padding:'12px 14px', color:'#dc2626', fontSize:13, lineHeight:1.5 }}>
+              ⚠️ {error}
+            </div>
+          )}
+        </div>
+      )}
+
+      {step === 'preview' && parsed && (
+        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          <div style={{ background:'#f0fdf4', border:'1.5px solid #86efac', borderRadius:10, padding:'10px 14px', fontSize:13, color:'#166534' }}>
+            ✅ <strong>{parsed.reduce((s,c)=>s+c.produits.length,0)} produits</strong> détectés dans <strong>{parsed.length} catégories</strong>
+          </div>
+          {tooMany && (
+            <div style={{ background:'#fffbeb', border:'1.5px solid #fcd34d', borderRadius:10, padding:'10px 14px', fontSize:12, color:'#92400e' }}>
+              ⚠️ Plus de 200 produits détectés — vérifiez soigneusement les données avant de valider.
+            </div>
+          )}
+          {parsed.map((cat, ci) => (
+            <div key={ci} style={{ border:'1px solid #eee', borderRadius:12, overflow:'hidden' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 12px', background: cat.checked ? '#fafafa' : '#f5f5f5', borderBottom:'1px solid #f0f0f0' }}>
+                <input type="checkbox" checked={cat.checked} onChange={()=>toggleCat(ci)} style={{ width:16, height:16, cursor:'pointer', accentColor:'#E8C547' }} />
+                <input value={cat.nom} onChange={e=>editCat(ci,e.target.value)} style={{ flex:1, border:'none', background:'transparent', fontWeight:700, fontSize:12, textTransform:'uppercase', letterSpacing:1, color: cat.checked ? '#333' : '#bbb', outline:'none' }} />
+                <span style={{ fontSize:11, color:'#aaa' }}>({cat.produits.filter(p=>p.checked).length}/{cat.produits.length})</span>
+              </div>
+              {cat.produits.map((prod, pi) => (
+                <div key={pi} style={{ display:'flex', alignItems:'flex-start', gap:8, padding:'8px 12px', borderBottom: pi<cat.produits.length-1?'1px solid #f7f7f7':'none', opacity: prod.checked ? 1 : 0.4 }}>
+                  <input type="checkbox" checked={prod.checked} onChange={()=>toggleProd(ci,pi)} style={{ width:14, height:14, marginTop:3, cursor:'pointer', flexShrink:0, accentColor:'#E8C547' }} />
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <input value={prod.nom} onChange={e=>editProd(ci,pi,'nom',e.target.value)} style={{ width:'100%', border:'none', borderBottom:'1px solid #f0f0f0', fontSize:13, fontWeight:600, color:'#111', outline:'none', background:'transparent', paddingBottom:2, marginBottom:3 }} />
+                    {prod.description && (
+                      <input value={prod.description} onChange={e=>editProd(ci,pi,'description',e.target.value)} style={{ width:'100%', border:'none', fontSize:11, color:'#888', outline:'none', background:'transparent' }} />
+                    )}
+                  </div>
+                  <input value={prod.prix_detail || (prod.prix ? prod.prix+' €' : '')} onChange={e=>{const v=e.target.value.trim();editProd(ci,pi,'prix',v.replace(/\s*€\s*$/,'').replace(',','.'));editProd(ci,pi,'prix_detail','');}} style={{ width:80, border:'1.5px solid #eee', borderRadius:6, fontSize:12, fontWeight:700, color:'#111', padding:'3px 7px', outline:'none', textAlign:'right', flexShrink:0 }} />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </MenuBottomSheet>
+  );
+}
+
 function CatsSheet({ categories: initCats, onClose, showToast, carte }) {
   const [cats, setCats] = useState([...initCats]);
   const [newNom, setNewNom] = useState('');
@@ -3371,6 +3658,7 @@ function MenuPage({ showToast }) {
   const [platSheet, setPlatSheet] = useState(null);
   const [showGererCats, setShowGererCats] = useState(false);
   const [showCartesSheet, setShowCartesSheet] = useState(false);
+  const [showPdfImport, setShowPdfImport] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [saving, setSaving] = useState(false);
   const [ctxMenu, setCtxMenu] = useState(null);
@@ -3595,6 +3883,7 @@ function MenuPage({ showToast }) {
           <p style={{ margin:'3px 0 0', fontSize:13, color:'#aaa' }}>Gérez la carte en temps réel</p>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <button onClick={() => setShowPdfImport(true)} style={{ background:'none', border:'none', cursor:'pointer', color:'#888', fontSize:18, padding:'6px', borderRadius:8, display:'flex', alignItems:'center' }} title="Importer depuis un PDF">📄</button>
           <button onClick={() => setShowCartesSheet(true)} style={{ background:'none', border:'none', cursor:'pointer', color:'#888', fontSize:18, padding:'6px', borderRadius:8, display:'flex', alignItems:'center' }} title="Gérer les cartes">🗂</button>
           <button onClick={() => setShowGererCats(true)} style={{ background:'none', border:'none', cursor:'pointer', color:'#888', fontSize:20, padding:'6px', borderRadius:8, display:'flex', alignItems:'center' }} title="Gérer les catégories">⚙️</button>
           <button onClick={() => catsFiltered.length > 0 ? setCatPickerOpen(true) : setEditProduit({ carte, disponible: true, mise_en_avant: false, badges: [], allergenes: [] })} style={{ ...btnPrimary, height:38, fontSize:13 }}>+ Ajouter</button>
@@ -3811,6 +4100,17 @@ function MenuPage({ showToast }) {
           onClose={() => { setShowGererCats(false); loadMenu(); }}
           showToast={showToast}
           carte={carte}
+        />
+      )}
+
+      {/* Import PDF */}
+      {showPdfImport && (
+        <PdfImportSheet
+          onClose={() => { setShowPdfImport(false); loadMenu(); }}
+          showToast={showToast}
+          cartes={cartes}
+          categories={categories}
+          produits={produits}
         />
       )}
 
