@@ -3192,6 +3192,7 @@ function CartesSheet({ onClose, showToast, produits }) {
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editNom, setEditNom] = useState('');
+  const [confirmForce, setConfirmForce] = useState(null); // { carte, nbCats, nbProds }
   const dragIdx = useRef(null);
   const dragOverIdx = useRef(null);
 
@@ -3225,10 +3226,22 @@ function CartesSheet({ onClose, showToast, produits }) {
   }
 
   async function deleteCarte(c) {
-    const count = produits.filter(p => p.carte === c.slug || p.carte === c.slug).length;
-    if (count > 0) { showToast(`Impossible : ${count} produit(s) utilisent cette carte`); return; }
+    const nbProds = produits.filter(p => p.carte === c.slug).length;
+    const { data: cats } = await supabase.from('menu_categories').select('id').eq('carte', c.slug);
+    const nbCats = cats?.length || 0;
+    if (nbProds > 0 || nbCats > 0) {
+      setConfirmForce({ carte: c, nbCats, nbProds });
+      return;
+    }
+    await doDeleteCarte(c);
+  }
+
+  async function doDeleteCarte(c) {
+    await supabase.from('menu_produits').delete().eq('carte', c.slug);
+    await supabase.from('menu_categories').delete().eq('carte', c.slug);
     await supabase.from('menu_cartes').delete().eq('id', c.id);
     setCartes(prev => prev.filter(x => x.id !== c.id));
+    setConfirmForce(null);
     showToast('Carte supprimée');
   }
 
@@ -3244,12 +3257,31 @@ function CartesSheet({ onClose, showToast, produits }) {
   }
 
   return (
+    <>
+    {confirmForce && (
+      <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:4500, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }} onClick={() => setConfirmForce(null)}>
+        <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:400, padding:'24px 20px', boxShadow:'0 8px 40px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
+          <div style={{ fontSize:32, textAlign:'center', marginBottom:12 }}>⚠️</div>
+          <h3 style={{ margin:'0 0 10px', fontSize:16, fontWeight:800, color:'#111', textAlign:'center' }}>
+            Supprimer « {confirmForce.carte.nom} » ?
+          </h3>
+          <p style={{ margin:'0 0 20px', fontSize:14, color:'#555', lineHeight:1.6, textAlign:'center' }}>
+            Cette carte contient <strong>{confirmForce.nbCats} catégorie{confirmForce.nbCats>1?'s':''}</strong> et <strong>{confirmForce.nbProds} produit{confirmForce.nbProds>1?'s':''}</strong>.<br/>
+            Tout son contenu sera définitivement perdu.
+          </p>
+          <div style={{ display:'flex', gap:8 }}>
+            <button onClick={() => setConfirmForce(null)} style={{ ...btnSecondary, flex:1 }}>Annuler</button>
+            <button onClick={() => doDeleteCarte(confirmForce.carte)} style={{ ...btnDanger, flex:1 }}>Supprimer quand même</button>
+          </div>
+        </div>
+      </div>
+    )}
     <MenuBottomSheet title="🗂 Gérer les cartes" onClose={onClose} footer={<button onClick={onClose} style={{ ...btnPrimary, width:'100%' }}>Fermer</button>}>
       <div style={{ display:'flex', gap:8, marginBottom:16 }}>
         <input value={newNom} onChange={e=>setNewNom(e.target.value)} placeholder="Nouvelle carte..." style={{ ...inp(false), flex:1, height:42 }} onKeyDown={e=>e.key==='Enter'&&addCarte()} />
         <button onClick={addCarte} disabled={adding} style={{ ...btnPrimary, height:42, whiteSpace:'nowrap' }}>+ Ajouter</button>
       </div>
-      <p style={{ fontSize:11, color:'#bbb', marginBottom:12, lineHeight:1.5 }}>Le slug est généré automatiquement. Utilisé dans "carte" des produits. Impossible de supprimer une carte contenant des produits.</p>
+      <p style={{ fontSize:11, color:'#bbb', marginBottom:12, lineHeight:1.5 }}>Le slug est généré automatiquement. Utilisé dans "carte" des produits. La suppression d'une carte supprime aussi ses catégories et produits.</p>
       <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
         {cartes.map((c, i) => (
           <div key={c.id}
@@ -3271,6 +3303,7 @@ function CartesSheet({ onClose, showToast, produits }) {
         ))}
       </div>
     </MenuBottomSheet>
+    </>
   );
 }
 
