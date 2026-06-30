@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus, UserPlus, Trophy, ArrowUpDown, LayoutGrid, Settings, MapPin } from 'lucide-react';
+import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus, UserPlus, Trophy, ArrowUpDown, LayoutGrid, Settings, MapPin, Dices } from 'lucide-react';
 import { supabase } from "./supabase";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -3575,6 +3575,572 @@ function OriginesSheet({ onClose, showToast }) {
   );
 }
 
+// ── Roue cadeaux — back-office ───────────────────────────────────────────────
+
+const DEFAULT_EMAIL1_OBJET = '🎉 Vous avez gagné au Grand Jeux du TED !';
+const DEFAULT_EMAIL1_CORPS = `Bonjour {prenom} {nom},
+
+Félicitations ! Vous avez gagné {emoji} {recompense} au Grand Jeux du TED.
+
+Votre récompense est confirmée. Nous vous contacterons très prochainement avec tous les détails.
+
+À très vite au TED !
+L'équipe du TED — 04 72 02 20 20`;
+
+const DEFAULT_EMAIL2_OBJET = '🥂 Votre {recompense} vous attend au TED !';
+const DEFAULT_EMAIL2_CORPS = `Bonjour {prenom} {nom},
+
+Votre {emoji} {recompense} vous attend !
+
+Venez la savourer le {jour} {date} à partir de {heure}.
+
+L'occasion parfaite de revenir entre amis 🥂
+
+Réservation conseillée : 04 72 02 20 20
+
+À très vite,
+L'équipe du TED`;
+
+function RecompenseSheet({ item, onClose, onSaved, showToast }) {
+  const [nom, setNom] = useState(item?.nom || '');
+  const [emoji, setEmoji] = useState(item?.emoji || '');
+  const [probabilite, setProbabilite] = useState(item?.probabilite ?? 1);
+  const [stock, setStock] = useState(item?.stock ?? 10);
+  const [stockIllimite, setStockIllimite] = useState(item?.stock_illimite ?? false);
+  const [actif, setActif] = useState(item?.actif ?? true);
+  const [conditions, setConditions] = useState(item?.conditions || '');
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    if (!nom.trim()) { showToast('Nom requis'); return; }
+    setSaving(true);
+    const payload = {
+      nom: nom.trim(), emoji: emoji.trim(),
+      probabilite: parseFloat(probabilite) || 1,
+      stock: stockIllimite ? null : parseInt(stock) || 0,
+      stock_illimite: stockIllimite, actif,
+      conditions: conditions.trim() || null
+    };
+    if (item?.id) {
+      await supabase.from('roue_recompenses').update(payload).eq('id', item.id);
+    } else {
+      await supabase.from('roue_recompenses').insert({ ...payload, ordre: 99 });
+    }
+    setSaving(false);
+    showToast('Récompense sauvegardée ✓');
+    onSaved();
+  }
+
+  const iStyle = { width:'100%', padding:'12px 14px', borderRadius:10, border:'1.5px solid #eee', fontSize:14, fontFamily:'inherit', outline:'none', background:'#fafafa', boxSizing:'border-box' };
+
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:999, display:'flex', alignItems:'flex-end', justifyContent:'center' }}>
+      <div style={{ background:'#fff', borderRadius:'20px 20px 0 0', padding:28, width:'100%', maxWidth:480, maxHeight:'90vh', overflowY:'auto' }}>
+        <h3 style={{ margin:'0 0 20px', fontSize:18, fontWeight:900 }}>{item?.id ? 'Modifier' : 'Ajouter'} une récompense</h3>
+        <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+          <div>
+            <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Nom</label>
+            <input value={nom} onChange={e=>setNom(e.target.value)} placeholder="Ex: Magnum de rosé" style={{ ...iStyle, marginTop:6 }} />
+          </div>
+          <div>
+            <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Emoji</label>
+            <input value={emoji} onChange={e=>setEmoji(e.target.value)} placeholder="🍾" style={{ ...iStyle, marginTop:6 }} />
+          </div>
+          <div>
+            <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Probabilité (poids relatif)</label>
+            <input type="number" min={0.1} step={0.1} value={probabilite} onChange={e=>setProbabilite(e.target.value)} style={{ ...iStyle, marginTop:6 }} />
+          </div>
+          <label style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer' }}>
+            <input type="checkbox" checked={stockIllimite} onChange={e=>setStockIllimite(e.target.checked)} style={{ width:18, height:18, accentColor:'#111' }} />
+            <span style={{ fontWeight:600, fontSize:14 }}>Stock illimité</span>
+          </label>
+          {!stockIllimite && (
+            <div>
+              <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Stock</label>
+              <input type="number" min={0} value={stock} onChange={e=>setStock(e.target.value)} style={{ ...iStyle, marginTop:6 }} />
+            </div>
+          )}
+          <div>
+            <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Conditions (optionnel)</label>
+            <input value={conditions} onChange={e=>setConditions(e.target.value)} placeholder="Valable jusqu'au…" style={{ ...iStyle, marginTop:6 }} />
+          </div>
+          <label style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer' }}>
+            <input type="checkbox" checked={actif} onChange={e=>setActif(e.target.checked)} style={{ width:18, height:18, accentColor:'#111' }} />
+            <span style={{ fontWeight:600, fontSize:14 }}>Actif</span>
+          </label>
+        </div>
+        <div style={{ display:'flex', gap:10, marginTop:24 }}>
+          <button onClick={save} disabled={saving} style={{ flex:1, padding:16, borderRadius:14, border:'none', background:'#111', color:'#fff', fontSize:15, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>{saving ? 'Sauvegarde…' : '💾 Sauvegarder'}</button>
+          <button onClick={onClose} style={{ padding:'16px 20px', borderRadius:14, border:'1.5px solid #eee', background:'#fff', color:'#888', fontSize:14, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>Annuler</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RouePage({ showToast }) {
+  const [loading, setLoading] = useState(true);
+  const [recompenses, setRecompenses] = useState([]);
+  const [gains, setGains] = useState([]);
+  const [editSheet, setEditSheet] = useState(null);
+  const [planModal, setPlanModal] = useState(null);
+  const [planDate, setPlanDate] = useState('');
+  const [planHeure, setPlanHeure] = useState('19:00');
+  const [accordion, setAccordion] = useState('recompenses');
+  const [filtreRec, setFiltreRec] = useState('all');
+  const [filtreStatut, setFiltreStatut] = useState('all');
+  const [filtrePeriode, setFiltrePeriode] = useState('mois');
+  const [recherche, setRecherche] = useState('');
+  const [rouеActive, setRoueActive] = useState(false);
+  const [essaisMax, setEssaisMax] = useState(3);
+  const [countdownSec, setCountdownSec] = useState(5);
+  const [email1Delai, setEmail1Delai] = useState('1');
+  const [email1Objet, setEmail1Objet] = useState(DEFAULT_EMAIL1_OBJET);
+  const [email1Corps, setEmail1Corps] = useState(DEFAULT_EMAIL1_CORPS);
+  const [email2DelaiJours, setEmail2DelaiJours] = useState('3');
+  const [email2Objet, setEmail2Objet] = useState(DEFAULT_EMAIL2_OBJET);
+  const [email2Corps, setEmail2Corps] = useState(DEFAULT_EMAIL2_CORPS);
+  const [savingParam, setSavingParam] = useState(false);
+
+  useEffect(() => { loadAll(); }, []);
+
+  async function loadAll() {
+    setLoading(true);
+    try {
+      const [{ data: recData }, { data: gainsData }, { data: paramsData }] = await Promise.all([
+        supabase.from('roue_recompenses').select('*').order('ordre'),
+        supabase.from('roue_gains').select('*, roue_recompenses(nom,emoji)').order('date_gain', { ascending: false }).limit(500),
+        supabase.from('parametres').select('cle,valeur').like('cle', 'roue%'),
+      ]);
+      setRecompenses(recData || []);
+      setGains(gainsData || []);
+      const p = {};
+      (paramsData || []).forEach(r => { p[r.cle] = r.valeur; });
+      if (p['roue_active'] !== undefined) setRoueActive(p['roue_active'] === 'true');
+      if (p['roue_essais_max']) setEssaisMax(parseInt(p['roue_essais_max']));
+      if (p['roue_countdown']) setCountdownSec(parseInt(p['roue_countdown']));
+      if (p['roue_email1_delai']) setEmail1Delai(p['roue_email1_delai']);
+      if (p['roue_email1_objet']) setEmail1Objet(p['roue_email1_objet']);
+      if (p['roue_email1_corps']) setEmail1Corps(p['roue_email1_corps']);
+      if (p['roue_email2_delai_jours']) setEmail2DelaiJours(p['roue_email2_delai_jours']);
+      if (p['roue_email2_objet']) setEmail2Objet(p['roue_email2_objet']);
+      if (p['roue_email2_corps']) setEmail2Corps(p['roue_email2_corps']);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function saveParam(cle, valeur) {
+    await supabase.from('parametres').upsert({ cle, valeur }, { onConflict: 'cle' });
+  }
+
+  async function toggleRoueActive(v) {
+    setRoueActive(v);
+    await saveParam('roue_active', v ? 'true' : 'false');
+    showToast(v ? 'Roue activée ✓' : 'Roue désactivée');
+  }
+
+  async function saveConfigBase() {
+    setSavingParam(true);
+    await Promise.all([saveParam('roue_essais_max', String(essaisMax)), saveParam('roue_countdown', String(countdownSec))]);
+    setSavingParam(false);
+    showToast('Configuration sauvegardée ✓');
+  }
+
+  async function saveEmail1() {
+    setSavingParam(true);
+    await Promise.all([
+      saveParam('roue_email1_delai', email1Delai),
+      saveParam('roue_email1_objet', email1Objet),
+      saveParam('roue_email1_corps', email1Corps),
+    ]);
+    setSavingParam(false);
+    showToast('Email 1 sauvegardé ✓');
+  }
+
+  async function sendEmail1Test() {
+    const mail = window.prompt('Email de test :');
+    if (!mail) return;
+    try {
+      await fetch('/api/roue-email', { method:'POST', headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ type:'email1', to_email:mail, to_prenom:'Test', to_nom:'TED', recompense:'Magnum de rosé', emoji:'🍾' }) });
+      showToast('Email de test envoyé ✓');
+    } catch { showToast('Erreur envoi email'); }
+  }
+
+  async function saveEmail2() {
+    setSavingParam(true);
+    await Promise.all([
+      saveParam('roue_email2_delai_jours', email2DelaiJours),
+      saveParam('roue_email2_objet', email2Objet),
+      saveParam('roue_email2_corps', email2Corps),
+    ]);
+    setSavingParam(false);
+    showToast('Email 2 sauvegardé ✓');
+  }
+
+  async function toggleRecupere(g) {
+    const v = !g.recupere;
+    await supabase.from('roue_gains').update({ recupere: v }).eq('id', g.id);
+    showToast(v ? '✅ Marqué récupéré' : 'Annulé');
+    setGains(prev => prev.map(x => x.id === g.id ? { ...x, recupere: v } : x));
+  }
+
+  async function toggleRecompenseActif(r) {
+    const v = !r.actif;
+    await supabase.from('roue_recompenses').update({ actif: v }).eq('id', r.id);
+    setRecompenses(prev => prev.map(x => x.id === r.id ? { ...x, actif: v } : x));
+  }
+
+  async function supprimerRecompense(r) {
+    if (!window.confirm(`Supprimer "${r.nom}" ?`)) return;
+    await supabase.from('roue_recompenses').delete().eq('id', r.id);
+    showToast('Récompense supprimée');
+    setRecompenses(prev => prev.filter(x => x.id !== r.id));
+  }
+
+  async function planifierVisite() {
+    if (!planDate) return;
+    const d = new Date(planDate);
+    d.setDate(d.getDate() - (parseInt(email2DelaiJours) || 3));
+    await supabase.from('roue_gains').update({
+      date_venue: planDate,
+      heure_venue: planHeure || null,
+      email2_planifie_le: d.toISOString(),
+    }).eq('id', planModal.id);
+    showToast('Visite planifiée ✓');
+    setPlanModal(null);
+    await loadAll();
+  }
+
+  async function envoyerEmail2(g) {
+    if (!g.email) { showToast('Pas d\'email pour ce gagnant'); return; }
+    try {
+      await fetch('/api/roue-email', { method:'POST', headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ type:'email2', to_email:g.email, to_prenom:g.prenom, to_nom:g.nom,
+          recompense:g.roue_recompenses?.nom, emoji:g.roue_recompenses?.emoji,
+          date_venue:g.date_venue, heure_venue:g.heure_venue, gain_id:g.id }) });
+      showToast('Email 2 envoyé ✓');
+      setGains(prev => prev.map(x => x.id === g.id ? { ...x, email2_envoye: true } : x));
+    } catch { showToast('Erreur envoi email'); }
+  }
+
+  function exportCSV() {
+    const data = getFilteredGains();
+    const headers = ['Date','Prénom','Nom','Téléphone','Email','Récompense','Récupéré','Date venue','Email 2 envoyé'];
+    const rows = data.map(g => [
+      g.date_gain ? new Date(g.date_gain).toLocaleDateString('fr-FR') : '',
+      g.prenom||'', g.nom||'', g.tel||'', g.email||'',
+      g.roue_recompenses?.nom||'',
+      g.recupere ? 'Oui' : 'Non',
+      g.date_venue||'',
+      g.email2_envoye ? 'Oui' : 'Non',
+    ]);
+    const csv = [headers,...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob(['﻿'+csv], { type:'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `roue_gains_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  }
+
+  function getFilteredGains() {
+    let g = [...gains];
+    if (filtreRec !== 'all') g = g.filter(x => x.recompense_id === filtreRec);
+    const isPerdu = x => (x.roue_recompenses?.nom||'').toLowerCase().includes('perdu');
+    if (filtreStatut === 'gagnants') g = g.filter(x => !isPerdu(x));
+    else if (filtreStatut === 'perdants') g = g.filter(x => isPerdu(x));
+    else if (filtreStatut === 'email2') g = g.filter(x => x.email2_envoye);
+    else if (filtreStatut === 'recuperes') g = g.filter(x => x.recupere);
+    const now = new Date();
+    if (filtrePeriode === 'today') g = g.filter(x => new Date(x.date_gain).toDateString() === now.toDateString());
+    else if (filtrePeriode === 'semaine') { const d = new Date(now - 7*86400000); g = g.filter(x => new Date(x.date_gain) >= d); }
+    else if (filtrePeriode === 'mois') g = g.filter(x => { const d = new Date(x.date_gain); return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear(); });
+    if (recherche.trim()) {
+      const q = recherche.toLowerCase();
+      g = g.filter(x => (x.prenom||'').toLowerCase().includes(q)||(x.nom||'').toLowerCase().includes(q)||(x.email||'').toLowerCase().includes(q)||(x.tel||'').includes(q));
+    }
+    return g;
+  }
+
+  const isPerdu = x => (x.roue_recompenses?.nom||'').toLowerCase().includes('perdu');
+  const total = gains.length;
+  const gainsVrais = gains.filter(x => !isPerdu(x));
+  const tauxGain = total > 0 ? Math.round(gainsVrais.length / total * 100) : 0;
+  const now2 = new Date();
+  const gainsMois = gainsVrais.filter(x => { const d = new Date(x.date_gain); return d.getMonth()===now2.getMonth()&&d.getFullYear()===now2.getFullYear(); }).length;
+  const formComplete = gains.filter(g => g.tel && g.email).length;
+  const filteredGains = getFilteredGains();
+
+  const card = { background:'#fff', borderRadius:16, padding:'20px 24px', boxShadow:'0 2px 8px rgba(0,0,0,0.07)' };
+  const iS = { width:'100%', padding:'10px 14px', borderRadius:10, border:'1.5px solid #eee', fontSize:14, fontFamily:'inherit', outline:'none', background:'#fafafa' };
+  const btnN = { padding:'10px 20px', borderRadius:10, border:'none', background:'#111', color:'#fff', fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:'inherit' };
+  const btnG = { padding:'9px 16px', borderRadius:10, border:'1.5px solid #e0e0e0', background:'#fff', color:'#555', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit' };
+
+  if (loading) return <div style={{ padding:40, textAlign:'center', color:'#999' }}>Chargement…</div>;
+
+  return (
+    <div style={{ maxWidth:1100, margin:'0 auto', padding:'24px 20px 80px' }}>
+      <h1 style={{ margin:'0 0 24px', fontSize:24, fontWeight:900, color:'#111' }}>🎡 Grand Jeux du TED</h1>
+
+      {/* Stats */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16, marginBottom:28 }}>
+        {[
+          { label:'Parties jouées', val:total, icon:'🎰' },
+          { label:'Taux de gain', val:`${tauxGain} %`, icon:'🏆' },
+          { label:'Gagnants ce mois', val:gainsMois, icon:'📅' },
+          { label:'Formulaires complets', val:formComplete, icon:'📋' },
+        ].map(s => (
+          <div key={s.label} style={{ ...card, textAlign:'center' }}>
+            <div style={{ fontSize:26 }}>{s.icon}</div>
+            <div style={{ fontSize:28, fontWeight:900, color:'#111', margin:'6px 0 4px' }}>{s.val}</div>
+            <div style={{ fontSize:12, color:'#888', fontWeight:500 }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Config accordion */}
+      <div style={{ ...card, marginBottom:28, padding:0, overflow:'hidden' }}>
+        {/* Récompenses */}
+        <div>
+          <button onClick={() => setAccordion(a => a==='recompenses' ? '' : 'recompenses')}
+            style={{ width:'100%', padding:'18px 24px', background:'none', border:'none', display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', fontSize:15, fontWeight:700, color:'#111' }}>
+            <span>⚙️ Récompenses &amp; paramètres</span>
+            <ChevronDown size={18} style={{ transform: accordion==='recompenses' ? 'rotate(180deg)' : 'none', transition:'transform .2s' }} />
+          </button>
+          {accordion === 'recompenses' && (
+            <div style={{ padding:'0 24px 24px', borderTop:'1px solid #f0f0f0' }}>
+              <div style={{ display:'flex', gap:20, alignItems:'center', flexWrap:'wrap', paddingTop:16, marginBottom:20 }}>
+                <label style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer' }}>
+                  <div onClick={() => toggleRoueActive(!rouеActive)} style={{ width:44, height:24, borderRadius:12, background: rouеActive ? '#E8C547' : '#ddd', position:'relative', cursor:'pointer', transition:'background .2s' }}>
+                    <div style={{ position:'absolute', top:2, left: rouеActive ? 22 : 2, width:20, height:20, borderRadius:'50%', background:'#fff', boxShadow:'0 1px 4px rgba(0,0,0,0.2)', transition:'left .2s' }} />
+                  </div>
+                  <span style={{ fontWeight:700, fontSize:14, color: rouеActive ? '#111' : '#888' }}>{rouеActive ? '🟢 Roue active' : '⚫ Roue inactive'}</span>
+                </label>
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <span style={{ fontSize:13, color:'#666', fontWeight:600 }}>Essais max :</span>
+                  <input type="number" min={1} max={10} value={essaisMax} onChange={e=>setEssaisMax(+e.target.value)} style={{ ...iS, width:60 }} />
+                </div>
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <span style={{ fontSize:13, color:'#666', fontWeight:600 }}>Countdown (s) :</span>
+                  <input type="number" min={0} max={60} value={countdownSec} onChange={e=>setCountdownSec(+e.target.value)} style={{ ...iS, width:60 }} />
+                </div>
+                <button onClick={saveConfigBase} disabled={savingParam} style={btnG}>💾 Sauvegarder</button>
+              </div>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+                <span style={{ fontWeight:700, fontSize:14 }}>Récompenses</span>
+                <button onClick={() => setEditSheet({})} style={{ ...btnN, padding:'7px 14px', fontSize:13 }}>+ Ajouter</button>
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                {recompenses.map(r => (
+                  <div key={r.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 16px', background:'#fafafa', borderRadius:12, border:'1.5px solid #f0f0f0' }}>
+                    <span style={{ fontSize:22, minWidth:28 }}>{r.emoji||'🎁'}</span>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontWeight:700, fontSize:14, color:'#111' }}>{r.nom}</div>
+                      <div style={{ fontSize:12, color:'#888' }}>
+                        Proba: {r.probabilite||'—'} &bull; {r.stock_illimite ? 'Illimité' : `Stock: ${r.stock??'—'}`}
+                        {!r.stock_illimite && r.stock!=null && r.stock<5 && <span style={{ marginLeft:6, background:'#ff4444', color:'#fff', borderRadius:6, padding:'1px 6px', fontSize:10, fontWeight:700 }}>Stock bas</span>}
+                      </div>
+                    </div>
+                    <div onClick={() => toggleRecompenseActif(r)} style={{ width:36, height:20, borderRadius:10, background: r.actif ? '#E8C547' : '#ddd', position:'relative', cursor:'pointer', flexShrink:0, transition:'background .2s' }}>
+                      <div style={{ position:'absolute', top:2, left: r.actif ? 18 : 2, width:16, height:16, borderRadius:'50%', background:'#fff', boxShadow:'0 1px 3px rgba(0,0,0,0.2)', transition:'left .2s' }} />
+                    </div>
+                    <button onClick={() => setEditSheet(r)} style={{ ...btnG, padding:'5px 10px', fontSize:12 }}><Pencil size={13} /></button>
+                    <button onClick={() => supprimerRecompense(r)} style={{ ...btnG, padding:'5px 10px', fontSize:12, color:'#cc3333' }}><Trash2 size={13} /></button>
+                  </div>
+                ))}
+                {recompenses.length === 0 && <div style={{ color:'#bbb', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucune récompense configurée</div>}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Email 1 */}
+        <div style={{ borderTop:'1px solid #f0f0f0' }}>
+          <button onClick={() => setAccordion(a => a==='email1' ? '' : 'email1')}
+            style={{ width:'100%', padding:'18px 24px', background:'none', border:'none', display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', fontSize:15, fontWeight:700, color:'#111' }}>
+            <span>📧 Email 1 — Confirmation automatique</span>
+            <ChevronDown size={18} style={{ transform: accordion==='email1' ? 'rotate(180deg)' : 'none', transition:'transform .2s' }} />
+          </button>
+          {accordion === 'email1' && (
+            <div style={{ padding:'0 24px 24px', borderTop:'1px solid #f0f0f0' }}>
+              <div style={{ paddingTop:16, display:'flex', flexDirection:'column', gap:14 }}>
+                <div style={{ background:'#fffbe6', border:'1.5px solid #E8C547', borderRadius:10, padding:'10px 14px', fontSize:12, color:'#666' }}>
+                  Variables disponibles : <strong>{'{prenom}'}</strong> <strong>{'{nom}'}</strong> <strong>{'{recompense}'}</strong> <strong>{'{emoji}'}</strong>
+                </div>
+                <div>
+                  <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Délai après le jeu (minutes)</label>
+                  <input type="number" min={0} value={email1Delai} onChange={e=>setEmail1Delai(e.target.value)} style={{ ...iS, marginTop:6 }} />
+                </div>
+                <div>
+                  <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Objet</label>
+                  <input type="text" value={email1Objet} onChange={e=>setEmail1Objet(e.target.value)} style={{ ...iS, marginTop:6 }} />
+                </div>
+                <div>
+                  <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Corps du mail</label>
+                  <textarea value={email1Corps} onChange={e=>setEmail1Corps(e.target.value)} rows={8} style={{ ...iS, marginTop:6, resize:'vertical', lineHeight:1.6 }} />
+                </div>
+                <div style={{ display:'flex', gap:10 }}>
+                  <button onClick={saveEmail1} disabled={savingParam} style={btnN}>💾 Sauvegarder</button>
+                  <button onClick={sendEmail1Test} style={btnG}>📧 Envoyer un test</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Email 2 */}
+        <div style={{ borderTop:'1px solid #f0f0f0' }}>
+          <button onClick={() => setAccordion(a => a==='email2' ? '' : 'email2')}
+            style={{ width:'100%', padding:'18px 24px', background:'none', border:'none', display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', fontSize:15, fontWeight:700, color:'#111' }}>
+            <span>🥂 Email 2 — Convocation</span>
+            <ChevronDown size={18} style={{ transform: accordion==='email2' ? 'rotate(180deg)' : 'none', transition:'transform .2s' }} />
+          </button>
+          {accordion === 'email2' && (
+            <div style={{ padding:'0 24px 24px', borderTop:'1px solid #f0f0f0' }}>
+              <div style={{ paddingTop:16, display:'flex', flexDirection:'column', gap:14 }}>
+                <div style={{ background:'#fffbe6', border:'1.5px solid #E8C547', borderRadius:10, padding:'10px 14px', fontSize:12, color:'#666' }}>
+                  Variables disponibles : <strong>{'{prenom}'}</strong> <strong>{'{nom}'}</strong> <strong>{'{recompense}'}</strong> <strong>{'{emoji}'}</strong> <strong>{'{date}'}</strong> <strong>{'{jour}'}</strong> <strong>{'{heure}'}</strong>
+                </div>
+                <div>
+                  <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Délai avant la date de venue (jours)</label>
+                  <input type="number" min={0} value={email2DelaiJours} onChange={e=>setEmail2DelaiJours(e.target.value)} style={{ ...iS, marginTop:6 }} />
+                </div>
+                <div>
+                  <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Objet</label>
+                  <input type="text" value={email2Objet} onChange={e=>setEmail2Objet(e.target.value)} style={{ ...iS, marginTop:6 }} />
+                </div>
+                <div>
+                  <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Corps du mail</label>
+                  <textarea value={email2Corps} onChange={e=>setEmail2Corps(e.target.value)} rows={8} style={{ ...iS, marginTop:6, resize:'vertical', lineHeight:1.6 }} />
+                </div>
+                <button onClick={saveEmail2} disabled={savingParam} style={btnN}>💾 Sauvegarder</button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Filtres */}
+      <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginBottom:16, alignItems:'center' }}>
+        <select value={filtreRec} onChange={e=>setFiltreRec(e.target.value)} style={{ ...iS, width:'auto', background:'#fff', cursor:'pointer' }}>
+          <option value="all">Toutes les récompenses</option>
+          {recompenses.map(r => <option key={r.id} value={r.id}>{r.emoji} {r.nom}</option>)}
+        </select>
+        <select value={filtreStatut} onChange={e=>setFiltreStatut(e.target.value)} style={{ ...iS, width:'auto', background:'#fff', cursor:'pointer' }}>
+          <option value="all">Tous</option>
+          <option value="gagnants">Gagnants</option>
+          <option value="perdants">Perdants</option>
+          <option value="email2">Email 2 envoyé</option>
+          <option value="recuperes">Récupérés</option>
+        </select>
+        <select value={filtrePeriode} onChange={e=>setFiltrePeriode(e.target.value)} style={{ ...iS, width:'auto', background:'#fff', cursor:'pointer' }}>
+          <option value="all">Toute la période</option>
+          <option value="today">Aujourd'hui</option>
+          <option value="semaine">Cette semaine</option>
+          <option value="mois">Ce mois</option>
+        </select>
+        <input type="text" placeholder="🔍 Rechercher…" value={recherche} onChange={e=>setRecherche(e.target.value)} style={{ ...iS, width:200, background:'#fff' }} />
+        <div style={{ marginLeft:'auto' }}>
+          <button onClick={exportCSV} style={{ ...btnG, display:'flex', alignItems:'center', gap:6 }}>
+            <Download size={14} /> Exporter CSV
+          </button>
+        </div>
+      </div>
+
+      {/* Tableau */}
+      <div style={{ ...card, padding:0, overflow:'hidden' }}>
+        <div style={{ overflowX:'auto' }}>
+          <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+            <thead>
+              <tr style={{ background:'#fafafa', borderBottom:'2px solid #f0f0f0' }}>
+                {['Date','Prénom','Nom','Téléphone','Email','Récompense','Statut','Date venue','Email 2','Actions'].map(h => (
+                  <th key={h} style={{ padding:'12px 14px', textAlign:'left', fontWeight:700, fontSize:11, color:'#888', textTransform:'uppercase', letterSpacing:'.04em', whiteSpace:'nowrap' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredGains.map(g => (
+                <tr key={g.id} style={{ borderBottom:'1px solid #f5f5f5' }}>
+                  <td style={{ padding:'12px 14px', whiteSpace:'nowrap', color:'#555', fontSize:12 }}>
+                    {g.date_gain ? new Date(g.date_gain).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—'}
+                  </td>
+                  <td style={{ padding:'12px 14px', fontWeight:600 }}>{g.prenom||'—'}</td>
+                  <td style={{ padding:'12px 14px' }}>{g.nom||'—'}</td>
+                  <td style={{ padding:'12px 14px', fontFamily:'monospace', fontSize:12 }}>{g.tel||'—'}</td>
+                  <td style={{ padding:'12px 14px', fontSize:12, maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{g.email||'—'}</td>
+                  <td style={{ padding:'12px 14px', whiteSpace:'nowrap' }}>
+                    <span style={{ fontSize:16 }}>{g.roue_recompenses?.emoji||''}</span>{' '}
+                    <span style={{ fontWeight:600 }}>{g.roue_recompenses?.nom||'—'}</span>
+                  </td>
+                  <td style={{ padding:'12px 14px' }}>
+                    <button onClick={() => toggleRecupere(g)} style={{ padding:'4px 10px', borderRadius:8, border:'none', fontSize:11, fontWeight:700, cursor:'pointer', background: g.recupere ? '#e8f5e9' : '#fff3e0', color: g.recupere ? '#2e7d32' : '#e65100', whiteSpace:'nowrap' }}>
+                      {g.recupere ? '✓ Récupéré' : 'En attente'}
+                    </button>
+                  </td>
+                  <td style={{ padding:'12px 14px', fontSize:12, whiteSpace:'nowrap' }}>
+                    {g.date_venue ? new Date(g.date_venue+'T00:00:00').toLocaleDateString('fr-FR')+(g.heure_venue ? ' '+String(g.heure_venue).slice(0,5) : '') : '—'}
+                  </td>
+                  <td style={{ padding:'12px 14px' }}>
+                    {g.email2_envoye
+                      ? <span style={{ fontSize:11, color:'#2e7d32', fontWeight:700 }}>✓ Envoyé</span>
+                      : <span style={{ fontSize:11, color:'#bbb' }}>—</span>}
+                  </td>
+                  <td style={{ padding:'12px 14px', whiteSpace:'nowrap' }}>
+                    <div style={{ display:'flex', gap:6 }}>
+                      <button onClick={() => { setPlanModal(g); setPlanDate(g.date_venue||''); setPlanHeure(g.heure_venue ? String(g.heure_venue).slice(0,5) : '19:00'); }}
+                        style={{ ...btnG, padding:'4px 8px', fontSize:11 }} title="Planifier la venue">📅</button>
+                      {g.email && <button onClick={() => envoyerEmail2(g)} style={{ ...btnG, padding:'4px 8px', fontSize:11 }} title="Envoyer Email 2">✉️</button>}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filteredGains.length === 0 && (
+                <tr><td colSpan={10} style={{ padding:40, textAlign:'center', color:'#bbb', fontSize:14 }}>Aucun résultat</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Modal planification */}
+      {planModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:999, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ background:'#fff', borderRadius:20, padding:32, width:340, boxShadow:'0 20px 60px rgba(0,0,0,0.25)' }}>
+            <h3 style={{ margin:'0 0 20px', fontSize:18, fontWeight:900 }}>📅 Planifier la venue</h3>
+            <div style={{ fontWeight:600, fontSize:14, marginBottom:4, color:'#444' }}>{planModal.prenom} {planModal.nom}</div>
+            <div style={{ fontSize:13, color:'#888', marginBottom:20 }}>{planModal.roue_recompenses?.emoji} {planModal.roue_recompenses?.nom}</div>
+            <div style={{ marginBottom:14 }}>
+              <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Date de venue</label>
+              <input type="date" value={planDate} onChange={e=>setPlanDate(e.target.value)} style={{ ...iS, marginTop:6 }} />
+            </div>
+            <div style={{ marginBottom:20 }}>
+              <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Heure</label>
+              <input type="time" value={planHeure} onChange={e=>setPlanHeure(e.target.value)} style={{ ...iS, marginTop:6 }} />
+            </div>
+            <div style={{ fontSize:11, color:'#999', marginBottom:20 }}>Email 2 sera planifié {email2DelaiJours} jour(s) avant.</div>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={planifierVisite} style={{ ...btnN, flex:1 }}>💾 Enregistrer</button>
+              <button onClick={() => setPlanModal(null)} style={{ ...btnG, flex:1 }}>Annuler</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editSheet !== null && (
+        <RecompenseSheet
+          item={editSheet?.id ? editSheet : null}
+          onClose={() => setEditSheet(null)}
+          onSaved={() => { setEditSheet(null); loadAll(); }}
+          showToast={showToast}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Menu ────────────────────────────────────────────────────────────────────
+
 function MenuPage({ showToast }) {
   const [carte, setCarte] = useState('restaurant');
   const [cartes, setCartes] = useState([{id:'restaurant',l:'Restaurant'},{id:'brasero',l:'Brasero'}]);
@@ -4692,6 +5258,7 @@ function CRMApp({ user, onLogout }) {
         { id:'reservations', label:'Réservations', icon:<CalendarDays size={24} strokeWidth={1.8} /> },
         { id:'clients', label:'Clients', icon:<Users size={24} strokeWidth={1.8} /> },
         { id:'communications', label:'Communications', icon:<Megaphone size={24} strokeWidth={1.8} /> },
+        { id:'roue', label:'Roue', icon:<Dices size={24} strokeWidth={1.8} /> },
         { id:'menu', label:'Menu', icon:<UtensilsCrossed size={24} strokeWidth={1.8} /> },
       ].map(item => {
         const nbAttenteSidebar = item.id === 'reservations' ? resaAttenteCount : 0;
@@ -4809,6 +5376,13 @@ function CRMApp({ user, onLogout }) {
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
       {notifPrePromptModal}
     </>
+  );
+
+  if (!isMobile && activeView === 'roue') return (
+    <div style={{ display:'flex', height:'100vh', background:'#f5f5f7' }}>
+      {sidebarDesktop}
+      <div style={{ flex:1, overflowY:'auto' }}><RouePage showToast={showToast} /></div>
+    </div>
   );
 
   if (activeView === 'communications' && !isMobile) {

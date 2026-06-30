@@ -807,8 +807,8 @@
         ctx.fillStyle = ci === 0 ? '#3a2000' : 'rgba(255,255,255,0.9)';
         ctx.shadowColor = ci === 0 ? 'rgba(255,240,100,0.5)' : 'rgba(0,0,0,0.7)';
         ctx.shadowBlur = 4;
-        const label = ((r.emoji || '') + ' ' + (r.nom || '')).trim();
-        ctx.fillText(label.slice(0, 18), innerR - 10, 4);
+        const isWin = !(r.nom || '').toLowerCase().includes('perdu');
+        ctx.fillText(isWin ? 'GAGNÉ' : 'PERDU', innerR - 10, 4);
         ctx.shadowBlur = 0; ctx.restore();
 
         start = end;
@@ -913,17 +913,26 @@
         if (t < 1) { requestAnimationFrame(animate); return; }
         currentAngle = targetAngle;
         spinning = false;
-        spawnConfetti();
-        showResult();
+        const isWin = !(gainResult.nom || '').toLowerCase().includes('perdu');
+        if (isWin) spawnConfetti();
+        showResult(isWin);
       }
       requestAnimationFrame(animate);
     }
 
-    function showResult() {
-      const winOv = document.getElementById('roue-win-overlay');
-      document.getElementById('roue-win-emoji').textContent = gainResult.emoji || '🎁';
-      document.getElementById('roue-win-label').textContent = gainResult.nom || '—';
-      if (winOv) { winOv.style.display = 'flex'; }
+    function showResult(isWin) {
+      if (isWin) {
+        const winOv = document.getElementById('roue-win-overlay');
+        document.getElementById('roue-win-emoji').textContent = gainResult.emoji || '🎁';
+        document.getElementById('roue-win-label').textContent = gainResult.nom || '—';
+        if (winOv) { winOv.style.display = 'flex'; }
+      } else {
+        const btn = document.getElementById('roue-jouer-btn');
+        if (btn) {
+          btn.disabled = triesLeft <= 0;
+          btn.textContent = triesLeft > 0 ? '😔 Retenter sa chance' : 'Plus d\'essais disponibles';
+        }
+      }
     }
 
     // ── Confettis ──────────────────────────────────────────────────────────────
