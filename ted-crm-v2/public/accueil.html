@@ -174,14 +174,27 @@
   const SUPA_KEY = 'sb_publishable_4-uVtQtXd0jLGkNAFsx4yw_ni17DzN_';
 
   async function loadSoirees() {
+    const url = `${SUPA_URL}/rest/v1/menu_soirees?select=id,nom,jour,horaire,ordre&visible=eq.true&order=ordre.asc`;
+    console.log('[TED] Chargement soirées →', url);
     try {
-      const r = await fetch(`${SUPA_URL}/rest/v1/menu_soirees?select=*&visible=eq.true&order=ordre`, {
+      const r = await fetch(url, {
         headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` }
       });
-      if (!r.ok) return;
+      console.log('[TED] Statut HTTP :', r.status);
       const soirees = await r.json();
+      console.log('[TED] Soirées reçues :', soirees);
+
+      if (!r.ok) {
+        console.error('[TED] Erreur Supabase :', soirees);
+        return;
+      }
+
       const list = document.getElementById('soirees-list');
-      if (!soirees.length) { list.parentElement.style.display = 'none'; return; }
+      if (!Array.isArray(soirees) || !soirees.length) {
+        console.log('[TED] Aucune soirée visible — section masquée');
+        list.closest('#soirees-section').style.display = 'none';
+        return;
+      }
 
       list.innerHTML = soirees.map(s => `
         <div class="soiree-item">
@@ -199,7 +212,9 @@
           el.style.animation = `soireeIn 350ms ease-out ${1800 + i * 80}ms both`;
         }
       });
-    } catch(e) { /* silencieux */ }
+    } catch(e) {
+      console.error('[TED] Exception loadSoirees :', e);
+    }
   }
 
   function esc(str) {
