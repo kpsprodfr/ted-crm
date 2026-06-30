@@ -3670,7 +3670,7 @@ function RecompenseSheet({ item, onClose, onSaved, showToast }) {
           </label>
         </div>
         <div style={{ display:'flex', gap:10, marginTop:24 }}>
-          <button onClick={save} disabled={saving} style={{ flex:1, padding:16, borderRadius:14, border:'none', background:'#111', color:'#fff', fontSize:15, fontWeight:700, cursor:'pointer', fontFamily:'inherit' }}>{saving ? 'Sauvegarde…' : '💾 Sauvegarder'}</button>
+          <button onClick={save} disabled={saving} style={{ flex:1, padding:16, borderRadius:14, border:'none', background:'#111', color:'#fff', fontSize:15, fontWeight:700, cursor:'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>{saving ? 'Sauvegarde…' : <><Save size={16} strokeWidth={2}/> Sauvegarder</>}</button>
           <button onClick={onClose} style={{ padding:'16px 20px', borderRadius:14, border:'1.5px solid #eee', background:'#fff', color:'#888', fontSize:14, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>Annuler</button>
         </div>
       </div>
@@ -3880,21 +3880,24 @@ function RouePage({ showToast }) {
   if (loading) return <div style={{ padding:40, textAlign:'center', color:'#999' }}>Chargement…</div>;
 
   return (
-    <div style={{ maxWidth:1100, margin:'0 auto', padding:'24px 20px 80px' }}>
-      <h1 style={{ margin:'0 0 24px', fontSize:24, fontWeight:900, color:'#111' }}>🎡 Grand Jeux du TED</h1>
+    <div style={{ padding:'24px 32px 80px', boxSizing:'border-box' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:24 }}>
+        <Dices size={28} strokeWidth={1.8} color="#111"/>
+        <h1 style={{ margin:0, fontSize:28, fontWeight:900, color:'#111' }}>Grand Jeux du TED</h1>
+      </div>
 
       {/* Stats */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16, marginBottom:28 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:16, marginBottom:28 }}>
         {[
-          { label:'Parties jouées', val:total, icon:'🎰' },
-          { label:'Taux de gain', val:`${tauxGain} %`, icon:'🏆' },
-          { label:'Gagnants ce mois', val:gainsMois, icon:'📅' },
-          { label:'Formulaires complets', val:formComplete, icon:'📋' },
-        ].map(s => (
-          <div key={s.label} style={{ ...card, textAlign:'center' }}>
-            <div style={{ fontSize:26 }}>{s.icon}</div>
-            <div style={{ fontSize:28, fontWeight:900, color:'#111', margin:'6px 0 4px' }}>{s.val}</div>
-            <div style={{ fontSize:12, color:'#888', fontWeight:500 }}>{s.label}</div>
+          { icon:<Dices size={20} strokeWidth={2} color="#E8C547"/>, bg:'#fffbea', label:'PARTIES JOUÉES', val:total },
+          { icon:<Star size={20} strokeWidth={2} color="#8b5cf6"/>, bg:'#f5f3ff', label:'TAUX DE GAIN', val:`${tauxGain} %` },
+          { icon:<Trophy size={20} strokeWidth={2} color="#22c55e"/>, bg:'#f0fdf4', label:'GAGNANTS CE MOIS', val:gainsMois },
+          { icon:<ClipboardList size={20} strokeWidth={2} color="#3b82f6"/>, bg:'#eff6ff', label:'FORMULAIRES COMPLETS', val:formComplete },
+        ].map((s,i) => (
+          <div key={i} style={{ background:'#fff', borderRadius:16, padding:'16px 20px' }}>
+            <div style={{ width:36, height:36, borderRadius:10, background:s.bg, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:10 }}>{s.icon}</div>
+            <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 4px' }}>{s.label}</p>
+            <p style={{ fontSize:22, fontWeight:900, color:'#111', margin:0 }}>{s.val}</p>
           </div>
         ))}
       </div>
@@ -3925,11 +3928,11 @@ function RouePage({ showToast }) {
                   <span style={{ fontSize:13, color:'#666', fontWeight:600 }}>Countdown (s) :</span>
                   <input type="number" min={0} max={60} value={countdownSec} onChange={e=>setCountdownSec(+e.target.value)} style={{ ...iS, width:60 }} />
                 </div>
-                <button onClick={saveConfigBase} disabled={savingParam} style={btnG}>💾 Sauvegarder</button>
+                <button onClick={saveConfigBase} disabled={savingParam} style={{ ...btnG, display:'flex', alignItems:'center', gap:6 }}><Save size={13} strokeWidth={2}/> Sauvegarder</button>
               </div>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
                 <span style={{ fontWeight:700, fontSize:14 }}>Récompenses</span>
-                <button onClick={() => setEditSheet({})} style={{ ...btnN, padding:'7px 14px', fontSize:13 }}>+ Ajouter</button>
+                <button onClick={() => setEditSheet({})} style={{ ...btnN, padding:'7px 14px', fontSize:13, display:'flex', alignItems:'center', gap:6 }}><Plus size={13} strokeWidth={2}/> Ajouter</button>
               </div>
               <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                 {recompenses.map(r => (
@@ -3981,8 +3984,8 @@ function RouePage({ showToast }) {
                   <textarea value={email1Corps} onChange={e=>setEmail1Corps(e.target.value)} rows={8} style={{ ...iS, marginTop:6, resize:'vertical', lineHeight:1.6 }} />
                 </div>
                 <div style={{ display:'flex', gap:10 }}>
-                  <button onClick={saveEmail1} disabled={savingParam} style={btnN}>💾 Sauvegarder</button>
-                  <button onClick={sendEmail1Test} style={btnG}>📧 Envoyer un test</button>
+                  <button onClick={saveEmail1} disabled={savingParam} style={{ ...btnN, display:'flex', alignItems:'center', gap:6 }}><Save size={13} strokeWidth={2}/> Sauvegarder</button>
+                  <button onClick={sendEmail1Test} style={{ ...btnG, display:'flex', alignItems:'center', gap:6 }}><Send size={13} strokeWidth={2}/> Envoyer un test</button>
                 </div>
               </div>
             </div>
@@ -4014,7 +4017,7 @@ function RouePage({ showToast }) {
                   <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Corps du mail</label>
                   <textarea value={email2Corps} onChange={e=>setEmail2Corps(e.target.value)} rows={8} style={{ ...iS, marginTop:6, resize:'vertical', lineHeight:1.6 }} />
                 </div>
-                <button onClick={saveEmail2} disabled={savingParam} style={btnN}>💾 Sauvegarder</button>
+                <button onClick={saveEmail2} disabled={savingParam} style={{ ...btnN, display:'flex', alignItems:'center', gap:6 }}><Save size={13} strokeWidth={2}/> Sauvegarder</button>
               </div>
             </div>
           )}
@@ -4120,7 +4123,7 @@ function RouePage({ showToast }) {
             </div>
             <div style={{ fontSize:11, color:'#999', marginBottom:20 }}>Email 2 sera planifié {email2DelaiJours} jour(s) avant.</div>
             <div style={{ display:'flex', gap:10 }}>
-              <button onClick={planifierVisite} style={{ ...btnN, flex:1 }}>💾 Enregistrer</button>
+              <button onClick={planifierVisite} style={{ ...btnN, flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}><Save size={14} strokeWidth={2}/> Enregistrer</button>
               <button onClick={() => setPlanModal(null)} style={{ ...btnG, flex:1 }}>Annuler</button>
             </div>
           </div>
@@ -5379,10 +5382,12 @@ function CRMApp({ user, onLogout }) {
   );
 
   if (!isMobile && activeView === 'roue') return (
-    <div style={{ display:'flex', height:'100vh', background:'#f5f5f7' }}>
+    <>
       {sidebarDesktop}
-      <div style={{ flex:1, overflowY:'auto' }}><RouePage showToast={showToast} /></div>
-    </div>
+      <div style={{ marginLeft:120, minHeight:'100vh', background:'#f5f5f5', overflowY:'auto', boxSizing:'border-box' }}>
+        <RouePage showToast={showToast} />
+      </div>
+    </>
   );
 
   if (activeView === 'communications' && !isMobile) {
