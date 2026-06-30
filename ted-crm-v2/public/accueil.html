@@ -17,17 +17,12 @@
       padding: 0 0 160px;
     }
 
-    /* Transition commune à tous les blocs animés */
     .anim {
       opacity: 0;
       transform: translateY(10px);
       transition: opacity 400ms ease, transform 400ms ease;
     }
-    .anim.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    /* prefers-reduced-motion : tout visible immédiatement */
+    .anim.visible { opacity: 1; transform: translateY(0); }
     @media (prefers-reduced-motion: reduce) {
       .anim { opacity: 1 !important; transform: none !important; transition: none !important; }
     }
@@ -40,99 +35,123 @@
       padding: 64px 24px 32px;
       text-align: center;
     }
-
     #logo-img {
-      width: 110px;
-      height: 110px;
-      object-fit: contain;
+      width: 110px; height: 110px; object-fit: contain;
       clip-path: inset(100% 0 0 0);
       transition: clip-path 1.2s cubic-bezier(0.22, 1, 0.36, 1), opacity 400ms ease;
       opacity: 0;
     }
-    #logo-img.visible {
-      clip-path: inset(0% 0 0 0);
-      opacity: 1;
-    }
+    #logo-img.visible { clip-path: inset(0% 0 0 0); opacity: 1; }
     @media (prefers-reduced-motion: reduce) {
       #logo-img { clip-path: none !important; opacity: 1 !important; transition: none !important; }
     }
-
-    #hero-title {
-      font-size: 36px;
-      font-weight: 900;
-      color: #E8C547;
-      letter-spacing: 3px;
-      margin-top: 20px;
-    }
-    #hero-sub {
-      font-size: 12px;
-      color: #666;
-      letter-spacing: 2px;
-      margin-top: 6px;
-      text-transform: uppercase;
-    }
-    #hero-line {
-      width: 40px;
-      height: 2px;
-      background: #E8C547;
-      border-radius: 2px;
-      margin-top: 18px;
-    }
+    #hero-title  { font-size: 36px; font-weight: 900; color: #E8C547; letter-spacing: 3px; margin-top: 20px; }
+    #hero-sub    { font-size: 12px; color: #666; letter-spacing: 2px; margin-top: 6px; text-transform: uppercase; }
+    #hero-line   { width: 40px; height: 2px; background: #E8C547; border-radius: 2px; margin-top: 18px; }
 
     /* ── Soirées ────────────────────────────────────────────────────────────── */
-    #soirees-section {
-      width: 100%;
-      max-width: 420px;
-      padding: 0 24px;
-      margin-top: 36px;
-    }
+    #soirees-section { width: 100%; max-width: 420px; padding: 0 24px; margin-top: 36px; }
     #soirees-label {
-      font-size: 11px;
-      font-weight: 700;
-      color: #E8C547;
-      letter-spacing: 2.5px;
-      text-transform: uppercase;
-      margin-bottom: 16px;
+      font-size: 11px; font-weight: 700; color: #E8C547;
+      letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 16px;
     }
     .soiree-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 13px 0;
-      border-bottom: 1px solid #222;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 13px 0; border-bottom: 1px solid #222;
+      cursor: pointer;
+      transition: background 150ms ease;
+      margin: 0 -8px; padding-left: 8px; padding-right: 8px;
+      border-radius: 8px;
     }
     .soiree-item:last-child { border-bottom: none; }
+    .soiree-item:active { background: rgba(255,255,255,0.05); }
     .soiree-nom  { font-size: 15px; font-weight: 600; color: #fff; }
     .soiree-desc { font-size: 12px; color: #555; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .soiree-meta { font-size: 12px; color: #666; text-align: right; flex-shrink: 0; margin-left: 12px; white-space: nowrap; }
+    .soiree-chevron { font-size: 12px; color: #333; margin-left: 8px; flex-shrink: 0; }
 
     /* ── Boutons ────────────────────────────────────────────────────────────── */
     #cta-bar {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
+      position: fixed; bottom: 0; left: 0; right: 0;
       padding: 16px 20px calc(16px + env(safe-area-inset-bottom, 0px));
       background: linear-gradient(to bottom, transparent 0%, #111 28%);
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      max-width: 480px;
-      margin: 0 auto;
+      display: flex; flex-direction: column; gap: 10px;
+      max-width: 480px; margin: 0 auto;
     }
     .btn-cta {
-      display: block;
-      width: 100%;
-      padding: 16px;
-      border-radius: 14px;
-      font-size: 15px;
-      font-weight: 700;
-      text-align: center;
-      text-decoration: none;
-      border: 2px solid #E8C547;
+      display: block; width: 100%; padding: 16px; border-radius: 14px;
+      font-size: 15px; font-weight: 700; text-align: center;
+      text-decoration: none; border: 2px solid #E8C547;
       transition: opacity 150ms ease;
     }
     .btn-cta:active { opacity: 0.75; }
     .btn-primary { background: #E8C547; color: #111; }
     .btn-outline  { background: transparent; color: #E8C547; }
+
+    /* ── Popup soirée ───────────────────────────────────────────────────────── */
+    #popup-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.75);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+      opacity: 0;
+      transition: opacity 200ms ease;
+      pointer-events: none;
+    }
+    #popup-overlay.open { opacity: 1; pointer-events: all; }
+    @media (prefers-reduced-motion: reduce) {
+      #popup-overlay { transition: none !important; }
+      #popup-card    { transition: none !important; }
+    }
+
+    #popup-card {
+      background: linear-gradient(160deg, #1a1a1a 0%, #111 100%);
+      border: 1px solid #2a2a2a;
+      border-radius: 20px;
+      width: 100%; max-width: 360px;
+      overflow: hidden;
+      transform: scale(0.92);
+      opacity: 0;
+      transition: transform 300ms cubic-bezier(0.34, 1.4, 0.64, 1), opacity 300ms ease;
+      position: relative;
+    }
+    #popup-overlay.open #popup-card { transform: scale(1); opacity: 1; }
+
+    /* Barre de progression */
+    #popup-progress-track {
+      height: 3px; background: #222; width: 100%;
+    }
+    #popup-progress-bar {
+      height: 100%; width: 0%; background: #E8C547;
+      transition: width 4000ms linear;
+    }
+    #popup-progress-bar.running { width: 100%; }
+
+    /* Bouton fermer */
+    #popup-close {
+      position: absolute; top: 16px; right: 16px;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      border: none; color: #888; font-size: 14px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background 150ms ease, color 150ms ease;
+    }
+    #popup-close:hover { background: rgba(255,255,255,0.16); color: #fff; }
+
+    /* Contenu */
+    #popup-body { padding: 28px 28px 24px; }
+    #popup-jour {
+      font-size: 32px; font-weight: 800; color: #E8C547;
+      letter-spacing: 2px; text-transform: uppercase;
+      line-height: 1;
+    }
+    #popup-nom  { font-size: 18px; font-weight: 600; color: #fff; margin-top: 8px; }
+    #popup-dj   { font-size: 13px; color: #c9a93a; margin-top: 6px; font-style: italic; }
+    #popup-desc { font-size: 13px; color: #999; margin-top: 12px; line-height: 1.5; }
+    #popup-horaire {
+      font-size: 12px; color: #555; margin-top: 16px;
+      letter-spacing: 0.5px;
+    }
   </style>
 </head>
 <body>
@@ -156,16 +175,31 @@
     <a href="/menu.html?carte=brasero&from=accueil" class="btn-cta btn-outline" data-dest="/menu.html?carte=brasero&from=accueil">Carte Brasero</a>
   </div>
 
+  <!-- Popup soirée -->
+  <div id="popup-overlay" role="dialog" aria-modal="true" aria-labelledby="popup-nom">
+    <div id="popup-card">
+      <div id="popup-progress-track"><div id="popup-progress-bar"></div></div>
+      <button id="popup-close" aria-label="Fermer">✕</button>
+      <div id="popup-body">
+        <div id="popup-jour"></div>
+        <div id="popup-nom"></div>
+        <div id="popup-dj"></div>
+        <div id="popup-desc"></div>
+        <div id="popup-horaire"></div>
+      </div>
+    </div>
+  </div>
+
 <script>
   const SUPA_URL = 'https://mwpfaytccypvdrgapptk.supabase.co';
   const SUPA_KEY = 'sb_publishable_4-uVtQtXd0jLGkNAFsx4yw_ni17DzN_';
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // Référence de temps pour respecter les délais absolus même si le fetch est lent
+  // ── Séquence d'animation ────────────────────────────────────────────────────
   const T0 = Date.now();
-
   function showAt(el, ms) {
-    const remaining = ms - (Date.now() - T0);
-    setTimeout(() => { el.classList.add('visible'); }, Math.max(0, remaining));
+    const rem = ms - (Date.now() - T0);
+    setTimeout(() => { el.classList.add('visible'); }, Math.max(0, rem));
   }
 
   const logo         = document.getElementById('logo-img');
@@ -173,20 +207,86 @@
   const soireesLabel = document.getElementById('soirees-label');
   const ctaBar       = document.getElementById('cta-bar');
 
-  // 1. Logo            → 100ms
   setTimeout(() => { logo.classList.add('visible'); }, 100);
-  // 2. Titre + sub     → 600ms
   setTimeout(() => { heroTexte.classList.add('visible'); }, 600);
-  // 3. Label "NOS SOIRÉES" → 900ms
   setTimeout(() => { soireesLabel.classList.add('visible'); }, 900);
-  // 5. Boutons         → 2000ms  (toujours, indépendant du fetch)
   setTimeout(() => { ctaBar.classList.add('visible'); }, 2000);
 
-  // ── Chargement Supabase — découplé, ne bloque RIEN ─────────────────────────
+  // ── Popup ───────────────────────────────────────────────────────────────────
+  const overlay    = document.getElementById('popup-overlay');
+  const card       = document.getElementById('popup-card');
+  const progressBar = document.getElementById('popup-progress-bar');
+  let autoCloseTimer = null;
+
+  function openPopup(s) {
+    // Remplir le contenu
+    document.getElementById('popup-jour').textContent   = s.jour  || '';
+    document.getElementById('popup-nom').textContent    = s.nom   || '';
+    document.getElementById('popup-dj').textContent     = s.dj    ? `♪ ${s.dj}` : '';
+    document.getElementById('popup-dj').style.display   = s.dj    ? '' : 'none';
+    document.getElementById('popup-desc').textContent   = s.description || '';
+    document.getElementById('popup-desc').style.display = s.description ? '' : 'none';
+    document.getElementById('popup-horaire').textContent = s.horaire ? `À partir de ${s.horaire}` : '';
+
+    // Reset barre
+    progressBar.style.transition = 'none';
+    progressBar.style.width = '0%';
+    progressBar.classList.remove('running');
+
+    // Ouvrir
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    // Démarrer barre après que l'animation card soit visible (~300ms)
+    const barDelay = prefersReduced ? 0 : 320;
+    setTimeout(() => {
+      progressBar.style.transition = 'width 4000ms linear';
+      progressBar.classList.add('running');
+    }, barDelay);
+
+    // Fermeture auto à 4s (après barDelay + 4000ms)
+    clearTimeout(autoCloseTimer);
+    autoCloseTimer = setTimeout(closePopup, barDelay + 4000);
+  }
+
+  function closePopup() {
+    clearTimeout(autoCloseTimer);
+    if (!overlay.classList.contains('open')) return;
+
+    if (prefersReduced) {
+      overlay.classList.remove('open');
+      document.body.style.overflow = '';
+      return;
+    }
+
+    // Sortie : fade-out + léger scale down
+    card.style.transition = 'transform 250ms ease, opacity 250ms ease';
+    card.style.transform  = 'scale(0.95)';
+    card.style.opacity    = '0';
+    overlay.style.transition = 'opacity 250ms ease';
+    overlay.style.opacity    = '0';
+
+    setTimeout(() => {
+      overlay.classList.remove('open');
+      overlay.style.opacity    = '';
+      overlay.style.transition = '';
+      card.style.transform  = '';
+      card.style.opacity    = '';
+      card.style.transition = '';
+      document.body.style.overflow = '';
+    }, 260);
+  }
+
+  // Clic overlay (ferme si clic en dehors de la card)
+  overlay.addEventListener('click', e => { if (e.target === overlay) closePopup(); });
+  document.getElementById('popup-close').addEventListener('click', closePopup);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closePopup(); });
+
+  // ── Chargement Supabase ─────────────────────────────────────────────────────
   (async function loadSoirees() {
     try {
       const r = await fetch(
-        `${SUPA_URL}/rest/v1/menu_soirees?select=id,nom,description,jour,horaire&visible=eq.true&order=ordre.asc`,
+        `${SUPA_URL}/rest/v1/menu_soirees?select=id,nom,description,jour,horaire,dj&visible=eq.true&order=ordre.asc`,
         { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
       );
       if (!r.ok) return;
@@ -199,22 +299,25 @@
       soirees.forEach((s, i) => {
         const el = document.createElement('div');
         el.className = 'soiree-item anim';
+        el.setAttribute('role', 'button');
+        el.setAttribute('tabindex', '0');
         el.innerHTML = `
           <div style="flex:1;min-width:0;">
             <div class="soiree-nom">${esc(s.nom)}</div>
             ${s.description ? `<div class="soiree-desc">${esc(s.description)}</div>` : ''}
           </div>
           <div class="soiree-meta">${[s.jour, s.horaire].filter(Boolean).map(esc).join(' · ')}</div>
+          <div class="soiree-chevron">›</div>
         `;
+        el.addEventListener('click', () => openPopup(s));
+        el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') openPopup(s); });
         list.appendChild(el);
-        // 4. Item i → 1100ms + i × 150ms
         showAt(el, 1100 + i * 150);
       });
-    } catch(e) { /* silencieux — les boutons s'affichent quand même */ }
+    } catch(e) { /* silencieux */ }
   })();
 
-  // ── Transition de sortie vers menu.html ────────────────────────────────────
-  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // ── Transition de sortie ────────────────────────────────────────────────────
   document.querySelectorAll('.btn-cta[data-dest]').forEach(btn => {
     btn.addEventListener('click', e => {
       const dest = btn.dataset.dest;
