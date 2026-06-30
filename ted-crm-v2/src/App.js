@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus, UserPlus, Trophy, ArrowUpDown, LayoutGrid, Settings } from 'lucide-react';
+import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus, UserPlus, Trophy, ArrowUpDown, LayoutGrid, Settings, MapPin } from 'lucide-react';
 import { supabase } from "./supabase";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -3426,6 +3426,156 @@ function CatsSheet({ categories: initCats, onClose, showToast, carte, produits }
   );
 }
 
+// ── Origine des viandes ──────────────────────────────────────────────────────
+
+function OriginesPage({ showToast }) {
+  const [titre, setTitre] = useState('Origine des viandes');
+  const [editTitre, setEditTitre] = useState(false);
+  const [titreDraft, setTitreDraft] = useState('');
+  const [origines, setOrigines] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState(null);
+  const [editProduit, setEditProduit] = useState('');
+  const [editOrigine, setEditOrigine] = useState('');
+  const [newProduit, setNewProduit] = useState('');
+  const [newOrigine, setNewOrigine] = useState('');
+  const [adding, setAdding] = useState(false);
+  const dragIdx = useRef(null);
+  const dragOverIdx = useRef(null);
+
+  useEffect(() => { load(); }, []);
+
+  async function load() {
+    const { data } = await supabase.from('menu_origines').select('*').order('ordre');
+    if (data) setOrigines(data);
+    setLoading(false);
+  }
+
+  async function saveTitre() {
+    setTitre(titreDraft.trim() || titre);
+    setEditTitre(false);
+  }
+
+  async function startEdit(o) {
+    setEditingId(o.id);
+    setEditProduit(o.produit);
+    setEditOrigine(o.origine);
+  }
+
+  async function saveEdit(o) {
+    if (!editProduit.trim()) { setEditingId(null); return; }
+    await supabase.from('menu_origines').update({ produit: editProduit.trim(), origine: editOrigine.trim() }).eq('id', o.id);
+    setOrigines(prev => prev.map(x => x.id === o.id ? { ...x, produit: editProduit.trim(), origine: editOrigine.trim() } : x));
+    setEditingId(null);
+    showToast('Modifié ✓');
+  }
+
+  async function deleteOrigine(o) {
+    await supabase.from('menu_origines').delete().eq('id', o.id);
+    setOrigines(prev => prev.filter(x => x.id !== o.id));
+    showToast('Supprimé');
+  }
+
+  async function addOrigine() {
+    if (!newProduit.trim()) return;
+    setAdding(true);
+    const ordre = origines.length > 0 ? Math.max(...origines.map(o => o.ordre || 0)) + 1 : 1;
+    const { data } = await supabase.from('menu_origines').insert({ produit: newProduit.trim(), origine: newOrigine.trim(), ordre }).select().single();
+    if (data) { setOrigines(prev => [...prev, data]); setNewProduit(''); setNewOrigine(''); showToast('Ajouté ✓'); }
+    setAdding(false);
+  }
+
+  async function drop() {
+    if (dragIdx.current === null || dragOverIdx.current === null || dragIdx.current === dragOverIdx.current) { dragIdx.current = null; dragOverIdx.current = null; return; }
+    const next = [...origines];
+    const [moved] = next.splice(dragIdx.current, 1);
+    next.splice(dragOverIdx.current, 0, moved);
+    const updated = next.map((o, i) => ({ ...o, ordre: i + 1 }));
+    setOrigines(updated);
+    await Promise.all(updated.map(o => supabase.from('menu_origines').update({ ordre: o.ordre }).eq('id', o.id)));
+    dragIdx.current = null; dragOverIdx.current = null;
+  }
+
+  if (loading) return <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'60vh', color:'#888', fontSize:15 }}>Chargement…</div>;
+
+  return (
+    <div style={{ padding:'32px 28px', maxWidth:700, margin:'0 auto' }}>
+      {/* Titre éditable */}
+      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
+        {editTitre ? (
+          <input value={titreDraft} onChange={e => setTitreDraft(e.target.value)}
+            onBlur={saveTitre} onKeyDown={e => { if (e.key === 'Enter') saveTitre(); if (e.key === 'Escape') setEditTitre(false); }}
+            autoFocus style={{ fontSize:24, fontWeight:900, color:'#111', border:'none', borderBottom:'2px solid #E8C547', outline:'none', background:'transparent', width:'100%' }} />
+        ) : (
+          <h1 style={{ margin:0, fontSize:24, fontWeight:900, color:'#111', cursor:'pointer', display:'flex', alignItems:'center', gap:8 }}
+            onClick={() => { setTitreDraft(titre); setEditTitre(true); }}>
+            {titre} <Pencil size={14} color="#ccc" />
+          </h1>
+        )}
+      </div>
+      <p style={{ margin:'0 0 28px', fontSize:13, color:'#aaa' }}>Cliquez sur le titre pour le renommer. Glissez les lignes pour réordonner.</p>
+
+      {/* Liste */}
+      <div style={{ background:'#fff', borderRadius:16, border:'1px solid #eee', overflow:'hidden', marginBottom:20 }}>
+        {/* En-tête */}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr auto', gap:0, padding:'10px 16px', background:'#f9f9f9', borderBottom:'1px solid #eee' }}>
+          <span style={{ fontSize:11, fontWeight:700, color:'#aaa', textTransform:'uppercase', letterSpacing:1 }}>Produit</span>
+          <span style={{ fontSize:11, fontWeight:700, color:'#aaa', textTransform:'uppercase', letterSpacing:1 }}>Origine</span>
+          <span style={{ width:60 }} />
+        </div>
+
+        {origines.map((o, i) => (
+          <div key={o.id}
+            draggable onDragStart={() => { dragIdx.current = i; }} onDragEnter={() => { dragOverIdx.current = i; }} onDragEnd={drop} onDragOver={e => e.preventDefault()}
+            style={{ display:'grid', gridTemplateColumns:'1fr 1fr auto', alignItems:'center', gap:0, padding:'12px 16px', borderBottom:'1px solid #f5f5f5', background:'#fff', cursor:'grab', userSelect:'none' }}>
+            {editingId === o.id ? (
+              <>
+                <input value={editProduit} onChange={e => setEditProduit(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') saveEdit(o); if (e.key === 'Escape') setEditingId(null); }}
+                  style={{ height:32, border:'1.5px solid #E8C547', borderRadius:7, padding:'0 8px', fontSize:13, outline:'none', marginRight:8 }} autoFocus />
+                <input value={editOrigine} onChange={e => setEditOrigine(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') saveEdit(o); if (e.key === 'Escape') setEditingId(null); }}
+                  style={{ height:32, border:'1.5px solid #E8C547', borderRadius:7, padding:'0 8px', fontSize:13, outline:'none', marginRight:8 }} />
+                <div style={{ display:'flex', gap:4 }}>
+                  <button draggable={false} onPointerDown={e => e.stopPropagation()} onClick={() => saveEdit(o)} style={{ ...btnPrimary, height:30, fontSize:12, padding:'0 10px' }}>✓</button>
+                  <button draggable={false} onPointerDown={e => e.stopPropagation()} onClick={() => setEditingId(null)} style={{ ...btnSecondary, height:30, fontSize:12, padding:'0 10px' }}>✕</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <span style={{ color:'#ddd', fontSize:14, flexShrink:0 }}>⠿</span>
+                  <span style={{ fontSize:14, fontWeight:600, color:'#111' }}>{o.produit}</span>
+                </div>
+                <span style={{ fontSize:14, color:'#555' }}>{o.origine}</span>
+                <div style={{ display:'flex', gap:4, justifyContent:'flex-end' }}>
+                  <button draggable={false} onPointerDown={e => e.stopPropagation()} onClick={() => startEdit(o)} style={{ background:'none', border:'none', cursor:'pointer', color:'#888', display:'flex', padding:4 }}><Pencil size={13} /></button>
+                  <button draggable={false} onPointerDown={e => e.stopPropagation()} onClick={() => deleteOrigine(o)} style={{ background:'none', border:'none', cursor:'pointer', color:'#e57373', display:'flex', padding:4 }}><Trash2 size={13} /></button>
+                </div>
+              </>
+            )}
+          </div>
+        ))}
+
+        {origines.length === 0 && (
+          <div style={{ padding:'32px', textAlign:'center', color:'#ccc', fontSize:14 }}>Aucune entrée. Ajoutez-en ci-dessous.</div>
+        )}
+      </div>
+
+      {/* Ajouter une ligne */}
+      <div style={{ display:'flex', gap:8 }}>
+        <input value={newProduit} onChange={e => setNewProduit(e.target.value)} placeholder="Produit (ex: Entrecôte)" onKeyDown={e => e.key === 'Enter' && addOrigine()}
+          style={{ ...inp(false), flex:2, height:42 }} />
+        <input value={newOrigine} onChange={e => setNewOrigine(e.target.value)} placeholder="Origine (ex: France)" onKeyDown={e => e.key === 'Enter' && addOrigine()}
+          style={{ ...inp(false), flex:2, height:42 }} />
+        <button onClick={addOrigine} disabled={adding || !newProduit.trim()} style={{ ...btnPrimary, height:42, display:'flex', alignItems:'center', gap:6, whiteSpace:'nowrap' }}>
+          <Plus size={15} /> Ajouter
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function MenuPage({ showToast }) {
   const [carte, setCarte] = useState('restaurant');
   const [cartes, setCartes] = useState([{id:'restaurant',l:'Restaurant'},{id:'brasero',l:'Brasero'}]);
@@ -4413,6 +4563,7 @@ function CRMApp({ user, onLogout }) {
         { id:'clients', label:'Clients', icon:<Users size={24} strokeWidth={1.8} /> },
         { id:'communications', label:'Communications', icon:<Megaphone size={24} strokeWidth={1.8} /> },
         { id:'menu', label:'Menu', icon:<UtensilsCrossed size={24} strokeWidth={1.8} /> },
+        { id:'origines', label:'Origines', icon:<MapPin size={24} strokeWidth={1.8} /> },
       ].map(item => {
         const nbAttenteSidebar = item.id === 'reservations' ? resaAttenteCount : 0;
         return (
@@ -4528,6 +4679,16 @@ function CRMApp({ user, onLogout }) {
       </div>
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
       {notifPrePromptModal}
+    </>
+  );
+
+  if (!isMobile && activeView === 'origines') return (
+    <>
+      {sidebarDesktop}
+      <div style={{ marginLeft:120, minHeight:'100vh', background:'#f5f5f5' }}>
+        <OriginesPage showToast={showToast} />
+      </div>
+      {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
     </>
   );
 
