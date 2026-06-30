@@ -14,36 +14,30 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 0 0 140px; /* espace pour les boutons fixés en bas */
+      padding: 0 0 160px;
     }
 
-    /* ── Animations ─────────────────────────────────────────────────────────── */
-    @keyframes logoReveal {
-      from { clip-path: inset(100% 0 0 0); opacity: 0; }
-      to   { clip-path: inset(0% 0 0 0);   opacity: 1; }
+    /* Transition commune à tous les blocs animés */
+    .anim {
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 400ms ease, transform 400ms ease;
     }
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(10px); }
-      to   { opacity: 1; transform: translateY(0); }
+    .anim.visible {
+      opacity: 1;
+      transform: translateY(0);
     }
-    @keyframes soireeIn {
-      from { opacity: 0; transform: translateX(-8px); }
-      to   { opacity: 1; transform: translateX(0); }
-    }
-
+    /* prefers-reduced-motion : tout visible immédiatement */
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        transition-duration: 0.01ms !important;
-      }
+      .anim { opacity: 1 !important; transform: none !important; transition: none !important; }
     }
 
-    /* ── Logo + identité ─────────────────────────────────────────────────────── */
+    /* ── Hero ──────────────────────────────────────────────────────────────── */
     #hero {
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 64px 24px 40px;
+      padding: 64px 24px 32px;
       text-align: center;
     }
 
@@ -51,7 +45,16 @@
       width: 110px;
       height: 110px;
       object-fit: contain;
-      animation: logoReveal 1.2s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both;
+      clip-path: inset(100% 0 0 0);
+      transition: clip-path 1.2s cubic-bezier(0.22, 1, 0.36, 1), opacity 400ms ease;
+      opacity: 0;
+    }
+    #logo-img.visible {
+      clip-path: inset(0% 0 0 0);
+      opacity: 1;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #logo-img { clip-path: none !important; opacity: 1 !important; transition: none !important; }
     }
 
     #hero-title {
@@ -60,36 +63,29 @@
       color: #E8C547;
       letter-spacing: 3px;
       margin-top: 20px;
-      animation: fadeUp 600ms ease-out 1.1s both;
     }
-
     #hero-sub {
       font-size: 12px;
       color: #666;
       letter-spacing: 2px;
       margin-top: 6px;
       text-transform: uppercase;
-      animation: fadeUp 600ms ease-out 1.3s both;
     }
-
-    /* ── Trait décoratif ─────────────────────────────────────────────────────── */
     #hero-line {
       width: 40px;
       height: 2px;
       background: #E8C547;
       border-radius: 2px;
-      margin: 20px auto 0;
-      animation: fadeUp 600ms ease-out 1.4s both;
+      margin-top: 18px;
     }
 
-    /* ── Section soirées ─────────────────────────────────────────────────────── */
+    /* ── Soirées ────────────────────────────────────────────────────────────── */
     #soirees-section {
       width: 100%;
-      max-width: 400px;
+      max-width: 420px;
       padding: 0 24px;
-      margin-top: 40px;
+      margin-top: 36px;
     }
-
     #soirees-label {
       font-size: 11px;
       font-weight: 700;
@@ -97,38 +93,31 @@
       letter-spacing: 2.5px;
       text-transform: uppercase;
       margin-bottom: 16px;
-      animation: fadeUp 400ms ease-out 0.6s both;
     }
-
     .soiree-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 14px 0;
+      padding: 13px 0;
       border-bottom: 1px solid #222;
-      opacity: 0;
     }
     .soiree-item:last-child { border-bottom: none; }
-    .soiree-nom { font-size: 15px; font-weight: 600; color: #fff; }
+    .soiree-nom  { font-size: 15px; font-weight: 600; color: #fff; }
     .soiree-desc { font-size: 12px; color: #555; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .soiree-meta { font-size: 13px; color: #666; text-align: right; flex-shrink: 0; margin-left: 12px; }
+    .soiree-meta { font-size: 12px; color: #666; text-align: right; flex-shrink: 0; margin-left: 12px; white-space: nowrap; }
 
-    /* ── Boutons bas de page ─────────────────────────────────────────────────── */
+    /* ── Boutons ────────────────────────────────────────────────────────────── */
     #cta-bar {
       position: fixed;
       bottom: 0; left: 0; right: 0;
       padding: 16px 20px calc(16px + env(safe-area-inset-bottom, 0px));
-      background: linear-gradient(to bottom, transparent 0%, #111 30%);
+      background: linear-gradient(to bottom, transparent 0%, #111 28%);
       display: flex;
       flex-direction: column;
       gap: 10px;
       max-width: 480px;
       margin: 0 auto;
-      opacity: 0;
-      transform: translateY(10px);
-      transition: opacity 350ms ease, transform 350ms ease;
     }
-
     .btn-cta {
       display: block;
       width: 100%;
@@ -138,37 +127,31 @@
       font-weight: 700;
       text-align: center;
       text-decoration: none;
-      cursor: pointer;
       border: 2px solid #E8C547;
       transition: opacity 150ms ease;
     }
-    .btn-cta:active { opacity: 0.8; }
-
-    .btn-primary {
-      background: #E8C547;
-      color: #111;
-    }
-    .btn-outline {
-      background: transparent;
-      color: #E8C547;
-    }
+    .btn-cta:active { opacity: 0.75; }
+    .btn-primary { background: #E8C547; color: #111; }
+    .btn-outline  { background: transparent; color: #E8C547; }
   </style>
 </head>
 <body>
 
   <div id="hero">
     <img id="logo-img" src="/logo192.png" alt="Logo TED">
-    <div id="hero-title">LE TED</div>
-    <div id="hero-sub">Restaurant &amp; Club</div>
-    <div id="hero-line"></div>
+    <div id="hero-texte" class="anim">
+      <div id="hero-title">LE TED</div>
+      <div id="hero-sub">Restaurant &amp; Club</div>
+      <div id="hero-line"></div>
+    </div>
   </div>
 
-  <div id="soirees-section">
+  <div id="soirees-section" class="anim">
     <div id="soirees-label">Nos soirées</div>
     <div id="soirees-list"></div>
   </div>
 
-  <div id="cta-bar">
+  <div id="cta-bar" class="anim">
     <a href="/menu.html?from=accueil" class="btn-cta btn-primary" data-dest="/menu.html?from=accueil">Consulter la carte</a>
     <a href="/menu.html?carte=brasero&from=accueil" class="btn-cta btn-outline" data-dest="/menu.html?carte=brasero&from=accueil">Carte Brasero</a>
   </div>
@@ -176,96 +159,56 @@
 <script>
   const SUPA_URL = 'https://mwpfaytccypvdrgapptk.supabase.co';
   const SUPA_KEY = 'sb_publishable_4-uVtQtXd0jLGkNAFsx4yw_ni17DzN_';
-  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  function showButtons(delay) {
-    const cta = document.getElementById('cta-bar');
-    if (delay <= 0 || prefersReduced) {
-      cta.style.transition = 'none';
-      cta.style.opacity = '1';
-      cta.style.transform = 'translateY(0)';
-    } else {
-      setTimeout(() => {
-        cta.style.opacity = '1';
-        cta.style.transform = 'translateY(0)';
-      }, delay);
-    }
+  // ── Révélation progressive ──────────────────────────────────────────────────
+  function show(id, delay) {
+    setTimeout(() => {
+      const el = document.getElementById(id);
+      if (el) el.classList.add('visible');
+    }, delay);
   }
 
-  async function loadSoirees() {
-    const url = `${SUPA_URL}/rest/v1/menu_soirees?select=id,nom,description,jour,horaire,ordre&visible=eq.true&order=ordre.asc`;
-    console.log('[TED] Chargement soirées →', url);
+  const logo      = document.getElementById('logo-img');
+  const heroTexte = document.getElementById('hero-texte');
+  const soirSect  = document.getElementById('soirees-section');
+  const ctaBar    = document.getElementById('cta-bar');
+
+  // Logo : clip-path reveal
+  setTimeout(() => { logo.classList.add('visible'); }, 100);
+  // Titre + sous-titre : juste après
+  setTimeout(() => { heroTexte.classList.add('visible'); }, 600);
+  // Section soirées : structure vide d'abord
+  setTimeout(() => { soirSect.classList.add('visible'); }, 900);
+  // Boutons : toujours à 2s, indépendant du fetch
+  setTimeout(() => { ctaBar.classList.add('visible'); }, 2000);
+
+  // ── Chargement Supabase — découplé, ne bloque RIEN ─────────────────────────
+  (async function loadSoirees() {
     try {
-      const r = await fetch(url, {
-        headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` }
-      });
-      console.log('[TED] Statut HTTP :', r.status);
+      const r = await fetch(
+        `${SUPA_URL}/rest/v1/menu_soirees?select=id,nom,description,jour,horaire&visible=eq.true&order=ordre.asc`,
+        { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
+      );
+      if (!r.ok) return;
       const soirees = await r.json();
-      console.log('[TED] Soirées reçues :', soirees);
-
-      if (!r.ok) {
-        console.error('[TED] Erreur Supabase :', soirees);
-        return;
-      }
-
-      const list = document.getElementById('soirees-list');
       if (!Array.isArray(soirees) || !soirees.length) {
-        console.log('[TED] Aucune soirée visible — section masquée');
-        list.closest('#soirees-section').style.display = 'none';
-        showButtons(700);
+        document.getElementById('soirees-section').style.display = 'none';
         return;
       }
-
-      list.innerHTML = soirees.map(s => `
+      document.getElementById('soirees-list').innerHTML = soirees.map(s => `
         <div class="soiree-item">
           <div style="flex:1;min-width:0;">
             <div class="soiree-nom">${esc(s.nom)}</div>
             ${s.description ? `<div class="soiree-desc">${esc(s.description)}</div>` : ''}
           </div>
-          <div class="soiree-meta">${s.jour ? esc(s.jour) : ''}${s.horaire ? ' · ' + esc(s.horaire) : ''}</div>
+          <div class="soiree-meta">${[s.jour, s.horaire].filter(Boolean).map(esc).join(' · ')}</div>
         </div>
       `).join('');
+    } catch(e) { /* silencieux — les boutons s'affichent quand même */ }
+  })();
 
-      // Animation en cascade soirées
-      const items = list.querySelectorAll('.soiree-item');
-      items.forEach((el, i) => {
-        if (prefersReduced) {
-          el.style.opacity = '1';
-        } else {
-          el.style.animation = `soireeIn 350ms ease-out ${700 + i * 80}ms both`;
-        }
-      });
-
-      // Boutons : apparaissent après la dernière soirée
-      const btnDelay = prefersReduced ? 0 : 700 + (items.length - 1) * 80 + 400;
-      showButtons(btnDelay);
-    } catch(e) {
-      console.error('[TED] Exception loadSoirees :', e);
-      showButtons(prefersReduced ? 0 : 800);
-    }
-  }
-
-  function showButtons(delay) {
-    const cta = document.getElementById('cta-bar');
-    if (delay <= 0) {
-      cta.style.transition = 'none';
-      cta.style.opacity = '1';
-      cta.style.transform = 'translateY(0)';
-    } else {
-      setTimeout(() => {
-        cta.style.opacity = '1';
-        cta.style.transform = 'translateY(0)';
-      }, delay);
-    }
-  }
-
-  function esc(str) {
-    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
-
-  // ── Transition de sortie ────────────────────────────────────────────────────
+  // ── Transition de sortie vers menu.html ────────────────────────────────────
   const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
   document.querySelectorAll('.btn-cta[data-dest]').forEach(btn => {
     btn.addEventListener('click', e => {
       const dest = btn.dataset.dest;
@@ -278,7 +221,9 @@
     });
   });
 
-  loadSoirees();
+  function esc(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
 </script>
 </body>
 </html>
