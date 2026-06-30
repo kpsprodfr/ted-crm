@@ -3183,8 +3183,10 @@ function MenuPage({ showToast }) {
   const [showGererCats, setShowGererCats] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [menuSearch, setMenuSearch] = useState('');
+  const [openCats, setOpenCats] = useState(null); // Set of open cat ids, null = first cat only on load
 
-  useEffect(() => { loadMenu(); }, [carte]);
+  useEffect(() => { loadMenu(); setMenuSearch(''); }, [carte]);
 
   async function loadMenu() {
     setLoading(true);
@@ -3249,6 +3251,25 @@ function MenuPage({ showToast }) {
 
   const catsFiltered = categories.filter(c => c.visible !== false && (c.carte === carte || c.carte === 'les-deux'));
   const produitsForCat = (catId) => produits.filter(p => p.categorie_id === catId && (p.carte === carte || p.carte === 'les-deux'));
+
+  const searchQ = menuSearch.trim().toLowerCase();
+  const produitsForCatFiltered = (catId) => {
+    const base = produitsForCat(catId);
+    if (!searchQ) return base;
+    return base.filter(p => normalizeStr(p.nom).includes(normalizeStr(searchQ)));
+  };
+  const catsVisible = searchQ
+    ? catsFiltered.filter(c => produitsForCatFiltered(c.id).length > 0)
+    : catsFiltered;
+
+  // openCats: Set of open cat ids. On first load (null) open only first cat.
+  const firstCatId = catsFiltered[0]?.id;
+  const resolvedOpen = openCats ?? (firstCatId ? new Set([firstCatId]) : new Set());
+  function toggleCat(id) {
+    const next = new Set(resolvedOpen);
+    next.has(id) ? next.delete(id) : next.add(id);
+    setOpenCats(next);
+  }
 
   const platItems = [platJour, dessertJour].filter(Boolean);
 
@@ -3321,34 +3342,70 @@ function MenuPage({ showToast }) {
         </div>
       )}
 
-      {/* Catégories + Produits */}
-      {catsFiltered.map(cat => {
-        const ps = produitsForCat(cat.id);
+      {/* Barre de recherche */}
+      <div style={{ position:'relative', marginBottom:20 }}>
+        <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#bbb', fontSize:15, pointerEvents:'none' }}>🔍</span>
+        <input
+          value={menuSearch}
+          onChange={e => { setMenuSearch(e.target.value); if (e.target.value.trim()) setOpenCats(new Set(catsFiltered.map(c => c.id))); }}
+          placeholder="Rechercher un produit..."
+          style={{ width:'100%', height:44, border:'1.5px solid #ddd', borderRadius:12, padding:'0 36px 0 38px', fontSize:14, outline:'none', boxSizing:'border-box', background:'#fff' }}
+        />
+        {menuSearch && (
+          <button onClick={() => { setMenuSearch(''); setOpenCats(null); }} style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', fontSize:16, cursor:'pointer', color:'#aaa', lineHeight:1 }}>✕</button>
+        )}
+      </div>
+
+      {/* Catégories en accordéon */}
+      {searchQ && catsVisible.length === 0 && (
+        <div style={{ textAlign:'center', padding:'40px 0', color:'#bbb', fontSize:14 }}>Aucun produit ne correspond à "{menuSearch}"</div>
+      )}
+      {catsVisible.map(cat => {
+        const ps = produitsForCatFiltered(cat.id);
+        const isOpen = searchQ ? true : resolvedOpen.has(cat.id);
         return (
-          <div key={cat.id} style={{ marginBottom:20 }}>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10, paddingBottom:8, borderBottom:'1px solid #eee' }}>
-              <h3 style={{ margin:0, fontSize:12, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:1.2 }}>{cat.nom} <span style={{ fontWeight:400, color:'#bbb' }}>({ps.length})</span></h3>
-              <button onClick={() => setShowAddModal(cat.id)} style={{ ...btnSecondary, height:30, fontSize:12, display:'inline-flex', alignItems:'center', gap:4, padding:'0 10px' }}>
-                <Plus size={12} strokeWidth={2.5} /> Ajouter
+          <div key={cat.id} style={{ marginBottom:10, borderRadius:14, border:'1px solid #eee', background:'#fff', overflow:'hidden' }}>
+            {/* En-tête accordéon */}
+            <div
+              onClick={() => !searchQ && toggleCat(cat.id)}
+              style={{ display:'flex', alignItems:'center', gap:10, padding:'13px 16px', cursor: searchQ ? 'default' : 'pointer', userSelect:'none', background: isOpen ? '#fafafa' : '#fff', borderBottom: isOpen ? '1px solid #f0f0f0' : 'none', transition:'background 0.15s' }}
+            >
+              <ChevronRight size={16} strokeWidth={2.5} style={{ color:'#bbb', flexShrink:0, transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition:'transform 0.2s ease', display: searchQ ? 'none' : 'block' }} />
+              <span style={{ flex:1, fontSize:12, fontWeight:700, color:'#666', textTransform:'uppercase', letterSpacing:1.1 }}>
+                {cat.nom}
+                <span style={{ fontWeight:500, color:'#ccc', marginLeft:6, textTransform:'none', letterSpacing:0 }}>({produitsForCat(cat.id).length})</span>
+                {searchQ && ps.length < produitsForCat(cat.id).length && (
+                  <span style={{ fontWeight:600, color:'#E8C547', marginLeft:6, fontSize:11 }}>{ps.length} résultat{ps.length > 1 ? 's' : ''}</span>
+                )}
+              </span>
+              <button
+                onClick={e => { e.stopPropagation(); setShowAddModal(cat.id); }}
+                style={{ ...btnSecondary, height:28, fontSize:11, display:'inline-flex', alignItems:'center', gap:3, padding:'0 9px', flexShrink:0 }}
+              >
+                <Plus size={11} strokeWidth={2.5} /> Ajouter
               </button>
             </div>
-            <div style={{ background:'#fff', borderRadius:12, border:'1px solid #eee', overflow:'hidden' }}>
-              {ps.length === 0 ? (
-                <div style={{ padding:'14px 16px', color:'#ccc', fontSize:13, textAlign:'center' }}>Aucun produit dans cette catégorie</div>
-              ) : ps.map((p, i) => (
-                <div key={p.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'11px 14px', borderBottom: i < ps.length-1 ? '1px solid #f5f5f5' : 'none', opacity: p.disponible ? 1 : 0.5 }}>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontWeight:600, fontSize:14, color:'#111', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                      {p.nom}
-                      {p.mise_en_avant && <span style={{ marginLeft:6, fontSize:10, background:'#fffbea', color:'#b8860b', borderRadius:6, padding:'1px 6px', fontWeight:700 }}>★</span>}
+
+            {/* Corps accordéon */}
+            {isOpen && (
+              <div>
+                {ps.length === 0 ? (
+                  <div style={{ padding:'14px 16px', color:'#ccc', fontSize:13, textAlign:'center' }}>Aucun produit dans cette catégorie</div>
+                ) : ps.map((p, i) => (
+                  <div key={p.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'11px 16px', borderBottom: i < ps.length-1 ? '1px solid #f7f7f7' : 'none', opacity: p.disponible ? 1 : 0.45, transition:'opacity 0.15s' }}>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontWeight:600, fontSize:14, color:'#111', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                        {p.nom}
+                        {p.mise_en_avant && <span style={{ marginLeft:6, fontSize:10, background:'#fffbea', color:'#b8860b', borderRadius:6, padding:'1px 6px', fontWeight:700 }}>★</span>}
+                      </div>
+                      {p.prix && <div style={{ fontSize:12, color:'#aaa', marginTop:1 }}>{p.prix}</div>}
                     </div>
-                    {p.prix && <div style={{ fontSize:12, color:'#888', marginTop:1 }}>{p.prix}</div>}
+                    <MenuToggle value={p.disponible} onChange={() => toggleDisponible(p)} />
+                    <button onClick={() => setEditProduit({...p})} style={{ background:'#f5f5f5', border:'none', borderRadius:8, padding:'6px 12px', fontSize:12, fontWeight:600, cursor:'pointer', color:'#333', whiteSpace:'nowrap' }}>Modifier</button>
                   </div>
-                  <MenuToggle value={p.disponible} onChange={() => toggleDisponible(p)} />
-                  <button onClick={() => setEditProduit({...p})} style={{ background:'#f5f5f5', border:'none', borderRadius:8, padding:'6px 12px', fontSize:12, fontWeight:600, cursor:'pointer', color:'#333', whiteSpace:'nowrap' }}>Modifier</button>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         );
       })}
