@@ -3890,7 +3890,7 @@ function RouePage({ showToast }) {
                   <input type="number" min={1} max={10} value={essaisMax} onChange={e=>setEssaisMax(+e.target.value)} style={{ ...iS, width:60 }} />
                 </div>
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  <span style={{ fontSize:13, color:'#666', fontWeight:600 }}>Countdown (s) :</span>
+                  <span style={{ fontSize:13, color:'#666', fontWeight:600 }}>Temps d'attente avant fermeture (s) :</span>
                   <input type="number" min={0} max={60} value={countdownSec} onChange={e=>setCountdownSec(+e.target.value)} style={{ ...iS, width:60 }} />
                 </div>
                 <button onClick={saveConfigBase} disabled={savingParam} style={{ ...btnG, display:'flex', alignItems:'center', gap:6 }}><Save size={13} strokeWidth={2}/> Sauvegarder</button>
