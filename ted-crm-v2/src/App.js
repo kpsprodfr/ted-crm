@@ -3309,13 +3309,14 @@ function CartesSheet({ onClose, showToast, produits }) {
 
 
 
-function CatsSheet({ categories: initCats, onClose, showToast, carte }) {
+function CatsSheet({ categories: initCats, onClose, showToast, carte, produits }) {
   const [cats, setCats] = useState([...initCats]);
   const [newNom, setNewNom] = useState('');
   const [newCarte, setNewCarte] = useState(carte);
   const [editingId, setEditingId] = useState(null);
   const [editNom, setEditNom] = useState('');
   const [adding, setAdding] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(null); // { cat, nbProds }
   const dragIdx = useRef(null);
   const dragOverIdx = useRef(null);
 
@@ -3342,6 +3343,20 @@ function CatsSheet({ categories: initCats, onClose, showToast, carte }) {
     setCats(prev=>prev.map(c=>c.id===cat.id?{...c,visible:val}:c));
   }
 
+  async function deleteCat(cat) {
+    const nbProds = (produits || []).filter(p => p.categorie_id === cat.id).length;
+    if (nbProds > 0) { setConfirmDel({ cat, nbProds }); return; }
+    await doDeleteCat(cat);
+  }
+
+  async function doDeleteCat(cat) {
+    await supabase.from('menu_produits').delete().eq('categorie_id', cat.id);
+    await supabase.from('menu_categories').delete().eq('id', cat.id);
+    setCats(prev => prev.filter(c => c.id !== cat.id));
+    setConfirmDel(null);
+    showToast('Catégorie supprimée');
+  }
+
   async function dropCat() {
     if (dragIdx.current === null || dragOverIdx.current === null || dragIdx.current === dragOverIdx.current) { dragIdx.current=null; dragOverIdx.current=null; return; }
     const next = [...cats];
@@ -3354,6 +3369,25 @@ function CatsSheet({ categories: initCats, onClose, showToast, carte }) {
   }
 
   return (
+    <>
+    {confirmDel && (
+      <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:4500, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }} onClick={() => setConfirmDel(null)}>
+        <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:400, padding:'24px 20px', boxShadow:'0 8px 40px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
+          <div style={{ fontSize:32, textAlign:'center', marginBottom:12 }}>⚠️</div>
+          <h3 style={{ margin:'0 0 10px', fontSize:16, fontWeight:800, color:'#111', textAlign:'center' }}>
+            Supprimer « {confirmDel.cat.nom} » ?
+          </h3>
+          <p style={{ margin:'0 0 20px', fontSize:14, color:'#555', lineHeight:1.6, textAlign:'center' }}>
+            Cette catégorie contient <strong>{confirmDel.nbProds} produit{confirmDel.nbProds>1?'s':''}</strong>.<br/>
+            Tout son contenu sera définitivement perdu.
+          </p>
+          <div style={{ display:'flex', gap:8 }}>
+            <button onClick={() => setConfirmDel(null)} style={{ ...btnSecondary, flex:1 }}>Annuler</button>
+            <button onClick={() => doDeleteCat(confirmDel.cat)} style={{ ...btnDanger, flex:1 }}>Supprimer quand même</button>
+          </div>
+        </div>
+      </div>
+    )}
     <MenuBottomSheet title="Gérer les catégories" onClose={onClose} footer={<button onClick={onClose} style={{ ...btnPrimary, width:'100%' }}>Fermer</button>}>
       <div style={{ display:'flex', gap:8, marginBottom:16 }}>
         <input value={newNom} onChange={e=>setNewNom(e.target.value)} placeholder="Nouvelle catégorie..." style={{ ...inp(false), flex:1, height:42 }} onKeyDown={e=>e.key==='Enter'&&addCat()} />
@@ -3381,12 +3415,14 @@ function CatsSheet({ categories: initCats, onClose, showToast, carte }) {
               <span style={{ flex:1, fontSize:13, fontWeight:600, color: cat.visible===false ? '#bbb' : '#111' }}>{cat.nom}</span>
             )}
             <span style={{ fontSize:10, color:'#aaa', background:'#e8e8e8', borderRadius:5, padding:'2px 6px', flexShrink:0 }}>{cat.carte}</span>
-            <button onClick={()=>{setEditingId(cat.id);setEditNom(cat.nom);}} style={{ background:'none', border:'none', cursor:'pointer', color:'#888', display:'flex', padding:4, flexShrink:0 }}><Pencil size={13}/></button>
+            <button draggable={false} onPointerDown={e=>e.stopPropagation()} onClick={()=>{setEditingId(cat.id);setEditNom(cat.nom);}} style={{ background:'none', border:'none', cursor:'pointer', color:'#888', display:'flex', padding:4, flexShrink:0 }}><Pencil size={13}/></button>
             <MenuToggle value={cat.visible!==false} onChange={()=>toggleVisible(cat)} />
+            <button draggable={false} onPointerDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation();deleteCat(cat);}} style={{ background:'none', border:'none', cursor:'pointer', color:'#e57373', display:'flex', padding:4, flexShrink:0 }}><Trash2 size={14}/></button>
           </div>
         ))}
       </div>
     </MenuBottomSheet>
+    </>
   );
 }
 
@@ -3847,6 +3883,7 @@ function MenuPage({ showToast }) {
           onClose={() => { setShowGererCats(false); loadMenu(); }}
           showToast={showToast}
           carte={carte}
+          produits={produits}
         />
       )}
 
