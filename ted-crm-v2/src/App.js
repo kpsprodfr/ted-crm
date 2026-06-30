@@ -3014,6 +3014,17 @@ function SendingProgressModal({ type, total, done, successCount, onClose }) {
 const MENU_BADGES = ['Fait maison', 'Fumé maison', 'Nouveau', 'Signature du chef', 'Best-seller'];
 const MENU_ALLERGENES = ['Gluten','Crustacés','Œufs','Poisson','Arachides','Soja','Lait','Fruits à coque','Céleri','Moutarde','Graines de sésame','Anhydride sulfureux','Lupin','Mollusques'];
 
+function formatPrix(p) {
+  if (!p) return '';
+  const s = String(p).trim();
+  if (!s || s.includes('€')) return s;
+  return /^[\d]+([,.][\d]{1,2})?$/.test(s) ? s + ' €' : s;
+}
+
+function slugify(str) {
+  return str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+}
+
 function MenuToggle({ value, onChange }) {
   return (
     <div onClick={onChange} style={{ width:44, height:24, borderRadius:12, background: value ? '#E8C547' : '#ddd', cursor:'pointer', position:'relative', transition:'background 0.2s', flexShrink:0 }}>
@@ -3072,9 +3083,10 @@ function PlatJourSheet({ item, onClose, onSaved }) {
     onClose();
   }
 
+  const sheetTitle = form.type === 'plat' ? '🍽 Plat du jour' : form.type === 'dessert' ? '🍮 Dessert du jour' : '👨‍🍳 Suggestion du chef';
   return (
     <MenuBottomSheet
-      title={form.type === 'plat' ? '🍽 Plat du jour' : '🍮 Dessert du jour'}
+      title={sheetTitle}
       onClose={onClose}
       footer={<><button onClick={onClose} style={{ ...btnSecondary, flex:1 }}>Annuler</button><button onClick={save} disabled={saving} style={{ ...btnPrimary, flex:2 }}>{saving ? '...' : 'Enregistrer'}</button></>}
     >
@@ -3110,7 +3122,14 @@ function ProduitSheet({ produit, categories, carte: defaultCarte, onSave, onClos
     >
       <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
         <div><label style={lbl}>Nom *</label><input value={form.nom||''} onChange={e=>setForm(p=>({...p,nom:e.target.value}))} style={inp(false)} placeholder="Nom du produit" autoFocus /></div>
-        <div><label style={lbl}>Prix</label><input value={form.prix||''} onChange={e=>setForm(p=>({...p,prix:e.target.value}))} style={inp(false)} placeholder="ex: 18 €" /></div>
+        <div>
+          <label style={lbl}>Prix <span style={{ fontWeight:400, color:'#bbb' }}>(ex: 18 ou 13,50 — € ajouté automatiquement)</span></label>
+          <input value={form.prix||''} onChange={e=>setForm(p=>({...p,prix:e.target.value}))} style={inp(false)} placeholder="ex: 18" />
+        </div>
+        <div>
+          <label style={lbl}>Prix détaillé <span style={{ fontWeight:400, color:'#bbb' }}>(optionnel — format libre : 25cl 4€ / 50cl 7€)</span></label>
+          <input value={form.prix_detail||''} onChange={e=>setForm(p=>({...p,prix_detail:e.target.value}))} style={inp(false)} placeholder="Laissez vide pour utiliser le prix simple" />
+        </div>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'2px 0' }}>
           <span style={{ fontSize:14, fontWeight:500, color:'#333' }}>Disponible</span>
           <MenuToggle value={!!form.disponible} onChange={() => setForm(p=>({...p,disponible:!p.disponible}))} />
@@ -3162,6 +3181,94 @@ function ProduitSheet({ produit, categories, carte: defaultCarte, onSave, onClos
             </div>}
           </div>
         </>}
+      </div>
+    </MenuBottomSheet>
+  );
+}
+
+function CartesSheet({ onClose, showToast, produits }) {
+  const [cartes, setCartes] = useState([]);
+  const [newNom, setNewNom] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editNom, setEditNom] = useState('');
+  const dragIdx = useRef(null);
+  const dragOverIdx = useRef(null);
+
+  useEffect(() => {
+    supabase.from('menu_cartes').select('*').order('ordre').then(({ data }) => setCartes(data || []));
+  }, []);
+
+  async function addCarte() {
+    if (!newNom.trim()) return;
+    setAdding(true);
+    const slug = slugify(newNom.trim());
+    const ordre = cartes.length > 0 ? Math.max(...cartes.map(c=>c.ordre||0))+1 : 1;
+    const { data, error } = await supabase.from('menu_cartes').insert({ nom: newNom.trim(), slug, ordre }).select().single();
+    if (error) { showToast('Erreur : slug déjà utilisé ?'); }
+    else { setCartes(prev => [...prev, data]); setNewNom(''); showToast('Carte ajoutée ✓'); }
+    setAdding(false);
+  }
+
+  async function saveNom(c) {
+    if (!editNom.trim()) { setEditingId(null); return; }
+    await supabase.from('menu_cartes').update({ nom: editNom.trim() }).eq('id', c.id);
+    setCartes(prev => prev.map(x => x.id === c.id ? { ...x, nom: editNom.trim() } : x));
+    setEditingId(null);
+    showToast('Renommée ✓');
+  }
+
+  async function toggleVisible(c) {
+    const val = !c.visible;
+    await supabase.from('menu_cartes').update({ visible: val }).eq('id', c.id);
+    setCartes(prev => prev.map(x => x.id === c.id ? { ...x, visible: val } : x));
+  }
+
+  async function deleteCarte(c) {
+    const count = produits.filter(p => p.carte === c.slug || p.carte === c.slug).length;
+    if (count > 0) { showToast(`Impossible : ${count} produit(s) utilisent cette carte`); return; }
+    await supabase.from('menu_cartes').delete().eq('id', c.id);
+    setCartes(prev => prev.filter(x => x.id !== c.id));
+    showToast('Carte supprimée');
+  }
+
+  async function drop() {
+    if (dragIdx.current === null || dragOverIdx.current === null || dragIdx.current === dragOverIdx.current) { dragIdx.current=null; dragOverIdx.current=null; return; }
+    const next = [...cartes];
+    const [moved] = next.splice(dragIdx.current, 1);
+    next.splice(dragOverIdx.current, 0, moved);
+    const updated = next.map((c, i) => ({ ...c, ordre: i+1 }));
+    setCartes(updated);
+    await Promise.all(updated.map(c => supabase.from('menu_cartes').update({ ordre: c.ordre }).eq('id', c.id)));
+    dragIdx.current=null; dragOverIdx.current=null;
+  }
+
+  return (
+    <MenuBottomSheet title="🗂 Gérer les cartes" onClose={onClose} footer={<button onClick={onClose} style={{ ...btnPrimary, width:'100%' }}>Fermer</button>}>
+      <div style={{ display:'flex', gap:8, marginBottom:16 }}>
+        <input value={newNom} onChange={e=>setNewNom(e.target.value)} placeholder="Nouvelle carte..." style={{ ...inp(false), flex:1, height:42 }} onKeyDown={e=>e.key==='Enter'&&addCarte()} />
+        <button onClick={addCarte} disabled={adding} style={{ ...btnPrimary, height:42, whiteSpace:'nowrap' }}>+ Ajouter</button>
+      </div>
+      <p style={{ fontSize:11, color:'#bbb', marginBottom:12, lineHeight:1.5 }}>Le slug est généré automatiquement. Utilisé dans "carte" des produits. Impossible de supprimer une carte contenant des produits.</p>
+      <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+        {cartes.map((c, i) => (
+          <div key={c.id}
+            draggable onDragStart={() => { dragIdx.current=i; }} onDragEnter={() => { dragOverIdx.current=i; }} onDragEnd={drop} onDragOver={e => e.preventDefault()}
+            style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 12px', background:'#f9f9f9', borderRadius:10, cursor:'grab', userSelect:'none', opacity: c.visible ? 1 : 0.5 }}>
+            <span style={{ color:'#ccc', fontSize:16, flexShrink:0 }}>⠿</span>
+            {editingId === c.id ? (
+              <input value={editNom} onChange={e=>setEditNom(e.target.value)} onBlur={()=>saveNom(c)} onKeyDown={e=>{if(e.key==='Enter')saveNom(c);if(e.key==='Escape')setEditingId(null);}} style={{ flex:1, height:34, border:'1.5px solid #E8C547', borderRadius:7, padding:'0 10px', fontSize:13, outline:'none' }} autoFocus />
+            ) : (
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontWeight:600, fontSize:13, color:'#111' }}>{c.nom}</div>
+                <div style={{ fontSize:11, color:'#bbb' }}>{c.slug}</div>
+              </div>
+            )}
+            <button onClick={()=>{setEditingId(c.id);setEditNom(c.nom);}} style={{ background:'none', border:'none', cursor:'pointer', color:'#888', display:'flex', padding:4 }}><Pencil size={13}/></button>
+            <MenuToggle value={!!c.visible} onChange={()=>toggleVisible(c)} />
+            <button onClick={()=>deleteCarte(c)} style={{ background:'none', border:'none', cursor:'pointer', color:'#ddd', display:'flex', padding:4 }}><Trash2 size={14}/></button>
+          </div>
+        ))}
       </div>
     </MenuBottomSheet>
   );
@@ -3250,22 +3357,30 @@ function CatsSheet({ categories: initCats, onClose, showToast, carte }) {
 
 function MenuPage({ showToast }) {
   const [carte, setCarte] = useState('restaurant');
+  const [cartes, setCartes] = useState([{id:'restaurant',l:'Restaurant'},{id:'brasero',l:'Brasero'}]);
   const [categories, setCategories] = useState([]);
   const [produits, setProduits] = useState([]);
   const [platJour, setPlatJour] = useState(null);
   const [dessertJour, setDessertJour] = useState(null);
+  const [suggestionJour, setSuggestionJour] = useState(null);
   const [loading, setLoading] = useState(true);
   const [openCats, setOpenCats] = useState(new Set());
   const [menuSearch, setMenuSearch] = useState('');
   const [editProduit, setEditProduit] = useState(null);
+  const [catPickerOpen, setCatPickerOpen] = useState(false);
   const [platSheet, setPlatSheet] = useState(null);
   const [showGererCats, setShowGererCats] = useState(false);
+  const [showCartesSheet, setShowCartesSheet] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [saving, setSaving] = useState(false);
   const [ctxMenu, setCtxMenu] = useState(null);
   const [editingPrice, setEditingPrice] = useState(null);
+  const [editingCatId, setEditingCatId] = useState(null);
+  const [editingCatName, setEditingCatName] = useState('');
   const dragProd = useRef(null);
   const dragOverProd = useRef(null);
+  const dragCat = useRef(null);
+  const dragOverCat = useRef(null);
 
   // Soirées
   const [soirees, setSoirees] = useState([]);
@@ -3275,12 +3390,14 @@ function MenuPage({ showToast }) {
   const dragOverSoiree = useRef(null);
 
   useEffect(() => { loadMenu(); setMenuSearch(''); setOpenCats(new Set()); }, [carte]);
-  useEffect(() => { loadSoirees(); }, []);
+  useEffect(() => { loadSoirees(); loadCartes(); }, []);
 
   useEffect(() => {
     const ch = supabase.channel('menu-rt')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_produits' }, () => loadMenu())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_categories' }, () => loadMenu())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_plat_jour' }, () => loadMenu())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_cartes' }, () => loadCartes())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_soirees' }, () => loadSoirees())
       .subscribe();
     return () => supabase.removeChannel(ch);
@@ -3292,6 +3409,11 @@ function MenuPage({ showToast }) {
     document.addEventListener('pointerdown', handle);
     return () => document.removeEventListener('pointerdown', handle);
   }, [ctxMenu]);
+
+  async function loadCartes() {
+    const { data, error } = await supabase.from('menu_cartes').select('*').eq('visible', true).order('ordre');
+    if (!error && data?.length) setCartes(data.map(c => ({ id: c.slug, l: c.nom, dbId: c.id })));
+  }
 
   async function loadSoirees() {
     const { data } = await supabase.from('menu_soirees').select('*').order('ordre');
@@ -3347,6 +3469,7 @@ function MenuPage({ showToast }) {
     const pj = jR.data || [];
     setPlatJour(pj.find(p => p.type === 'plat' && p.carte === carte) || null);
     setDessertJour(pj.find(p => p.type === 'dessert' && p.carte === carte) || null);
+    setSuggestionJour(pj.find(p => p.type === 'suggestion' && p.carte === carte) || null);
     setLoading(false);
   }
 
@@ -3386,15 +3509,54 @@ function MenuPage({ showToast }) {
 
   async function dropProd() {
     if (!dragProd.current || !dragOverProd.current) return;
-    if (dragProd.current.catId !== dragOverProd.current.catId || dragProd.current.idx === dragOverProd.current.idx) { dragProd.current=null; dragOverProd.current=null; return; }
-    const catId = dragProd.current.catId;
-    const catProds = [...produits.filter(p => p.categorie_id === catId)].sort((a,b) => (a.ordre||0)-(b.ordre||0));
-    const [moved] = catProds.splice(dragProd.current.idx, 1);
-    catProds.splice(dragOverProd.current.idx, 0, moved);
-    const updated = catProds.map((p,i) => ({ ...p, ordre: i+1 }));
-    setProduits(prev => { const ids = new Set(updated.map(u=>u.id)); return [...prev.filter(p=>!ids.has(p.id)), ...updated]; });
-    await Promise.all(updated.map(p => supabase.from('menu_produits').update({ ordre: p.ordre }).eq('id', p.id)));
-    dragProd.current=null; dragOverProd.current=null;
+    const { catId: fromCat, idx: fromIdx } = dragProd.current;
+    const { catId: toCat, idx: toIdx } = dragOverProd.current;
+    dragProd.current = null; dragOverProd.current = null;
+    if (fromCat === toCat && fromIdx === toIdx) return;
+
+    if (fromCat === toCat) {
+      const catProds = [...produits.filter(p => p.categorie_id === fromCat)].sort((a,b) => (a.ordre||0)-(b.ordre||0));
+      const [moved] = catProds.splice(fromIdx, 1);
+      catProds.splice(toIdx, 0, moved);
+      const updated = catProds.map((p,i) => ({ ...p, ordre: i+1 }));
+      setProduits(prev => { const ids = new Set(updated.map(u=>u.id)); return [...prev.filter(p=>!ids.has(p.id)), ...updated]; });
+      await Promise.all(updated.map(p => supabase.from('menu_produits').update({ ordre: p.ordre }).eq('id', p.id)));
+    } else {
+      const fromProds = [...produits.filter(p => p.categorie_id === fromCat)].sort((a,b) => (a.ordre||0)-(b.ordre||0));
+      const [moved] = fromProds.splice(fromIdx, 1);
+      const toProds = [...produits.filter(p => p.categorie_id === toCat)].sort((a,b) => (a.ordre||0)-(b.ordre||0));
+      const movedNew = { ...moved, categorie_id: toCat };
+      toProds.splice(toIdx, 0, movedNew);
+      const updatedFrom = fromProds.map((p,i) => ({ ...p, ordre: i+1 }));
+      const updatedTo = toProds.map((p,i) => ({ ...p, ordre: i+1 }));
+      const all = [...updatedFrom, ...updatedTo];
+      setProduits(prev => { const ids = new Set(all.map(u=>u.id)); return [...prev.filter(p=>!ids.has(p.id)), ...all]; });
+      await Promise.all([
+        ...updatedFrom.map(p => supabase.from('menu_produits').update({ ordre: p.ordre }).eq('id', p.id)),
+        ...updatedTo.map(p => supabase.from('menu_produits').update({ ordre: p.ordre, categorie_id: p.categorie_id }).eq('id', p.id)),
+      ]);
+      const destCat = categories.find(c => c.id === toCat);
+      showToast(`Déplacé vers ${destCat?.nom || 'autre catégorie'} ✓`);
+    }
+  }
+
+  async function dropCatAccordion() {
+    if (dragCat.current === null || dragOverCat.current === null || dragCat.current === dragOverCat.current) { dragCat.current=null; dragOverCat.current=null; return; }
+    const next = [...catsVisible];
+    const [moved] = next.splice(dragCat.current, 1);
+    next.splice(dragOverCat.current, 0, moved);
+    const updated = next.map((c, i) => ({ ...c, ordre: i + 1 }));
+    setCategories(prev => { const ids = new Set(updated.map(u=>u.id)); return [...prev.filter(c=>!ids.has(c.id)), ...updated].sort((a,b)=>(a.ordre||0)-(b.ordre||0)); });
+    await Promise.all(updated.map(c => supabase.from('menu_categories').update({ ordre: c.ordre }).eq('id', c.id)));
+    dragCat.current=null; dragOverCat.current=null;
+  }
+
+  async function saveCatName(cat) {
+    if (!editingCatName.trim()) { setEditingCatId(null); return; }
+    await supabase.from('menu_categories').update({ nom: editingCatName.trim() }).eq('id', cat.id);
+    setCategories(prev => prev.map(c => c.id === cat.id ? { ...c, nom: editingCatName.trim() } : c));
+    setEditingCatId(null);
+    showToast('Catégorie renommée ✓');
   }
 
   function toggleCat(id) {
@@ -3409,7 +3571,7 @@ function MenuPage({ showToast }) {
     return <>{t.slice(0,idx)}<mark style={{ background:'#fffbea', color:'#b8860b', borderRadius:3, padding:'0 1px' }}>{t.slice(idx,idx+q.length)}</mark>{t.slice(idx+q.length)}</>;
   }
 
-  const catsFiltered = categories.filter(c => c.visible !== false && (c.carte === carte || c.carte === 'les-deux'));
+  const catsFiltered = categories.filter(c => c.visible !== false && (c.carte === carte || c.carte === 'les-deux') && c.nom !== 'Plat du jour');
   const searchQ = menuSearch.trim();
 
   function produitsForCat(catId) {
@@ -3419,7 +3581,7 @@ function MenuPage({ showToast }) {
   }
 
   const catsVisible = searchQ ? catsFiltered.filter(c => produitsForCat(c.id).length > 0) : catsFiltered;
-  const platItems = [platJour, dessertJour].filter(Boolean);
+  const platItems = [platJour, dessertJour, suggestionJour].filter(Boolean);
 
   if (loading) return <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'60vh', color:'#888', fontSize:15 }}>Chargement du menu...</div>;
 
@@ -3433,15 +3595,16 @@ function MenuPage({ showToast }) {
           <p style={{ margin:'3px 0 0', fontSize:13, color:'#aaa' }}>Gérez la carte en temps réel</p>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <button onClick={() => setShowCartesSheet(true)} style={{ background:'none', border:'none', cursor:'pointer', color:'#888', fontSize:18, padding:'6px', borderRadius:8, display:'flex', alignItems:'center' }} title="Gérer les cartes">🗂</button>
           <button onClick={() => setShowGererCats(true)} style={{ background:'none', border:'none', cursor:'pointer', color:'#888', fontSize:20, padding:'6px', borderRadius:8, display:'flex', alignItems:'center' }} title="Gérer les catégories">⚙️</button>
-          <button onClick={() => setEditProduit({ carte, disponible: true, mise_en_avant: false, badges: [], allergenes: [] })} style={{ ...btnPrimary, height:38, fontSize:13 }}>+ Ajouter</button>
+          <button onClick={() => catsFiltered.length > 0 ? setCatPickerOpen(true) : setEditProduit({ carte, disponible: true, mise_en_avant: false, badges: [], allergenes: [] })} style={{ ...btnPrimary, height:38, fontSize:13 }}>+ Ajouter</button>
         </div>
       </div>
 
       {/* Onglets + lien carte client */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
         <div style={{ display:'flex', gap:6 }}>
-          {[{id:'restaurant',l:'Restaurant'},{id:'brasero',l:'Brasero'}].map(c => (
+          {cartes.map(c => (
             <button key={c.id} onClick={() => setCarte(c.id)} style={{ padding:'7px 18px', borderRadius:20, fontWeight:700, fontSize:13, cursor:'pointer', border:'none', background: carte===c.id ? '#E8C547' : '#efefef', color: carte===c.id ? '#111' : '#888', transition:'all 0.15s' }}>{c.l}</button>
           ))}
         </div>
@@ -3456,14 +3619,14 @@ function MenuPage({ showToast }) {
           {platItems.map(item => (
             <div key={item.id} style={{ background:'#fff', borderRadius:14, padding:'14px 16px', border:`1.5px solid ${item.actif ? '#E8C547' : '#eee'}`, transition:'border-color 0.2s' }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
-                <span style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:0.5 }}>{item.type==='plat' ? '🍽 Plat du jour' : '🍮 Dessert du jour'}</span>
-                <MenuToggle value={!!item.actif} onChange={async () => { const v=!item.actif; item.type==='plat'?setPlatJour(p=>({...p,actif:v})):setDessertJour(p=>({...p,actif:v})); await supabase.from('menu_plat_jour').update({actif:v,updated_at:new Date().toISOString()}).eq('id',item.id); }} />
+                <span style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:0.5 }}>{item.type==='plat' ? '🍽 Plat du jour' : item.type==='dessert' ? '🍮 Dessert du jour' : '👨‍🍳 Suggestion du chef'}</span>
+                <MenuToggle value={!!item.actif} onChange={async () => { const v=!item.actif; item.type==='plat'?setPlatJour(p=>({...p,actif:v})):item.type==='dessert'?setDessertJour(p=>({...p,actif:v})):setSuggestionJour(p=>({...p,actif:v})); await supabase.from('menu_plat_jour').update({actif:v,updated_at:new Date().toISOString()}).eq('id',item.id); }} />
               </div>
               <div style={{ fontSize:14, fontWeight:600, color: item.actif ? '#111' : '#bbb', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:2 }}>
                 {item.nom || <span style={{ color:'#ddd', fontStyle:'italic', fontWeight:400 }}>Non défini</span>}
               </div>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:4 }}>
-                <span style={{ fontSize:12, color:'#aaa' }}>{item.prix||''}</span>
+                <span style={{ fontSize:12, color:'#aaa' }}>{formatPrix(item.prix)}</span>
                 <button onClick={() => setPlatSheet(item)} style={{ fontSize:12, color:'#666', background:'none', border:'none', cursor:'pointer', fontWeight:600, textDecoration:'underline', padding:0 }}>Modifier</button>
               </div>
             </div>
@@ -3481,19 +3644,43 @@ function MenuPage({ showToast }) {
       {searchQ && catsVisible.length === 0 && <div style={{ textAlign:'center', padding:'40px 0', color:'#bbb', fontSize:14 }}>Aucun produit pour "{menuSearch}"</div>}
 
       {/* Accordéon catégories */}
-      {catsVisible.map(cat => {
+      {catsVisible.map((cat, catIdx) => {
         const ps = produitsForCat(cat.id);
         const allPs = produits.filter(p => p.categorie_id === cat.id).length;
         const isOpen = searchQ ? true : openCats.has(cat.id);
         return (
-          <div key={cat.id} style={{ marginBottom:8, borderRadius:14, background:'#fff', border:'1px solid #eee', overflow:'hidden' }}>
-            <div onClick={() => !searchQ && toggleCat(cat.id)} style={{ display:'flex', alignItems:'center', gap:10, padding:'13px 16px', cursor: searchQ ? 'default' : 'pointer', userSelect:'none', borderBottom: isOpen ? '1px solid #f5f5f5' : 'none' }}>
-              {!searchQ && <ChevronRight size={15} strokeWidth={2.5} style={{ color:'#ccc', flexShrink:0, transform: isOpen ? 'rotate(90deg)' : 'none', transition:'transform 0.2s' }} />}
-              <span style={{ flex:1, fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:1.1 }}>
-                {cat.nom}
-                <span style={{ fontWeight:400, color:'#ccc', marginLeft:6, textTransform:'none', letterSpacing:0 }}>({allPs})</span>
-                {searchQ && ps.length < allPs && <span style={{ color:'#E8C547', marginLeft:6, fontWeight:700 }}> · {ps.length} résultat{ps.length>1?'s':''}</span>}
-              </span>
+          <div key={cat.id}
+            draggable={!searchQ}
+            onDragStart={() => { dragCat.current = catIdx; }}
+            onDragEnter={() => { dragOverCat.current = catIdx; }}
+            onDragEnd={dropCatAccordion}
+            onDragOver={e => e.preventDefault()}
+            style={{ marginBottom:8, borderRadius:14, background:'#fff', border:'1px solid #eee', overflow:'hidden' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10, padding:'13px 16px', borderBottom: isOpen ? '1px solid #f5f5f5' : 'none' }}>
+              {!searchQ && <span style={{ color:'#d0d0d0', fontSize:15, cursor:'grab', flexShrink:0, userSelect:'none' }}>⠿</span>}
+              {!searchQ && <ChevronRight size={15} strokeWidth={2.5} onClick={() => toggleCat(cat.id)} style={{ color:'#ccc', flexShrink:0, transform: isOpen ? 'rotate(90deg)' : 'none', transition:'transform 0.2s', cursor:'pointer' }} />}
+              {editingCatId === cat.id ? (
+                <input
+                  value={editingCatName}
+                  onChange={e => setEditingCatName(e.target.value)}
+                  onBlur={() => saveCatName(cat)}
+                  onKeyDown={e => { if(e.key==='Enter') saveCatName(cat); if(e.key==='Escape') setEditingCatId(null); }}
+                  style={{ flex:1, height:28, border:'1.5px solid #E8C547', borderRadius:7, padding:'0 8px', fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:1.1, outline:'none' }}
+                  autoFocus
+                  onClick={e => e.stopPropagation()}
+                />
+              ) : (
+                <span onClick={() => !searchQ && toggleCat(cat.id)} style={{ flex:1, fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:1.1, cursor: searchQ ? 'default' : 'pointer', userSelect:'none' }}>
+                  {cat.nom}
+                  <span style={{ fontWeight:400, color:'#ccc', marginLeft:6, textTransform:'none', letterSpacing:0 }}>({allPs})</span>
+                  {searchQ && ps.length < allPs && <span style={{ color:'#E8C547', marginLeft:6, fontWeight:700 }}> · {ps.length} résultat{ps.length>1?'s':''}</span>}
+                </span>
+              )}
+              {!searchQ && (
+                <button onClick={e => { e.stopPropagation(); setEditingCatId(cat.id); setEditingCatName(cat.nom); }} style={{ background:'none', border:'none', cursor:'pointer', color:'#d0d0d0', display:'flex', padding:'2px 4px', flexShrink:0 }} title="Renommer">
+                  <Pencil size={12} />
+                </button>
+              )}
               <button onClick={e => { e.stopPropagation(); setEditProduit({ categorie_id: cat.id, carte, disponible: true, mise_en_avant: false, badges: [], allergenes: [], ordre: allPs+1 }); }} style={{ ...btnSecondary, height:28, fontSize:11, display:'inline-flex', alignItems:'center', gap:3, padding:'0 9px', flexShrink:0 }}>
                 <Plus size={11} strokeWidth={2.5} /> Ajouter
               </button>
@@ -3525,7 +3712,7 @@ function MenuPage({ showToast }) {
                       <input value={editingPrice.val} onChange={e => setEditingPrice(prev => ({ ...prev, val: e.target.value }))} onBlur={() => savePrixInline(p.id, editingPrice.val)} onKeyDown={e => { if(e.key==='Enter') savePrixInline(p.id, editingPrice.val); if(e.key==='Escape') setEditingPrice(null); }} style={{ width:80, height:30, border:'1.5px solid #E8C547', borderRadius:7, padding:'0 8px', fontSize:12, outline:'none', textAlign:'right' }} autoFocus />
                     ) : (
                       <span onClick={() => setEditingPrice({ id: p.id, val: p.prix||'' })} style={{ fontSize:12, color:'#999', cursor:'pointer', whiteSpace:'nowrap', minWidth:50, textAlign:'right', padding:'4px 6px', borderRadius:6, border:'1px solid transparent' }} onMouseEnter={e => e.currentTarget.style.borderColor='#eee'} onMouseLeave={e => e.currentTarget.style.borderColor='transparent'}>
-                        {p.prix || <span style={{ color:'#ddd' }}>—</span>}
+                        {p.prix_detail || formatPrix(p.prix) || <span style={{ color:'#ddd' }}>—</span>}
                       </span>
                     )}
 
@@ -3559,6 +3746,31 @@ function MenuPage({ showToast }) {
         </div>
       )}
 
+      {/* Sélecteur de catégorie avant création produit */}
+      {catPickerOpen && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:3000, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }} onClick={() => setCatPickerOpen(false)}>
+          <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:400, overflow:'hidden', boxShadow:'0 8px 32px rgba(0,0,0,0.18)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding:'16px 20px', borderBottom:'1px solid #f0f0f0', fontWeight:700, fontSize:15, color:'#111' }}>Dans quelle catégorie ?</div>
+            <div style={{ maxHeight:360, overflowY:'auto' }}>
+              {catsFiltered.map(cat => {
+                const n = produits.filter(p => p.categorie_id === cat.id).length;
+                return (
+                  <button key={cat.id} onClick={() => { setCatPickerOpen(false); setEditProduit({ categorie_id: cat.id, carte, disponible: true, mise_en_avant: false, badges: [], allergenes: [], ordre: n+1 }); }}
+                    style={{ display:'block', width:'100%', textAlign:'left', padding:'13px 20px', border:'none', background:'none', cursor:'pointer', fontSize:14, color:'#111', borderBottom:'1px solid #f7f7f7' }}
+                    onMouseEnter={e => e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e => e.currentTarget.style.background='none'}>
+                    {cat.nom} <span style={{ color:'#ccc', fontSize:12 }}>({n})</span>
+                  </button>
+                );
+              })}
+              <button onClick={() => { setCatPickerOpen(false); setEditProduit({ carte, disponible: true, mise_en_avant: false, badges: [], allergenes: [] }); }}
+                style={{ display:'block', width:'100%', textAlign:'left', padding:'13px 20px', border:'none', background:'none', cursor:'pointer', fontSize:13, color:'#aaa', borderTop:'1px solid #f0f0f0' }}>
+                Choisir plus tard →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Bottom sheet produit */}
       {editProduit && (
         <ProduitSheet
@@ -3576,7 +3788,7 @@ function MenuPage({ showToast }) {
         <PlatJourSheet
           item={platSheet}
           onClose={() => setPlatSheet(null)}
-          onSaved={updated => { updated.type==='plat' ? setPlatJour(updated) : setDessertJour(updated); showToast('Enregistré ✓'); }}
+          onSaved={updated => { updated.type==='plat' ? setPlatJour(updated) : updated.type==='dessert' ? setDessertJour(updated) : setSuggestionJour(updated); showToast('Enregistré ✓'); }}
         />
       )}
 
@@ -3599,6 +3811,15 @@ function MenuPage({ showToast }) {
           onClose={() => { setShowGererCats(false); loadMenu(); }}
           showToast={showToast}
           carte={carte}
+        />
+      )}
+
+      {/* Gestion cartes dynamiques */}
+      {showCartesSheet && (
+        <CartesSheet
+          onClose={() => { setShowCartesSheet(false); loadCartes(); }}
+          showToast={showToast}
+          produits={produits}
         />
       )}
 

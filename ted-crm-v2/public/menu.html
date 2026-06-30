@@ -281,13 +281,21 @@
   let allProduits = [];
   let platJour = null;
   let dessertJour = null;
+  let suggestionJour = null;
+
+  function formatPrix(p) {
+    if (!p) return '';
+    const s = String(p).trim();
+    if (!s || s.includes('€')) return s;
+    return /^[\d]+([,.][\d]{1,2})?$/.test(s) ? s + ' €' : s;
+  }
 
   // ── Langue ──────────────────────────────────────────────────────────────────
   const UI = {
-    fr: { restaurant:'Restaurant', brasero:'Brasero', plat_jour:'Plat du jour', dessert_jour:'Dessert du jour', brasero_banner:'🔥 Carte Brasero disponible le mercredi soir uniquement' },
-    en: { restaurant:'Restaurant', brasero:'Brasero', plat_jour:'Daily special', dessert_jour:'Dessert of the day', brasero_banner:'🔥 Brasero menu available Wednesday evenings only' },
-    es: { restaurant:'Restaurante', brasero:'Brasero', plat_jour:'Plato del día', dessert_jour:'Postre del día', brasero_banner:'🔥 Carta Brasero disponible solo los miércoles por la noche' },
-    it: { restaurant:'Ristorante', brasero:'Brasero', plat_jour:'Piatto del giorno', dessert_jour:'Dolce del giorno', brasero_banner:'🔥 Menu Brasero disponibile solo il mercoledì sera' }
+    fr: { restaurant:'Restaurant', brasero:'Brasero', plat_jour:'Plat du jour', dessert_jour:'Dessert du jour', suggestion_chef:'Suggestion du chef', brasero_banner:'🔥 Carte Brasero disponible le mercredi soir uniquement' },
+    en: { restaurant:'Restaurant', brasero:'Brasero', plat_jour:'Daily special', dessert_jour:'Dessert of the day', suggestion_chef:"Chef's special", brasero_banner:'🔥 Brasero menu available Wednesday evenings only' },
+    es: { restaurant:'Restaurante', brasero:'Brasero', plat_jour:'Plato del día', dessert_jour:'Postre del día', suggestion_chef:'Sugerencia del chef', brasero_banner:'🔥 Carta Brasero disponible solo los miércoles por la noche' },
+    it: { restaurant:'Ristorante', brasero:'Brasero', plat_jour:'Piatto del giorno', dessert_jour:'Dolce del giorno', suggestion_chef:'Suggerimento dello chef', brasero_banner:'🔥 Menu Brasero disponibile solo il mercoledì sera' }
   };
   let lang = localStorage.getItem('ted_langue') || 'fr';
 
@@ -428,8 +436,9 @@
   });
 
   function updatePlatJour(plats) {
-    platJour = plats.find(p => p.type === 'plat' && p.carte === carteActive && p.actif) || null;
-    dessertJour = plats.find(p => p.type === 'dessert' && p.carte === carteActive && p.actif) || null;
+    platJour       = plats.find(p => p.type === 'plat'       && p.carte === carteActive && p.actif) || null;
+    dessertJour    = plats.find(p => p.type === 'dessert'    && p.carte === carteActive && p.actif) || null;
+    suggestionJour = plats.find(p => p.type === 'suggestion' && p.carte === carteActive && p.actif) || null;
   }
 
   // ── Header compact + bouton retour ─────────────────────────────────────────
@@ -467,24 +476,19 @@
     const isFoodSection = (nom) => FOOD_CATS.some(f => nom.toLowerCase().includes(f.toLowerCase()) || f.toLowerCase().includes(nom.toLowerCase()));
 
     // ── Bloc plat du jour (hors contenu, avant la barre) ──
-    if (platJour || dessertJour) {
-      let pjHtml = '';
-      if (platJour) {
-        pjHtml += `<div class="plat-jour-card">
-          <div class="plat-jour-label">${tUI('plat_jour')}</div>
-          ${platJour.nom ? `<div class="plat-jour-nom">${esc(platJour.nom)}</div>` : ''}
-          ${platJour.description ? `<div class="plat-jour-desc">${esc(platJour.description)}</div>` : ''}
-          ${platJour.prix ? `<div class="plat-jour-prix">${esc(platJour.prix)}</div>` : ''}
-        </div>`;
-      }
-      if (dessertJour) {
-        pjHtml += `<div class="plat-jour-card" style="margin-top:8px">
-          <div class="plat-jour-label">${tUI('dessert_jour')}</div>
-          ${dessertJour.nom ? `<div class="plat-jour-nom">${esc(dessertJour.nom)}</div>` : ''}
-          ${dessertJour.description ? `<div class="plat-jour-desc">${esc(dessertJour.description)}</div>` : ''}
-          ${dessertJour.prix ? `<div class="plat-jour-prix">${esc(dessertJour.prix)}</div>` : ''}
-        </div>`;
-      }
+    const pjItems = [
+      { item: platJour,       key: 'plat_jour' },
+      { item: dessertJour,    key: 'dessert_jour' },
+      { item: suggestionJour, key: 'suggestion_chef' },
+    ].filter(x => x.item);
+    if (pjItems.length > 0) {
+      const pjHtml = pjItems.map(({ item, key }, i) => `
+        <div class="plat-jour-card"${i > 0 ? ' style="margin-top:8px"' : ''}>
+          <div class="plat-jour-label">${tUI(key)}</div>
+          ${item.nom ? `<div class="plat-jour-nom">${esc(item.nom)}</div>` : ''}
+          ${item.description ? `<div class="plat-jour-desc">${esc(item.description)}</div>` : ''}
+          ${(item.prix_detail || item.prix) ? `<div class="plat-jour-prix">${esc(item.prix_detail || formatPrix(item.prix))}</div>` : ''}
+        </div>`).join('');
       platContainer.innerHTML = pjHtml;
       platContainer.style.display = 'block';
     } else {
@@ -522,7 +526,7 @@
             ${p.accord_vin ? `<div class="produit-accord">— ${esc(p.accord_vin)}</div>` : ''}
             ${badges ? `<div class="produit-badges">${badges}</div>` : ''}
           </div>
-          ${p.prix ? `<div class="produit-prix">${esc(p.prix)}</div>` : ''}
+          ${(p.prix_detail || p.prix) ? `<div class="produit-prix">${esc(p.prix_detail || formatPrix(p.prix))}</div>` : ''}
         </div>`;
       });
 
