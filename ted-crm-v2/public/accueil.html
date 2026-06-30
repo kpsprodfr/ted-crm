@@ -170,18 +170,16 @@
     /* ── Roue cadeaux ──────────────────────────────────────────────────────────── */
     #roue-overlay {
       position: fixed; inset: 0; z-index: 300;
-      background: rgba(0,0,0,0.72);
+      background: rgba(0,0,0,0.75);
       display: flex; align-items: flex-end;
       opacity: 0; pointer-events: none;
-      transition: opacity 300ms ease;
+      transition: opacity 280ms ease;
     }
     #roue-overlay.open { opacity: 1; pointer-events: all; }
     #roue-sheet {
-      width: 100%; background: #fefefe;
+      width: 100%; background: #fff;
       border-radius: 22px 22px 0 0;
-      border-top: 2.5px solid #E8C547;
-      padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
-      max-height: 93vh; overflow-y: auto;
+      max-height: 94vh; overflow-y: auto; overflow-x: hidden;
       transform: translateY(100%);
       transition: transform 380ms cubic-bezier(0.32, 0.72, 0, 1);
       position: relative;
@@ -190,16 +188,27 @@
     @media (prefers-reduced-motion: reduce) {
       #roue-overlay, #roue-sheet { transition: none !important; }
     }
+
+    /* Zone haute — fond crème, contient la roue ou le résultat visuel */
+    #roue-zone-haute {
+      background: #faf7ef;
+      padding: 28px 20px 20px;
+      text-align: center;
+      position: relative;
+      display: flex; flex-direction: column; align-items: center;
+    }
     #roue-handle {
-      width: 36px; height: 4px; background: #e0e0e0;
-      border-radius: 2px; margin: 12px auto 0;
+      position: absolute; top: 10px; left: 50%;
+      transform: translateX(-50%);
+      width: 34px; height: 4px; background: rgba(0,0,0,0.14);
+      border-radius: 2px;
     }
     #roue-close {
-      position: absolute; top: 14px; right: 16px;
+      position: absolute; top: 12px; right: 14px;
       width: 40px; height: 40px; border-radius: 50%;
-      background: #f4f4f4; border: none; cursor: pointer;
+      background: rgba(0,0,0,0.07); border: none; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 800; color: #aaa;
+      font-size: 11px; font-weight: 800; color: rgba(0,0,0,0.35);
       z-index: 10; padding: 0; outline: none;
       transition: background 200ms, color 200ms;
     }
@@ -207,81 +216,110 @@
     #roue-close:disabled { cursor: not-allowed; }
     #roue-close-svg {
       position: absolute; inset: 0; width: 100%; height: 100%;
-      transform: rotate(-90deg); border-radius: 50%;
-      pointer-events: none;
+      transform: rotate(-90deg); border-radius: 50%; pointer-events: none;
     }
     #roue-ring { fill: none; stroke: #E8C547; stroke-width: 2.5; stroke-linecap: round; }
     #roue-close-label { position: relative; z-index: 1; }
 
-    .roue-step { padding: 10px 24px 16px; }
-    #roue-step-wheel { text-align: center; padding-top: 4px; }
-    #roue-titre {
-      font-size: 17px; font-weight: 800; color: #111;
-      margin: 8px 0 18px; line-height: 1.3; padding: 0 44px;
-    }
-    #roue-canvas-wrap {
-      position: relative; display: inline-block; margin: 0 auto 16px;
-    }
+    /* Canvas */
+    #roue-canvas-wrap { position: relative; display: inline-block; }
     #roue-pointer-tri {
-      position: absolute; top: -8px; left: 50%;
+      position: absolute; top: -9px; left: 50%;
       transform: translateX(-50%);
       width: 0; height: 0;
-      border-left: 10px solid transparent;
-      border-right: 10px solid transparent;
-      border-top: 16px solid #E8C547;
-      filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25));
-      z-index: 2;
+      border-left: 12px solid transparent;
+      border-right: 12px solid transparent;
+      border-top: 20px solid #E8C547;
+      filter: drop-shadow(0 2px 5px rgba(0,0,0,0.4));
+      z-index: 5;
     }
-    #roue-canvas {
-      display: block;
-      box-shadow: 0 6px 28px rgba(0,0,0,0.14);
-      border-radius: 50%;
-    }
-    #roue-jouer-btn {
-      position: absolute; top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      width: 62px; height: 62px; border-radius: 50%;
-      background: #111; color: #E8C547;
-      border: 3px solid #E8C547;
-      font-size: 10px; font-weight: 900; letter-spacing: 1.5px;
-      cursor: pointer; z-index: 3;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.35);
-      transition: transform 120ms ease;
-      font-family: inherit;
-    }
-    #roue-jouer-btn:active:not(:disabled) { transform: translate(-50%,-50%) scale(0.92); }
-    #roue-jouer-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    #roue-canvas { display: block; }
 
-    #roue-step-result { text-align: center; padding: 16px 28px 12px; }
-    #roue-result-emoji { font-size: 60px; margin-bottom: 8px; line-height: 1; }
+    /* Résultat visuel dans zone haute */
+    #roue-visuel-result {
+      display: none; padding: 8px 0 4px;
+      animation: roueResultIn 0.45s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+    @keyframes roueResultIn {
+      from { opacity: 0; transform: scale(0.82); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    @media (prefers-reduced-motion: reduce) { #roue-visuel-result { animation: none; } }
+    #roue-result-emoji { font-size: 52px; line-height: 1; margin-bottom: 10px; }
     #roue-result-label {
-      font-size: 11px; font-weight: 700; color: #E8C547;
-      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px;
+      font-size: 10px; font-weight: 800; color: #c9a93a;
+      letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 8px;
     }
     #roue-result-nom {
-      font-size: 20px; font-weight: 900; color: #111;
-      background: #fffbea; border: 2px solid #E8C547;
-      border-radius: 14px; padding: 14px 18px;
-      margin: 8px 0 10px; line-height: 1.3;
+      font-size: 19px; font-weight: 900; color: #111;
+      background: #fff; border: 2.5px solid #E8C547;
+      border-radius: 12px; padding: 11px 20px; line-height: 1.3;
+      box-shadow: 0 2px 14px rgba(232,197,71,0.18);
     }
-    #roue-result-cond { font-size: 12px; color: #888; margin: 0 0 16px; line-height: 1.5; }
 
-    #roue-step-form { padding: 16px 24px 12px; }
+    /* Séparateur ticket */
+    #roue-tiret {
+      border: none; margin: 0;
+      border-top: 2px dashed #ddd;
+      position: relative;
+    }
+    #roue-tiret::before, #roue-tiret::after {
+      content: '✂'; position: absolute; top: -11px;
+      font-size: 14px; color: #ccc; line-height: 1;
+    }
+    #roue-tiret::before { left: 14px; }
+    #roue-tiret::after  { right: 14px; transform: scaleX(-1); }
+
+    /* Zone basse — fond blanc */
+    #roue-zone-basse {
+      background: #fff;
+      padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* Titre / sous-titre */
+    #roue-titre {
+      font-size: 14px; font-weight: 700; color: #555;
+      margin-bottom: 14px; line-height: 1.4; text-align: center;
+    }
+
+    /* Bouton JOUER — plein largeur, noir, pulsation */
+    #roue-jouer-btn {
+      display: block; width: 100%; padding: 17px;
+      border-radius: 14px; border: none;
+      background: #111; color: #fff;
+      font-size: 17px; font-weight: 900; letter-spacing: 0.3px;
+      cursor: pointer; font-family: inherit;
+      transition: transform 120ms ease, opacity 120ms;
+    }
+    #roue-jouer-btn:active:not(:disabled) { transform: scale(0.97); opacity: 0.85; }
+    #roue-jouer-btn:disabled { opacity: 0.35; cursor: not-allowed; animation: none !important; }
+    @keyframes rouePulse {
+      0%,100% { box-shadow: 0 4px 22px rgba(0,0,0,0.22), 0 0 0 0 rgba(232,197,71,0.5); }
+      50%     { box-shadow: 0 4px 22px rgba(0,0,0,0.22), 0 0 0 12px rgba(232,197,71,0); }
+    }
+    #roue-jouer-btn:not(:disabled) { animation: rouePulse 2.2s ease-in-out infinite; }
+    @media (prefers-reduced-motion: reduce) { #roue-jouer-btn { animation: none !important; box-shadow: 0 4px 22px rgba(0,0,0,0.22); } }
+
+    /* Conditions */
+    #roue-result-cond { font-size: 12px; color: #888; margin: 0 0 14px; line-height: 1.5; text-align: center; }
+
+    /* Formulaire */
     #roue-form-titre { font-size: 18px; font-weight: 800; color: #111; margin-bottom: 4px; }
     #roue-form-sub { font-size: 13px; color: #888; margin-bottom: 18px; line-height: 1.4; }
     .roue-input {
-      display: block; width: 100%; height: 48px;
-      border: 1.5px solid #e8e8e8; border-radius: 12px;
+      display: block; width: 100%; height: 50px;
+      border: 1.5px solid #eee; border-radius: 12px;
       padding: 0 14px; font-size: 15px; font-family: inherit;
       outline: none; box-sizing: border-box; margin-bottom: 10px;
       background: #fafafa; color: #111; transition: border-color 150ms;
     }
     .roue-input:focus { border-color: #E8C547; background: #fff; }
-    .roue-input::placeholder { color: #bbb; }
+    .roue-input::placeholder { color: #c0c0c0; }
     .roue-mention-anti { font-size: 11px; color: #bbb; text-align: center; margin: 0 0 14px; }
 
+    /* Boutons */
     .roue-btn-noir {
-      display: block; width: 100%; padding: 15px; border-radius: 14px;
+      display: block; width: 100%; padding: 16px; border-radius: 14px;
       border: none; background: #111; color: #fff;
       font-size: 15px; font-weight: 700; text-align: center;
       cursor: pointer; font-family: inherit; transition: opacity 150ms;
@@ -290,19 +328,21 @@
     .roue-btn-noir:disabled { opacity: 0.4; cursor: not-allowed; }
     .roue-btn-noir:active:not(:disabled) { opacity: 0.8; }
     .roue-btn-ghost {
-      display: block; width: 100%; padding: 13px; border-radius: 14px;
-      border: 1.5px solid #ddd; background: #fff; color: #888;
+      display: block; width: 100%; padding: 14px; border-radius: 14px;
+      border: 1.5px solid #e0e0e0; background: #fff; color: #999;
       font-size: 14px; font-weight: 600; text-align: center;
       cursor: pointer; font-family: inherit; transition: background 150ms;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
     .roue-btn-ghost:active { background: #f5f5f5; }
 
-    #roue-step-done { text-align: center; padding: 28px 28px 12px; }
-    #roue-done-icon { font-size: 56px; margin-bottom: 12px; }
+    /* Done */
+    #roue-step-done { text-align: center; }
+    #roue-done-icon { font-size: 52px; margin-bottom: 10px; }
     #roue-done-titre { font-size: 20px; font-weight: 800; color: #111; margin-bottom: 8px; }
     #roue-done-sub { font-size: 14px; color: #888; line-height: 1.55; margin-bottom: 22px; }
 
+    /* Confettis */
     .roue-confetti {
       position: fixed; border-radius: 2px;
       opacity: 0; z-index: 600; pointer-events: none;
@@ -349,54 +389,71 @@
   <!-- Roue cadeaux -->
   <div id="roue-overlay" role="dialog" aria-modal="true" aria-label="Roue des cadeaux">
     <div id="roue-sheet">
-      <div id="roue-handle"></div>
 
-      <button id="roue-close" disabled aria-label="Fermer dans 5 secondes">
-        <svg id="roue-close-svg" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-          <circle id="roue-ring" cx="20" cy="20" r="18"/>
-        </svg>
-        <span id="roue-close-label">5</span>
-      </button>
+      <!-- Zone haute — fond crème (roue ou résultat visuel) -->
+      <div id="roue-zone-haute">
+        <div id="roue-handle"></div>
+        <button id="roue-close" disabled aria-label="Fermer dans 5 secondes">
+          <svg id="roue-close-svg" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+            <circle id="roue-ring" cx="20" cy="20" r="18"/>
+          </svg>
+          <span id="roue-close-label">5</span>
+        </button>
 
-      <!-- Étape 0 — Roue -->
-      <div id="roue-step-wheel" class="roue-step">
-        <h2 id="roue-titre">🎉 Tentez de remporter des lots&nbsp;!</h2>
+        <!-- Canvas (phase 0 + spin) -->
         <div id="roue-canvas-wrap">
           <div id="roue-pointer-tri"></div>
-          <canvas id="roue-canvas" width="290" height="290"></canvas>
-          <button id="roue-jouer-btn">JOUER</button>
+          <canvas id="roue-canvas" width="320" height="320"></canvas>
+        </div>
+
+        <!-- Résultat visuel (phase 1+) -->
+        <div id="roue-visuel-result">
+          <div id="roue-result-emoji">🎁</div>
+          <div id="roue-result-label">Félicitations&nbsp;!</div>
+          <div id="roue-result-nom">—</div>
         </div>
       </div>
 
-      <!-- Étape 1 — Résultat -->
-      <div id="roue-step-result" style="display:none">
-        <div id="roue-result-emoji">🎁</div>
-        <div id="roue-result-label">Félicitations&nbsp;!</div>
-        <div id="roue-result-nom">—</div>
-        <div id="roue-result-cond" style="display:none"></div>
-        <button class="roue-btn-noir" id="roue-recuperer-btn">Récupérer ma récompense 🎁</button>
-        <button class="roue-btn-ghost" id="roue-skip-btn">Non merci, continuer sans</button>
-      </div>
+      <!-- Séparateur ticket pointillé -->
+      <hr id="roue-tiret">
 
-      <!-- Étape 2 — Formulaire -->
-      <div id="roue-step-form" style="display:none">
-        <div id="roue-form-titre">Vos coordonnées</div>
-        <div id="roue-form-sub">Votre récompense vous sera envoyée par SMS et email pour la conserver facilement.</div>
-        <input class="roue-input" id="roue-prenom" type="text" placeholder="Prénom (optionnel)" autocomplete="given-name">
-        <input class="roue-input" id="roue-tel" type="tel" placeholder="Téléphone *" autocomplete="tel">
-        <input class="roue-input" id="roue-email" type="email" placeholder="Email *" autocomplete="email">
-        <div class="roue-mention-anti">⚠️ Une seule participation par personne</div>
-        <button class="roue-btn-noir" id="roue-confirmer-btn">Confirmer et recevoir ma récompense</button>
-      </div>
+      <!-- Zone basse — fond blanc (contenu selon phase) -->
+      <div id="roue-zone-basse">
 
-      <!-- Étape 3 — Confirmation / Déjà participé -->
-      <div id="roue-step-done" style="display:none">
-        <div id="roue-done-icon">✅</div>
-        <div id="roue-done-titre">C'est noté !</div>
-        <div id="roue-done-sub">Votre récompense vous a été envoyée par SMS et email.<br>Présentez-la à votre serveur lors de votre prochain passage.</div>
-        <button class="roue-btn-noir" id="roue-vers-carte-btn">Consulter la carte →</button>
-      </div>
-    </div>
+        <!-- Phase 0 : avant de jouer -->
+        <div id="roue-content-wheel">
+          <div id="roue-titre">🎉 Tentez votre chance et gagnez des lots&nbsp;!</div>
+          <button id="roue-jouer-btn">🎰 Lancer la roue</button>
+        </div>
+
+        <!-- Phase 1 : après le spin -->
+        <div id="roue-content-result" style="display:none">
+          <div id="roue-result-cond" style="display:none"></div>
+          <button class="roue-btn-noir" id="roue-recuperer-btn">Récupérer ma récompense 🎁</button>
+          <button class="roue-btn-ghost" id="roue-skip-btn">Non merci, continuer sans</button>
+        </div>
+
+        <!-- Phase 2 : formulaire -->
+        <div id="roue-content-form" style="display:none">
+          <div id="roue-form-titre">Vos coordonnées</div>
+          <div id="roue-form-sub">Votre récompense vous sera envoyée par SMS et email pour la conserver facilement.</div>
+          <input class="roue-input" id="roue-prenom" type="text" placeholder="Prénom (optionnel)" autocomplete="given-name">
+          <input class="roue-input" id="roue-tel" type="tel" placeholder="Téléphone *" autocomplete="tel">
+          <input class="roue-input" id="roue-email" type="email" placeholder="Email *" autocomplete="email">
+          <div class="roue-mention-anti">⚠️ Une seule participation par personne</div>
+          <button class="roue-btn-noir" id="roue-confirmer-btn">Confirmer et recevoir ma récompense</button>
+        </div>
+
+        <!-- Phase 3 : confirmation / déjà participé -->
+        <div id="roue-step-done" style="display:none">
+          <div id="roue-done-icon">✅</div>
+          <div id="roue-done-titre">C'est noté !</div>
+          <div id="roue-done-sub">Votre récompense vous a été envoyée par SMS et email.<br>Présentez-la à votre serveur lors de votre prochain passage.</div>
+          <button class="roue-btn-noir" id="roue-vers-carte-btn">Consulter la carte →</button>
+        </div>
+
+      </div><!-- /roue-zone-basse -->
+    </div><!-- /roue-sheet -->
   </div>
 
   <!-- Popup soirée -->
@@ -694,23 +751,26 @@
 
   // ── Roue cadeaux ─────────────────────────────────────────────────────────────
   (async function initRoue() {
-    let recompenses = [];
-    let gainResult  = null;
-    let spinning    = false;
-    let currentAngle = 0; // angle courant de la roue (radians)
+    let recompenses  = [];
+    let gainResult   = null;
+    let spinning     = false;
+    let currentAngle = 0;
 
-    const CANVAS_SIZE = 290;
-    const CX      = CANVAS_SIZE / 2; // 145
-    const R_OUTER = CX - 2;          // 143
-    const R_TEXT  = R_OUTER * 0.62;  // texte radial ~62% du rayon
-    const R_CTR   = 28;              // rayon cercle central
+    // Canvas 320×320
+    const CS     = 320;  // canvas size
+    const CX     = 160;  // center
+    const R_SEG  = 144;  // segments fill to here
+    const R_RING = 154;  // gold outer ring
+    const R_BUMP = 154;  // bump dots sit on ring
+    const R_TEXT = 90;   // text anchor radius
+    const R_CTR  = 22;   // central circle
+    const N_BUMP = 18;   // number of decorative dots
+    const COLS   = ['#E8C547', '#111111']; // alternating gold / black
 
     const canvas = document.getElementById('roue-canvas');
     const ctx    = canvas.getContext('2d');
 
-    const FALLBACK_COLS = ['#E8C547','#c9a93a','#f5e8a0','#e0c030','#fff3b0','#d4af37'];
-
-    // ── Chargement des récompenses actives ──────────────────────────────────────
+    // ── Chargement ──────────────────────────────────────────────────────────────
     try {
       const res = await fetch(
         `${SUPA_URL}/rest/v1/roue_recompenses?actif=eq.true&order=ordre`,
@@ -722,72 +782,102 @@
     } catch(e) { return; }
 
     if (!recompenses.length) return;
-    if (localStorage.getItem('ted_roue_joue')) return; // déjà participé sur cet appareil
+    if (localStorage.getItem('ted_roue_joue')) return;
 
-    // ── Dessin ──────────────────────────────────────────────────────────────────
+    // ── Utilitaires ─────────────────────────────────────────────────────────────
     function totalProba() {
       return recompenses.reduce((s, r) => s + parseFloat(r.probabilite || 1), 0);
     }
+    function trunc(s, n) { return s && s.length > n ? s.slice(0, n - 1) + '…' : (s || ''); }
 
-    function isLight(hex) {
-      if (!hex || hex.length < 7) return true;
-      const rv = parseInt(hex.slice(1,3),16), gv = parseInt(hex.slice(3,5),16), bv = parseInt(hex.slice(5,7),16);
-      return (rv*299 + gv*587 + bv*114) / 1000 > 145;
-    }
-
-    function trunc(s, n) { return s && s.length > n ? s.slice(0, n-1) + '…' : (s || ''); }
-
+    // ── drawWheel ───────────────────────────────────────────────────────────────
     function drawWheel(rotAngle) {
-      ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      ctx.clearRect(0, 0, CS, CS);
       const total = totalProba();
-      let start = rotAngle;
+      let start   = rotAngle;
 
+      // Segments
       recompenses.forEach((r, i) => {
         const slice = (parseFloat(r.probabilite || 1) / total) * 2 * Math.PI;
         const end   = start + slice;
         const mid   = start + slice / 2;
-        const color = r.couleur || FALLBACK_COLS[i % FALLBACK_COLS.length];
+        const bg    = COLS[i % 2];           // alternance or/noir
+        const tc    = bg === '#E8C547' ? '#111' : '#fff'; // texte contrasté
 
-        // Segment
+        // Remplissage segment
         ctx.beginPath();
         ctx.moveTo(CX, CX);
-        ctx.arc(CX, CX, R_OUTER, start, end);
+        ctx.arc(CX, CX, R_SEG, start, end);
         ctx.closePath();
-        ctx.fillStyle = color;
+        ctx.fillStyle = bg;
         ctx.fill();
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 1.5;
+
+        // Séparateur blanc fin
+        ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+        ctx.lineWidth = 1;
         ctx.stroke();
 
-        // Texte radial
+        // Texte tangentiel (perpendiculaire au rayon)
+        // Après rotate(mid + π/2), l'axe X pointe tangentiellement,
+        // la position (0, -R_TEXT) est au milieu du segment sur le rayon.
+        // Ainsi le texte est horizontal quand le segment est en haut (position gagnant).
+        const maxW  = Math.max(22, slice * (R_TEXT - 10) - 2); // largeur max approx
+        const nomStr = trunc(r.nom, 15);
+
         ctx.save();
         ctx.translate(CX, CX);
-        ctx.rotate(mid);
-        ctx.textAlign  = 'right';
+        ctx.rotate(mid + Math.PI / 2);
+        ctx.textAlign    = 'center';
         ctx.textBaseline = 'middle';
-        const tc = isLight(color) ? '#222' : '#fff';
-        ctx.fillStyle = tc;
+        ctx.fillStyle    = tc;
 
-        // Emoji (ligne du haut)
-        ctx.font = '12px serif';
-        ctx.fillText(r.emoji || '', R_TEXT, -7);
+        // Emoji (ligne extérieure)
+        ctx.font = '14px serif';
+        ctx.fillText(r.emoji || '', 0, -(R_TEXT + 9), maxW);
 
-        // Nom (ligne du bas)
-        ctx.font = `bold 9.5px 'Segoe UI', Arial, sans-serif`;
-        ctx.fillText(trunc(r.nom, 16), R_TEXT, 6);
+        // Nom (ligne intérieure)
+        ctx.font = `bold 9px 'Segoe UI', Arial, sans-serif`;
+        ctx.fillText(nomStr, 0, -(R_TEXT - 8), maxW);
 
         ctx.restore();
         start = end;
       });
 
-      // Cercle central
+      // Anneau décoratif extérieur (fixe, au-dessus des segments)
+      ctx.beginPath();
+      ctx.arc(CX, CX, R_RING, 0, 2 * Math.PI);
+      ctx.strokeStyle = '#E8C547';
+      ctx.lineWidth   = 7;
+      ctx.stroke();
+
+      // Petits points décoratifs (ampoules) alternés sur l'anneau
+      for (let i = 0; i < N_BUMP; i++) {
+        const a  = (i / N_BUMP) * 2 * Math.PI;
+        const bx = CX + R_BUMP * Math.cos(a);
+        const by = CX + R_BUMP * Math.sin(a);
+        ctx.beginPath();
+        ctx.arc(bx, by, 4, 0, 2 * Math.PI);
+        ctx.fillStyle   = i % 2 === 0 ? '#fff' : '#111';
+        ctx.fill();
+        ctx.strokeStyle = '#c9a93a';
+        ctx.lineWidth   = 0.8;
+        ctx.stroke();
+      }
+
+      // Cercle central (décoratif, sous le bouton HTML)
       ctx.beginPath();
       ctx.arc(CX, CX, R_CTR, 0, 2 * Math.PI);
-      ctx.fillStyle = '#111';
+      ctx.fillStyle   = '#111';
       ctx.fill();
       ctx.strokeStyle = '#E8C547';
-      ctx.lineWidth = 3;
+      ctx.lineWidth   = 3;
       ctx.stroke();
+      // Étoile centrale
+      ctx.font         = '16px serif';
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle    = '#E8C547';
+      ctx.fillText('★', CX, CX + 1);
     }
 
     // ── Tirage pondéré ──────────────────────────────────────────────────────────
@@ -801,26 +891,23 @@
       return recompenses[recompenses.length - 1];
     }
 
-    // ── Angle cible : le pointer en haut (-π/2) doit viser le centre du segment gagnant ──
+    // ── Angle cible ─────────────────────────────────────────────────────────────
     function calcTargetAngle(winnerIdx) {
       const total = totalProba();
       let cumul = 0;
       for (let i = 0; i < winnerIdx; i++) {
         cumul += (parseFloat(recompenses[i].probabilite || 1) / total) * 2 * Math.PI;
       }
-      const slice = (parseFloat(recompenses[winnerIdx].probabilite || 1) / total) * 2 * Math.PI;
+      const slice       = (parseFloat(recompenses[winnerIdx].probabilite || 1) / total) * 2 * Math.PI;
       const midFromZero = cumul + slice / 2;
-
-      // drawWheel part de rotAngle, donc le midpoint en screen = rotAngle + midFromZero
-      // On veut : targetAngle + midFromZero ≡ -π/2  (mod 2π)
-      // => targetAngle = -π/2 - midFromZero + 2π*k
-      const base = -Math.PI / 2 - midFromZero;
-      const minTurns = 4 + Math.floor(Math.random() * 3); // 4-6 tours
-      const k = Math.ceil((currentAngle + minTurns * 2 * Math.PI - base) / (2 * Math.PI));
+      // pointer à -π/2 (haut) → targetAngle + midFromZero ≡ -π/2 (mod 2π)
+      const base      = -Math.PI / 2 - midFromZero;
+      const minTurns  = 4 + Math.floor(Math.random() * 3);
+      const k         = Math.ceil((currentAngle + minTurns * 2 * Math.PI - base) / (2 * Math.PI));
       return base + k * 2 * Math.PI;
     }
 
-    // ── Animation ───────────────────────────────────────────────────────────────
+    // ── Animation easeOutQuart + rebond ─────────────────────────────────────────
     function easeOutQuart(t) { return 1 - Math.pow(1 - t, 4); }
 
     function animateSpin(targetAngle, durationMs, onDone) {
@@ -836,11 +923,11 @@
     }
 
     function bounce(base, onDone) {
-      const over = base + 0.07;
+      const over = base + 0.065;
       const t0 = performance.now(), d1 = 170;
       (function p1(now) {
         const t = Math.min((now - t0) / d1, 1);
-        currentAngle = base + (over - base) * (1 - (1-t)*(1-t));
+        currentAngle = base + (over - base) * (1 - (1 - t) * (1 - t));
         drawWheel(currentAngle);
         if (t < 1) { requestAnimationFrame(p1); return; }
         currentAngle = over;
@@ -855,7 +942,7 @@
       })(performance.now());
     }
 
-    // ── Décrément atomique du stock via RPC ─────────────────────────────────────
+    // ── Décrément atomique ──────────────────────────────────────────────────────
     async function tryDecrementStock(r) {
       if (r.stock_illimite) return true;
       try {
@@ -864,13 +951,12 @@
           headers: { 'Content-Type': 'application/json', apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` },
           body: JSON.stringify({ p_id: r.id }),
         });
-        if (!res.ok) return true; // fail open plutôt que bloquer
-        const ok = await res.json();
-        return ok === true;
+        if (!res.ok) return true;
+        return (await res.json()) === true;
       } catch { return true; }
     }
 
-    // ── Lancer la roue ──────────────────────────────────────────────────────────
+    // ── Lancer ──────────────────────────────────────────────────────────────────
     async function lancer() {
       if (spinning) return;
       spinning = true;
@@ -881,7 +967,6 @@
 
       const ok = await tryDecrementStock(winner);
       if (!ok) {
-        // Épuisé en concurrence → on retire et on réessaie
         recompenses = recompenses.filter(r => r.id !== winner.id);
         spinning = false;
         document.getElementById('roue-jouer-btn').disabled = false;
@@ -893,21 +978,26 @@
       gainResult = winner;
       const targetAngle = calcTargetAngle(winnerIdx);
       const duration    = 4200 + Math.random() * 900;
-
       animateSpin(targetAngle, duration, () => {
         spinning = false;
         setTimeout(showResult, 650);
       });
     }
 
-    // ── Résultat ────────────────────────────────────────────────────────────────
+    // ── Afficher le résultat ─────────────────────────────────────────────────────
     function showResult() {
-      document.getElementById('roue-step-wheel').style.display = 'none';
-      document.getElementById('roue-step-result').style.display = 'block';
-      document.getElementById('roue-result-emoji').textContent = gainResult.emoji || '🎁';
-      document.getElementById('roue-result-nom').textContent   = (gainResult.emoji ? gainResult.emoji + ' ' : '') + gainResult.nom;
+      // Zone haute : remplacer le canvas par le visuel résultat
+      document.getElementById('roue-canvas-wrap').style.display  = 'none';
+      document.getElementById('roue-visuel-result').style.display = 'block';
+      document.getElementById('roue-result-emoji').textContent   = gainResult.emoji || '🎁';
+      document.getElementById('roue-result-nom').textContent     = (gainResult.emoji ? gainResult.emoji + ' ' : '') + gainResult.nom;
+
+      // Zone basse : remplacer le bouton JOUER par les actions résultat
+      document.getElementById('roue-content-wheel').style.display  = 'none';
+      document.getElementById('roue-content-result').style.display = 'block';
       const condEl = document.getElementById('roue-result-cond');
       if (gainResult.conditions) { condEl.textContent = gainResult.conditions; condEl.style.display = 'block'; }
+
       lanceConfettis();
     }
 
@@ -930,20 +1020,20 @@
       }
     }
 
-    // ── Soumission formulaire ────────────────────────────────────────────────────
+    // ── Formulaire ──────────────────────────────────────────────────────────────
     async function confirmer() {
       const prenom = document.getElementById('roue-prenom').value.trim();
       const tel    = document.getElementById('roue-tel').value.trim();
       const email  = document.getElementById('roue-email').value.trim();
 
-      if (!tel || !email)                            { alert('Téléphone et email requis.'); return; }
-      if (!email.includes('@') || !email.includes('.')) { alert('Email invalide.'); return; }
+      if (!tel || !email)                                          { alert('Téléphone et email requis.'); return; }
+      if (!email.includes('@') || !email.includes('.'))           { alert('Email invalide.'); return; }
 
       const btn = document.getElementById('roue-confirmer-btn');
       btn.disabled    = true;
       btn.textContent = 'Vérification en cours…';
 
-      // Anti-rejeu : check Supabase
+      // Anti-rejeu
       try {
         const chk = await fetch(
           `${SUPA_URL}/rest/v1/roue_gains?or=(tel.eq.${encodeURIComponent(tel)},email.eq.${encodeURIComponent(email)})&select=id&limit=1`,
@@ -953,7 +1043,7 @@
         if (Array.isArray(existing) && existing.length) { showDeja(); return; }
       } catch(e) {}
 
-      // Lier ou créer client (best-effort — peut échouer à cause du RLS)
+      // Lier / créer client (best-effort, peut échouer selon RLS)
       let clientId = null;
       try {
         const cliRes = await fetch(
@@ -975,7 +1065,7 @@
         }
       } catch(e) {}
 
-      // Enregistrer le gain
+      // Enregistrer gain
       try {
         await fetch(`${SUPA_URL}/rest/v1/roue_gains`, {
           method: 'POST',
@@ -1005,16 +1095,16 @@
     }
 
     function showDeja() {
-      document.getElementById('roue-step-form').style.display = 'none';
-      document.getElementById('roue-step-done').style.display  = 'block';
+      document.getElementById('roue-content-form').style.display = 'none';
+      document.getElementById('roue-step-done').style.display    = 'block';
       document.getElementById('roue-done-icon').textContent  = '🙅';
       document.getElementById('roue-done-titre').textContent = 'Déjà participé';
       document.getElementById('roue-done-sub').textContent   = 'Vous avez déjà participé à la roue des cadeaux. Une seule participation par personne.';
     }
 
     function showDone() {
-      document.getElementById('roue-step-form').style.display = 'none';
-      document.getElementById('roue-step-done').style.display  = 'block';
+      document.getElementById('roue-content-form').style.display = 'none';
+      document.getElementById('roue-step-done').style.display    = 'block';
     }
 
     // ── Fermeture ────────────────────────────────────────────────────────────────
@@ -1040,18 +1130,16 @@
       document.body.style.overflow = 'hidden';
       requestAnimationFrame(() => requestAnimationFrame(() => ov.classList.add('open')));
 
-      // Ring de countdown
+      // Ring countdown 5s
       const closeBtn = document.getElementById('roue-close');
       const label    = document.getElementById('roue-close-label');
       const ring     = document.getElementById('roue-ring');
-      const CIRCUM   = 2 * Math.PI * 18; // r=18 → ~113.1
+      const CIRCUM   = 2 * Math.PI * 18;
 
       ring.style.strokeDasharray = `0 ${CIRCUM}`;
-
       if (!prefersReduced) {
-        // Transition CSS fluide sur 5s
-        void ring.getBoundingClientRect(); // force reflow
-        ring.style.transition = `stroke-dasharray 5s linear`;
+        void ring.getBoundingClientRect();
+        ring.style.transition      = `stroke-dasharray 5s linear`;
         ring.style.strokeDasharray = `${CIRCUM} 0`;
       }
 
@@ -1076,7 +1164,6 @@
         closeRoue();
       };
 
-      // Click hors du sheet quand bouton actif
       ov.addEventListener('click', e => {
         if (e.target === ov && !closeBtn.disabled) { clearInterval(cInterval); closeRoue(); }
       });
@@ -1084,10 +1171,10 @@
       document.getElementById('roue-jouer-btn').onclick = lancer;
 
       document.getElementById('roue-recuperer-btn').onclick = () => {
-        document.getElementById('roue-step-result').style.display = 'none';
-        document.getElementById('roue-step-form').style.display   = 'block';
+        document.getElementById('roue-content-result').style.display = 'none';
+        document.getElementById('roue-content-form').style.display   = 'block';
       };
-      document.getElementById('roue-skip-btn').onclick    = closeRoue;
+      document.getElementById('roue-skip-btn').onclick      = closeRoue;
       document.getElementById('roue-confirmer-btn').onclick = confirmer;
       document.getElementById('roue-vers-carte-btn').onclick = () => {
         closeRoue();
