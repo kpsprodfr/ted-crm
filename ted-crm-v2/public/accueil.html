@@ -97,7 +97,7 @@
       letter-spacing: 2.5px;
       text-transform: uppercase;
       margin-bottom: 16px;
-      animation: fadeUp 400ms ease-out 1.6s both;
+      animation: fadeUp 400ms ease-out 0.6s both;
     }
 
     .soiree-item {
@@ -123,6 +123,9 @@
       gap: 10px;
       max-width: 480px;
       margin: 0 auto;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 350ms ease, transform 350ms ease;
     }
 
     .btn-cta {
@@ -172,6 +175,21 @@
 <script>
   const SUPA_URL = 'https://mwpfaytccypvdrgapptk.supabase.co';
   const SUPA_KEY = 'sb_publishable_4-uVtQtXd0jLGkNAFsx4yw_ni17DzN_';
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function showButtons(delay) {
+    const cta = document.getElementById('cta-bar');
+    if (delay <= 0 || prefersReduced) {
+      cta.style.transition = 'none';
+      cta.style.opacity = '1';
+      cta.style.transform = 'translateY(0)';
+    } else {
+      setTimeout(() => {
+        cta.style.opacity = '1';
+        cta.style.transform = 'translateY(0)';
+      }, delay);
+    }
+  }
 
   async function loadSoirees() {
     const url = `${SUPA_URL}/rest/v1/menu_soirees?select=id,nom,jour,horaire,ordre&visible=eq.true&order=ordre.asc`;
@@ -193,6 +211,7 @@
       if (!Array.isArray(soirees) || !soirees.length) {
         console.log('[TED] Aucune soirée visible — section masquée');
         list.closest('#soirees-section').style.display = 'none';
+        showButtons(700);
         return;
       }
 
@@ -203,17 +222,36 @@
         </div>
       `).join('');
 
-      // Animation en cascade
-      const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      list.querySelectorAll('.soiree-item').forEach((el, i) => {
+      // Animation en cascade soirées
+      const items = list.querySelectorAll('.soiree-item');
+      items.forEach((el, i) => {
         if (prefersReduced) {
           el.style.opacity = '1';
         } else {
-          el.style.animation = `soireeIn 350ms ease-out ${1800 + i * 80}ms both`;
+          el.style.animation = `soireeIn 350ms ease-out ${700 + i * 80}ms both`;
         }
       });
+
+      // Boutons : apparaissent après la dernière soirée
+      const btnDelay = prefersReduced ? 0 : 700 + (items.length - 1) * 80 + 400;
+      showButtons(btnDelay);
     } catch(e) {
       console.error('[TED] Exception loadSoirees :', e);
+      showButtons(prefersReduced ? 0 : 800);
+    }
+  }
+
+  function showButtons(delay) {
+    const cta = document.getElementById('cta-bar');
+    if (delay <= 0) {
+      cta.style.transition = 'none';
+      cta.style.opacity = '1';
+      cta.style.transform = 'translateY(0)';
+    } else {
+      setTimeout(() => {
+        cta.style.opacity = '1';
+        cta.style.transform = 'translateY(0)';
+      }, delay);
     }
   }
 
