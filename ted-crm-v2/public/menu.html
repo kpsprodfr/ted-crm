@@ -232,25 +232,61 @@
   let platJour = null;
   let dessertJour = null;
 
+  // ── Cache sessionStorage (TTL 5 min) ───────────────────────────────────────
+  const CACHE_KEY = 'ted_menu_v1';
+  const CACHE_TTL = 5 * 60 * 1000;
+
+  function cacheGet() {
+    try {
+      const raw = sessionStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      const { ts, cats, prods, plats } = JSON.parse(raw);
+      if (Date.now() - ts > CACHE_TTL) { sessionStorage.removeItem(CACHE_KEY); return null; }
+      return { cats, prods, plats };
+    } catch(e) { return null; }
+  }
+
+  function cacheSet(cats, prods, plats) {
+    try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), cats, prods, plats })); } catch(e) {}
+  }
+
   // ── Fetch Supabase ──────────────────────────────────────────────────────────
   async function fetchJSON(table, params = '') {
     const r = await fetch(`${SUPA_URL}/rest/v1/${table}?${params}`, {
-      headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json' }
+      headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` }
     });
     if (!r.ok) throw new Error(`Erreur ${r.status} sur ${table}`);
     return r.json();
   }
 
   async function loadData() {
+    // Lecture du cache — affichage immédiat si dispo
+    const hit = cacheGet();
+    if (hit) {
+      allCategories = hit.cats;
+      allProduits = hit.prods;
+      updatePlatJour(hit.plats);
+      document.getElementById('loading').style.display = 'none';
+      renderMenu();
+      return;
+    }
+
+    // Fetch réseau — 3 requêtes parallèles, colonnes minimales
     try {
+      const CAT_COLS  = 'id,nom,carte,ordre,visible';
+      const PROD_COLS = 'id,nom,description,prix,accord_vin,badges,ordre,disponible,carte,categorie_id';
+      const PLAT_COLS = 'id,nom,description,prix,type,carte,actif';
+
       const [cats, prods, plats] = await Promise.all([
-        fetchJSON('menu_categories', 'select=*&order=ordre'),
-        fetchJSON('menu_produits', 'select=*&disponible=eq.true&order=ordre'),
-        fetchJSON('menu_plat_jour', 'select=*')
+        fetchJSON('menu_categories', `select=${CAT_COLS}&order=ordre`),
+        fetchJSON('menu_produits',   `select=${PROD_COLS}&disponible=eq.true&order=ordre`),
+        fetchJSON('menu_plat_jour',  `select=${PLAT_COLS}`)
       ]);
+
       allCategories = cats;
       allProduits = prods;
       updatePlatJour(plats);
+      cacheSet(cats, prods, plats);
       document.getElementById('loading').style.display = 'none';
       renderMenu();
     } catch(e) {
