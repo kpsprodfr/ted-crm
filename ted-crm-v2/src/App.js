@@ -3537,7 +3537,19 @@ function MenuPage({ showToast }) {
     ]);
     setCategories(cR.data || []);
     setProduits(pR.data || []);
-    const pj = jR.data || [];
+    let pj = jR.data || [];
+
+    // Auto-créer les entrées manquantes pour cette carte
+    const types = ['plat', 'dessert', 'suggestion'];
+    const missing = types.filter(t => !pj.find(p => p.type === t && p.carte === carte));
+    if (missing.length > 0) {
+      await Promise.all(missing.map(t =>
+        supabase.from('menu_plat_jour').insert({ type: t, carte, actif: false, nom: '', prix: null })
+      ));
+      const { data: refreshed } = await supabase.from('menu_plat_jour').select('*');
+      pj = refreshed || pj;
+    }
+
     setPlatJour(pj.find(p => p.type === 'plat' && p.carte === carte) || null);
     setDessertJour(pj.find(p => p.type === 'dessert' && p.carte === carte) || null);
     setSuggestionJour(pj.find(p => p.type === 'suggestion' && p.carte === carte) || null);
@@ -3691,26 +3703,36 @@ function MenuPage({ showToast }) {
         </a>
       </div>
 
-      {/* Plat du jour / Dessert du jour */}
-      {platItems.length > 0 && (
-        <div style={{ display:'grid', gridTemplateColumns: `repeat(${platItems.length},1fr)`, gap:12, marginBottom:24 }}>
-          {platItems.map(item => (
-            <div key={item.id} style={{ background:'#fff', borderRadius:14, padding:'14px 16px', border:`1.5px solid ${item.actif ? '#E8C547' : '#eee'}`, transition:'border-color 0.2s' }}>
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
-                <span style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:0.5 }}>{item.type==='plat' ? '🍽 Plat du jour' : item.type==='dessert' ? '🍮 Dessert du jour' : '👨‍🍳 Suggestion du chef'}</span>
-                <MenuToggle value={!!item.actif} onChange={async () => { const v=!item.actif; item.type==='plat'?setPlatJour(p=>({...p,actif:v})):item.type==='dessert'?setDessertJour(p=>({...p,actif:v})):setSuggestionJour(p=>({...p,actif:v})); await supabase.from('menu_plat_jour').update({actif:v,updated_at:new Date().toISOString()}).eq('id',item.id); }} />
-              </div>
-              <div style={{ fontSize:14, fontWeight:600, color: item.actif ? '#111' : '#bbb', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:2 }}>
-                {item.nom || <span style={{ color:'#ddd', fontStyle:'italic', fontWeight:400 }}>Non défini</span>}
-              </div>
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:4 }}>
-                <span style={{ fontSize:12, color:'#aaa' }}>{formatPrix(item.prix)}</span>
-                <button onClick={() => setPlatSheet(item)} style={{ fontSize:12, color:'#666', background:'none', border:'none', cursor:'pointer', fontWeight:600, textDecoration:'underline', padding:0 }}>Modifier</button>
-              </div>
+      {/* Plat du jour / Dessert du jour / Suggestion — toujours visible, par carte */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:24 }}>
+        {[
+          { item: platJour,       label: 'Plat du jour',      icon: '🍽' },
+          { item: dessertJour,    label: 'Dessert du jour',   icon: '🍮' },
+          { item: suggestionJour, label: 'Suggestion du chef',icon: '👨‍🍳' },
+        ].map(({ item, label, icon }) => item ? (
+          <div key={item.id} style={{ background:'#fff', borderRadius:14, padding:'14px 16px', border:`1.5px solid ${item.actif ? '#E8C547' : '#eee'}`, transition:'border-color 0.2s' }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+              <span style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:0.5 }}>{icon} {label}</span>
+              <MenuToggle value={!!item.actif} onChange={async () => {
+                const v = !item.actif;
+                item.type==='plat' ? setPlatJour(p=>({...p,actif:v})) : item.type==='dessert' ? setDessertJour(p=>({...p,actif:v})) : setSuggestionJour(p=>({...p,actif:v}));
+                await supabase.from('menu_plat_jour').update({ actif:v, updated_at:new Date().toISOString() }).eq('id', item.id);
+              }} />
             </div>
-          ))}
-        </div>
-      )}
+            <div style={{ fontSize:14, fontWeight:600, color: item.actif ? '#111' : '#bbb', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:2 }}>
+              {item.nom || <span style={{ color:'#ddd', fontStyle:'italic', fontWeight:400 }}>Non défini</span>}
+            </div>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:4 }}>
+              <span style={{ fontSize:12, color:'#aaa' }}>{formatPrix(item.prix)}</span>
+              <button onClick={() => setPlatSheet(item)} style={{ fontSize:12, color:'#666', background:'none', border:'none', cursor:'pointer', fontWeight:600, textDecoration:'underline', padding:0 }}>Modifier</button>
+            </div>
+          </div>
+        ) : (
+          <div key={label} style={{ background:'#f9f9f9', borderRadius:14, padding:'14px 16px', border:'1.5px solid #eee', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <span style={{ fontSize:12, color:'#ccc' }}>Chargement…</span>
+          </div>
+        ))}
+      </div>
 
       {/* Recherche */}
       <div style={{ position:'relative', marginBottom:20 }}>
