@@ -203,6 +203,53 @@
     }
     #back-top.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
     #back-top:hover { background: rgba(17,17,17,0.85); }
+
+    /* ── Menu du jour + Suggestion ───────────────────────────────────────── */
+    #specials-container {
+      max-width: 720px; margin: 0 auto 0; padding: 0 16px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+      animation: platJourIn 0.4s ease both;
+    }
+    @media (max-width: 540px) { #specials-container { grid-template-columns: 1fr; } }
+
+    .special-card {
+      border-radius: 14px; overflow: hidden;
+      border: 1.5px solid #e8c547;
+    }
+    .special-card.suggestion-card { border-color: #333; }
+
+    .special-card-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px;
+      background: #111; color: #E8C547;
+      font-size: 11px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase;
+    }
+    .special-card.suggestion-card .special-card-header {
+      background: #1a1a1a; color: #fff;
+    }
+
+    .special-card-body { padding: 12px 14px; background: #fff; display: flex; flex-direction: column; gap: 8px; }
+
+    .special-row {
+      display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+    }
+    .special-row-label {
+      font-size: 10px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: 0.8px;
+      flex-shrink: 0; width: 52px;
+    }
+    .special-row-nom { font-size: 13px; font-weight: 600; color: #111; flex: 1; }
+    .special-row-prix { font-size: 13px; font-weight: 700; color: #111; flex-shrink: 0; white-space: nowrap; }
+
+    .special-formule {
+      border-top: 1px solid #f0f0f0; margin-top: 4px; padding-top: 8px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .special-formule-label { font-size: 11px; font-weight: 700; color: #E8C547; }
+    .special-formule-prix { font-size: 15px; font-weight: 800; color: #111; }
+
+    .special-suggestion-nom { font-size: 14px; font-weight: 700; color: #111; }
+    .special-suggestion-desc { font-size: 12px; color: #666; margin-top: 2px; }
+    .special-suggestion-prix { font-size: 14px; font-weight: 800; color: #111; margin-top: 6px; text-align: right; }
   </style>
 </head>
 <body>
@@ -238,6 +285,7 @@
 
 <div id="loading">Chargement de la carte...</div>
 <div id="error" style="display:none"></div>
+<div id="specials-container" style="display:none; margin: 16px auto 8px; padding: 0 16px; max-width:720px;"></div>
 <div id="content" style="display:none"></div>
 
 <button id="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Retour en haut">↑</button>
@@ -260,8 +308,10 @@
   let allCartes = [{ slug:'restaurant', nom:'Restaurant' }, { slug:'brasero', nom:'Brasero' }];
   let allCategories = [];
   let allProduits = [];
+  let entreeJour = null;
   let platJour = null;
   let dessertJour = null;
+  let formuleJour = null;
   let suggestionJour = null;
 
   // ── Cartes dynamiques depuis menu_cartes ────────────────────────────────────
@@ -445,9 +495,65 @@
   });
 
   function updatePlatJour(plats) {
-    platJour       = plats.find(p => p.type === 'plat'       && p.carte === carteActive && p.actif) || null;
-    dessertJour    = plats.find(p => p.type === 'dessert'    && p.carte === carteActive && p.actif) || null;
-    suggestionJour = plats.find(p => p.type === 'suggestion' && p.carte === carteActive && p.actif) || null;
+    entreeJour     = plats.find(p => p.type === 'entree'     && p.carte === carteActive) || null;
+    platJour       = plats.find(p => p.type === 'plat'       && p.carte === carteActive) || null;
+    dessertJour    = plats.find(p => p.type === 'dessert'    && p.carte === carteActive) || null;
+    formuleJour    = plats.find(p => p.type === 'formule'    && p.carte === carteActive) || null;
+    suggestionJour = plats.find(p => p.type === 'suggestion' && p.carte === carteActive) || null;
+  }
+
+  function renderSpecials() {
+    const container = document.getElementById('specials-container');
+    if (!container) return;
+
+    const menuRows = [
+      { label: 'Entrée',  icon: '🥗', item: entreeJour },
+      { label: 'Plat',    icon: '🍽', item: platJour },
+      { label: 'Dessert', icon: '🍮', item: dessertJour },
+    ];
+    const menuVisible = menuRows.some(r => r.item && r.item.actif && r.item.nom);
+    const suggestionVisible = suggestionJour && suggestionJour.actif && suggestionJour.nom;
+
+    if (!menuVisible && !suggestionVisible) { container.style.display = 'none'; return; }
+    container.style.display = 'grid';
+
+    let html = '';
+
+    // Encart Menu du jour
+    if (menuVisible) {
+      html += `<div class="special-card">
+        <div class="special-card-header">🍽 ${tUI('plat_jour')}</div>
+        <div class="special-card-body">`;
+      menuRows.forEach(({ label, icon, item }) => {
+        if (!item || !item.actif || !item.nom) return;
+        html += `<div class="special-row">
+          <span class="special-row-label">${icon} ${label}</span>
+          <span class="special-row-nom">${esc(item.nom)}</span>
+          ${item.prix ? `<span class="special-row-prix">${esc(formatPrix(item.prix))}</span>` : ''}
+        </div>`;
+      });
+      if (formuleJour && formuleJour.prix) {
+        html += `<div class="special-formule">
+          <span class="special-formule-label">Formule</span>
+          <span class="special-formule-prix">${esc(formatPrix(formuleJour.prix))}</span>
+        </div>`;
+      }
+      html += `</div></div>`;
+    }
+
+    // Encart Suggestion du chef
+    if (suggestionVisible) {
+      html += `<div class="special-card suggestion-card">
+        <div class="special-card-header">👨‍🍳 ${tUI('suggestion_chef')}</div>
+        <div class="special-card-body">
+          <div class="special-suggestion-nom">${esc(suggestionJour.nom)}</div>
+          ${suggestionJour.description ? `<div class="special-suggestion-desc">${esc(suggestionJour.description)}</div>` : ''}
+          ${suggestionJour.prix ? `<div class="special-suggestion-prix">${esc(formatPrix(suggestionJour.prix))}</div>` : ''}
+        </div>
+      </div>`;
+    }
+
+    container.innerHTML = html;
   }
 
   // ── Header compact + bouton retour ─────────────────────────────────────────
@@ -463,11 +569,14 @@
     carteActive = carte;
     document.querySelectorAll('.carte-tab').forEach(t => t.classList.toggle('active', t.dataset.carte === carte));
     document.getElementById('brasero-banner').classList.toggle('visible', carte === 'brasero');
+    const hit = cacheGet();
+    if (hit) updatePlatJour(hit.plats);
     renderMenu();
   }
 
   // ── Render ───────────────────────────────────────────────────────────────────
   function renderMenu() {
+    renderSpecials();
     const content = document.getElementById('content');
     const catsBar = document.getElementById('cats-bar');
     content.style.display = 'block';

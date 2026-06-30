@@ -3581,8 +3581,10 @@ function MenuPage({ showToast }) {
   const [cartes, setCartes] = useState([{id:'restaurant',l:'Restaurant'},{id:'brasero',l:'Brasero'}]);
   const [categories, setCategories] = useState([]);
   const [produits, setProduits] = useState([]);
+  const [entreeJour, setEntreeJour] = useState(null);
   const [platJour, setPlatJour] = useState(null);
   const [dessertJour, setDessertJour] = useState(null);
+  const [formuleJour, setFormuleJour] = useState(null);
   const [suggestionJour, setSuggestionJour] = useState(null);
   const [loading, setLoading] = useState(true);
   const [openCats, setOpenCats] = useState(new Set());
@@ -3690,7 +3692,7 @@ function MenuPage({ showToast }) {
     let pj = jR.data || [];
 
     // Auto-créer les entrées manquantes pour cette carte
-    const types = ['plat', 'dessert', 'suggestion'];
+    const types = ['entree', 'plat', 'dessert', 'formule', 'suggestion'];
     const missing = types.filter(t => !pj.find(p => p.type === t && p.carte === carte));
     if (missing.length > 0) {
       await Promise.all(missing.map(t =>
@@ -3700,8 +3702,10 @@ function MenuPage({ showToast }) {
       pj = refreshed || pj;
     }
 
+    setEntreeJour(pj.find(p => p.type === 'entree' && p.carte === carte) || null);
     setPlatJour(pj.find(p => p.type === 'plat' && p.carte === carte) || null);
     setDessertJour(pj.find(p => p.type === 'dessert' && p.carte === carte) || null);
+    setFormuleJour(pj.find(p => p.type === 'formule' && p.carte === carte) || null);
     setSuggestionJour(pj.find(p => p.type === 'suggestion' && p.carte === carte) || null);
     setLoading(false);
   }
@@ -3853,36 +3857,123 @@ function MenuPage({ showToast }) {
         </a>
       </div>
 
-      {/* Plat du jour / Dessert du jour / Suggestion — toujours visible, par carte */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:12, marginBottom:24 }}>
-        {[
-          { item: platJour,       label: 'Plat du jour',      icon: '🍽' },
-          { item: dessertJour,    label: 'Dessert du jour',   icon: '🍮' },
-          { item: suggestionJour, label: 'Suggestion du chef',icon: '👨‍🍳' },
-        ].map(({ item, label, icon }) => item ? (
-          <div key={item.id} style={{ background:'#fff', borderRadius:14, padding:'14px 16px', border:`1.5px solid ${item.actif ? '#E8C547' : '#eee'}`, transition:'border-color 0.2s' }}>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
-              <span style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:0.5 }}>{icon} {label}</span>
-              <MenuToggle value={!!item.actif} onChange={async () => {
-                const v = !item.actif;
-                item.type==='plat' ? setPlatJour(p=>({...p,actif:v})) : item.type==='dessert' ? setDessertJour(p=>({...p,actif:v})) : setSuggestionJour(p=>({...p,actif:v}));
-                await supabase.from('menu_plat_jour').update({ actif:v, updated_at:new Date().toISOString() }).eq('id', item.id);
-              }} />
+      {/* ── Encarts Menu du jour + Suggestion ─────────────────────────── */}
+      {(() => {
+        const menuActif = !!(entreeJour?.actif || platJour?.actif || dessertJour?.actif);
+
+        async function saveField(item, setter, field, value) {
+          setter(p => p ? ({ ...p, [field]: value }) : p);
+          await supabase.from('menu_plat_jour').update({ [field]: value, updated_at: new Date().toISOString() }).eq('id', item.id);
+        }
+
+        async function toggleMenuJour() {
+          const v = !menuActif;
+          const items = [entreeJour, platJour, dessertJour].filter(Boolean);
+          [setEntreeJour, setPlatJour, setDessertJour].forEach((s, i) => { if (items[i]) s(p => ({...p, actif:v})); });
+          await Promise.all(items.map(it => supabase.from('menu_plat_jour').update({ actif:v, updated_at:new Date().toISOString() }).eq('id', it.id)));
+        }
+
+        const rows = [
+          { item: entreeJour, setter: setEntreeJour, label: 'Entrée', icon: '🥗' },
+          { item: platJour,   setter: setPlatJour,   label: 'Plat',   icon: '🍽' },
+          { item: dessertJour,setter: setDessertJour, label: 'Dessert',icon: '🍮' },
+        ];
+
+        const inpStyle = { height:34, border:'1px solid #eee', borderRadius:8, padding:'0 10px', fontSize:13, outline:'none', background:'#fafafa', width:'100%', transition:'border-color 0.15s' };
+        const prixStyle = { ...inpStyle, width:90, flexShrink:0, textAlign:'right' };
+
+        return (
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, marginBottom:24 }}>
+
+            {/* Encart 1 — Menu du jour */}
+            <div style={{ background:'#fff', borderRadius:16, border:`2px solid ${menuActif ? '#E8C547' : '#eee'}`, overflow:'hidden', transition:'border-color 0.2s' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 16px', borderBottom:'1px solid #f5f5f5' }}>
+                <span style={{ fontSize:12, fontWeight:800, color:'#111', textTransform:'uppercase', letterSpacing:1 }}>🍽 Menu du jour</span>
+                <MenuToggle value={menuActif} onChange={toggleMenuJour} />
+              </div>
+              <div style={{ padding:'12px 16px', display:'flex', flexDirection:'column', gap:10 }}>
+                {rows.map(({ item, setter, label, icon }) => (
+                  <div key={label} style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <span style={{ fontSize:11, fontWeight:700, color:'#aaa', width:52, flexShrink:0 }}>{icon} {label}</span>
+                    <input
+                      value={item?.nom || ''}
+                      onChange={e => setter(p => p ? ({...p, nom: e.target.value}) : p)}
+                      onBlur={e => item && saveField(item, setter, 'nom', e.target.value)}
+                      placeholder={`Nom du ${label.toLowerCase()}…`}
+                      style={{ ...inpStyle, flex:1 }}
+                      onFocus={e => e.target.style.borderColor='#E8C547'}
+                    />
+                    <input
+                      value={item?.prix || ''}
+                      onChange={e => setter(p => p ? ({...p, prix: e.target.value}) : p)}
+                      onBlur={e => item && saveField(item, setter, 'prix', e.target.value)}
+                      placeholder="Prix"
+                      style={prixStyle}
+                      onFocus={e => e.target.style.borderColor='#E8C547'}
+                    />
+                  </div>
+                ))}
+                {/* Séparateur + prix formule */}
+                <div style={{ borderTop:'1px solid #f0f0f0', paddingTop:10, display:'flex', alignItems:'center', gap:8 }}>
+                  <span style={{ fontSize:11, fontWeight:700, color:'#E8C547', flex:1 }}>Prix formule</span>
+                  <input
+                    value={formuleJour?.prix || ''}
+                    onChange={e => setFormuleJour(p => p ? ({...p, prix: e.target.value}) : p)}
+                    onBlur={e => formuleJour && saveField(formuleJour, setFormuleJour, 'prix', e.target.value)}
+                    placeholder="ex: 22 €"
+                    style={{ ...prixStyle }}
+                    onFocus={e => e.target.style.borderColor='#E8C547'}
+                  />
+                </div>
+              </div>
             </div>
-            <div style={{ fontSize:14, fontWeight:600, color: item.actif ? '#111' : '#bbb', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:2 }}>
-              {item.nom || <span style={{ color:'#ddd', fontStyle:'italic', fontWeight:400 }}>Non défini</span>}
+
+            {/* Encart 2 — Suggestion du chef */}
+            <div style={{ background:'#fff', borderRadius:16, border:`2px solid ${suggestionJour?.actif ? '#333' : '#eee'}`, overflow:'hidden', transition:'border-color 0.2s' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 16px', borderBottom:'1px solid #f5f5f5' }}>
+                <span style={{ fontSize:12, fontWeight:800, color:'#111', textTransform:'uppercase', letterSpacing:1 }}>👨‍🍳 Suggestion du chef</span>
+                <MenuToggle value={!!suggestionJour?.actif} onChange={async () => {
+                  const v = !suggestionJour?.actif;
+                  setSuggestionJour(p => p ? ({...p, actif:v}) : p);
+                  if (suggestionJour) await supabase.from('menu_plat_jour').update({ actif:v, updated_at:new Date().toISOString() }).eq('id', suggestionJour.id);
+                }} />
+              </div>
+              <div style={{ padding:'12px 16px', display:'flex', flexDirection:'column', gap:10 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <input
+                    value={suggestionJour?.nom || ''}
+                    onChange={e => setSuggestionJour(p => p ? ({...p, nom: e.target.value}) : p)}
+                    onBlur={e => suggestionJour && saveField(suggestionJour, setSuggestionJour, 'nom', e.target.value)}
+                    placeholder="Nom de la suggestion…"
+                    style={{ ...inpStyle, flex:1 }}
+                    onFocus={e => e.target.style.borderColor='#333'}
+                  />
+                  <input
+                    value={suggestionJour?.prix || ''}
+                    onChange={e => setSuggestionJour(p => p ? ({...p, prix: e.target.value}) : p)}
+                    onBlur={e => suggestionJour && saveField(suggestionJour, setSuggestionJour, 'prix', e.target.value)}
+                    placeholder="Prix"
+                    style={{ ...prixStyle }}
+                    onFocus={e => e.target.style.borderColor='#333'}
+                  />
+                </div>
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <span style={{ fontSize:11, fontWeight:600, color:'#aaa' }}>Description</span>
+                  <input
+                    value={suggestionJour?.description || ''}
+                    onChange={e => setSuggestionJour(p => p ? ({...p, description: e.target.value}) : p)}
+                    onBlur={e => suggestionJour && saveField(suggestionJour, setSuggestionJour, 'description', e.target.value)}
+                    placeholder="Courte description (optionnel)…"
+                    style={{ ...inpStyle, flex:1 }}
+                    onFocus={e => e.target.style.borderColor='#333'}
+                  />
+                </div>
+              </div>
             </div>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:4 }}>
-              <span style={{ fontSize:12, color:'#aaa' }}>{formatPrix(item.prix)}</span>
-              <button onClick={() => setPlatSheet(item)} style={{ fontSize:12, color:'#666', background:'none', border:'none', cursor:'pointer', fontWeight:600, textDecoration:'underline', padding:0 }}>Modifier</button>
-            </div>
+
           </div>
-        ) : (
-          <div key={label} style={{ background:'#f9f9f9', borderRadius:14, padding:'14px 16px', border:'1.5px solid #eee', display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <span style={{ fontSize:12, color:'#ccc' }}>Chargement…</span>
-          </div>
-        ))}
-      </div>
+        );
+      })()}
 
       {/* Recherche */}
       <div style={{ position:'relative', marginBottom:20 }}>
@@ -4034,14 +4125,6 @@ function MenuPage({ showToast }) {
       )}
 
       {/* Bottom sheet plat du jour */}
-      {platSheet && (
-        <PlatJourSheet
-          item={platSheet}
-          onClose={() => setPlatSheet(null)}
-          onSaved={updated => { updated.type==='plat' ? setPlatJour(updated) : updated.type==='dessert' ? setDessertJour(updated) : setSuggestionJour(updated); showToast('Enregistré ✓'); }}
-        />
-      )}
-
       {/* Confirmation suppression */}
       {confirmDelete && (
         <ConfirmModal
