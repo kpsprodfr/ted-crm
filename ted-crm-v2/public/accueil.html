@@ -260,40 +260,87 @@
     clearTimeout(autoCloseTimer);
   });
 
-  // ── Chargement Supabase ─────────────────────────────────────────────────────
-  (async function loadSoirees() {
+  // ── Cache sessionStorage soirées (TTL 5 min) ───────────────────────────────
+  const SOIREES_KEY   = 'ted_soirees_v1';
+  const SOIREES_TTL   = 5 * 60 * 1000;
+  const SOIREES_STALE =     60 * 1000;
+
+  function soireesFromCache() {
     try {
-      const r = await fetch(
-        `${SUPA_URL}/rest/v1/menu_soirees?select=id,nom,description,jour,horaire,dj&visible=eq.true&order=ordre.asc`,
-        { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
-      );
-      if (!r.ok) return;
-      const soirees = await r.json();
-      if (!Array.isArray(soirees) || !soirees.length) {
-        document.getElementById('soirees-section').style.display = 'none';
-        return;
+      const raw = sessionStorage.getItem(SOIREES_KEY);
+      if (!raw) return null;
+      const { ts, data } = JSON.parse(raw);
+      if (Date.now() - ts > SOIREES_TTL) { sessionStorage.removeItem(SOIREES_KEY); return null; }
+      return { data, age: Date.now() - ts };
+    } catch(e) { return null; }
+  }
+
+  function soiresToCache(data) {
+    try { sessionStorage.setItem(SOIREES_KEY, JSON.stringify({ ts: Date.now(), data })); } catch(e) {}
+  }
+
+  function renderSoirees(soirees, animate) {
+    const list = document.getElementById('soirees-list');
+    if (!Array.isArray(soirees) || !soirees.length) {
+      document.getElementById('soirees-section').style.display = 'none';
+      return;
+    }
+    list.innerHTML = '';
+    soirees.forEach((s, i) => {
+      const el = document.createElement('div');
+      el.className = animate ? 'soiree-item anim' : 'soiree-item anim visible';
+      el.setAttribute('role', 'button');
+      el.setAttribute('tabindex', '0');
+      const when = [s.jour, s.horaire].filter(Boolean).map(esc).join(' · ');
+      el.innerHTML = `
+        <div class="soiree-info">
+          <div class="soiree-nom">${esc(s.nom)}</div>
+          ${when ? `<div class="soiree-when">${when}</div>` : ''}
+        </div>
+        <div class="soiree-chevron">›</div>
+      `;
+      el.addEventListener('click', () => openPopup(s));
+      el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') openPopup(s); });
+      list.appendChild(el);
+      if (animate) showAt(el, 1100 + i * 150);
+    });
+  }
+
+  async function fetchSoirees(silent) {
+    const r = await fetch(
+      `${SUPA_URL}/rest/v1/menu_soirees?select=id,nom,description,jour,horaire,dj&visible=eq.true&order=ordre.asc`,
+      { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
+    );
+    if (!r.ok) return;
+    const soirees = await r.json();
+    soiresToCache(soirees);
+    renderSoirees(soirees, !silent);
+  }
+
+  // ── Chargement Supabase ─────────────────────────────────────────────────────
+  (function loadSoirees() {
+    const hit = soireesFromCache();
+    if (hit) {
+      // Affichage immédiat depuis le cache — pas d'animation (déjà visible)
+      renderSoirees(hit.data, false);
+      // Revalidation silencieuse si le cache a > 60s
+      if (hit.age > SOIREES_STALE) {
+        fetchSoirees(true).catch(() => {});
       }
-      const list = document.getElementById('soirees-list');
-      soirees.forEach((s, i) => {
-        const el = document.createElement('div');
-        el.className = 'soiree-item anim';
-        el.setAttribute('role', 'button');
-        el.setAttribute('tabindex', '0');
-        const when = [s.jour, s.horaire].filter(Boolean).map(esc).join(' · ');
-        el.innerHTML = `
-          <div class="soiree-info">
-            <div class="soiree-nom">${esc(s.nom)}</div>
-            ${when ? `<div class="soiree-when">${when}</div>` : ''}
-          </div>
-          <div class="soiree-chevron">›</div>
-        `;
-        el.addEventListener('click', () => openPopup(s));
-        el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') openPopup(s); });
-        list.appendChild(el);
-        showAt(el, 1100 + i * 150);
-      });
-    } catch(e) { /* silencieux */ }
+      return;
+    }
+    // Pas de cache — fetch avec animations séquentielles
+    fetchSoirees(false).catch(() => {});
   })();
+
+  // ── bfcache : retour navigateur — soirées déjà dans le DOM ─────────────────
+  window.addEventListener('pageshow', e => {
+    if (e.persisted && document.getElementById('soirees-list').children.length === 0) {
+      const hit = soireesFromCache();
+      if (hit) renderSoirees(hit.data, false);
+      else fetchSoirees(false).catch(() => {});
+    }
+  });
 
   // ── Transition de sortie ────────────────────────────────────────────────────
   document.querySelectorAll('.btn-cta[data-dest]').forEach(btn => {

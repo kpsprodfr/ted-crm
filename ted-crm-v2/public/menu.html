@@ -244,9 +244,10 @@
   let platJour = null;
   let dessertJour = null;
 
-  // ── Cache sessionStorage (TTL 5 min) ───────────────────────────────────────
+  // ── Cache sessionStorage (TTL 5 min, revalidation silencieuse > 60s) ─────────
   const CACHE_KEY = 'ted_menu_v1';
-  const CACHE_TTL = 5 * 60 * 1000;
+  const CACHE_TTL  = 5 * 60 * 1000;
+  const CACHE_STALE =     60 * 1000;
 
   function cacheGet() {
     try {
@@ -254,7 +255,7 @@
       if (!raw) return null;
       const { ts, cats, prods, plats } = JSON.parse(raw);
       if (Date.now() - ts > CACHE_TTL) { sessionStorage.removeItem(CACHE_KEY); return null; }
-      return { cats, prods, plats };
+      return { cats, prods, plats, age: Date.now() - ts };
     } catch(e) { return null; }
   }
 
@@ -271,36 +272,45 @@
     return r.json();
   }
 
+  const CAT_COLS  = 'id,nom,carte,ordre,visible';
+  const PROD_COLS = 'id,nom,description,prix,accord_vin,badges,ordre,disponible,carte,categorie_id';
+  const PLAT_COLS = 'id,nom,description,prix,type,carte,actif';
+
+  async function fetchFromNetwork(silent = false) {
+    const [cats, prods, plats] = await Promise.all([
+      fetchJSON('menu_categories', `select=${CAT_COLS}&order=ordre`),
+      fetchJSON('menu_produits',   `select=${PROD_COLS}&disponible=eq.true&order=ordre`),
+      fetchJSON('menu_plat_jour',  `select=${PLAT_COLS}`)
+    ]);
+    allCategories = cats;
+    allProduits = prods;
+    updatePlatJour(plats);
+    cacheSet(cats, prods, plats);
+    if (!silent) {
+      document.getElementById('loading').style.display = 'none';
+    }
+    renderMenu();
+  }
+
   async function loadData() {
-    // Lecture du cache — affichage immédiat si dispo
     const hit = cacheGet();
     if (hit) {
+      // Affichage immédiat depuis le cache
       allCategories = hit.cats;
       allProduits = hit.prods;
       updatePlatJour(hit.plats);
       document.getElementById('loading').style.display = 'none';
       renderMenu();
+      // Revalidation silencieuse si le cache a > 60s
+      if (hit.age > CACHE_STALE) {
+        fetchFromNetwork(true).catch(() => {});
+      }
       return;
     }
 
-    // Fetch réseau — 3 requêtes parallèles, colonnes minimales
+    // Pas de cache — fetch bloquant avec indicateur de chargement
     try {
-      const CAT_COLS  = 'id,nom,carte,ordre,visible';
-      const PROD_COLS = 'id,nom,description,prix,accord_vin,badges,ordre,disponible,carte,categorie_id';
-      const PLAT_COLS = 'id,nom,description,prix,type,carte,actif';
-
-      const [cats, prods, plats] = await Promise.all([
-        fetchJSON('menu_categories', `select=${CAT_COLS}&order=ordre`),
-        fetchJSON('menu_produits',   `select=${PROD_COLS}&disponible=eq.true&order=ordre`),
-        fetchJSON('menu_plat_jour',  `select=${PLAT_COLS}`)
-      ]);
-
-      allCategories = cats;
-      allProduits = prods;
-      updatePlatJour(plats);
-      cacheSet(cats, prods, plats);
-      document.getElementById('loading').style.display = 'none';
-      renderMenu();
+      await fetchFromNetwork(false);
     } catch(e) {
       document.getElementById('loading').style.display = 'none';
       const err = document.getElementById('error');
@@ -308,6 +318,22 @@
       err.style.display = 'block';
     }
   }
+
+  // ── bfcache : retour navigateur — pas de refetch si données déjà en mémoire ─
+  window.addEventListener('pageshow', e => {
+    if (e.persisted && allCategories.length === 0) {
+      // Edge case : JS state perdu malgré bfcache — recharge depuis sessionStorage
+      const hit = cacheGet();
+      if (hit) {
+        allCategories = hit.cats; allProduits = hit.prods;
+        updatePlatJour(hit.plats);
+        document.getElementById('loading').style.display = 'none';
+        renderMenu();
+      } else {
+        loadData();
+      }
+    }
+  });
 
   function updatePlatJour(plats) {
     platJour = plats.find(p => p.type === 'plat' && p.carte === carteActive && p.actif) || null;
