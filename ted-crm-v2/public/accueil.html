@@ -700,12 +700,15 @@
 
     // ── Chargement Supabase ────────────────────────────────────────────────────
     try {
-      const res = await fetch(
-        `${SUPA_URL}/rest/v1/roue_recompenses?actif=eq.true&order=ordre`,
-        { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
-      );
-      if (!res.ok) return;
-      const data = await res.json();
+      const [resParam, resRec] = await Promise.all([
+        fetch(`${SUPA_URL}/rest/v1/parametres?cle=eq.roue_active&select=valeur`, { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }),
+        fetch(`${SUPA_URL}/rest/v1/roue_recompenses?actif=eq.true&order=ordre`, { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }),
+      ]);
+      const paramData = resParam.ok ? await resParam.json() : [];
+      const rouueActive = (paramData[0]?.valeur === 'true');
+      if (!rouueActive) return;
+      if (!resRec.ok) return;
+      const data = await resRec.json();
       recompenses = (data || []).filter(r => r.stock_illimite || (r.stock != null && r.stock > 0));
     } catch(e) { return; }
 

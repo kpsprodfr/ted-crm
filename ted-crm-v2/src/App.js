@@ -3843,6 +3843,12 @@ function RouePage({ showToast }) {
       <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:24 }}>
         <Dices size={28} strokeWidth={1.8} color="#111"/>
         <h1 style={{ margin:0, fontSize:28, fontWeight:900, color:'#111' }}>Grand Jeux du TED</h1>
+        <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:10 }}>
+          <span style={{ fontSize:13, fontWeight:600, color: rouеActive ? '#111' : '#aaa' }}>{rouеActive ? '🟢 Jeux actif' : '⚫ Jeux inactif'}</span>
+          <div onClick={() => toggleRoueActive(!rouеActive)} style={{ width:48, height:26, borderRadius:13, background: rouеActive ? '#E8C547' : '#ddd', position:'relative', cursor:'pointer', transition:'background .2s', flexShrink:0 }}>
+            <div style={{ position:'absolute', top:3, left: rouеActive ? 25 : 3, width:20, height:20, borderRadius:'50%', background:'#fff', boxShadow:'0 1px 4px rgba(0,0,0,0.25)', transition:'left .2s' }} />
+          </div>
+        </div>
       </div>
 
       {/* Stats */}
@@ -5176,7 +5182,7 @@ function CRMApp({ user, onLogout }) {
         { id:'reservations', label:'Réservations', icon:<CalendarDays size={24} strokeWidth={1.8} /> },
         { id:'clients', label:'Clients', icon:<Users size={24} strokeWidth={1.8} /> },
         { id:'communications', label:'Communications', icon:<Megaphone size={24} strokeWidth={1.8} /> },
-        { id:'roue', label:'Roue', icon:<Dices size={24} strokeWidth={1.8} /> },
+        { id:'roue', label:'Jeux', icon:<Dices size={24} strokeWidth={1.8} /> },
         { id:'menu', label:'Menu', icon:<UtensilsCrossed size={24} strokeWidth={1.8} /> },
       ].map(item => {
         const nbAttenteSidebar = item.id === 'reservations' ? resaAttenteCount : 0;
