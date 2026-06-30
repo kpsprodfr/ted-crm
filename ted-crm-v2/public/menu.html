@@ -87,8 +87,9 @@
     #lang-selector { position: relative; flex-shrink: 0; }
     #lang-btn {
       background: rgba(255,255,255,0.07); border: 1px solid #333;
-      color: #aaa; font-size: 11px; font-weight: 700; letter-spacing: 1px;
-      padding: 4px 9px; border-radius: 6px; cursor: pointer;
+      color: #aaa; font-size: 13px; font-weight: 700; letter-spacing: 1px;
+      padding: 10px 16px; border-radius: 6px; cursor: pointer;
+      min-height: 44px; min-width: 44px;
       transition: background 150ms ease; font-family: inherit;
     }
     #lang-btn:hover { background: rgba(255,255,255,0.13); color: #fff; }
@@ -351,16 +352,28 @@
     return r.json();
   }
 
-  const CAT_COLS  = 'id,nom,nom_en,nom_es,nom_it,carte,ordre,visible';
-  const PROD_COLS = 'id,nom,nom_en,nom_es,nom_it,description,description_en,description_es,description_it,prix,accord_vin,badges,ordre,disponible,carte,categorie_id';
-  const PLAT_COLS = 'id,nom,description,prix,type,carte,actif';
+  const CAT_COLS   = 'id,nom,nom_en,nom_es,nom_it,carte,ordre,visible';
+  const PROD_COLS  = 'id,nom,nom_en,nom_es,nom_it,description,description_en,description_es,description_it,prix,accord_vin,badges,ordre,disponible,carte,categorie_id';
+  const CAT_COLS_FR  = 'id,nom,carte,ordre,visible';
+  const PROD_COLS_FR = 'id,nom,description,prix,accord_vin,badges,ordre,disponible,carte,categorie_id';
+  const PLAT_COLS  = 'id,nom,description,prix,type,carte,actif';
 
   async function fetchFromNetwork(silent = false) {
-    const [cats, prods, plats] = await Promise.all([
-      fetchJSON('menu_categories', `select=${CAT_COLS}&order=ordre`),
-      fetchJSON('menu_produits',   `select=${PROD_COLS}&disponible=eq.true&order=ordre`),
-      fetchJSON('menu_plat_jour',  `select=${PLAT_COLS}`)
-    ]);
+    let cats, prods, plats;
+    try {
+      [cats, prods, plats] = await Promise.all([
+        fetchJSON('menu_categories', `select=${CAT_COLS}&order=ordre`),
+        fetchJSON('menu_produits',   `select=${PROD_COLS}&disponible=eq.true&order=ordre`),
+        fetchJSON('menu_plat_jour',  `select=${PLAT_COLS}`)
+      ]);
+    } catch(e) {
+      // Colonnes de traduction absentes → fallback FR uniquement
+      [cats, prods, plats] = await Promise.all([
+        fetchJSON('menu_categories', `select=${CAT_COLS_FR}&order=ordre`),
+        fetchJSON('menu_produits',   `select=${PROD_COLS_FR}&disponible=eq.true&order=ordre`),
+        fetchJSON('menu_plat_jour',  `select=${PLAT_COLS}`)
+      ]);
+    }
     allCategories = cats;
     allProduits = prods;
     updatePlatJour(plats);
