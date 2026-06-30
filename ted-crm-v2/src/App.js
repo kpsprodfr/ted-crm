@@ -3296,9 +3296,9 @@ function CartesSheet({ onClose, showToast, produits }) {
                 <div style={{ fontSize:11, color:'#bbb' }}>{c.slug}</div>
               </div>
             )}
-            <button onClick={()=>{setEditingId(c.id);setEditNom(c.nom);}} style={{ background:'none', border:'none', cursor:'pointer', color:'#888', display:'flex', padding:4 }}><Pencil size={13}/></button>
+            <button draggable={false} onPointerDown={e=>e.stopPropagation()} onClick={()=>{setEditingId(c.id);setEditNom(c.nom);}} style={{ background:'none', border:'none', cursor:'pointer', color:'#888', display:'flex', padding:4 }}><Pencil size={13}/></button>
             <MenuToggle value={!!c.visible} onChange={()=>toggleVisible(c)} />
-            <button onClick={()=>deleteCarte(c)} style={{ background:'none', border:'none', cursor:'pointer', color:'#ddd', display:'flex', padding:4 }}><Trash2 size={14}/></button>
+            <button draggable={false} onPointerDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation();console.log('[CartesSheet] deleteCarte click', c.nom);deleteCarte(c);}} style={{ background:'none', border:'none', cursor:'pointer', color:'#e57373', display:'flex', padding:4 }}><Trash2 size={14}/></button>
           </div>
         ))}
       </div>
