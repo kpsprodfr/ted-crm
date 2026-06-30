@@ -52,6 +52,7 @@
       animation: fadeUp 400ms ease-out both;
       transition: font-size 220ms ease;
     }
+    #header.compact #header-logo { height: 24px; width: 24px; }
     #header.compact #header-title { font-size: 14px; letter-spacing: 0.5px; }
 
     #header-sub {
@@ -189,8 +190,13 @@
 <body>
 
 <div id="header">
-  <div id="header-title">LE TED</div>
-  <div id="header-sub">RESTAURANT &amp; CLUB — CHASSIEU</div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <img src="/logo192.png" alt="Logo TED" id="header-logo" style="height:36px;width:36px;object-fit:contain;transition:height 220ms ease,width 220ms ease;">
+    <div>
+      <div id="header-title">LE TED</div>
+      <div id="header-sub">RESTAURANT &amp; CLUB — CHASSIEU</div>
+    </div>
+  </div>
   <div id="header-underline"></div>
   <div id="carte-tabs">
     <button class="carte-tab active" data-carte="restaurant" onclick="switchCarte('restaurant')">Restaurant</button>
@@ -207,6 +213,7 @@
 <button id="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Retour en haut">↑</button>
 
 <footer>
+  <img src="/logo192.png" alt="Logo TED" style="height:48px;width:48px;object-fit:contain;opacity:0.85;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;">
   <strong>LE TED</strong><br>
   28 Av. des Frères Montgolfier, 69680 Chassieu<br>
   04 72 02 20 20
