@@ -45,15 +45,15 @@
       background: #111; padding: 20px 20px 0;
       transition: padding 220ms ease;
     }
-    #header.compact { padding-top: 8px; padding-bottom: 0; }
+    #header.compact { padding-top: 5px; padding-bottom: 0; }
 
     #header-title {
       color: #E8C547; font-size: 22px; font-weight: 900; letter-spacing: 1px;
       animation: fadeUp 400ms ease-out both;
       transition: font-size 220ms ease;
     }
-    #header.compact #header-logo { height: 24px; width: 24px; }
-    #header.compact #header-title { font-size: 14px; letter-spacing: 0.5px; }
+    #header.compact #header-logo { height: 18px; width: 18px; }
+    #header.compact #header-title { font-size: 13px; letter-spacing: 0.5px; }
 
     #header-sub {
       color: #888; font-size: 11px; letter-spacing: 0.5px; margin-top: 2px; margin-bottom: 0;
@@ -61,7 +61,7 @@
       transition: opacity 220ms ease, max-height 220ms ease;
       overflow: hidden; max-height: 20px;
     }
-    #header.compact #header-sub { opacity: 0; max-height: 0; }
+    #header.compact #header-sub { opacity: 0; max-height: 0; margin: 0; }
 
     /* Trait jaune sous le titre */
     #header-underline {
@@ -71,7 +71,7 @@
       animation: underlineIn 600ms ease-out 200ms both;
       transition: width 220ms ease, margin 220ms ease;
     }
-    #header.compact #header-underline { width: 18px; margin: 3px 0 5px; }
+    #header.compact #header-underline { width: 14px; margin: 2px 0 4px; }
 
     /* Onglets carte */
     #carte-tabs { display: flex; gap: 0; border-bottom: 2px solid #222; }
@@ -193,7 +193,7 @@
     <img src="/logo192.png" alt="Logo TED" id="header-logo" style="height:36px;width:36px;object-fit:contain;transition:height 220ms ease,width 220ms ease;">
     <div>
       <div id="header-title">LE TED</div>
-      <div id="header-sub">RESTAURANT &amp; CLUB — CHASSIEU</div>
+      <div id="header-sub">RESTAURANT &amp; CLUB</div>
     </div>
   </div>
   <div id="header-underline"></div>
