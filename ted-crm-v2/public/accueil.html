@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Le TED — Chassieu</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Caveat:wght@700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
 
@@ -168,196 +169,41 @@
     #popup-reserver:active { opacity: 0.8; }
 
     /* ── Roue cadeaux ──────────────────────────────────────────────────────────── */
+    @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes closeCountdown { from{stroke-dashoffset:0} to{stroke-dashoffset:100.5} }
+    @keyframes winReveal { 0%{opacity:0;transform:scale(.88) translateY(8px)} 100%{opacity:1;transform:scale(1) translateY(0)} }
+    @keyframes subtleFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-2px)} }
+    @keyframes logoPulse {
+      0%,100% { transform: rotateY(2160deg) scale(1) rotateZ(0deg); }
+      33%     { transform: rotateY(2160deg) scale(1.06) rotateZ(-4deg); }
+      66%     { transform: rotateY(2160deg) scale(1.06) rotateZ(4deg); }
+    }
+    @keyframes logoSpin {
+      0%   { transform: rotateY(0deg); opacity:0; }
+      5%   { opacity:1; }
+      50%  { transform: rotateY(1440deg); }
+      80%  { transform: rotateY(1800deg); }
+      100% { transform: rotateY(2160deg); }
+    }
+    @keyframes logoShrink {
+      0%,60% { transform: scale(2.8) translateY(60px); }
+      90%    { transform: scale(1.02) translateY(0); }
+      100%   { transform: scale(1) translateY(0); }
+    }
+    @keyframes contentReveal {
+      0%,70% { opacity:0; transform:translateY(12px); }
+      100%   { opacity:1; transform:translateY(0); }
+    }
+    @keyframes confettiFall { 0%{transform:translateY(-10px) rotate(0deg) scale(1);opacity:1} 100%{transform:translateY(90vh) rotate(540deg) scale(.5);opacity:0} }
     #roue-overlay {
       position: fixed; inset: 0; z-index: 300;
-      background: rgba(0,0,0,0.75);
-      display: flex; align-items: flex-end;
+      background: radial-gradient(ellipse at 40% 20%, #1c1c2e 0%, #000 60%);
+      display: flex; align-items: center; justify-content: center; padding: 24px;
       opacity: 0; pointer-events: none;
       transition: opacity 280ms ease;
     }
     #roue-overlay.open { opacity: 1; pointer-events: all; }
-    #roue-sheet {
-      width: 100%; background: #fff;
-      border-radius: 22px 22px 0 0;
-      max-height: 94vh; overflow-y: auto; overflow-x: hidden;
-      transform: translateY(100%);
-      transition: transform 380ms cubic-bezier(0.32, 0.72, 0, 1);
-      position: relative;
-    }
-    #roue-overlay.open #roue-sheet { transform: translateY(0); }
-    @media (prefers-reduced-motion: reduce) {
-      #roue-overlay, #roue-sheet { transition: none !important; }
-    }
-
-    /* Zone haute — fond crème, contient la roue ou le résultat visuel */
-    #roue-zone-haute {
-      background: radial-gradient(ellipse at 50% 15%, #FFE033 0%, #F5B800 60%, #E8A000 100%);
-      padding: 28px 20px 20px;
-      text-align: center;
-      position: relative;
-      display: flex; flex-direction: column; align-items: center;
-    }
-    #roue-handle {
-      position: absolute; top: 10px; left: 50%;
-      transform: translateX(-50%);
-      width: 34px; height: 4px; background: rgba(0,0,0,0.14);
-      border-radius: 2px;
-    }
-    #roue-close {
-      position: absolute; top: 12px; right: 14px;
-      width: 40px; height: 40px; border-radius: 50%;
-      background: rgba(0,0,0,0.07); border: none; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 11px; font-weight: 800; color: rgba(0,0,0,0.35);
-      z-index: 10; padding: 0; outline: none;
-      transition: background 200ms, color 200ms;
-    }
-    #roue-close.active { background: #111; color: #fff; }
-    #roue-close:disabled { cursor: not-allowed; }
-    #roue-close-svg {
-      position: absolute; inset: 0; width: 100%; height: 100%;
-      transform: rotate(-90deg); border-radius: 50%; pointer-events: none;
-    }
-    #roue-ring { fill: none; stroke: #E8C547; stroke-width: 2.5; stroke-linecap: round; }
-    #roue-close-label { position: relative; z-index: 1; }
-
-    /* Canvas */
-    #roue-canvas-wrap { position: relative; display: inline-block; }
-    #roue-pointer-tri {
-      position: absolute; top: -9px; left: 50%;
-      transform: translateX(-50%);
-      width: 0; height: 0;
-      border-left: 12px solid transparent;
-      border-right: 12px solid transparent;
-      border-top: 20px solid #E8C547;
-      filter: drop-shadow(0 2px 5px rgba(0,0,0,0.4));
-      z-index: 5;
-    }
-    #roue-canvas { display: block; }
-    #roue-socle {
-      width: 72px; height: 18px; background: #CC1111;
-      border: 2.5px solid #E8C547; border-top: none;
-      border-radius: 0 0 10px 10px; margin: -1px auto 0;
-    }
-
-    /* Résultat visuel dans zone haute */
-    #roue-visuel-result {
-      display: none; padding: 8px 0 4px;
-      animation: roueResultIn 0.45s cubic-bezier(0.34,1.56,0.64,1) both;
-    }
-    @keyframes roueResultIn {
-      from { opacity: 0; transform: scale(0.82); }
-      to   { opacity: 1; transform: scale(1); }
-    }
-    @media (prefers-reduced-motion: reduce) { #roue-visuel-result { animation: none; } }
-    #roue-result-emoji { font-size: 52px; line-height: 1; margin-bottom: 10px; }
-    #roue-result-label {
-      font-size: 10px; font-weight: 800; color: #c9a93a;
-      letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 8px;
-    }
-    #roue-result-nom {
-      font-size: 19px; font-weight: 900; color: #111;
-      background: #fff; border: 2.5px solid #E8C547;
-      border-radius: 12px; padding: 11px 20px; line-height: 1.3;
-      box-shadow: 0 2px 14px rgba(232,197,71,0.18);
-    }
-
-    /* Séparateur ticket */
-    #roue-tiret {
-      border: none; margin: 0;
-      border-top: 2px dashed #ddd;
-      position: relative;
-    }
-    #roue-tiret::before, #roue-tiret::after {
-      content: '✂'; position: absolute; top: -11px;
-      font-size: 14px; color: #ccc; line-height: 1;
-    }
-    #roue-tiret::before { left: 14px; }
-    #roue-tiret::after  { right: 14px; transform: scaleX(-1); }
-
-    /* Zone basse — fond blanc */
-    #roue-zone-basse {
-      background: #fff;
-      padding: 20px 20px calc(20px + env(safe-area-inset-bottom, 0px));
-    }
-
-    /* Titre / sous-titre */
-    #roue-titre {
-      font-size: 14px; font-weight: 700; color: #555;
-      margin-bottom: 14px; line-height: 1.4; text-align: center;
-    }
-
-    /* Bouton JOUER — plein largeur, noir, pulsation */
-    #roue-jouer-btn {
-      display: block; width: 100%; padding: 17px;
-      border-radius: 14px; border: none;
-      background: #111; color: #fff;
-      font-size: 17px; font-weight: 900; letter-spacing: 0.3px;
-      cursor: pointer; font-family: inherit;
-      transition: transform 120ms ease, opacity 120ms;
-    }
-    #roue-jouer-btn:active:not(:disabled) { transform: scale(0.97); opacity: 0.85; }
-    #roue-jouer-btn:disabled { opacity: 0.35; cursor: not-allowed; animation: none !important; }
-    @keyframes rouePulse {
-      0%,100% { box-shadow: 0 4px 22px rgba(0,0,0,0.22), 0 0 0 0 rgba(232,197,71,0.5); }
-      50%     { box-shadow: 0 4px 22px rgba(0,0,0,0.22), 0 0 0 12px rgba(232,197,71,0); }
-    }
-    #roue-jouer-btn:not(:disabled) { animation: rouePulse 2.2s ease-in-out infinite; }
-    @media (prefers-reduced-motion: reduce) { #roue-jouer-btn { animation: none !important; box-shadow: 0 4px 22px rgba(0,0,0,0.22); } }
-
-    /* Conditions */
-    #roue-result-cond { font-size: 12px; color: #888; margin: 0 0 14px; line-height: 1.5; text-align: center; }
-
-    /* Formulaire */
-    #roue-form-titre { font-size: 18px; font-weight: 800; color: #111; margin-bottom: 4px; }
-    #roue-form-sub { font-size: 13px; color: #888; margin-bottom: 18px; line-height: 1.4; }
-    .roue-input {
-      display: block; width: 100%; height: 50px;
-      border: 1.5px solid #eee; border-radius: 12px;
-      padding: 0 14px; font-size: 15px; font-family: inherit;
-      outline: none; box-sizing: border-box; margin-bottom: 10px;
-      background: #fafafa; color: #111; transition: border-color 150ms;
-    }
-    .roue-input:focus { border-color: #E8C547; background: #fff; }
-    .roue-input::placeholder { color: #c0c0c0; }
-    .roue-mention-anti { font-size: 11px; color: #bbb; text-align: center; margin: 0 0 14px; }
-
-    /* Boutons */
-    .roue-btn-noir {
-      display: block; width: 100%; padding: 16px; border-radius: 14px;
-      border: none; background: #111; color: #fff;
-      font-size: 15px; font-weight: 700; text-align: center;
-      cursor: pointer; font-family: inherit; transition: opacity 150ms;
-      margin-bottom: 8px;
-    }
-    .roue-btn-noir:disabled { opacity: 0.4; cursor: not-allowed; }
-    .roue-btn-noir:active:not(:disabled) { opacity: 0.8; }
-    .roue-btn-ghost {
-      display: block; width: 100%; padding: 14px; border-radius: 14px;
-      border: 1.5px solid #e0e0e0; background: #fff; color: #999;
-      font-size: 14px; font-weight: 600; text-align: center;
-      cursor: pointer; font-family: inherit; transition: background 150ms;
-      margin-bottom: 6px;
-    }
-    .roue-btn-ghost:active { background: #f5f5f5; }
-
-    /* Done */
-    #roue-step-done { text-align: center; }
-    #roue-done-icon { font-size: 52px; margin-bottom: 10px; }
-    #roue-done-titre { font-size: 20px; font-weight: 800; color: #111; margin-bottom: 8px; }
-    #roue-done-sub { font-size: 14px; color: #888; line-height: 1.55; margin-bottom: 22px; }
-
-    /* Confettis */
-    .roue-confetti {
-      position: fixed; border-radius: 2px;
-      opacity: 0; z-index: 600; pointer-events: none;
-      animation: confettiFall 2.2s ease-in forwards;
-    }
-    @keyframes confettiFall {
-      0%   { opacity: 1; transform: translateY(0) rotate(0deg) scaleX(1); }
-      60%  { opacity: 1; }
-      100% { opacity: 0; transform: translateY(78vh) rotate(540deg) scaleX(0.4); }
-    }
+    @media (prefers-reduced-motion: reduce) { #roue-overlay { transition: none !important; } }
   </style>
 </head>
 <body>
@@ -393,74 +239,145 @@
 
   <!-- Roue cadeaux -->
   <div id="roue-overlay" role="dialog" aria-modal="true" aria-label="Roue des cadeaux">
-    <div id="roue-sheet">
+    <div id="roue-particle-layer" style="position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:1;"></div>
 
-      <!-- Zone haute — fond crème (roue ou résultat visuel) -->
-      <div id="roue-zone-haute">
-        <div id="roue-handle"></div>
-        <button id="roue-close" disabled aria-label="Fermer dans 5 secondes">
-          <svg id="roue-close-svg" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-            <circle id="roue-ring" cx="20" cy="20" r="18"/>
+    <!-- Popup card -->
+    <div id="roue-card" style="position:relative;z-index:2;width:100%;max-width:390px;border-radius:22px;max-height:92vh;overflow-y:auto;background:linear-gradient(180deg,#fff8c0 0%,#FFE033 25%,#FFC200 60%,#FF9500 100%);box-shadow:0 32px 80px rgba(0,0,0,0.6),0 0 0 0.5px rgba(255,200,0,0.3);animation:fadeUp .3s cubic-bezier(.25,.46,.45,.94);">
+
+      <!-- Close with countdown -->
+      <div style="position:absolute;top:12px;right:14px;width:34px;height:34px;z-index:10;">
+        <div id="roue-countdown-svg" style="position:absolute;inset:0;pointer-events:none;">
+          <svg width="34" height="34" style="transform:rotate(-90deg);">
+            <circle cx="17" cy="17" r="16" fill="none" stroke="rgba(0,0,0,0.1)" stroke-width="2"></circle>
+            <circle id="roue-ring" cx="17" cy="17" r="16" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="2.5" stroke-dasharray="100.5" stroke-dashoffset="0" style="animation:closeCountdown 5s linear forwards;"></circle>
           </svg>
-          <span id="roue-close-label">5</span>
+        </div>
+        <button id="roue-close" disabled style="position:absolute;inset:0;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.3);border:1px solid rgba(255,255,255,0.7);font-size:13px;display:flex;align-items:center;justify-content:center;color:rgba(0,0,0,0.2);font-family:inherit;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.9),0 2px 8px rgba(0,0,0,0.1);cursor:not-allowed;transition:color .3s;">✕</button>
+      </div>
+
+      <!-- Title + logo 3D -->
+      <div style="text-align:center;padding:20px 24px 4px;display:flex;flex-direction:column;align-items:center;">
+        <div style="perspective:600px;margin-bottom:10px;display:flex;justify-content:center;animation:logoShrink 3s cubic-bezier(.1,0,.2,1) forwards;">
+          <div style="position:relative;width:100px;height:100px;transform-style:preserve-3d;transform-origin:50% 50% 0;animation:logoSpin 3s cubic-bezier(.1,0,.2,1) forwards, logoPulse 3s 3s ease-in-out infinite;">
+            <img src="/logo192.png" style="position:absolute;inset:0;width:100px;height:100px;object-fit:contain;filter:brightness(0) sepia(1) saturate(3) hue-rotate(-10deg) brightness(0.35);transform:translateZ(-2px);" alt="">
+            <img src="/logo192.png" style="position:absolute;inset:0;width:100px;height:100px;object-fit:contain;filter:brightness(0) sepia(1) saturate(3) hue-rotate(-10deg) brightness(0.3);transform:translateZ(-4px);" alt="">
+            <img src="/logo192.png" style="position:absolute;inset:0;width:100px;height:100px;object-fit:contain;filter:brightness(0) sepia(1) saturate(3) hue-rotate(-10deg) brightness(0.25);transform:translateZ(-6px);" alt="">
+            <img src="/logo192.png" style="position:absolute;inset:0;width:100px;height:100px;object-fit:contain;filter:brightness(0) sepia(1) saturate(3) hue-rotate(-10deg) brightness(0.2);transform:translateZ(-9px);" alt="">
+            <img src="/logo192.png" style="position:absolute;inset:0;width:100px;height:100px;object-fit:contain;filter:brightness(0) sepia(1) saturate(3) hue-rotate(-10deg) brightness(0.15);transform:translateZ(-12px);" alt="">
+            <img src="/logo192.png" style="position:absolute;inset:0;width:100px;height:100px;object-fit:contain;filter:brightness(0) sepia(1) saturate(3) hue-rotate(-10deg) brightness(0.1);transform:translateZ(-16px);" alt="">
+            <img src="/logo192.png" style="position:absolute;inset:0;width:100px;height:100px;object-fit:contain;filter:brightness(0);transform:translateZ(0px);" alt="Le TED">
+          </div>
+        </div>
+        <h2 style="font-size:26px;color:#1a1200;font-weight:800;letter-spacing:-.3px;margin:0;animation:subtleFloat 4s 3.5s ease infinite,contentReveal 3.5s cubic-bezier(.25,.46,.45,.94) forwards;"><span style="font-family:'Caveat',cursive;font-weight:700;font-size:30px;">Grand Jeux du </span>TED</h2>
+        <p style="font-size:13px;color:rgba(0,0,0,0.5);margin-top:4px;font-weight:400;animation:contentReveal 3.5s cubic-bezier(.25,.46,.45,.94) forwards;">Tentez votre chance</p>
+      </div>
+
+      <!-- Wheel area -->
+      <div style="display:flex;flex-direction:column;align-items:center;padding:4px 24px 20px;position:relative;animation:contentReveal 1s 2.8s cubic-bezier(.25,.46,.45,.94) both;">
+        <div style="position:relative;width:280px;height:298px;">
+          <!-- Pointer liquid glass -->
+          <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:10;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.2));">
+            <svg width="22" height="28" viewBox="0 0 22 28">
+              <defs>
+                <linearGradient id="pg" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="rgba(255,255,255,0.95)"></stop>
+                  <stop offset="50%" stop-color="rgba(255,255,255,0.5)"></stop>
+                  <stop offset="100%" stop-color="rgba(255,255,255,0.2)"></stop>
+                </linearGradient>
+              </defs>
+              <polygon points="11,28 22,0 0,0" fill="url(#pg)"></polygon>
+              <polygon points="11,24 19,2 3,2" fill="rgba(255,255,255,0.3)"></polygon>
+            </svg>
+          </div>
+          <canvas id="roue-canvas" width="280" height="280" style="position:absolute;top:18px;left:0;border-radius:50%;filter:drop-shadow(0 0 40px rgba(255,215,0,0.9)) drop-shadow(0 0 80px rgba(255,160,0,0.6)) drop-shadow(0 0 120px rgba(255,120,0,0.3));cursor:pointer;"></canvas>
+        </div>
+
+        <!-- Bouton Tourner -->
+        <button id="roue-jouer-btn" style="margin-top:64px;width:100%;max-width:260px;padding:15px 24px;border-radius:20px;border:1px solid rgba(255,255,255,0.6);background:rgba(255,255,255,0.25);color:#1a1200;font-family:-apple-system,'Inter',sans-serif;font-size:16px;font-weight:700;cursor:pointer;letter-spacing:-.2px;transition:all .2s;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 4px 24px rgba(255,255,255,0.3),inset 0 1px 0 rgba(255,255,255,0.8),inset 0 -1px 0 rgba(0,0,0,0.08);text-shadow:0 1px 2px rgba(255,255,255,0.5);">
+          Tourner la roue
         </button>
 
-        <!-- Canvas (phase 0 + spin) -->
-        <div id="roue-canvas-wrap">
-          <div id="roue-pointer-tri"></div>
-          <canvas id="roue-canvas" width="320" height="320"></canvas>
-        </div>
-        <div id="roue-socle"></div>
-
-        <!-- Résultat visuel (phase 1+) -->
-        <div id="roue-visuel-result">
-          <div id="roue-result-emoji">🎁</div>
-          <div id="roue-result-label">Félicitations&nbsp;!</div>
-          <div id="roue-result-nom">—</div>
+        <!-- Essais -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:20px;width:260px;text-align:center;">
+          <div style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:rgba(0,0,0,0.4);">Essais</div>
+          <div id="roue-tries-count" style="font-size:14px;font-weight:700;color:#1a1200;">0<span style="color:rgba(0,0,0,0.35);font-weight:500;">/3</span></div>
+          <div style="display:flex;gap:8px;justify-content:center;">
+            <div class="roue-try-dot" style="width:12px;height:12px;border-radius:50%;background:rgba(0,0,0,0.15);transition:all .3s;"></div>
+            <div class="roue-try-dot" style="width:12px;height:12px;border-radius:50%;background:rgba(0,0,0,0.15);transition:all .3s;"></div>
+            <div class="roue-try-dot" style="width:12px;height:12px;border-radius:50%;background:rgba(0,0,0,0.15);transition:all .3s;"></div>
+          </div>
         </div>
       </div>
 
-      <!-- Séparateur ticket pointillé -->
-      <hr id="roue-tiret">
+      <div style="height:env(safe-area-inset-bottom,0px);"></div>
+    </div><!-- /roue-card -->
 
-      <!-- Zone basse — fond blanc (contenu selon phase) -->
-      <div id="roue-zone-basse">
+    <!-- Win overlay (inside roue-overlay, z:400) -->
+    <div id="roue-win-overlay" style="display:none;position:fixed;inset:0;align-items:center;justify-content:center;z-index:400;padding:32px;">
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);"></div>
+      <div style="position:relative;width:100%;max-width:320px;background:linear-gradient(160deg,#fff8c0,#FFE033 40%,#FFC200);border-radius:24px;padding:36px 28px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,0.45),0 0 0 1px rgba(255,255,255,0.3);animation:winReveal .5s cubic-bezier(.34,1.56,.64,1);">
+        <div id="roue-win-emoji" style="font-size:56px;margin-bottom:14px;">🎁</div>
+        <div style="font-size:26px;font-weight:900;color:#1a1200;margin-bottom:4px;">🎉 Félicitations !</div>
+        <div style="font-size:15px;font-weight:500;color:rgba(0,0,0,0.5);margin-bottom:12px;">Vous avez gagné</div>
+        <div id="roue-win-label" style="font-size:20px;font-weight:800;color:#1a1200;letter-spacing:-.3px;margin-bottom:24px;padding:22px 24px;background:rgba(0,0,0,0.1);border-radius:20px;border:2px solid rgba(0,0,0,0.12);width:100%;">—</div>
+        <button id="roue-recuperer-btn" style="width:100%;padding:16px;border-radius:14px;border:none;background:#1a1200;color:#fff;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.3);">Récupérer ma récompense</button>
+        <button id="roue-skip-btn" style="width:100%;padding:13px;border-radius:14px;border:1.5px solid rgba(0,0,0,0.15);background:transparent;color:rgba(0,0,0,0.45);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;margin-top:10px;">Non merci, continuer sans</button>
+      </div>
+    </div>
+  </div><!-- /roue-overlay -->
 
-        <!-- Phase 0 : avant de jouer -->
-        <div id="roue-content-wheel">
-          <div id="roue-titre">🎉 Tentez votre chance et gagnez des lots&nbsp;!</div>
-          <button id="roue-jouer-btn">🎰 Lancer la roue</button>
+  <!-- Form overlay (plein écran, z:500) -->
+  <div id="roue-form-overlay" style="display:none;position:fixed;inset:0;background:linear-gradient(180deg,#fff8c0 0%,#FFE033 30%,#FFC200 70%,#FF9500 100%);z-index:500;overflow-y:auto;padding:0 0 40px;animation:fadeUp .35s cubic-bezier(.25,.46,.45,.94);">
+
+    <!-- État succès -->
+    <div id="roue-form-done" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px;text-align:center;">
+      <div style="font-size:64px;margin-bottom:20px;">🎁</div>
+      <h2 style="font-size:26px;font-weight:900;color:#1a1200;margin-bottom:10px;">C'est tout bon !</h2>
+      <p style="font-size:15px;color:rgba(0,0,0,0.6);max-width:280px;line-height:1.6;margin-bottom:32px;">Votre récompense vous a été envoyée.<br>À bientôt au TED !</p>
+      <button id="roue-vers-carte-btn" style="padding:16px 36px;border-radius:14px;border:none;background:#1a1200;color:#fff;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.25);">Consulter la carte →</button>
+    </div>
+
+    <!-- Formulaire -->
+    <div id="roue-form-fields">
+      <div style="padding:56px 24px 20px;text-align:center;">
+        <img src="/logo192.png" alt="Le TED" style="width:52px;height:52px;object-fit:contain;filter:brightness(0);margin-bottom:12px;">
+        <h2 style="font-size:22px;font-weight:900;color:#1a1200;margin-bottom:6px;">Récupérez votre récompense</h2>
+        <p style="font-size:13px;color:rgba(0,0,0,0.5);line-height:1.8;">Renseignez vos informations pour recevoir votre récompense.</p>
+        <p style="font-size:13px;font-weight:700;color:rgba(0,0,0,0.65);margin-top:4px;">Sinon elle sera perdue.</p>
+      </div>
+      <div style="padding:0 20px;display:flex;flex-direction:column;gap:14px;">
+        <div>
+          <div style="font-size:12px;font-weight:600;color:rgba(0,0,0,0.5);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Genre</div>
+          <div style="display:flex;gap:10px;">
+            <button id="roue-gender-m" onclick="rouSelectM()" style="flex:1;padding:14px;border-radius:12px;border:2px solid #1a1200;background:#1a1200;color:#FFD700;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">M.</button>
+            <button id="roue-gender-mme" onclick="rouSelectMme()" style="flex:1;padding:14px;border-radius:12px;border:2px solid rgba(0,0,0,0.15);background:rgba(255,255,255,0.6);color:#1a1200;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">Mme</button>
+          </div>
         </div>
-
-        <!-- Phase 1 : après le spin -->
-        <div id="roue-content-result" style="display:none">
-          <div id="roue-result-cond" style="display:none"></div>
-          <button class="roue-btn-noir" id="roue-recuperer-btn">Récupérer ma récompense 🎁</button>
-          <button class="roue-btn-ghost" id="roue-skip-btn">Non merci, continuer sans</button>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:rgba(0,0,0,0.5);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Nom</div>
+          <input id="roue-nom" type="text" placeholder="Votre nom" autocomplete="family-name" style="width:100%;padding:15px 16px;border-radius:12px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(255,255,255,0.7);font-size:15px;font-family:inherit;color:#1a1200;outline:none;">
         </div>
-
-        <!-- Phase 2 : formulaire -->
-        <div id="roue-content-form" style="display:none">
-          <div id="roue-form-titre">Vos coordonnées</div>
-          <div id="roue-form-sub">Votre récompense vous sera envoyée par SMS et email pour la conserver facilement.</div>
-          <input class="roue-input" id="roue-prenom" type="text" placeholder="Prénom (optionnel)" autocomplete="given-name">
-          <input class="roue-input" id="roue-tel" type="tel" placeholder="Téléphone *" autocomplete="tel">
-          <input class="roue-input" id="roue-email" type="email" placeholder="Email *" autocomplete="email">
-          <div class="roue-mention-anti">⚠️ Une seule participation par personne</div>
-          <button class="roue-btn-noir" id="roue-confirmer-btn">Confirmer et recevoir ma récompense</button>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:rgba(0,0,0,0.5);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Prénom</div>
+          <input id="roue-prenom" type="text" placeholder="Votre prénom" autocomplete="given-name" style="width:100%;padding:15px 16px;border-radius:12px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(255,255,255,0.7);font-size:15px;font-family:inherit;color:#1a1200;outline:none;">
         </div>
-
-        <!-- Phase 3 : confirmation / déjà participé -->
-        <div id="roue-step-done" style="display:none">
-          <div id="roue-done-icon">✅</div>
-          <div id="roue-done-titre">C'est noté !</div>
-          <div id="roue-done-sub">Votre récompense vous a été envoyée par SMS et email.<br>Présentez-la à votre serveur lors de votre prochain passage.</div>
-          <button class="roue-btn-noir" id="roue-vers-carte-btn">Consulter la carte →</button>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:rgba(0,0,0,0.5);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Numéro de téléphone</div>
+          <input id="roue-tel" type="tel" placeholder="06 00 00 00 00" autocomplete="tel" style="width:100%;padding:15px 16px;border-radius:12px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(255,255,255,0.7);font-size:15px;font-family:inherit;color:#1a1200;outline:none;">
         </div>
-
-      </div><!-- /roue-zone-basse -->
-    </div><!-- /roue-sheet -->
-  </div>
+        <div>
+          <div style="font-size:12px;font-weight:600;color:rgba(0,0,0,0.5);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Email</div>
+          <input id="roue-email" type="email" placeholder="votre@email.com" autocomplete="email" style="width:100%;padding:15px 16px;border-radius:12px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(255,255,255,0.7);font-size:15px;font-family:inherit;color:#1a1200;outline:none;">
+        </div>
+        <label style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:rgba(255,255,255,0.5);border-radius:12px;cursor:pointer;border:1.5px solid rgba(0,0,0,0.1);">
+          <input id="roue-consent" type="checkbox" checked style="width:18px;height:18px;margin-top:2px;accent-color:#1a1200;flex-shrink:0;">
+          <span style="font-size:11px;color:rgba(0,0,0,0.55);line-height:1.5;">J'accepte que mes données soient utilisées par l'établissement pour m'envoyer ma récompense. Ces données ne seront pas transmises à des tiers. <strong>*</strong></span>
+        </label>
+        <div style="font-size:11px;color:rgba(0,0,0,0.4);text-align:center;">⚠️ Une seule participation par personne</div>
+        <button id="roue-confirmer-btn" style="width:100%;padding:17px;border-radius:14px;border:none;background:#1a1200;color:#fff;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;margin-top:6px;box-shadow:0 4px 20px rgba(0,0,0,0.25);">Valider mes informations</button>
+      </div>
+    </div>
+  </div><!-- /roue-form-overlay -->
 
   <!-- Popup soirée -->
   <div id="popup-overlay" role="dialog" aria-modal="true" aria-labelledby="popup-nom">
@@ -757,28 +674,31 @@
 
   // ── Roue cadeaux ─────────────────────────────────────────────────────────────
   (async function initRoue() {
+    // ── État ──────────────────────────────────────────────────────────────────
     let recompenses  = [];
     let gainResult   = null;
     let spinning     = false;
     let currentAngle = 0;
+    let triesLeft    = 3;
+    let gender       = 'M.';
+    let idleTimer    = null;
 
-    // Canvas 320×320
-    const CS     = 320;
-    const CX     = 160;
-    const R_SEG  = 136;
-    const R_RING = 144;
-    const R_BUMP = 152;
-    const R_TEXT = 84;
-    const R_CTR  = 26;
-    const N_BUMP = 16;
-    const VIVID  = ['#E63946','#2196F3','#4CAF50','#FF9800','#9C27B0','#B71C1C','#00897B','#F57F17'];
-    const CREAM  = '#FFF5D6';
-    function getSegColor(i) { return i % 2 === 0 ? VIVID[Math.floor(i / 2) % VIVID.length] : CREAM; }
+    // Genre buttons (appelés depuis inline onclick)
+    window.rouSelectM   = () => { gender = 'M.';  updateGenderUI(); };
+    window.rouSelectMme = () => { gender = 'Mme'; updateGenderUI(); };
+    function updateGenderUI() {
+      const m   = document.getElementById('roue-gender-m');
+      const mme = document.getElementById('roue-gender-mme');
+      if (!m || !mme) return;
+      m.style.border      = gender === 'M.'  ? '2px solid #1a1200' : '2px solid rgba(0,0,0,0.15)';
+      m.style.background  = gender === 'M.'  ? '#1a1200' : 'rgba(255,255,255,0.6)';
+      m.style.color       = gender === 'M.'  ? '#FFD700' : '#1a1200';
+      mme.style.border    = gender === 'Mme' ? '2px solid #1a1200' : '2px solid rgba(0,0,0,0.15)';
+      mme.style.background= gender === 'Mme' ? '#1a1200' : 'rgba(255,255,255,0.6)';
+      mme.style.color     = gender === 'Mme' ? '#FFD700' : '#1a1200';
+    }
 
-    const canvas = document.getElementById('roue-canvas');
-    const ctx    = canvas.getContext('2d');
-
-    // ── Chargement ──────────────────────────────────────────────────────────────
+    // ── Chargement Supabase ────────────────────────────────────────────────────
     try {
       const res = await fetch(
         `${SUPA_URL}/rest/v1/roue_recompenses?actif=eq.true&order=ordre`,
@@ -792,415 +712,395 @@
     if (!recompenses.length) return;
     if (localStorage.getItem('ted_roue_joue')) return;
 
-    // ── Utilitaires ─────────────────────────────────────────────────────────────
+    // ── Canvas ─────────────────────────────────────────────────────────────────
+    const canvas = document.getElementById('roue-canvas');
+    const ctx    = canvas.getContext('2d');
+
     function totalProba() {
       return recompenses.reduce((s, r) => s + parseFloat(r.probabilite || 1), 0);
     }
-    function trunc(s, n) { return s && s.length > n ? s.slice(0, n - 1) + '…' : (s || ''); }
 
-    // ── drawWheel ───────────────────────────────────────────────────────────────
-    function drawWheel(rotAngle) {
-      ctx.clearRect(0, 0, CS, CS);
-      const total = totalProba();
-      let start   = rotAngle;
+    function drawWheel(rotation) {
+      const dpr = window.devicePixelRatio || 1;
+      const displaySize = 280;
+      if (canvas.width !== displaySize * dpr) {
+        canvas.width  = displaySize * dpr;
+        canvas.height = displaySize * dpr;
+        canvas.style.width  = displaySize + 'px';
+        canvas.style.height = displaySize + 'px';
+      }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const S = displaySize, cx = S / 2, cy = S / 2;
+      const outerR = S / 2 - 1;
+      const rimW   = 16;
+      const innerR = outerR - rimW;
+      const total  = totalProba();
 
-      // Segments multicolores vifs + crème alternés
+      ctx.clearRect(0, 0, S, S);
+
+      // Outer glow
+      ctx.save();
+      ctx.shadowColor = '#FFD700'; ctx.shadowBlur = 30;
+      ctx.beginPath(); ctx.arc(cx, cy, outerR, 0, 2 * Math.PI);
+      ctx.strokeStyle = 'rgba(255,215,0,0.6)'; ctx.lineWidth = 4; ctx.stroke();
+      ctx.restore();
+
+      // Drop shadow
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 24; ctx.shadowOffsetY = 8;
+      ctx.beginPath(); ctx.arc(cx, cy, outerR, 0, 2 * Math.PI);
+      ctx.fillStyle = '#000'; ctx.fill();
+      ctx.restore();
+
+      // Outer rim bevel
+      const rimShadow = ctx.createLinearGradient(cx - outerR, cy - outerR, cx + outerR, cy + outerR);
+      rimShadow.addColorStop(0, '#555560'); rimShadow.addColorStop(0.35, '#222228');
+      rimShadow.addColorStop(0.65, '#111116'); rimShadow.addColorStop(1, '#33333a');
+      ctx.beginPath(); ctx.arc(cx, cy, outerR, 0, 2 * Math.PI);
+      ctx.fillStyle = rimShadow; ctx.fill();
+
+      const rimHL = ctx.createLinearGradient(cx - outerR, cy - outerR, cx + outerR * 0.3, cy + outerR * 0.3);
+      rimHL.addColorStop(0, 'rgba(255,255,255,0.18)'); rimHL.addColorStop(0.4, 'rgba(255,255,255,0.04)');
+      rimHL.addColorStop(1, 'rgba(0,0,0,0.1)');
+      ctx.beginPath(); ctx.arc(cx, cy, outerR, 0, 2 * Math.PI);
+      ctx.fillStyle = rimHL; ctx.fill();
+
+      // Inner rim lip
+      ctx.beginPath(); ctx.arc(cx, cy, outerR - rimW + 2, 0, 2 * Math.PI);
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx, cy, outerR - rimW + 2, 0, 2 * Math.PI);
+      ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1; ctx.stroke();
+
+      // Segments
+      let start = rotation - Math.PI / 2;
       recompenses.forEach((r, i) => {
-        const slice = (parseFloat(r.probabilite || 1) / total) * 2 * Math.PI;
-        const end   = start + slice;
-        const mid   = start + slice / 2;
-        const bg    = getSegColor(i);
-        const tc    = bg === CREAM ? '#333' : '#fff';
+        const slice    = (parseFloat(r.probabilite || 1) / total) * 2 * Math.PI;
+        const end      = start + slice;
+        const midAngle = start + slice / 2;
+        const ci       = i % 2;
 
-        ctx.beginPath();
-        ctx.moveTo(CX, CX);
-        ctx.arc(CX, CX, R_SEG, start, end);
-        ctx.closePath();
-        ctx.fillStyle = bg;
-        ctx.fill();
+        const gx1 = cx + (innerR * 0.2) * Math.cos(midAngle);
+        const gy1 = cy + (innerR * 0.2) * Math.sin(midAngle);
+        const gx2 = cx + innerR * Math.cos(midAngle);
+        const gy2 = cy + innerR * Math.sin(midAngle);
+        const segGrad = ctx.createLinearGradient(gx1, gy1, gx2, gy2);
+        if (ci === 0) {
+          segGrad.addColorStop(0, '#FFFACC'); segGrad.addColorStop(0.45, '#FFD700'); segGrad.addColorStop(1, '#B87800');
+        } else {
+          segGrad.addColorStop(0, '#2c2c36'); segGrad.addColorStop(0.45, '#111116'); segGrad.addColorStop(1, '#000');
+        }
+        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, innerR, start, end); ctx.closePath();
+        ctx.fillStyle = segGrad; ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1.5; ctx.stroke();
 
-        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-        ctx.lineWidth = 1.2;
-        ctx.stroke();
+        // Gloss
+        const glossGrad = ctx.createRadialGradient(cx, cy - innerR * 0.1, 0, cx, cy, innerR);
+        glossGrad.addColorStop(0, 'rgba(255,255,255,0.22)'); glossGrad.addColorStop(0.4, 'rgba(255,255,255,0.06)');
+        glossGrad.addColorStop(1, 'rgba(0,0,0,0.15)');
+        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, innerR, start, end); ctx.closePath();
+        ctx.fillStyle = glossGrad; ctx.fill();
 
-        const maxW   = Math.max(22, slice * (R_TEXT - 10) - 2);
-        const nomStr = trunc(r.nom, 15);
-
+        // Text
         ctx.save();
-        ctx.translate(CX, CX);
-        ctx.rotate(mid + Math.PI / 2);
-        ctx.textAlign    = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle    = tc;
+        ctx.translate(cx, cy); ctx.rotate(midAngle); ctx.textAlign = 'right';
+        ctx.font = '800 11px -apple-system, Inter, sans-serif';
+        ctx.fillStyle = ci === 0 ? '#3a2000' : 'rgba(255,255,255,0.9)';
+        ctx.shadowColor = ci === 0 ? 'rgba(255,240,100,0.5)' : 'rgba(0,0,0,0.7)';
+        ctx.shadowBlur = 4;
+        const label = ((r.emoji || '') + ' ' + (r.nom || '')).trim();
+        ctx.fillText(label.slice(0, 18), innerR - 10, 4);
+        ctx.shadowBlur = 0; ctx.restore();
 
-        ctx.font = '14px serif';
-        ctx.fillText(r.emoji || '', 0, -(R_TEXT + 9), maxW);
-
-        ctx.font = `bold 9.5px 'Segoe UI', Arial, sans-serif`;
-        ctx.fillText(nomStr, 0, -(R_TEXT - 7), maxW);
-
-        ctx.restore();
         start = end;
       });
 
-      // Anneau rouge épais
-      ctx.beginPath();
-      ctx.arc(CX, CX, R_RING, 0, 2 * Math.PI);
-      ctx.strokeStyle = '#CC1111';
-      ctx.lineWidth   = 14;
-      ctx.stroke();
+      // Edge vignette
+      const vignette = ctx.createRadialGradient(cx, cy, innerR * 0.7, cx, cy, innerR);
+      vignette.addColorStop(0, 'rgba(0,0,0,0)'); vignette.addColorStop(1, 'rgba(0,0,0,0.2)');
+      ctx.beginPath(); ctx.arc(cx, cy, innerR, 0, 2 * Math.PI);
+      ctx.fillStyle = vignette; ctx.fill();
 
-      // Bordures dorées de l'anneau
-      [R_RING - 7, R_RING + 7].forEach(rr => {
-        ctx.beginPath();
-        ctx.arc(CX, CX, rr, 0, 2 * Math.PI);
-        ctx.strokeStyle = '#E8C547';
-        ctx.lineWidth   = 1.5;
-        ctx.stroke();
-      });
-
-      // Ampoules dorées avec halo
-      for (let i = 0; i < N_BUMP; i++) {
-        const a  = (i / N_BUMP) * 2 * Math.PI;
-        const bx = CX + R_BUMP * Math.cos(a);
-        const by = CX + R_BUMP * Math.sin(a);
-        ctx.beginPath();
-        ctx.arc(bx, by, 6, 0, 2 * Math.PI);
-        ctx.fillStyle = 'rgba(232,197,71,0.25)';
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(bx, by, 3.8, 0, 2 * Math.PI);
-        ctx.fillStyle   = '#E8C547';
-        ctx.fill();
-        ctx.strokeStyle = '#b8930a';
-        ctx.lineWidth   = 1;
-        ctx.stroke();
+      // Bulbs chasing wave
+      const bulbCount = 20;
+      const now = Date.now();
+      for (let i = 0; i < bulbCount; i++) {
+        const a  = (i / bulbCount) * 2 * Math.PI - Math.PI / 2;
+        const bx = cx + (outerR - 8) * Math.cos(a);
+        const by = cy + (outerR - 8) * Math.sin(a);
+        const phase = (now / 600 - i / bulbCount * bulbCount) % bulbCount;
+        const bright = 0.3 + 0.7 * Math.pow(Math.max(0, Math.cos((phase / bulbCount) * 2 * Math.PI)), 2);
+        ctx.beginPath(); ctx.arc(bx, by, 4.5, 0, 2 * Math.PI);
+        ctx.fillStyle = `rgba(255,240,100,${bright.toFixed(2)})`;
+        ctx.shadowColor = '#FFD700'; ctx.shadowBlur = bright > 0.6 ? 16 : 4;
+        ctx.fill(); ctx.shadowBlur = 0;
       }
 
-      // Cercle central rouge avec bordure dorée + texte JOUER
-      ctx.shadowColor = 'rgba(0,0,0,0.35)';
-      ctx.shadowBlur  = 8;
-      ctx.beginPath();
-      ctx.arc(CX, CX, R_CTR, 0, 2 * Math.PI);
-      ctx.fillStyle = '#CC1111';
-      ctx.fill();
-      ctx.shadowBlur  = 0;
-      ctx.shadowColor = 'transparent';
-      ctx.strokeStyle = '#E8C547';
-      ctx.lineWidth   = 3;
-      ctx.stroke();
-      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-      ctx.lineWidth   = 1.5;
-      ctx.beginPath();
-      ctx.arc(CX, CX, R_CTR - 6, 0, 2 * Math.PI);
-      ctx.stroke();
-      ctx.font         = `bold 8px 'Segoe UI', Arial, sans-serif`;
-      ctx.textAlign    = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle    = '#fff';
-      ctx.fillText('JOUER', CX, CX + 1);
+      // Center hub chrome
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 3;
+      ctx.beginPath(); ctx.arc(cx, cy, 18, 0, 2 * Math.PI); ctx.fillStyle = '#111'; ctx.fill();
+      ctx.restore();
+      const hub = ctx.createRadialGradient(cx - 5, cy - 6, 1, cx, cy, 18);
+      hub.addColorStop(0, '#ffffff'); hub.addColorStop(0.25, '#e0e0e8');
+      hub.addColorStop(0.6, '#888898'); hub.addColorStop(1, '#333340');
+      ctx.beginPath(); ctx.arc(cx, cy, 18, 0, 2 * Math.PI); ctx.fillStyle = hub; ctx.fill();
+      ctx.beginPath(); ctx.arc(cx, cy, 18, 0, 2 * Math.PI);
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1.5; ctx.stroke();
+      const dot = ctx.createRadialGradient(cx - 2, cy - 2, 0, cx, cy, 6);
+      dot.addColorStop(0, '#fff'); dot.addColorStop(1, '#aaa');
+      ctx.beginPath(); ctx.arc(cx, cy, 6, 0, 2 * Math.PI); ctx.fillStyle = dot; ctx.fill();
     }
 
-    // ── Tirage pondéré ──────────────────────────────────────────────────────────
-    function drawWinner() {
+    function idleLoop() {
+      if (!spinning) drawWheel(currentAngle);
+      idleTimer = setTimeout(() => requestAnimationFrame(idleLoop), 160);
+    }
+
+    // ── Tirage pondéré ─────────────────────────────────────────────────────────
+    function weightedDraw() {
       const total = totalProba();
       let rand = Math.random() * total;
-      for (const r of recompenses) {
-        rand -= parseFloat(r.probabilite || 1);
-        if (rand <= 0) return r;
+      for (let i = 0; i < recompenses.length; i++) {
+        rand -= parseFloat(recompenses[i].probabilite || 1);
+        if (rand <= 0) return i;
       }
-      return recompenses[recompenses.length - 1];
+      return recompenses.length - 1;
     }
 
-    // ── Angle cible ─────────────────────────────────────────────────────────────
-    function calcTargetAngle(winnerIdx) {
-      const total = totalProba();
+    function updateTries() {
+      const used = 3 - triesLeft;
+      const el = document.getElementById('roue-tries-count');
+      if (el) el.innerHTML = `${used}<span style="color:rgba(0,0,0,0.35);font-weight:500;">/3</span>`;
+      document.querySelectorAll('.roue-try-dot').forEach((d, i) => {
+        d.style.background = i < used ? '#1a1200' : 'rgba(0,0,0,0.15)';
+      });
+    }
+
+    // ── Spin ───────────────────────────────────────────────────────────────────
+    function spin() {
+      if (spinning || triesLeft <= 0) return;
+
+      const winnerIdx = weightedDraw();
+      const total     = totalProba();
       let cumul = 0;
-      for (let i = 0; i < winnerIdx; i++) {
-        cumul += (parseFloat(recompenses[i].probabilite || 1) / total) * 2 * Math.PI;
+      for (let k = 0; k < winnerIdx; k++) {
+        cumul += (parseFloat(recompenses[k].probabilite || 1) / total) * 2 * Math.PI;
       }
       const slice       = (parseFloat(recompenses[winnerIdx].probabilite || 1) / total) * 2 * Math.PI;
       const midFromZero = cumul + slice / 2;
-      // pointer à -π/2 (haut) → targetAngle + midFromZero ≡ -π/2 (mod 2π)
-      const base      = -Math.PI / 2 - midFromZero;
-      const minTurns  = 4 + Math.floor(Math.random() * 3);
-      const k         = Math.ceil((currentAngle + minTurns * 2 * Math.PI - base) / (2 * Math.PI));
-      return base + k * 2 * Math.PI;
-    }
+      const extraSpins  = (7 + Math.floor(Math.random() * 3)) * 2 * Math.PI;
+      const norm        = currentAngle % (2 * Math.PI);
+      const targetOffset = (2 * Math.PI - midFromZero - norm + 2 * Math.PI) % (2 * Math.PI);
+      const targetAngle  = currentAngle + extraSpins + targetOffset;
 
-    // ── Animation easeOutQuart + rebond ─────────────────────────────────────────
-    function easeOutQuart(t) { return 1 - Math.pow(1 - t, 4); }
+      gainResult = recompenses[winnerIdx];
+      triesLeft--;
+      spinning = true;
+      const btn = document.getElementById('roue-jouer-btn');
+      if (btn) { btn.disabled = true; btn.textContent = 'En cours…'; }
+      updateTries();
 
-    function animateSpin(targetAngle, durationMs, onDone) {
+      const duration   = 7500;
+      const startTime  = performance.now();
       const startAngle = currentAngle;
-      const t0 = performance.now();
-      (function tick(now) {
-        const t = Math.min((now - t0) / durationMs, 1);
-        currentAngle = startAngle + (targetAngle - startAngle) * easeOutQuart(t);
-        drawWheel(currentAngle);
-        if (t < 1) requestAnimationFrame(tick);
-        else { currentAngle = targetAngle; bounce(targetAngle, onDone); }
-      })(performance.now());
+      function easeOutQuint(t) { return 1 - Math.pow(1 - t, 6); }
+
+      function animate(now) {
+        const t     = Math.min((now - startTime) / duration, 1);
+        const eased = easeOutQuint(t);
+        const angle = startAngle + (targetAngle - startAngle) * eased;
+        drawWheel(angle);
+        if (t < 1) { requestAnimationFrame(animate); return; }
+        currentAngle = targetAngle;
+        spinning = false;
+        spawnConfetti();
+        showResult();
+      }
+      requestAnimationFrame(animate);
     }
 
-    function bounce(base, onDone) {
-      const over = base + 0.065;
-      const t0 = performance.now(), d1 = 170;
-      (function p1(now) {
-        const t = Math.min((now - t0) / d1, 1);
-        currentAngle = base + (over - base) * (1 - (1 - t) * (1 - t));
-        drawWheel(currentAngle);
-        if (t < 1) { requestAnimationFrame(p1); return; }
-        currentAngle = over;
-        const t1 = performance.now(), d2 = 230;
-        (function p2(now2) {
-          const t2 = Math.min((now2 - t1) / d2, 1);
-          currentAngle = over + (base - over) * easeOutQuart(t2);
-          drawWheel(currentAngle);
-          if (t2 < 1) requestAnimationFrame(p2);
-          else { currentAngle = base; drawWheel(base); onDone(); }
-        })(performance.now());
-      })(performance.now());
+    function showResult() {
+      const winOv = document.getElementById('roue-win-overlay');
+      document.getElementById('roue-win-emoji').textContent = gainResult.emoji || '🎁';
+      document.getElementById('roue-win-label').textContent = gainResult.nom || '—';
+      if (winOv) { winOv.style.display = 'flex'; }
     }
 
-    // ── Décrément atomique ──────────────────────────────────────────────────────
-    async function tryDecrementStock(r) {
-      if (r.stock_illimite) return true;
+    // ── Confettis ──────────────────────────────────────────────────────────────
+    function spawnConfetti() {
+      const layer = document.getElementById('roue-particle-layer');
+      if (!layer) return;
+      const colors = ['#FFD700','#FF8C00','#fff','#FFE033','#FFF3A0','#FFA500'];
+      for (let i = 0; i < 50; i++) {
+        const el = document.createElement('div');
+        const x   = Math.random() * 100;
+        const delay = Math.random() * 0.8;
+        const dur   = 1.6 + Math.random() * 1.4;
+        const sz    = 5 + Math.random() * 8;
+        el.style.cssText = `position:absolute;left:${x}%;top:-10px;width:${sz}px;height:${sz}px;background:${colors[Math.floor(Math.random() * colors.length)]};border-radius:${Math.random() > .5 ? '50%' : '2px'};animation:confettiFall ${dur}s ${delay}s ease-in forwards;`;
+        layer.appendChild(el);
+        setTimeout(() => el.remove(), (dur + delay + 0.2) * 1000);
+      }
+      const bg = document.getElementById('roue-overlay');
+      if (bg) {
+        let t = 0;
+        const iv = setInterval(() => {
+          bg.style.filter = t++ % 2 === 0 ? 'brightness(1.3) saturate(1.2)' : 'brightness(0.95)';
+          if (t > 8) { clearInterval(iv); bg.style.filter = ''; }
+        }, 100);
+      }
+    }
+
+    // ── Supabase : décrémente stock ─────────────────────────────────────────────
+    async function tryDecrementStock(id) {
       try {
         const res = await fetch(`${SUPA_URL}/rest/v1/rpc/decrement_stock_roue`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` },
-          body: JSON.stringify({ p_id: r.id }),
+          body: JSON.stringify({ recompense_id: id })
         });
-        if (!res.ok) return true;
-        return (await res.json()) === true;
-      } catch { return true; }
+        return res.ok;
+      } catch(e) { return false; }
     }
 
-    // ── Lancer ──────────────────────────────────────────────────────────────────
-    async function lancer() {
-      if (spinning) return;
-      spinning = true;
-      document.getElementById('roue-jouer-btn').disabled = true;
-
-      const winner    = drawWinner();
-      const winnerIdx = recompenses.indexOf(winner);
-
-      const ok = await tryDecrementStock(winner);
-      if (!ok) {
-        recompenses = recompenses.filter(r => r.id !== winner.id);
-        spinning = false;
-        document.getElementById('roue-jouer-btn').disabled = false;
-        if (!recompenses.length) { closeRoue(); return; }
-        lancer();
-        return;
-      }
-
-      gainResult = winner;
-      const targetAngle = calcTargetAngle(winnerIdx);
-      const duration    = 4200 + Math.random() * 900;
-      animateSpin(targetAngle, duration, () => {
-        spinning = false;
-        setTimeout(showResult, 650);
-      });
-    }
-
-    // ── Afficher le résultat ─────────────────────────────────────────────────────
-    function showResult() {
-      // Zone haute : remplacer le canvas par le visuel résultat
-      document.getElementById('roue-canvas-wrap').style.display  = 'none';
-      document.getElementById('roue-visuel-result').style.display = 'block';
-      document.getElementById('roue-result-emoji').textContent   = gainResult.emoji || '🎁';
-      document.getElementById('roue-result-nom').textContent     = (gainResult.emoji ? gainResult.emoji + ' ' : '') + gainResult.nom;
-
-      // Zone basse : remplacer le bouton JOUER par les actions résultat
-      document.getElementById('roue-content-wheel').style.display  = 'none';
-      document.getElementById('roue-content-result').style.display = 'block';
-      const condEl = document.getElementById('roue-result-cond');
-      if (gainResult.conditions) { condEl.textContent = gainResult.conditions; condEl.style.display = 'block'; }
-
-      lanceConfettis();
-    }
-
-    function lanceConfettis() {
-      const cols = ['#E8C547','#c9a93a','#f5e8a0','#111','#e74c3c','#27ae60','#3498db','#fff'];
-      for (let i = 0; i < 32; i++) {
-        const d = document.createElement('div');
-        d.className = 'roue-confetti';
-        d.style.cssText = [
-          `left:${5 + Math.random() * 90}vw`,
-          `top:${-8 - Math.random() * 8}px`,
-          `width:${5 + Math.random() * 7}px`,
-          `height:${5 + Math.random() * 7}px`,
-          `background:${cols[Math.floor(Math.random() * cols.length)]}`,
-          `animation-delay:${(Math.random() * 0.6).toFixed(2)}s`,
-          `animation-duration:${(1.8 + Math.random() * 1.4).toFixed(2)}s`,
-        ].join(';');
-        document.body.appendChild(d);
-        setTimeout(() => d.remove(), 3500);
-      }
-    }
-
-    // ── Formulaire ──────────────────────────────────────────────────────────────
+    // ── Confirmer formulaire ───────────────────────────────────────────────────
     async function confirmer() {
-      const prenom = document.getElementById('roue-prenom').value.trim();
-      const tel    = document.getElementById('roue-tel').value.trim();
-      const email  = document.getElementById('roue-email').value.trim();
+      const prenom = (document.getElementById('roue-prenom').value || '').trim();
+      const nom    = (document.getElementById('roue-nom').value    || '').trim();
+      const tel    = (document.getElementById('roue-tel').value    || '').trim().replace(/\s/g, '');
+      const email  = (document.getElementById('roue-email').value  || '').trim().toLowerCase();
+      const consent = document.getElementById('roue-consent').checked;
 
-      if (!tel || !email)                                          { alert('Téléphone et email requis.'); return; }
-      if (!email.includes('@') || !email.includes('.'))           { alert('Email invalide.'); return; }
+      if (!tel && !email) { alert('Merci de renseigner votre téléphone ou votre email.'); return; }
 
       const btn = document.getElementById('roue-confirmer-btn');
-      btn.disabled    = true;
-      btn.textContent = 'Vérification en cours…';
+      if (btn) { btn.disabled = true; btn.textContent = 'Envoi en cours…'; }
 
-      // Anti-rejeu
+      // Anti-rejeu Supabase
       try {
-        const chk = await fetch(
-          `${SUPA_URL}/rest/v1/roue_gains?or=(tel.eq.${encodeURIComponent(tel)},email.eq.${encodeURIComponent(email)})&select=id&limit=1`,
+        const params = [];
+        if (tel)   params.push(`tel.eq.${encodeURIComponent(tel)}`);
+        if (email) params.push(`email.eq.${encodeURIComponent(email)}`);
+        const check = await fetch(
+          `${SUPA_URL}/rest/v1/roue_gains?or=(${params.join(',')})&select=id&limit=1`,
           { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
         );
-        const existing = await chk.json();
-        if (Array.isArray(existing) && existing.length) { showDeja(); return; }
-      } catch(e) {}
-
-      // Lier / créer client (best-effort, peut échouer selon RLS)
-      let clientId = null;
-      try {
-        const cliRes = await fetch(
-          `${SUPA_URL}/rest/v1/clients?tel=eq.${encodeURIComponent(tel)}&select=id&limit=1`,
-          { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
-        );
-        if (cliRes.ok) {
-          const cli = await cliRes.json();
-          if (Array.isArray(cli) && cli.length) {
-            clientId = cli[0].id;
-          } else {
-            const cr = await fetch(`${SUPA_URL}/rest/v1/clients`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, Prefer: 'return=representation' },
-              body: JSON.stringify({ prenom: prenom || null, tel, email }),
-            });
-            if (cr.ok) { const nc = await cr.json(); if (Array.isArray(nc) && nc.length) clientId = nc[0].id; }
-          }
+        if (check.ok) {
+          const existing = await check.json();
+          if (existing && existing.length > 0) { showDeja(); return; }
         }
       } catch(e) {}
 
-      // Enregistrer gain
+      // Décrémente stock
+      if (!gainResult.stock_illimite && gainResult.id) await tryDecrementStock(gainResult.id);
+
+      // Insert gain
       try {
         await fetch(`${SUPA_URL}/rest/v1/roue_gains`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, Prefer: 'return=minimal' },
-          body: JSON.stringify({ recompense_id: gainResult.id, prenom: prenom || null, tel, email, client_id: clientId || null, recupere: false }),
+          body: JSON.stringify({
+            recompense_id: gainResult.id,
+            prenom: prenom || null, nom: nom || null, genre: gender,
+            tel: tel || null, email: email || null,
+            consent_marketing: consent,
+            date_gain: new Date().toISOString()
+          })
+        });
+      } catch(e) {}
+
+      // Notification SMS + email
+      try {
+        await fetch('/api/roue-notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tel, email, prenom, nom,
+            recompense_nom:      gainResult.nom,
+            recompense_emoji:    gainResult.emoji || '',
+            conditions:          gainResult.conditions || '',
+            date_debut_validite: gainResult.date_debut_validite || null
+          })
         });
       } catch(e) {}
 
       localStorage.setItem('ted_roue_joue', '1');
-
-      // SMS + email via Cloudflare Function
-      try {
-        fetch('/api/roue-notify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            tel, email, prenom,
-            recompense_nom:   gainResult.nom,
-            recompense_emoji: gainResult.emoji,
-            conditions:       gainResult.conditions,
-            date_debut_validite: gainResult.date_debut_validite,
-          }),
-        });
-      } catch(e) {}
-
       showDone();
     }
 
     function showDeja() {
-      document.getElementById('roue-content-form').style.display = 'none';
-      document.getElementById('roue-step-done').style.display    = 'block';
-      document.getElementById('roue-done-icon').textContent  = '🙅';
-      document.getElementById('roue-done-titre').textContent = 'Déjà participé';
-      document.getElementById('roue-done-sub').textContent   = 'Vous avez déjà participé à la roue des cadeaux. Une seule participation par personne.';
+      const doneDiv   = document.getElementById('roue-form-done');
+      const fieldsDiv = document.getElementById('roue-form-fields');
+      if (doneDiv && fieldsDiv) {
+        fieldsDiv.style.display = 'none';
+        doneDiv.querySelector('h2').textContent = 'Déjà participé !';
+        doneDiv.querySelector('p').textContent  = 'Vous avez déjà participé à la roue des cadeaux.';
+        doneDiv.style.display = 'flex';
+      }
     }
 
     function showDone() {
-      document.getElementById('roue-content-form').style.display = 'none';
-      document.getElementById('roue-step-done').style.display    = 'block';
+      const doneDiv   = document.getElementById('roue-form-done');
+      const fieldsDiv = document.getElementById('roue-form-fields');
+      if (doneDiv && fieldsDiv) { fieldsDiv.style.display = 'none'; doneDiv.style.display = 'flex'; }
     }
 
-    // ── Fermeture ────────────────────────────────────────────────────────────────
+    // ── Ouvrir / fermer ────────────────────────────────────────────────────────
     function closeRoue() {
+      clearTimeout(idleTimer);
       const ov = document.getElementById('roue-overlay');
-      const sh = document.getElementById('roue-sheet');
-      sh.style.transform = 'translateY(100%)';
-      ov.style.opacity   = '0';
-      setTimeout(() => {
-        ov.style.display   = 'none';
-        ov.style.opacity   = '';
-        sh.style.transform = '';
-        document.body.style.overflow = '';
-      }, 400);
+      if (ov) { ov.classList.remove('open'); }
     }
 
-    // ── Ouverture ────────────────────────────────────────────────────────────────
     function openRouePopup() {
-      drawWheel(currentAngle);
-
       const ov = document.getElementById('roue-overlay');
-      ov.style.display = 'flex';
-      document.body.style.overflow = 'hidden';
+      if (!ov) return;
       requestAnimationFrame(() => requestAnimationFrame(() => ov.classList.add('open')));
 
-      // Ring countdown 5s
+      drawWheel(currentAngle);
+      requestAnimationFrame(idleLoop);
+
+      // Countdown fermeture
       const closeBtn = document.getElementById('roue-close');
-      const label    = document.getElementById('roue-close-label');
-      const ring     = document.getElementById('roue-ring');
-      const CIRCUM   = 2 * Math.PI * 18;
-
-      ring.style.strokeDasharray = `0 ${CIRCUM}`;
-      if (!prefersReduced) {
-        void ring.getBoundingClientRect();
-        ring.style.transition      = `stroke-dasharray 5s linear`;
-        ring.style.strokeDasharray = `${CIRCUM} 0`;
-      }
-
-      let countdown = 5;
+      let seconds = 5;
       const cInterval = setInterval(() => {
-        countdown--;
-        if (countdown <= 0) {
+        seconds--;
+        if (seconds <= 0) {
           clearInterval(cInterval);
-          label.textContent = '✕';
           closeBtn.disabled = false;
-          closeBtn.classList.add('active');
-          closeBtn.setAttribute('aria-label', 'Fermer');
-          if (prefersReduced) ring.style.strokeDasharray = `${CIRCUM} 0`;
-        } else {
-          label.textContent = countdown;
+          closeBtn.style.color  = 'rgba(0,0,0,0.6)';
+          closeBtn.style.cursor = 'pointer';
+          const svgWrap = document.getElementById('roue-countdown-svg');
+          if (svgWrap) svgWrap.style.display = 'none';
         }
       }, 1000);
 
-      closeBtn.onclick = () => {
-        if (closeBtn.disabled) return;
-        clearInterval(cInterval);
-        closeRoue();
-      };
-
+      closeBtn.onclick = () => { if (!closeBtn.disabled) { clearInterval(cInterval); closeRoue(); } };
       ov.addEventListener('click', e => {
         if (e.target === ov && !closeBtn.disabled) { clearInterval(cInterval); closeRoue(); }
       });
 
-      document.getElementById('roue-jouer-btn').onclick = lancer;
-      canvas.onclick = () => { if (!spinning) lancer(); };
+      document.getElementById('roue-jouer-btn').onclick = spin;
+      canvas.onclick = () => { if (!spinning && triesLeft > 0) spin(); };
 
       document.getElementById('roue-recuperer-btn').onclick = () => {
-        document.getElementById('roue-content-result').style.display = 'none';
-        document.getElementById('roue-content-form').style.display   = 'block';
+        document.getElementById('roue-win-overlay').style.display = 'none';
+        document.getElementById('roue-form-overlay').style.display = 'block';
       };
-      document.getElementById('roue-skip-btn').onclick      = closeRoue;
+      document.getElementById('roue-skip-btn').onclick = () => {
+        document.getElementById('roue-win-overlay').style.display = 'none';
+        if (triesLeft <= 0) {
+          closeRoue();
+        } else {
+          const btn = document.getElementById('roue-jouer-btn');
+          if (btn) { btn.disabled = false; btn.textContent = 'Retenter sa chance'; }
+        }
+      };
       document.getElementById('roue-confirmer-btn').onclick = confirmer;
       document.getElementById('roue-vers-carte-btn').onclick = () => {
+        document.getElementById('roue-form-overlay').style.display = 'none';
         closeRoue();
-        setTimeout(() => { window.location.href = '/menu.html?from=accueil'; }, 400);
+        setTimeout(() => { window.location.href = '/menu.html?from=accueil'; }, 300);
       };
     }
 
