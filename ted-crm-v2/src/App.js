@@ -3525,30 +3525,30 @@ function OriginesSheet({ onClose, showToast }) {
             {origines.map((o, i) => (
               <div key={o.id}
                 draggable onDragStart={() => { dragIdx.current = i; }} onDragEnter={() => { dragOverIdx.current = i; }} onDragEnd={drop} onDragOver={e => e.preventDefault()}
-                style={{ display:'grid', gridTemplateColumns:'1fr 1fr auto', alignItems:'center', padding:'10px 14px', borderBottom:'1px solid #f5f5f5', background:'#fff', cursor:'grab', userSelect:'none' }}>
+                style={{ display:'grid', gridTemplateColumns:'1fr 1fr auto', alignItems:'center', padding:'13px 14px', borderBottom:'1px solid #f0f0f0', background: i % 2 === 0 ? '#fff' : '#fafafa', cursor:'grab', userSelect:'none', transition:'background 0.1s' }}>
                 {editingId === o.id ? (
                   <>
                     <input value={editProduit} onChange={e => setEditProduit(e.target.value)}
                       onKeyDown={e => { if (e.key==='Enter') saveEdit(o); if (e.key==='Escape') setEditingId(null); }}
-                      style={{ height:30, border:'1.5px solid #E8C547', borderRadius:7, padding:'0 8px', fontSize:13, outline:'none', marginRight:6 }} autoFocus />
+                      style={{ height:32, border:'1.5px solid #E8C547', borderRadius:7, padding:'0 8px', fontSize:13, outline:'none', marginRight:6, background:'#fff' }} autoFocus />
                     <input value={editOrigine} onChange={e => setEditOrigine(e.target.value)}
                       onKeyDown={e => { if (e.key==='Enter') saveEdit(o); if (e.key==='Escape') setEditingId(null); }}
-                      style={{ height:30, border:'1.5px solid #E8C547', borderRadius:7, padding:'0 8px', fontSize:13, outline:'none', marginRight:6 }} />
+                      style={{ height:32, border:'1.5px solid #E8C547', borderRadius:7, padding:'0 8px', fontSize:13, outline:'none', marginRight:6, background:'#fff' }} />
                     <div style={{ display:'flex', gap:4 }}>
-                      <button draggable={false} onPointerDown={e=>e.stopPropagation()} onClick={() => saveEdit(o)} style={{ ...btnPrimary, height:28, fontSize:12, padding:'0 8px' }}>✓</button>
-                      <button draggable={false} onPointerDown={e=>e.stopPropagation()} onClick={() => setEditingId(null)} style={{ ...btnSecondary, height:28, fontSize:12, padding:'0 8px' }}>✕</button>
+                      <button draggable={false} onPointerDown={e=>e.stopPropagation()} onClick={() => saveEdit(o)} style={{ ...btnPrimary, height:30, fontSize:12, padding:'0 10px' }}>✓</button>
+                      <button draggable={false} onPointerDown={e=>e.stopPropagation()} onClick={() => setEditingId(null)} style={{ ...btnSecondary, height:30, fontSize:12, padding:'0 10px' }}>✕</button>
                     </div>
                   </>
                 ) : (
                   <>
-                    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                      <span style={{ color:'#ddd', fontSize:13, flexShrink:0 }}>⠿</span>
+                    <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                      <span style={{ color:'#d0d0d0', fontSize:13, flexShrink:0 }}>⠿</span>
                       <span style={{ fontSize:13, fontWeight:600, color:'#111' }}>{o.produit}</span>
                     </div>
                     <span style={{ fontSize:13, color:'#555' }}>{o.origine}</span>
                     <div style={{ display:'flex', gap:2, justifyContent:'flex-end' }}>
-                      <button draggable={false} onPointerDown={e=>e.stopPropagation()} onClick={() => startEdit(o)} style={{ background:'none', border:'none', cursor:'pointer', color:'#888', display:'flex', padding:4 }}><Pencil size={12} /></button>
-                      <button draggable={false} onPointerDown={e=>e.stopPropagation()} onClick={() => deleteOrigine(o)} style={{ background:'none', border:'none', cursor:'pointer', color:'#e57373', display:'flex', padding:4 }}><Trash2 size={12} /></button>
+                      <button draggable={false} onPointerDown={e=>e.stopPropagation()} onClick={() => startEdit(o)} style={{ background:'none', border:'none', cursor:'pointer', color:'#bbb', display:'flex', padding:'4px 6px', borderRadius:6 }}><Pencil size={12} /></button>
+                      <button draggable={false} onPointerDown={e=>e.stopPropagation()} onClick={() => deleteOrigine(o)} style={{ background:'none', border:'none', cursor:'pointer', color:'#e57373', display:'flex', padding:'4px 6px', borderRadius:6 }}><Trash2 size={12} /></button>
                     </div>
                   </>
                 )}

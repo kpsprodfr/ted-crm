@@ -250,6 +250,29 @@
     .special-suggestion-nom { font-size: 14px; font-weight: 700; color: #111; }
     .special-suggestion-desc { font-size: 12px; color: #666; margin-top: 2px; }
     .special-suggestion-prix { font-size: 14px; font-weight: 800; color: #111; margin-top: 6px; text-align: right; }
+
+    /* ── Origine des viandes ─────────────────────────────────────────────── */
+    #origines-section {
+      max-width: 720px; margin: 40px auto 0; padding: 0 20px 32px;
+      display: none;
+    }
+    #origines-section.visible { display: block; }
+    .origines-title {
+      font-size: 10px; font-weight: 800; color: #bbb;
+      letter-spacing: 2.5px; text-transform: uppercase;
+      margin-bottom: 12px; padding-bottom: 8px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .origines-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px;
+    }
+    @media (max-width: 420px) { .origines-grid { grid-template-columns: 1fr; } }
+    .origines-row {
+      display: flex; align-items: baseline; justify-content: space-between;
+      gap: 8px; padding: 5px 0; border-bottom: 1px solid #f8f8f8;
+    }
+    .origines-produit { font-size: 12px; color: #888; }
+    .origines-origine { font-size: 11px; color: #bbb; font-style: italic; white-space: nowrap; }
   </style>
 </head>
 <body>
@@ -289,6 +312,11 @@
 <div id="content" style="display:none"></div>
 
 <button id="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Retour en haut">↑</button>
+
+<div id="origines-section">
+  <div class="origines-title">Origine des viandes</div>
+  <div class="origines-grid" id="origines-grid"></div>
+</div>
 
 <footer>
   <img src="/logo192.png" alt="Logo TED" style="height:48px;width:48px;object-fit:contain;opacity:0.85;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;">
@@ -729,6 +757,28 @@
 
   applyLangUI();
   loadData();
+
+  // ── Origine des viandes ─────────────────────────────────────────────────
+  async function loadOrigines() {
+    try {
+      const r = await fetch(
+        `${SUPA_URL}/rest/v1/menu_origines?select=produit,origine&order=ordre`,
+        { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
+      );
+      if (!r.ok) return;
+      const data = await r.json();
+      if (!data || data.length === 0) return;
+      const grid = document.getElementById('origines-grid');
+      grid.innerHTML = data.map(o =>
+        `<div class="origines-row">
+          <span class="origines-produit">${esc(o.produit)}</span>
+          <span class="origines-origine">${esc(o.origine)}</span>
+        </div>`
+      ).join('');
+      document.getElementById('origines-section').classList.add('visible');
+    } catch(e) {}
+  }
+  loadOrigines();
 </script>
 </body>
 </html>
