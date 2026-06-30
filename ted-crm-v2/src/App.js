@@ -3577,29 +3577,22 @@ function OriginesSheet({ onClose, showToast }) {
 
 // ── Roue cadeaux — back-office ───────────────────────────────────────────────
 
-const DEFAULT_EMAIL1_OBJET = '🎉 Vous avez gagné au Grand Jeux du TED !';
-const DEFAULT_EMAIL1_CORPS = `Bonjour {prenom} {nom},
+const DEFAULT_EMAIL1_OBJET = '🎉 {prenom}, vous avez gagné {emoji} {recompense} au Grand Jeux du TED !';
+const DEFAULT_EMAIL1_CORPS = `🎉 {prenom}, vous avez gagné !
 
-Félicitations ! Vous avez gagné {emoji} {recompense} au Grand Jeux du TED.
+Le destin a parlé — et il a choisi votre nom. 🎰
 
-Votre récompense est confirmée. Nous vous contacterons très prochainement avec tous les détails.
+Votre {emoji} {recompense} vous attend au TED le {date}.
 
-À très vite au TED !
-L'équipe du TED — 04 72 02 20 20`;
+Une victoire comme celle-là, ça se fête en grand. Réunissez vos plus belles personnes autour de vous — parce que les meilleurs moments de la vie se vivent ensemble. 🥂
 
-const DEFAULT_EMAIL2_OBJET = '🥂 Votre {recompense} vous attend au TED !';
-const DEFAULT_EMAIL2_CORPS = `Bonjour {prenom} {nom},
+Pour profiter de votre récompense, venez à minimum 5 personnes autour d'un repas au TED. Notre équipe se fera un honneur de vous l'offrir dès votre arrivée.
 
-Votre {emoji} {recompense} vous attend !
+📞 Réservation par téléphone : 04 72 02 20 20
+🔗 Réservation en ligne : https://ted-crm.pages.dev/reserver.html
 
-Venez la savourer le {jour} {date} à partir de {heure}.
-
-L'occasion parfaite de revenir entre amis 🥂
-
-Réservation conseillée : 04 72 02 20 20
-
-À très vite,
-L'équipe du TED`;
+On vous attend avec impatience,
+L'équipe du TED 🦁`;
 
 function RecompenseSheet({ item, onClose, onSaved, showToast }) {
   const [nom, setNom] = useState(item?.nom || '');
@@ -3697,9 +3690,6 @@ function RouePage({ showToast }) {
   const [email1Delai, setEmail1Delai] = useState('1');
   const [email1Objet, setEmail1Objet] = useState(DEFAULT_EMAIL1_OBJET);
   const [email1Corps, setEmail1Corps] = useState(DEFAULT_EMAIL1_CORPS);
-  const [email2DelaiJours, setEmail2DelaiJours] = useState('3');
-  const [email2Objet, setEmail2Objet] = useState(DEFAULT_EMAIL2_OBJET);
-  const [email2Corps, setEmail2Corps] = useState(DEFAULT_EMAIL2_CORPS);
   const [savingParam, setSavingParam] = useState(false);
 
   useEffect(() => { loadAll(); }, []);
@@ -3722,9 +3712,6 @@ function RouePage({ showToast }) {
       if (p['roue_email1_delai']) setEmail1Delai(p['roue_email1_delai']);
       if (p['roue_email1_objet']) setEmail1Objet(p['roue_email1_objet']);
       if (p['roue_email1_corps']) setEmail1Corps(p['roue_email1_corps']);
-      if (p['roue_email2_delai_jours']) setEmail2DelaiJours(p['roue_email2_delai_jours']);
-      if (p['roue_email2_objet']) setEmail2Objet(p['roue_email2_objet']);
-      if (p['roue_email2_corps']) setEmail2Corps(p['roue_email2_corps']);
     } finally {
       setLoading(false);
     }
@@ -3768,17 +3755,6 @@ function RouePage({ showToast }) {
     } catch { showToast('Erreur envoi email'); }
   }
 
-  async function saveEmail2() {
-    setSavingParam(true);
-    await Promise.all([
-      saveParam('roue_email2_delai_jours', email2DelaiJours),
-      saveParam('roue_email2_objet', email2Objet),
-      saveParam('roue_email2_corps', email2Corps),
-    ]);
-    setSavingParam(false);
-    showToast('Email 2 sauvegardé ✓');
-  }
-
   async function toggleRecupere(g) {
     const v = !g.recupere;
     await supabase.from('roue_gains').update({ recupere: v }).eq('id', g.id);
@@ -3801,40 +3777,24 @@ function RouePage({ showToast }) {
 
   async function planifierVisite() {
     if (!planDate) return;
-    const d = new Date(planDate);
-    d.setDate(d.getDate() - (parseInt(email2DelaiJours) || 3));
     await supabase.from('roue_gains').update({
       date_venue: planDate,
       heure_venue: planHeure || null,
-      email2_planifie_le: d.toISOString(),
     }).eq('id', planModal.id);
-    showToast('Visite planifiée ✓');
+    showToast('Date de venue enregistrée ✓');
     setPlanModal(null);
     await loadAll();
   }
 
-  async function envoyerEmail2(g) {
-    if (!g.email) { showToast('Pas d\'email pour ce gagnant'); return; }
-    try {
-      await fetch('/api/roue-email', { method:'POST', headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify({ type:'email2', to_email:g.email, to_prenom:g.prenom, to_nom:g.nom,
-          recompense:g.roue_recompenses?.nom, emoji:g.roue_recompenses?.emoji,
-          date_venue:g.date_venue, heure_venue:g.heure_venue, gain_id:g.id }) });
-      showToast('Email 2 envoyé ✓');
-      setGains(prev => prev.map(x => x.id === g.id ? { ...x, email2_envoye: true } : x));
-    } catch { showToast('Erreur envoi email'); }
-  }
-
   function exportCSV() {
     const data = getFilteredGains();
-    const headers = ['Date','Prénom','Nom','Téléphone','Email','Récompense','Récupéré','Date venue','Email 2 envoyé'];
+    const headers = ['Date','Prénom','Nom','Téléphone','Email','Récompense','Récupéré','Date venue'];
     const rows = data.map(g => [
       g.date_gain ? new Date(g.date_gain).toLocaleDateString('fr-FR') : '',
       g.prenom||'', g.nom||'', g.tel||'', g.email||'',
       g.roue_recompenses?.nom||'',
       g.recupere ? 'Oui' : 'Non',
       g.date_venue||'',
-      g.email2_envoye ? 'Oui' : 'Non',
     ]);
     const csv = [headers,...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
     const blob = new Blob(['﻿'+csv], { type:'text/csv;charset=utf-8;' });
@@ -3850,7 +3810,6 @@ function RouePage({ showToast }) {
     const isPerdu = x => (x.roue_recompenses?.nom||'').toLowerCase().includes('perdu');
     if (filtreStatut === 'gagnants') g = g.filter(x => !isPerdu(x));
     else if (filtreStatut === 'perdants') g = g.filter(x => isPerdu(x));
-    else if (filtreStatut === 'email2') g = g.filter(x => x.email2_envoye);
     else if (filtreStatut === 'recuperes') g = g.filter(x => x.recupere);
     const now = new Date();
     if (filtrePeriode === 'today') g = g.filter(x => new Date(x.date_gain).toDateString() === now.toDateString());
@@ -3992,36 +3951,6 @@ function RouePage({ showToast }) {
           )}
         </div>
 
-        {/* Email 2 */}
-        <div style={{ borderTop:'1px solid #f0f0f0' }}>
-          <button onClick={() => setAccordion(a => a==='email2' ? '' : 'email2')}
-            style={{ width:'100%', padding:'18px 24px', background:'none', border:'none', display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', fontSize:15, fontWeight:700, color:'#111' }}>
-            <span>🥂 Email 2 — Convocation</span>
-            <ChevronDown size={18} style={{ transform: accordion==='email2' ? 'rotate(180deg)' : 'none', transition:'transform .2s' }} />
-          </button>
-          {accordion === 'email2' && (
-            <div style={{ padding:'0 24px 24px', borderTop:'1px solid #f0f0f0' }}>
-              <div style={{ paddingTop:16, display:'flex', flexDirection:'column', gap:14 }}>
-                <div style={{ background:'#fffbe6', border:'1.5px solid #E8C547', borderRadius:10, padding:'10px 14px', fontSize:12, color:'#666' }}>
-                  Variables disponibles : <strong>{'{prenom}'}</strong> <strong>{'{nom}'}</strong> <strong>{'{recompense}'}</strong> <strong>{'{emoji}'}</strong> <strong>{'{date}'}</strong> <strong>{'{jour}'}</strong> <strong>{'{heure}'}</strong>
-                </div>
-                <div>
-                  <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Délai avant la date de venue (jours)</label>
-                  <input type="number" min={0} value={email2DelaiJours} onChange={e=>setEmail2DelaiJours(e.target.value)} style={{ ...iS, marginTop:6 }} />
-                </div>
-                <div>
-                  <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Objet</label>
-                  <input type="text" value={email2Objet} onChange={e=>setEmail2Objet(e.target.value)} style={{ ...iS, marginTop:6 }} />
-                </div>
-                <div>
-                  <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Corps du mail</label>
-                  <textarea value={email2Corps} onChange={e=>setEmail2Corps(e.target.value)} rows={8} style={{ ...iS, marginTop:6, resize:'vertical', lineHeight:1.6 }} />
-                </div>
-                <button onClick={saveEmail2} disabled={savingParam} style={{ ...btnN, display:'flex', alignItems:'center', gap:6 }}><Save size={13} strokeWidth={2}/> Sauvegarder</button>
-              </div>
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Filtres */}
@@ -4034,7 +3963,6 @@ function RouePage({ showToast }) {
           <option value="all">Tous</option>
           <option value="gagnants">Gagnants</option>
           <option value="perdants">Perdants</option>
-          <option value="email2">Email 2 envoyé</option>
           <option value="recuperes">Récupérés</option>
         </select>
         <select value={filtrePeriode} onChange={e=>setFiltrePeriode(e.target.value)} style={{ ...iS, width:'auto', background:'#fff', cursor:'pointer' }}>
@@ -4057,7 +3985,7 @@ function RouePage({ showToast }) {
           <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
             <thead>
               <tr style={{ background:'#fafafa', borderBottom:'2px solid #f0f0f0' }}>
-                {['Date','Prénom','Nom','Téléphone','Email','Récompense','Statut','Date venue','Email 2','Actions'].map(h => (
+                {['Date','Prénom','Nom','Téléphone','Email','Récompense','Statut','Date visite','Actions'].map(h => (
                   <th key={h} style={{ padding:'12px 14px', textAlign:'left', fontWeight:700, fontSize:11, color:'#888', textTransform:'uppercase', letterSpacing:'.04em', whiteSpace:'nowrap' }}>{h}</th>
                 ))}
               </tr>
@@ -4084,22 +4012,14 @@ function RouePage({ showToast }) {
                   <td style={{ padding:'12px 14px', fontSize:12, whiteSpace:'nowrap' }}>
                     {g.date_venue ? new Date(g.date_venue+'T00:00:00').toLocaleDateString('fr-FR')+(g.heure_venue ? ' '+String(g.heure_venue).slice(0,5) : '') : '—'}
                   </td>
-                  <td style={{ padding:'12px 14px' }}>
-                    {g.email2_envoye
-                      ? <span style={{ fontSize:11, color:'#2e7d32', fontWeight:700 }}>✓ Envoyé</span>
-                      : <span style={{ fontSize:11, color:'#bbb' }}>—</span>}
-                  </td>
                   <td style={{ padding:'12px 14px', whiteSpace:'nowrap' }}>
-                    <div style={{ display:'flex', gap:6 }}>
-                      <button onClick={() => { setPlanModal(g); setPlanDate(g.date_venue||''); setPlanHeure(g.heure_venue ? String(g.heure_venue).slice(0,5) : '19:00'); }}
-                        style={{ ...btnG, padding:'4px 8px', fontSize:11 }} title="Planifier la venue">📅</button>
-                      {g.email && <button onClick={() => envoyerEmail2(g)} style={{ ...btnG, padding:'4px 8px', fontSize:11 }} title="Envoyer Email 2">✉️</button>}
-                    </div>
+                    <button onClick={() => { setPlanModal(g); setPlanDate(g.date_venue||''); setPlanHeure(g.heure_venue ? String(g.heure_venue).slice(0,5) : '19:00'); }}
+                      style={{ ...btnG, padding:'4px 8px', fontSize:11 }} title="Noter la date de visite">📅</button>
                   </td>
                 </tr>
               ))}
               {filteredGains.length === 0 && (
-                <tr><td colSpan={10} style={{ padding:40, textAlign:'center', color:'#bbb', fontSize:14 }}>Aucun résultat</td></tr>
+                <tr><td colSpan={9} style={{ padding:40, textAlign:'center', color:'#bbb', fontSize:14 }}>Aucun résultat</td></tr>
               )}
             </tbody>
           </table>
@@ -4110,7 +4030,7 @@ function RouePage({ showToast }) {
       {planModal && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:999, display:'flex', alignItems:'center', justifyContent:'center' }}>
           <div style={{ background:'#fff', borderRadius:20, padding:32, width:340, boxShadow:'0 20px 60px rgba(0,0,0,0.25)' }}>
-            <h3 style={{ margin:'0 0 20px', fontSize:18, fontWeight:900 }}>📅 Planifier la venue</h3>
+            <h3 style={{ margin:'0 0 20px', fontSize:18, fontWeight:900 }}>📅 Date de visite</h3>
             <div style={{ fontWeight:600, fontSize:14, marginBottom:4, color:'#444' }}>{planModal.prenom} {planModal.nom}</div>
             <div style={{ fontSize:13, color:'#888', marginBottom:20 }}>{planModal.roue_recompenses?.emoji} {planModal.roue_recompenses?.nom}</div>
             <div style={{ marginBottom:14 }}>
@@ -4121,7 +4041,6 @@ function RouePage({ showToast }) {
               <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Heure</label>
               <input type="time" value={planHeure} onChange={e=>setPlanHeure(e.target.value)} style={{ ...iS, marginTop:6 }} />
             </div>
-            <div style={{ fontSize:11, color:'#999', marginBottom:20 }}>Email 2 sera planifié {email2DelaiJours} jour(s) avant.</div>
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={planifierVisite} style={{ ...btnN, flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}><Save size={14} strokeWidth={2}/> Enregistrer</button>
               <button onClick={() => setPlanModal(null)} style={{ ...btnG, flex:1 }}>Annuler</button>
