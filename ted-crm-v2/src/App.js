@@ -3428,7 +3428,7 @@ function CatsSheet({ categories: initCats, onClose, showToast, carte, produits }
 
 // ── Origine des viandes ──────────────────────────────────────────────────────
 
-function OriginesPage({ showToast }) {
+function OriginesSheet({ onClose, showToast }) {
   const [titre, setTitre] = useState('Origine des viandes');
   const [editTitre, setEditTitre] = useState(false);
   const [titreDraft, setTitreDraft] = useState('');
@@ -3496,83 +3496,82 @@ function OriginesPage({ showToast }) {
     dragIdx.current = null; dragOverIdx.current = null;
   }
 
-  if (loading) return <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'60vh', color:'#888', fontSize:15 }}>Chargement…</div>;
-
   return (
-    <div style={{ padding:'32px 28px', maxWidth:700, margin:'0 auto' }}>
-      {/* Titre éditable */}
-      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8 }}>
-        {editTitre ? (
-          <input value={titreDraft} onChange={e => setTitreDraft(e.target.value)}
-            onBlur={saveTitre} onKeyDown={e => { if (e.key === 'Enter') saveTitre(); if (e.key === 'Escape') setEditTitre(false); }}
-            autoFocus style={{ fontSize:24, fontWeight:900, color:'#111', border:'none', borderBottom:'2px solid #E8C547', outline:'none', background:'transparent', width:'100%' }} />
-        ) : (
-          <h1 style={{ margin:0, fontSize:24, fontWeight:900, color:'#111', cursor:'pointer', display:'flex', alignItems:'center', gap:8 }}
-            onClick={() => { setTitreDraft(titre); setEditTitre(true); }}>
-            {titre} <Pencil size={14} color="#ccc" />
-          </h1>
-        )}
-      </div>
-      <p style={{ margin:'0 0 28px', fontSize:13, color:'#aaa' }}>Cliquez sur le titre pour le renommer. Glissez les lignes pour réordonner.</p>
+    <MenuBottomSheet
+      title={
+        editTitre
+          ? <input value={titreDraft} onChange={e => setTitreDraft(e.target.value)}
+              onBlur={saveTitre} onKeyDown={e => { if (e.key==='Enter') saveTitre(); if (e.key==='Escape') setEditTitre(false); }}
+              autoFocus style={{ fontSize:16, fontWeight:800, color:'#111', border:'none', borderBottom:'2px solid #E8C547', outline:'none', background:'transparent', width:'100%' }} />
+          : <span style={{ cursor:'pointer', display:'flex', alignItems:'center', gap:6 }} onClick={() => { setTitreDraft(titre); setEditTitre(true); }}>
+              {titre} <Pencil size={12} color="#ccc" />
+            </span>
+      }
+      onClose={onClose}
+    >
+      {loading ? (
+        <div style={{ textAlign:'center', padding:'40px 0', color:'#ccc', fontSize:14 }}>Chargement…</div>
+      ) : (
+        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          <p style={{ margin:0, fontSize:12, color:'#bbb' }}>Cliquez sur le titre pour le renommer. Glissez pour réordonner.</p>
 
-      {/* Liste */}
-      <div style={{ background:'#fff', borderRadius:16, border:'1px solid #eee', overflow:'hidden', marginBottom:20 }}>
-        {/* En-tête */}
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr auto', gap:0, padding:'10px 16px', background:'#f9f9f9', borderBottom:'1px solid #eee' }}>
-          <span style={{ fontSize:11, fontWeight:700, color:'#aaa', textTransform:'uppercase', letterSpacing:1 }}>Produit</span>
-          <span style={{ fontSize:11, fontWeight:700, color:'#aaa', textTransform:'uppercase', letterSpacing:1 }}>Origine</span>
-          <span style={{ width:60 }} />
-        </div>
-
-        {origines.map((o, i) => (
-          <div key={o.id}
-            draggable onDragStart={() => { dragIdx.current = i; }} onDragEnter={() => { dragOverIdx.current = i; }} onDragEnd={drop} onDragOver={e => e.preventDefault()}
-            style={{ display:'grid', gridTemplateColumns:'1fr 1fr auto', alignItems:'center', gap:0, padding:'12px 16px', borderBottom:'1px solid #f5f5f5', background:'#fff', cursor:'grab', userSelect:'none' }}>
-            {editingId === o.id ? (
-              <>
-                <input value={editProduit} onChange={e => setEditProduit(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') saveEdit(o); if (e.key === 'Escape') setEditingId(null); }}
-                  style={{ height:32, border:'1.5px solid #E8C547', borderRadius:7, padding:'0 8px', fontSize:13, outline:'none', marginRight:8 }} autoFocus />
-                <input value={editOrigine} onChange={e => setEditOrigine(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') saveEdit(o); if (e.key === 'Escape') setEditingId(null); }}
-                  style={{ height:32, border:'1.5px solid #E8C547', borderRadius:7, padding:'0 8px', fontSize:13, outline:'none', marginRight:8 }} />
-                <div style={{ display:'flex', gap:4 }}>
-                  <button draggable={false} onPointerDown={e => e.stopPropagation()} onClick={() => saveEdit(o)} style={{ ...btnPrimary, height:30, fontSize:12, padding:'0 10px' }}>✓</button>
-                  <button draggable={false} onPointerDown={e => e.stopPropagation()} onClick={() => setEditingId(null)} style={{ ...btnSecondary, height:30, fontSize:12, padding:'0 10px' }}>✕</button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  <span style={{ color:'#ddd', fontSize:14, flexShrink:0 }}>⠿</span>
-                  <span style={{ fontSize:14, fontWeight:600, color:'#111' }}>{o.produit}</span>
-                </div>
-                <span style={{ fontSize:14, color:'#555' }}>{o.origine}</span>
-                <div style={{ display:'flex', gap:4, justifyContent:'flex-end' }}>
-                  <button draggable={false} onPointerDown={e => e.stopPropagation()} onClick={() => startEdit(o)} style={{ background:'none', border:'none', cursor:'pointer', color:'#888', display:'flex', padding:4 }}><Pencil size={13} /></button>
-                  <button draggable={false} onPointerDown={e => e.stopPropagation()} onClick={() => deleteOrigine(o)} style={{ background:'none', border:'none', cursor:'pointer', color:'#e57373', display:'flex', padding:4 }}><Trash2 size={13} /></button>
-                </div>
-              </>
+          {/* Liste */}
+          <div style={{ border:'1px solid #eee', borderRadius:12, overflow:'hidden' }}>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr auto', padding:'8px 14px', background:'#f9f9f9', borderBottom:'1px solid #eee' }}>
+              <span style={{ fontSize:10, fontWeight:700, color:'#aaa', textTransform:'uppercase', letterSpacing:1 }}>Produit</span>
+              <span style={{ fontSize:10, fontWeight:700, color:'#aaa', textTransform:'uppercase', letterSpacing:1 }}>Origine</span>
+              <span style={{ width:56 }} />
+            </div>
+            {origines.map((o, i) => (
+              <div key={o.id}
+                draggable onDragStart={() => { dragIdx.current = i; }} onDragEnter={() => { dragOverIdx.current = i; }} onDragEnd={drop} onDragOver={e => e.preventDefault()}
+                style={{ display:'grid', gridTemplateColumns:'1fr 1fr auto', alignItems:'center', padding:'10px 14px', borderBottom:'1px solid #f5f5f5', background:'#fff', cursor:'grab', userSelect:'none' }}>
+                {editingId === o.id ? (
+                  <>
+                    <input value={editProduit} onChange={e => setEditProduit(e.target.value)}
+                      onKeyDown={e => { if (e.key==='Enter') saveEdit(o); if (e.key==='Escape') setEditingId(null); }}
+                      style={{ height:30, border:'1.5px solid #E8C547', borderRadius:7, padding:'0 8px', fontSize:13, outline:'none', marginRight:6 }} autoFocus />
+                    <input value={editOrigine} onChange={e => setEditOrigine(e.target.value)}
+                      onKeyDown={e => { if (e.key==='Enter') saveEdit(o); if (e.key==='Escape') setEditingId(null); }}
+                      style={{ height:30, border:'1.5px solid #E8C547', borderRadius:7, padding:'0 8px', fontSize:13, outline:'none', marginRight:6 }} />
+                    <div style={{ display:'flex', gap:4 }}>
+                      <button draggable={false} onPointerDown={e=>e.stopPropagation()} onClick={() => saveEdit(o)} style={{ ...btnPrimary, height:28, fontSize:12, padding:'0 8px' }}>✓</button>
+                      <button draggable={false} onPointerDown={e=>e.stopPropagation()} onClick={() => setEditingId(null)} style={{ ...btnSecondary, height:28, fontSize:12, padding:'0 8px' }}>✕</button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                      <span style={{ color:'#ddd', fontSize:13, flexShrink:0 }}>⠿</span>
+                      <span style={{ fontSize:13, fontWeight:600, color:'#111' }}>{o.produit}</span>
+                    </div>
+                    <span style={{ fontSize:13, color:'#555' }}>{o.origine}</span>
+                    <div style={{ display:'flex', gap:2, justifyContent:'flex-end' }}>
+                      <button draggable={false} onPointerDown={e=>e.stopPropagation()} onClick={() => startEdit(o)} style={{ background:'none', border:'none', cursor:'pointer', color:'#888', display:'flex', padding:4 }}><Pencil size={12} /></button>
+                      <button draggable={false} onPointerDown={e=>e.stopPropagation()} onClick={() => deleteOrigine(o)} style={{ background:'none', border:'none', cursor:'pointer', color:'#e57373', display:'flex', padding:4 }}><Trash2 size={12} /></button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+            {origines.length === 0 && (
+              <div style={{ padding:'24px', textAlign:'center', color:'#ccc', fontSize:13 }}>Aucune entrée. Ajoutez-en ci-dessous.</div>
             )}
           </div>
-        ))}
 
-        {origines.length === 0 && (
-          <div style={{ padding:'32px', textAlign:'center', color:'#ccc', fontSize:14 }}>Aucune entrée. Ajoutez-en ci-dessous.</div>
-        )}
-      </div>
-
-      {/* Ajouter une ligne */}
-      <div style={{ display:'flex', gap:8 }}>
-        <input value={newProduit} onChange={e => setNewProduit(e.target.value)} placeholder="Produit (ex: Entrecôte)" onKeyDown={e => e.key === 'Enter' && addOrigine()}
-          style={{ ...inp(false), flex:2, height:42 }} />
-        <input value={newOrigine} onChange={e => setNewOrigine(e.target.value)} placeholder="Origine (ex: France)" onKeyDown={e => e.key === 'Enter' && addOrigine()}
-          style={{ ...inp(false), flex:2, height:42 }} />
-        <button onClick={addOrigine} disabled={adding || !newProduit.trim()} style={{ ...btnPrimary, height:42, display:'flex', alignItems:'center', gap:6, whiteSpace:'nowrap' }}>
-          <Plus size={15} /> Ajouter
-        </button>
-      </div>
-    </div>
+          {/* Ajouter */}
+          <div style={{ display:'flex', gap:8 }}>
+            <input value={newProduit} onChange={e => setNewProduit(e.target.value)} placeholder="Produit (ex: Entrecôte)" onKeyDown={e => e.key==='Enter' && addOrigine()}
+              style={{ ...inp(false), flex:2 }} />
+            <input value={newOrigine} onChange={e => setNewOrigine(e.target.value)} placeholder="Origine (ex: France)" onKeyDown={e => e.key==='Enter' && addOrigine()}
+              style={{ ...inp(false), flex:2 }} />
+            <button onClick={addOrigine} disabled={adding || !newProduit.trim()} style={{ ...btnPrimary, display:'flex', alignItems:'center', gap:6, whiteSpace:'nowrap' }}>
+              <Plus size={14} /> Ajouter
+            </button>
+          </div>
+        </div>
+      )}
+    </MenuBottomSheet>
   );
 }
 
@@ -3609,6 +3608,7 @@ function MenuPage({ showToast }) {
   const [soirees, setSoirees] = useState([]);
   const [soireeSheet, setSoireeSheet] = useState(null); // {} pour new, {...s} pour edit
   const [confirmDeleteSoiree, setConfirmDeleteSoiree] = useState(null);
+  const [showOriginesSheet, setShowOriginesSheet] = useState(false);
   const dragSoiree = useRef(null);
   const dragOverSoiree = useRef(null);
 
@@ -3838,6 +3838,9 @@ function MenuPage({ showToast }) {
           </button>
           <button onClick={() => setShowGererCats(true)} style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'1px solid #e5e5e5', cursor:'pointer', color:'#666', fontSize:13, fontWeight:600, padding:'7px 12px', borderRadius:8 }}>
             <Settings size={14} /> Gérer les catégories
+          </button>
+          <button onClick={() => setShowOriginesSheet(true)} style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'1px solid #e5e5e5', cursor:'pointer', color:'#666', fontSize:13, fontWeight:600, padding:'7px 12px', borderRadius:8 }}>
+            <MapPin size={14} /> Origine des viandes
           </button>
           <button onClick={() => catsFiltered.length > 0 ? setCatPickerOpen(true) : setEditProduit({ carte, disponible: true, mise_en_avant: false, badges: [], allergenes: [] })} style={{ ...btnPrimary, height:36, fontSize:13, display:'flex', alignItems:'center', gap:6 }}>
             <Plus size={15} /> Ajouter un produit
@@ -4155,6 +4158,10 @@ function MenuPage({ showToast }) {
           showToast={showToast}
           produits={produits}
         />
+      )}
+
+      {showOriginesSheet && (
+        <OriginesSheet onClose={() => setShowOriginesSheet(false)} showToast={showToast} />
       )}
 
       {/* ── Section Soirées ── */}
@@ -4646,7 +4653,6 @@ function CRMApp({ user, onLogout }) {
         { id:'clients', label:'Clients', icon:<Users size={24} strokeWidth={1.8} /> },
         { id:'communications', label:'Communications', icon:<Megaphone size={24} strokeWidth={1.8} /> },
         { id:'menu', label:'Menu', icon:<UtensilsCrossed size={24} strokeWidth={1.8} /> },
-        { id:'origines', label:'Origines', icon:<MapPin size={24} strokeWidth={1.8} /> },
       ].map(item => {
         const nbAttenteSidebar = item.id === 'reservations' ? resaAttenteCount : 0;
         return (
@@ -4762,16 +4768,6 @@ function CRMApp({ user, onLogout }) {
       </div>
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
       {notifPrePromptModal}
-    </>
-  );
-
-  if (!isMobile && activeView === 'origines') return (
-    <>
-      {sidebarDesktop}
-      <div style={{ marginLeft:120, minHeight:'100vh', background:'#f5f5f5' }}>
-        <OriginesPage showToast={showToast} />
-      </div>
-      {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
     </>
   );
 
