@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus, UserPlus, Trophy, ArrowUpDown, LayoutGrid, Settings, MapPin } from 'lucide-react';
+import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus, UserPlus, Trophy, ArrowUpDown, LayoutGrid, Settings, MapPin, Dices } from 'lucide-react';
 import { supabase } from "./supabase";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -3575,6 +3575,317 @@ function OriginesSheet({ onClose, showToast }) {
   );
 }
 
+// ── Roue cadeaux ─────────────────────────────────────────────────────────────
+
+function RecompenseSheet({ item, onClose, onSaved, showToast }) {
+  const isNew = !item?.id;
+  const [form, setForm] = useState({
+    nom: '', emoji: '🎁', probabilite: 10, stock: '', stock_illimite: false,
+    date_debut_validite: '', date_fin_validite: '', conditions: '', actif: true, couleur: '#E8C547',
+    ...item
+  });
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    if (!form.nom.trim()) return;
+    setSaving(true);
+    const payload = {
+      nom: form.nom.trim(), emoji: form.emoji || '🎁',
+      probabilite: parseFloat(form.probabilite) || 0,
+      stock: form.stock_illimite ? null : (parseInt(form.stock) || null),
+      stock_illimite: !!form.stock_illimite,
+      date_debut_validite: form.date_debut_validite || null,
+      date_fin_validite: form.date_fin_validite || null,
+      conditions: form.conditions || null,
+      actif: !!form.actif, couleur: form.couleur || '#E8C547',
+    };
+    if (isNew) {
+      const { data } = await supabase.from('roue_recompenses').insert({ ...payload, ordre: 99 }).select().single();
+      if (data) onSaved(data, true);
+    } else {
+      await supabase.from('roue_recompenses').update(payload).eq('id', item.id);
+      onSaved({ ...item, ...payload }, false);
+    }
+    setSaving(false);
+    onClose();
+  }
+
+  const f = (k) => (e) => setForm(p => ({ ...p, [k]: e.target.value }));
+  const fieldStyle = { ...inp(false), width: '100%' };
+
+  return (
+    <MenuBottomSheet title={isNew ? '➕ Nouvelle récompense' : '✏️ Modifier la récompense'} onClose={onClose}
+      footer={<><button onClick={onClose} style={{ ...btnSecondary, flex:1 }}>Annuler</button><button onClick={save} disabled={saving || !form.nom.trim()} style={{ ...btnPrimary, flex:2 }}>{saving ? '...' : 'Enregistrer'}</button></>}>
+      <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+        <div style={{ display:'flex', gap:10 }}>
+          <div style={{ width:70 }}>
+            <label style={lbl}>Emoji</label>
+            <input value={form.emoji} onChange={f('emoji')} style={{ ...fieldStyle, fontSize:22, textAlign:'center', padding:'6px 4px' }} maxLength={4} />
+          </div>
+          <div style={{ flex:1 }}>
+            <label style={lbl}>Nom de la récompense *</label>
+            <input value={form.nom} onChange={f('nom')} style={fieldStyle} placeholder="ex: Dessert offert" autoFocus />
+          </div>
+        </div>
+
+        <div style={{ display:'flex', gap:10 }}>
+          <div style={{ flex:1 }}>
+            <label style={lbl}>Probabilité (%)</label>
+            <input type="number" min="0" max="100" step="0.1" value={form.probabilite} onChange={f('probabilite')} style={fieldStyle} />
+          </div>
+          <div style={{ flex:1 }}>
+            <label style={lbl}>Couleur (hex)</label>
+            <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+              <input type="color" value={form.couleur || '#E8C547'} onChange={f('couleur')} style={{ width:42, height:38, border:'none', borderRadius:8, cursor:'pointer', padding:2 }} />
+              <input value={form.couleur} onChange={f('couleur')} style={{ ...fieldStyle, flex:1 }} placeholder="#E8C547" />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
+            <label style={lbl}>Stock</label>
+            <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+              <span style={{ fontSize:12, color:'#888' }}>Illimité</span>
+              <MenuToggle value={!!form.stock_illimite} onChange={() => setForm(p => ({ ...p, stock_illimite: !p.stock_illimite }))} />
+            </div>
+          </div>
+          <input type="number" min="0" value={form.stock || ''} onChange={f('stock')} disabled={!!form.stock_illimite}
+            style={{ ...fieldStyle, opacity: form.stock_illimite ? 0.4 : 1 }} placeholder="ex: 30" />
+        </div>
+
+        <div style={{ display:'flex', gap:10 }}>
+          <div style={{ flex:1 }}><label style={lbl}>Date début validité</label><input type="date" value={form.date_debut_validite || ''} onChange={f('date_debut_validite')} style={fieldStyle} /></div>
+          <div style={{ flex:1 }}><label style={lbl}>Date fin (optionnel)</label><input type="date" value={form.date_fin_validite || ''} onChange={f('date_fin_validite')} style={fieldStyle} /></div>
+        </div>
+
+        <div><label style={lbl}>Conditions (optionnel)</label><input value={form.conditions || ''} onChange={f('conditions')} style={fieldStyle} placeholder="ex: Sur présentation du ticket de caisse" /></div>
+
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'4px 0', borderTop:'1px solid #f0f0f0', paddingTop:10 }}>
+          <span style={{ fontSize:14, fontWeight:600, color:'#333' }}>Récompense active</span>
+          <MenuToggle value={!!form.actif} onChange={() => setForm(p => ({ ...p, actif: !p.actif }))} />
+        </div>
+      </div>
+    </MenuBottomSheet>
+  );
+}
+
+function RouePage({ showToast }) {
+  const [recompenses, setRecompenses] = useState([]);
+  const [gains, setGains] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editSheet, setEditSheet] = useState(null); // null | {} | {id,...}
+  const [filtre, setFiltre] = useState('tous'); // 'tous'|'recupere'|'non_recupere'
+  const [search, setSearch] = useState('');
+  const dragIdx = useRef(null);
+  const dragOverIdx = useRef(null);
+
+  useEffect(() => { load(); }, []);
+
+  async function load() {
+    const [rR, gR] = await Promise.all([
+      supabase.from('roue_recompenses').select('*').order('ordre'),
+      supabase.from('roue_gains').select('*, roue_recompenses(nom,emoji)').order('date_gain', { ascending: false }).limit(200),
+    ]);
+    setRecompenses(rR.data || []);
+    setGains(gR.data || []);
+    setLoading(false);
+  }
+
+  async function toggleActif(r) {
+    const v = !r.actif;
+    setRecompenses(prev => prev.map(x => x.id === r.id ? { ...x, actif: v } : x));
+    await supabase.from('roue_recompenses').update({ actif: v }).eq('id', r.id);
+  }
+
+  async function deleteRecompense(r) {
+    if (!window.confirm(`Supprimer "${r.nom}" ?`)) return;
+    await supabase.from('roue_recompenses').delete().eq('id', r.id);
+    setRecompenses(prev => prev.filter(x => x.id !== r.id));
+    showToast('Récompense supprimée');
+  }
+
+  async function marquerRecupere(g) {
+    const v = !g.recupere;
+    const now = v ? new Date().toISOString() : null;
+    setGains(prev => prev.map(x => x.id === g.id ? { ...x, recupere: v, date_recuperation: now } : x));
+    await supabase.from('roue_gains').update({ recupere: v, date_recuperation: now }).eq('id', g.id);
+    showToast(v ? 'Marqué comme récupéré ✓' : 'Marqué comme non récupéré');
+  }
+
+  function onSaved(item, isNew) {
+    if (isNew) { setRecompenses(prev => [...prev, item]); showToast('Récompense ajoutée ✓'); }
+    else { setRecompenses(prev => prev.map(x => x.id === item.id ? item : x)); showToast('Modifié ✓'); }
+  }
+
+  async function drop() {
+    if (dragIdx.current === null || dragOverIdx.current === null || dragIdx.current === dragOverIdx.current) { dragIdx.current = null; dragOverIdx.current = null; return; }
+    const next = [...recompenses];
+    const [moved] = next.splice(dragIdx.current, 1);
+    next.splice(dragOverIdx.current, 0, moved);
+    const updated = next.map((r, i) => ({ ...r, ordre: i + 1 }));
+    setRecompenses(updated);
+    await Promise.all(updated.map(r => supabase.from('roue_recompenses').update({ ordre: r.ordre }).eq('id', r.id)));
+    dragIdx.current = null; dragOverIdx.current = null;
+  }
+
+  const totalProba = recompenses.filter(r => r.actif).reduce((s, r) => s + parseFloat(r.probabilite || 0), 0);
+  const probaOk = Math.abs(totalProba - 100) < 0.1;
+
+  const gainsFiltres = gains.filter(g => {
+    if (filtre === 'recupere' && !g.recupere) return false;
+    if (filtre === 'non_recupere' && g.recupere) return false;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      return (g.prenom||'').toLowerCase().includes(q) || (g.tel||'').includes(q) || (g.email||'').toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  if (loading) return <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'60vh', color:'#888', fontSize:15 }}>Chargement…</div>;
+
+  const cardStyle = { background:'#fff', borderRadius:16, border:'1px solid #eee', overflow:'hidden', marginBottom:24 };
+  const thStyle = { fontSize:10, fontWeight:800, color:'#aaa', textTransform:'uppercase', letterSpacing:1, padding:'10px 16px', background:'#f9f9f9' };
+
+  return (
+    <div style={{ padding:'24px 28px', maxWidth:1000, margin:'0 auto' }}>
+
+      {/* Header */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:28 }}>
+        <div>
+          <h1 style={{ margin:0, fontSize:24, fontWeight:900, color:'#111' }}>🎡 Roue cadeaux</h1>
+          <p style={{ margin:'3px 0 0', fontSize:13, color:'#aaa' }}>Gérez les récompenses et suivez les gains</p>
+        </div>
+        <button onClick={() => setEditSheet({})} style={{ ...btnPrimary, display:'flex', alignItems:'center', gap:6, height:38, fontSize:13 }}>
+          <Plus size={15} /> Ajouter une récompense
+        </button>
+      </div>
+
+      {/* ── Section A : Récompenses ── */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+        <h2 style={{ margin:0, fontSize:16, fontWeight:800, color:'#111' }}>Récompenses</h2>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <span style={{ fontSize:13, fontWeight:700, color: probaOk ? '#4caf50' : '#e57373' }}>
+            Total actif : {totalProba.toFixed(1)}%
+          </span>
+          {!probaOk && (
+            <span style={{ fontSize:11, background:'#fff3cd', color:'#856404', padding:'3px 8px', borderRadius:6, border:'1px solid #ffc107', fontWeight:600 }}>
+              ⚠️ Doit être égal à 100%
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div style={cardStyle}>
+        <div style={{ display:'grid', gridTemplateColumns:'32px 1fr 80px 90px 80px 80px 90px', gap:0, ...thStyle }}>
+          <span></span>
+          <span>Récompense</span>
+          <span style={{ textAlign:'center' }}>Prob.</span>
+          <span style={{ textAlign:'center' }}>Stock</span>
+          <span style={{ textAlign:'center' }}>Actif</span>
+          <span></span>
+          <span></span>
+        </div>
+        {recompenses.map((r, i) => (
+          <div key={r.id}
+            draggable onDragStart={() => { dragIdx.current = i; }} onDragEnter={() => { dragOverIdx.current = i; }} onDragEnd={drop} onDragOver={e => e.preventDefault()}
+            style={{ display:'grid', gridTemplateColumns:'32px 1fr 80px 90px 80px 80px 90px', alignItems:'center', padding:'12px 16px', borderBottom:'1px solid #f5f5f5', background: i%2===0 ? '#fff' : '#fafafa', cursor:'grab', userSelect:'none' }}>
+            <span style={{ color:'#d0d0d0', fontSize:14 }}>⠿</span>
+            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+              <span style={{ fontSize:20 }}>{r.emoji}</span>
+              <div>
+                <div style={{ fontSize:14, fontWeight:700, color: r.actif ? '#111' : '#bbb' }}>{r.nom}</div>
+                {r.conditions && <div style={{ fontSize:11, color:'#aaa' }}>{r.conditions}</div>}
+              </div>
+            </div>
+            <div style={{ textAlign:'center' }}>
+              <span style={{ fontSize:13, fontWeight:700, color:'#E8C547', background:'#fffbea', padding:'3px 8px', borderRadius:6 }}>{r.probabilite}%</span>
+            </div>
+            <div style={{ textAlign:'center', fontSize:13, color:'#555' }}>
+              {r.stock_illimite ? <span style={{ color:'#4caf50', fontWeight:700 }}>∞</span> : (r.stock != null ? r.stock : <span style={{ color:'#ccc' }}>—</span>)}
+            </div>
+            <div style={{ display:'flex', justifyContent:'center' }}>
+              <MenuToggle value={!!r.actif} onChange={() => toggleActif(r)} />
+            </div>
+            <div style={{ display:'flex', justifyContent:'center' }}>
+              <button draggable={false} onPointerDown={e=>e.stopPropagation()} onClick={() => setEditSheet(r)}
+                style={{ background:'none', border:'none', cursor:'pointer', color:'#aaa', padding:'4px 6px', borderRadius:6 }}>
+                <Pencil size={14} />
+              </button>
+            </div>
+            <div style={{ display:'flex', justifyContent:'center' }}>
+              <button draggable={false} onPointerDown={e=>e.stopPropagation()} onClick={() => deleteRecompense(r)}
+                style={{ background:'none', border:'none', cursor:'pointer', color:'#e57373', padding:'4px 6px', borderRadius:6 }}>
+                <Trash2 size={14} />
+              </button>
+            </div>
+          </div>
+        ))}
+        {recompenses.length === 0 && (
+          <div style={{ padding:'32px', textAlign:'center', color:'#ccc', fontSize:14 }}>Aucune récompense. Ajoutez-en une.</div>
+        )}
+      </div>
+
+      {/* ── Section B : Gains récents ── */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+        <h2 style={{ margin:0, fontSize:16, fontWeight:800, color:'#111' }}>Gains récents</h2>
+        <div style={{ display:'flex', gap:6 }}>
+          {['tous','non_recupere','recupere'].map(f => (
+            <button key={f} onClick={() => setFiltre(f)} style={{ padding:'6px 14px', borderRadius:20, fontWeight:700, fontSize:12, cursor:'pointer', border:'none', background: filtre===f ? '#E8C547' : '#efefef', color: filtre===f ? '#111' : '#888', transition:'all 0.15s' }}>
+              {f==='tous' ? 'Tous' : f==='non_recupere' ? 'Non récupérés' : 'Récupérés'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ position:'relative', marginBottom:12 }}>
+        <Search size={14} style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', color:'#bbb' }} />
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher par prénom, tél, email…"
+          style={{ width:'100%', height:40, border:'1.5px solid #eee', borderRadius:10, padding:'0 36px 0 36px', fontSize:13, outline:'none', background:'#fff', boxSizing:'border-box' }} />
+        {search && <button onClick={() => setSearch('')} style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'#aaa', fontSize:16 }}>✕</button>}
+      </div>
+
+      <div style={cardStyle}>
+        <div style={{ display:'grid', gridTemplateColumns:'130px 1fr 130px 1fr 1fr 100px', gap:0, ...thStyle }}>
+          <span>Date</span>
+          <span>Récompense</span>
+          <span>Prénom</span>
+          <span>Téléphone</span>
+          <span>Email</span>
+          <span style={{ textAlign:'center' }}>Statut</span>
+        </div>
+        {gainsFiltres.length === 0 && (
+          <div style={{ padding:'32px', textAlign:'center', color:'#ccc', fontSize:14 }}>Aucun gain trouvé.</div>
+        )}
+        {gainsFiltres.map((g, i) => {
+          const r = g.roue_recompenses;
+          return (
+            <div key={g.id} style={{ display:'grid', gridTemplateColumns:'130px 1fr 130px 1fr 1fr 100px', alignItems:'center', padding:'11px 16px', borderBottom:'1px solid #f5f5f5', background: i%2===0 ? '#fff' : '#fafafa' }}>
+              <span style={{ fontSize:12, color:'#888' }}>{new Date(g.date_gain).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}</span>
+              <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                <span style={{ fontSize:16 }}>{r?.emoji || '🎁'}</span>
+                <span style={{ fontSize:13, fontWeight:600, color:'#111' }}>{r?.nom || '—'}</span>
+              </div>
+              <span style={{ fontSize:13, color:'#555' }}>{g.prenom || '—'}</span>
+              <span style={{ fontSize:12, color:'#555', fontFamily:'monospace' }}>{g.tel}</span>
+              <span style={{ fontSize:12, color:'#555', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{g.email}</span>
+              <div style={{ display:'flex', justifyContent:'center' }}>
+                <button onClick={() => marquerRecupere(g)} style={{ padding:'5px 10px', borderRadius:8, fontWeight:700, fontSize:11, cursor:'pointer', border:'none', background: g.recupere ? '#e8f5e9' : '#fff3e0', color: g.recupere ? '#2e7d32' : '#e65100', whiteSpace:'nowrap' }}>
+                  {g.recupere ? '✓ Récupéré' : 'En attente'}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {editSheet !== null && (
+        <RecompenseSheet item={editSheet?.id ? editSheet : null} onClose={() => setEditSheet(null)} onSaved={onSaved} showToast={showToast} />
+      )}
+    </div>
+  );
+}
+
 function MenuPage({ showToast }) {
   const [carte, setCarte] = useState('restaurant');
   const [cartes, setCartes] = useState([{id:'restaurant',l:'Restaurant'},{id:'brasero',l:'Brasero'}]);
@@ -4653,6 +4964,7 @@ function CRMApp({ user, onLogout }) {
         { id:'clients', label:'Clients', icon:<Users size={24} strokeWidth={1.8} /> },
         { id:'communications', label:'Communications', icon:<Megaphone size={24} strokeWidth={1.8} /> },
         { id:'menu', label:'Menu', icon:<UtensilsCrossed size={24} strokeWidth={1.8} /> },
+        { id:'roue', label:'Roue', icon:<Dices size={24} strokeWidth={1.8} /> },
       ].map(item => {
         const nbAttenteSidebar = item.id === 'reservations' ? resaAttenteCount : 0;
         return (
@@ -4768,6 +5080,16 @@ function CRMApp({ user, onLogout }) {
       </div>
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
       {notifPrePromptModal}
+    </>
+  );
+
+  if (!isMobile && activeView === 'roue') return (
+    <>
+      {sidebarDesktop}
+      <div style={{ marginLeft:120, minHeight:'100vh', background:'#f5f5f5' }}>
+        <RouePage showToast={showToast} />
+      </div>
+      {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
     </>
   );
 
