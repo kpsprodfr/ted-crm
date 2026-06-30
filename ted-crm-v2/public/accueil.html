@@ -166,6 +166,153 @@
       transition: opacity 150ms ease;
     }
     #popup-reserver:active { opacity: 0.8; }
+
+    /* ── Roue cadeaux ──────────────────────────────────────────────────────────── */
+    #roue-overlay {
+      position: fixed; inset: 0; z-index: 300;
+      background: rgba(0,0,0,0.72);
+      display: flex; align-items: flex-end;
+      opacity: 0; pointer-events: none;
+      transition: opacity 300ms ease;
+    }
+    #roue-overlay.open { opacity: 1; pointer-events: all; }
+    #roue-sheet {
+      width: 100%; background: #fefefe;
+      border-radius: 22px 22px 0 0;
+      border-top: 2.5px solid #E8C547;
+      padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+      max-height: 93vh; overflow-y: auto;
+      transform: translateY(100%);
+      transition: transform 380ms cubic-bezier(0.32, 0.72, 0, 1);
+      position: relative;
+    }
+    #roue-overlay.open #roue-sheet { transform: translateY(0); }
+    @media (prefers-reduced-motion: reduce) {
+      #roue-overlay, #roue-sheet { transition: none !important; }
+    }
+    #roue-handle {
+      width: 36px; height: 4px; background: #e0e0e0;
+      border-radius: 2px; margin: 12px auto 0;
+    }
+    #roue-close {
+      position: absolute; top: 14px; right: 16px;
+      width: 40px; height: 40px; border-radius: 50%;
+      background: #f4f4f4; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800; color: #aaa;
+      z-index: 10; padding: 0; outline: none;
+      transition: background 200ms, color 200ms;
+    }
+    #roue-close.active { background: #111; color: #fff; }
+    #roue-close:disabled { cursor: not-allowed; }
+    #roue-close-svg {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      transform: rotate(-90deg); border-radius: 50%;
+      pointer-events: none;
+    }
+    #roue-ring { fill: none; stroke: #E8C547; stroke-width: 2.5; stroke-linecap: round; }
+    #roue-close-label { position: relative; z-index: 1; }
+
+    .roue-step { padding: 10px 24px 16px; }
+    #roue-step-wheel { text-align: center; padding-top: 4px; }
+    #roue-titre {
+      font-size: 17px; font-weight: 800; color: #111;
+      margin: 8px 0 18px; line-height: 1.3; padding: 0 44px;
+    }
+    #roue-canvas-wrap {
+      position: relative; display: inline-block; margin: 0 auto 16px;
+    }
+    #roue-pointer-tri {
+      position: absolute; top: -8px; left: 50%;
+      transform: translateX(-50%);
+      width: 0; height: 0;
+      border-left: 10px solid transparent;
+      border-right: 10px solid transparent;
+      border-top: 16px solid #E8C547;
+      filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25));
+      z-index: 2;
+    }
+    #roue-canvas {
+      display: block;
+      box-shadow: 0 6px 28px rgba(0,0,0,0.14);
+      border-radius: 50%;
+    }
+    #roue-jouer-btn {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 62px; height: 62px; border-radius: 50%;
+      background: #111; color: #E8C547;
+      border: 3px solid #E8C547;
+      font-size: 10px; font-weight: 900; letter-spacing: 1.5px;
+      cursor: pointer; z-index: 3;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+      transition: transform 120ms ease;
+      font-family: inherit;
+    }
+    #roue-jouer-btn:active:not(:disabled) { transform: translate(-50%,-50%) scale(0.92); }
+    #roue-jouer-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    #roue-step-result { text-align: center; padding: 16px 28px 12px; }
+    #roue-result-emoji { font-size: 60px; margin-bottom: 8px; line-height: 1; }
+    #roue-result-label {
+      font-size: 11px; font-weight: 700; color: #E8C547;
+      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px;
+    }
+    #roue-result-nom {
+      font-size: 20px; font-weight: 900; color: #111;
+      background: #fffbea; border: 2px solid #E8C547;
+      border-radius: 14px; padding: 14px 18px;
+      margin: 8px 0 10px; line-height: 1.3;
+    }
+    #roue-result-cond { font-size: 12px; color: #888; margin: 0 0 16px; line-height: 1.5; }
+
+    #roue-step-form { padding: 16px 24px 12px; }
+    #roue-form-titre { font-size: 18px; font-weight: 800; color: #111; margin-bottom: 4px; }
+    #roue-form-sub { font-size: 13px; color: #888; margin-bottom: 18px; line-height: 1.4; }
+    .roue-input {
+      display: block; width: 100%; height: 48px;
+      border: 1.5px solid #e8e8e8; border-radius: 12px;
+      padding: 0 14px; font-size: 15px; font-family: inherit;
+      outline: none; box-sizing: border-box; margin-bottom: 10px;
+      background: #fafafa; color: #111; transition: border-color 150ms;
+    }
+    .roue-input:focus { border-color: #E8C547; background: #fff; }
+    .roue-input::placeholder { color: #bbb; }
+    .roue-mention-anti { font-size: 11px; color: #bbb; text-align: center; margin: 0 0 14px; }
+
+    .roue-btn-noir {
+      display: block; width: 100%; padding: 15px; border-radius: 14px;
+      border: none; background: #111; color: #fff;
+      font-size: 15px; font-weight: 700; text-align: center;
+      cursor: pointer; font-family: inherit; transition: opacity 150ms;
+      margin-bottom: 8px;
+    }
+    .roue-btn-noir:disabled { opacity: 0.4; cursor: not-allowed; }
+    .roue-btn-noir:active:not(:disabled) { opacity: 0.8; }
+    .roue-btn-ghost {
+      display: block; width: 100%; padding: 13px; border-radius: 14px;
+      border: 1.5px solid #ddd; background: #fff; color: #888;
+      font-size: 14px; font-weight: 600; text-align: center;
+      cursor: pointer; font-family: inherit; transition: background 150ms;
+      margin-bottom: 8px;
+    }
+    .roue-btn-ghost:active { background: #f5f5f5; }
+
+    #roue-step-done { text-align: center; padding: 28px 28px 12px; }
+    #roue-done-icon { font-size: 56px; margin-bottom: 12px; }
+    #roue-done-titre { font-size: 20px; font-weight: 800; color: #111; margin-bottom: 8px; }
+    #roue-done-sub { font-size: 14px; color: #888; line-height: 1.55; margin-bottom: 22px; }
+
+    .roue-confetti {
+      position: fixed; border-radius: 2px;
+      opacity: 0; z-index: 600; pointer-events: none;
+      animation: confettiFall 2.2s ease-in forwards;
+    }
+    @keyframes confettiFall {
+      0%   { opacity: 1; transform: translateY(0) rotate(0deg) scaleX(1); }
+      60%  { opacity: 1; }
+      100% { opacity: 0; transform: translateY(78vh) rotate(540deg) scaleX(0.4); }
+    }
   </style>
 </head>
 <body>
@@ -196,6 +343,59 @@
       <button class="lang-opt" onclick="setLang('en')">EN</button>
       <button class="lang-opt" onclick="setLang('es')">ES</button>
       <button class="lang-opt" onclick="setLang('it')">IT</button>
+    </div>
+  </div>
+
+  <!-- Roue cadeaux -->
+  <div id="roue-overlay" role="dialog" aria-modal="true" aria-label="Roue des cadeaux">
+    <div id="roue-sheet">
+      <div id="roue-handle"></div>
+
+      <button id="roue-close" disabled aria-label="Fermer dans 5 secondes">
+        <svg id="roue-close-svg" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+          <circle id="roue-ring" cx="20" cy="20" r="18"/>
+        </svg>
+        <span id="roue-close-label">5</span>
+      </button>
+
+      <!-- Étape 0 — Roue -->
+      <div id="roue-step-wheel" class="roue-step">
+        <h2 id="roue-titre">🎉 Tentez de remporter des lots&nbsp;!</h2>
+        <div id="roue-canvas-wrap">
+          <div id="roue-pointer-tri"></div>
+          <canvas id="roue-canvas" width="290" height="290"></canvas>
+          <button id="roue-jouer-btn">JOUER</button>
+        </div>
+      </div>
+
+      <!-- Étape 1 — Résultat -->
+      <div id="roue-step-result" style="display:none">
+        <div id="roue-result-emoji">🎁</div>
+        <div id="roue-result-label">Félicitations&nbsp;!</div>
+        <div id="roue-result-nom">—</div>
+        <div id="roue-result-cond" style="display:none"></div>
+        <button class="roue-btn-noir" id="roue-recuperer-btn">Récupérer ma récompense 🎁</button>
+        <button class="roue-btn-ghost" id="roue-skip-btn">Non merci, continuer sans</button>
+      </div>
+
+      <!-- Étape 2 — Formulaire -->
+      <div id="roue-step-form" style="display:none">
+        <div id="roue-form-titre">Vos coordonnées</div>
+        <div id="roue-form-sub">Votre récompense vous sera envoyée par SMS et email pour la conserver facilement.</div>
+        <input class="roue-input" id="roue-prenom" type="text" placeholder="Prénom (optionnel)" autocomplete="given-name">
+        <input class="roue-input" id="roue-tel" type="tel" placeholder="Téléphone *" autocomplete="tel">
+        <input class="roue-input" id="roue-email" type="email" placeholder="Email *" autocomplete="email">
+        <div class="roue-mention-anti">⚠️ Une seule participation par personne</div>
+        <button class="roue-btn-noir" id="roue-confirmer-btn">Confirmer et recevoir ma récompense</button>
+      </div>
+
+      <!-- Étape 3 — Confirmation / Déjà participé -->
+      <div id="roue-step-done" style="display:none">
+        <div id="roue-done-icon">✅</div>
+        <div id="roue-done-titre">C'est noté !</div>
+        <div id="roue-done-sub">Votre récompense vous a été envoyée par SMS et email.<br>Présentez-la à votre serveur lors de votre prochain passage.</div>
+        <button class="roue-btn-noir" id="roue-vers-carte-btn">Consulter la carte →</button>
+      </div>
     </div>
   </div>
 
@@ -491,6 +691,413 @@
   window.addEventListener('resize', adjustBodyPadding);
   // Appel immédiat après que le DOM soit prêt
   adjustBodyPadding();
+
+  // ── Roue cadeaux ─────────────────────────────────────────────────────────────
+  (async function initRoue() {
+    let recompenses = [];
+    let gainResult  = null;
+    let spinning    = false;
+    let currentAngle = 0; // angle courant de la roue (radians)
+
+    const CANVAS_SIZE = 290;
+    const CX      = CANVAS_SIZE / 2; // 145
+    const R_OUTER = CX - 2;          // 143
+    const R_TEXT  = R_OUTER * 0.62;  // texte radial ~62% du rayon
+    const R_CTR   = 28;              // rayon cercle central
+
+    const canvas = document.getElementById('roue-canvas');
+    const ctx    = canvas.getContext('2d');
+
+    const FALLBACK_COLS = ['#E8C547','#c9a93a','#f5e8a0','#e0c030','#fff3b0','#d4af37'];
+
+    // ── Chargement des récompenses actives ──────────────────────────────────────
+    try {
+      const res = await fetch(
+        `${SUPA_URL}/rest/v1/roue_recompenses?actif=eq.true&order=ordre`,
+        { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      recompenses = (data || []).filter(r => r.stock_illimite || (r.stock != null && r.stock > 0));
+    } catch(e) { return; }
+
+    if (!recompenses.length) return;
+    if (localStorage.getItem('ted_roue_joue')) return; // déjà participé sur cet appareil
+
+    // ── Dessin ──────────────────────────────────────────────────────────────────
+    function totalProba() {
+      return recompenses.reduce((s, r) => s + parseFloat(r.probabilite || 1), 0);
+    }
+
+    function isLight(hex) {
+      if (!hex || hex.length < 7) return true;
+      const rv = parseInt(hex.slice(1,3),16), gv = parseInt(hex.slice(3,5),16), bv = parseInt(hex.slice(5,7),16);
+      return (rv*299 + gv*587 + bv*114) / 1000 > 145;
+    }
+
+    function trunc(s, n) { return s && s.length > n ? s.slice(0, n-1) + '…' : (s || ''); }
+
+    function drawWheel(rotAngle) {
+      ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      const total = totalProba();
+      let start = rotAngle;
+
+      recompenses.forEach((r, i) => {
+        const slice = (parseFloat(r.probabilite || 1) / total) * 2 * Math.PI;
+        const end   = start + slice;
+        const mid   = start + slice / 2;
+        const color = r.couleur || FALLBACK_COLS[i % FALLBACK_COLS.length];
+
+        // Segment
+        ctx.beginPath();
+        ctx.moveTo(CX, CX);
+        ctx.arc(CX, CX, R_OUTER, start, end);
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Texte radial
+        ctx.save();
+        ctx.translate(CX, CX);
+        ctx.rotate(mid);
+        ctx.textAlign  = 'right';
+        ctx.textBaseline = 'middle';
+        const tc = isLight(color) ? '#222' : '#fff';
+        ctx.fillStyle = tc;
+
+        // Emoji (ligne du haut)
+        ctx.font = '12px serif';
+        ctx.fillText(r.emoji || '', R_TEXT, -7);
+
+        // Nom (ligne du bas)
+        ctx.font = `bold 9.5px 'Segoe UI', Arial, sans-serif`;
+        ctx.fillText(trunc(r.nom, 16), R_TEXT, 6);
+
+        ctx.restore();
+        start = end;
+      });
+
+      // Cercle central
+      ctx.beginPath();
+      ctx.arc(CX, CX, R_CTR, 0, 2 * Math.PI);
+      ctx.fillStyle = '#111';
+      ctx.fill();
+      ctx.strokeStyle = '#E8C547';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+
+    // ── Tirage pondéré ──────────────────────────────────────────────────────────
+    function drawWinner() {
+      const total = totalProba();
+      let rand = Math.random() * total;
+      for (const r of recompenses) {
+        rand -= parseFloat(r.probabilite || 1);
+        if (rand <= 0) return r;
+      }
+      return recompenses[recompenses.length - 1];
+    }
+
+    // ── Angle cible : le pointer en haut (-π/2) doit viser le centre du segment gagnant ──
+    function calcTargetAngle(winnerIdx) {
+      const total = totalProba();
+      let cumul = 0;
+      for (let i = 0; i < winnerIdx; i++) {
+        cumul += (parseFloat(recompenses[i].probabilite || 1) / total) * 2 * Math.PI;
+      }
+      const slice = (parseFloat(recompenses[winnerIdx].probabilite || 1) / total) * 2 * Math.PI;
+      const midFromZero = cumul + slice / 2;
+
+      // drawWheel part de rotAngle, donc le midpoint en screen = rotAngle + midFromZero
+      // On veut : targetAngle + midFromZero ≡ -π/2  (mod 2π)
+      // => targetAngle = -π/2 - midFromZero + 2π*k
+      const base = -Math.PI / 2 - midFromZero;
+      const minTurns = 4 + Math.floor(Math.random() * 3); // 4-6 tours
+      const k = Math.ceil((currentAngle + minTurns * 2 * Math.PI - base) / (2 * Math.PI));
+      return base + k * 2 * Math.PI;
+    }
+
+    // ── Animation ───────────────────────────────────────────────────────────────
+    function easeOutQuart(t) { return 1 - Math.pow(1 - t, 4); }
+
+    function animateSpin(targetAngle, durationMs, onDone) {
+      const startAngle = currentAngle;
+      const t0 = performance.now();
+      (function tick(now) {
+        const t = Math.min((now - t0) / durationMs, 1);
+        currentAngle = startAngle + (targetAngle - startAngle) * easeOutQuart(t);
+        drawWheel(currentAngle);
+        if (t < 1) requestAnimationFrame(tick);
+        else { currentAngle = targetAngle; bounce(targetAngle, onDone); }
+      })(performance.now());
+    }
+
+    function bounce(base, onDone) {
+      const over = base + 0.07;
+      const t0 = performance.now(), d1 = 170;
+      (function p1(now) {
+        const t = Math.min((now - t0) / d1, 1);
+        currentAngle = base + (over - base) * (1 - (1-t)*(1-t));
+        drawWheel(currentAngle);
+        if (t < 1) { requestAnimationFrame(p1); return; }
+        currentAngle = over;
+        const t1 = performance.now(), d2 = 230;
+        (function p2(now2) {
+          const t2 = Math.min((now2 - t1) / d2, 1);
+          currentAngle = over + (base - over) * easeOutQuart(t2);
+          drawWheel(currentAngle);
+          if (t2 < 1) requestAnimationFrame(p2);
+          else { currentAngle = base; drawWheel(base); onDone(); }
+        })(performance.now());
+      })(performance.now());
+    }
+
+    // ── Décrément atomique du stock via RPC ─────────────────────────────────────
+    async function tryDecrementStock(r) {
+      if (r.stock_illimite) return true;
+      try {
+        const res = await fetch(`${SUPA_URL}/rest/v1/rpc/decrement_stock_roue`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` },
+          body: JSON.stringify({ p_id: r.id }),
+        });
+        if (!res.ok) return true; // fail open plutôt que bloquer
+        const ok = await res.json();
+        return ok === true;
+      } catch { return true; }
+    }
+
+    // ── Lancer la roue ──────────────────────────────────────────────────────────
+    async function lancer() {
+      if (spinning) return;
+      spinning = true;
+      document.getElementById('roue-jouer-btn').disabled = true;
+
+      const winner    = drawWinner();
+      const winnerIdx = recompenses.indexOf(winner);
+
+      const ok = await tryDecrementStock(winner);
+      if (!ok) {
+        // Épuisé en concurrence → on retire et on réessaie
+        recompenses = recompenses.filter(r => r.id !== winner.id);
+        spinning = false;
+        document.getElementById('roue-jouer-btn').disabled = false;
+        if (!recompenses.length) { closeRoue(); return; }
+        lancer();
+        return;
+      }
+
+      gainResult = winner;
+      const targetAngle = calcTargetAngle(winnerIdx);
+      const duration    = 4200 + Math.random() * 900;
+
+      animateSpin(targetAngle, duration, () => {
+        spinning = false;
+        setTimeout(showResult, 650);
+      });
+    }
+
+    // ── Résultat ────────────────────────────────────────────────────────────────
+    function showResult() {
+      document.getElementById('roue-step-wheel').style.display = 'none';
+      document.getElementById('roue-step-result').style.display = 'block';
+      document.getElementById('roue-result-emoji').textContent = gainResult.emoji || '🎁';
+      document.getElementById('roue-result-nom').textContent   = (gainResult.emoji ? gainResult.emoji + ' ' : '') + gainResult.nom;
+      const condEl = document.getElementById('roue-result-cond');
+      if (gainResult.conditions) { condEl.textContent = gainResult.conditions; condEl.style.display = 'block'; }
+      lanceConfettis();
+    }
+
+    function lanceConfettis() {
+      const cols = ['#E8C547','#c9a93a','#f5e8a0','#111','#e74c3c','#27ae60','#3498db','#fff'];
+      for (let i = 0; i < 32; i++) {
+        const d = document.createElement('div');
+        d.className = 'roue-confetti';
+        d.style.cssText = [
+          `left:${5 + Math.random() * 90}vw`,
+          `top:${-8 - Math.random() * 8}px`,
+          `width:${5 + Math.random() * 7}px`,
+          `height:${5 + Math.random() * 7}px`,
+          `background:${cols[Math.floor(Math.random() * cols.length)]}`,
+          `animation-delay:${(Math.random() * 0.6).toFixed(2)}s`,
+          `animation-duration:${(1.8 + Math.random() * 1.4).toFixed(2)}s`,
+        ].join(';');
+        document.body.appendChild(d);
+        setTimeout(() => d.remove(), 3500);
+      }
+    }
+
+    // ── Soumission formulaire ────────────────────────────────────────────────────
+    async function confirmer() {
+      const prenom = document.getElementById('roue-prenom').value.trim();
+      const tel    = document.getElementById('roue-tel').value.trim();
+      const email  = document.getElementById('roue-email').value.trim();
+
+      if (!tel || !email)                            { alert('Téléphone et email requis.'); return; }
+      if (!email.includes('@') || !email.includes('.')) { alert('Email invalide.'); return; }
+
+      const btn = document.getElementById('roue-confirmer-btn');
+      btn.disabled    = true;
+      btn.textContent = 'Vérification en cours…';
+
+      // Anti-rejeu : check Supabase
+      try {
+        const chk = await fetch(
+          `${SUPA_URL}/rest/v1/roue_gains?or=(tel.eq.${encodeURIComponent(tel)},email.eq.${encodeURIComponent(email)})&select=id&limit=1`,
+          { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
+        );
+        const existing = await chk.json();
+        if (Array.isArray(existing) && existing.length) { showDeja(); return; }
+      } catch(e) {}
+
+      // Lier ou créer client (best-effort — peut échouer à cause du RLS)
+      let clientId = null;
+      try {
+        const cliRes = await fetch(
+          `${SUPA_URL}/rest/v1/clients?tel=eq.${encodeURIComponent(tel)}&select=id&limit=1`,
+          { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
+        );
+        if (cliRes.ok) {
+          const cli = await cliRes.json();
+          if (Array.isArray(cli) && cli.length) {
+            clientId = cli[0].id;
+          } else {
+            const cr = await fetch(`${SUPA_URL}/rest/v1/clients`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, Prefer: 'return=representation' },
+              body: JSON.stringify({ prenom: prenom || null, tel, email }),
+            });
+            if (cr.ok) { const nc = await cr.json(); if (Array.isArray(nc) && nc.length) clientId = nc[0].id; }
+          }
+        }
+      } catch(e) {}
+
+      // Enregistrer le gain
+      try {
+        await fetch(`${SUPA_URL}/rest/v1/roue_gains`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, Prefer: 'return=minimal' },
+          body: JSON.stringify({ recompense_id: gainResult.id, prenom: prenom || null, tel, email, client_id: clientId || null, recupere: false }),
+        });
+      } catch(e) {}
+
+      localStorage.setItem('ted_roue_joue', '1');
+
+      // SMS + email via Cloudflare Function
+      try {
+        fetch('/api/roue-notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tel, email, prenom,
+            recompense_nom:   gainResult.nom,
+            recompense_emoji: gainResult.emoji,
+            conditions:       gainResult.conditions,
+            date_debut_validite: gainResult.date_debut_validite,
+          }),
+        });
+      } catch(e) {}
+
+      showDone();
+    }
+
+    function showDeja() {
+      document.getElementById('roue-step-form').style.display = 'none';
+      document.getElementById('roue-step-done').style.display  = 'block';
+      document.getElementById('roue-done-icon').textContent  = '🙅';
+      document.getElementById('roue-done-titre').textContent = 'Déjà participé';
+      document.getElementById('roue-done-sub').textContent   = 'Vous avez déjà participé à la roue des cadeaux. Une seule participation par personne.';
+    }
+
+    function showDone() {
+      document.getElementById('roue-step-form').style.display = 'none';
+      document.getElementById('roue-step-done').style.display  = 'block';
+    }
+
+    // ── Fermeture ────────────────────────────────────────────────────────────────
+    function closeRoue() {
+      const ov = document.getElementById('roue-overlay');
+      const sh = document.getElementById('roue-sheet');
+      sh.style.transform = 'translateY(100%)';
+      ov.style.opacity   = '0';
+      setTimeout(() => {
+        ov.style.display   = 'none';
+        ov.style.opacity   = '';
+        sh.style.transform = '';
+        document.body.style.overflow = '';
+      }, 400);
+    }
+
+    // ── Ouverture ────────────────────────────────────────────────────────────────
+    function openRouePopup() {
+      drawWheel(currentAngle);
+
+      const ov = document.getElementById('roue-overlay');
+      ov.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+      requestAnimationFrame(() => requestAnimationFrame(() => ov.classList.add('open')));
+
+      // Ring de countdown
+      const closeBtn = document.getElementById('roue-close');
+      const label    = document.getElementById('roue-close-label');
+      const ring     = document.getElementById('roue-ring');
+      const CIRCUM   = 2 * Math.PI * 18; // r=18 → ~113.1
+
+      ring.style.strokeDasharray = `0 ${CIRCUM}`;
+
+      if (!prefersReduced) {
+        // Transition CSS fluide sur 5s
+        void ring.getBoundingClientRect(); // force reflow
+        ring.style.transition = `stroke-dasharray 5s linear`;
+        ring.style.strokeDasharray = `${CIRCUM} 0`;
+      }
+
+      let countdown = 5;
+      const cInterval = setInterval(() => {
+        countdown--;
+        if (countdown <= 0) {
+          clearInterval(cInterval);
+          label.textContent = '✕';
+          closeBtn.disabled = false;
+          closeBtn.classList.add('active');
+          closeBtn.setAttribute('aria-label', 'Fermer');
+          if (prefersReduced) ring.style.strokeDasharray = `${CIRCUM} 0`;
+        } else {
+          label.textContent = countdown;
+        }
+      }, 1000);
+
+      closeBtn.onclick = () => {
+        if (closeBtn.disabled) return;
+        clearInterval(cInterval);
+        closeRoue();
+      };
+
+      // Click hors du sheet quand bouton actif
+      ov.addEventListener('click', e => {
+        if (e.target === ov && !closeBtn.disabled) { clearInterval(cInterval); closeRoue(); }
+      });
+
+      document.getElementById('roue-jouer-btn').onclick = lancer;
+
+      document.getElementById('roue-recuperer-btn').onclick = () => {
+        document.getElementById('roue-step-result').style.display = 'none';
+        document.getElementById('roue-step-form').style.display   = 'block';
+      };
+      document.getElementById('roue-skip-btn').onclick    = closeRoue;
+      document.getElementById('roue-confirmer-btn').onclick = confirmer;
+      document.getElementById('roue-vers-carte-btn').onclick = () => {
+        closeRoue();
+        setTimeout(() => { window.location.href = '/menu.html?from=accueil'; }, 400);
+      };
+    }
+
+    // Délai pour laisser la page s'animer d'abord
+    setTimeout(openRouePopup, 1800);
+  })();
 </script>
 </body>
 </html>
