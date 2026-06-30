@@ -517,6 +517,24 @@
     }
   }
 
+  // ── Polling menu du jour — mise à jour en direct toutes les 30s ────────────
+  async function pollPlatJour() {
+    try {
+      const plats = await fetchJSON('menu_plat_jour', `select=${PLAT_COLS}`);
+      const sig = JSON.stringify(plats);
+      if (sig !== pollPlatJour._last) {
+        pollPlatJour._last = sig;
+        updatePlatJour(plats);
+        renderSpecials();
+        // Met à jour le cache sessionStorage avec les nouvelles données plat
+        const hit = cacheGet();
+        if (hit) cacheSet(hit.cats, hit.prods, plats);
+      }
+    } catch(e) { /* silencieux */ }
+  }
+  pollPlatJour._last = null;
+  setInterval(pollPlatJour, 30000);
+
   // ── bfcache : retour navigateur — pas de refetch si données déjà en mémoire ─
   window.addEventListener('pageshow', e => {
     if (e.persisted && allCategories.length === 0) {
