@@ -135,13 +135,13 @@
       background: #FFFDF7;
       border: 1px solid rgba(232,197,71,0.35);
       border-radius: 16px;
-      padding: 20px 18px 18px;
+      padding: 28px 22px 24px;
       margin: 16px 0 8px;
       animation: platJourIn 350ms ease-out 300ms both;
     }
     .menu-jour-title {
       display: flex; align-items: center; justify-content: center; gap: 10px;
-      margin-bottom: 18px;
+      margin-bottom: 22px;
     }
     .menu-jour-title-line {
       flex: 1; height: 1px; background: rgba(232,197,71,0.45);
@@ -151,14 +151,14 @@
       color: #E8C547; text-transform: uppercase; white-space: nowrap;
     }
     .menu-jour-row {
-      display: flex; align-items: center; gap: 14px;
-      padding: 12px 0;
+      display: flex; align-items: center; gap: 16px;
+      padding: 16px 0;
     }
     .menu-jour-row + .menu-jour-row {
       border-top: 1px solid rgba(232,197,71,0.2);
     }
     .menu-jour-icon {
-      width: 44px; height: 44px; flex-shrink: 0;
+      width: 58px; height: 58px; flex-shrink: 0;
       border: 1.5px solid rgba(232,197,71,0.5);
       border-radius: 50%; background: #fff;
       display: flex; align-items: center; justify-content: center;
@@ -561,10 +561,10 @@
     const isFoodSection = (nom) => FOOD_CATS.some(f => nom.toLowerCase().includes(f.toLowerCase()) || f.toLowerCase().includes(nom.toLowerCase()));
 
     // ── Bloc 1 : Menu du jour (plat + dessert uniquement) ──
-    // Fourchette + couteau (plat principal)
-    const ICON_PLAT = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E8C547" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v4c0 1.1.9 2 2 2s2-.9 2-2V2"/><line x1="5" y1="8" x2="5" y2="22"/><path d="M17 2v4h4V2"/><line x1="19" y1="6" x2="19" y2="22"/></svg>`;
+    // Couteau + fourchette croisés (plat principal)
+    const ICON_PLAT = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#E8C547" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v4c0 1.1.9 2 2 2s2-.9 2-2V2"/><line x1="5" y1="8" x2="5" y2="22"/><line x1="19" y1="2" x2="19" y2="22"/><path d="M19 2c0 0 2 2 2 5s-2 3-2 3"/></svg>`;
     // Cupcake / gâteau (dessert)
-    const ICON_DESSERT = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E8C547" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14H5l-1 6h16l-1-6h-3"/><path d="M12 2c0 0-2 1.5-2 3.5S12 8 12 8s2-1 2-2.5S12 2 12 2z"/><path d="M7 8c0 0 0 6 5 6s5-6 5-6H7z"/></svg>`;
+    const ICON_DESSERT = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#E8C547" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14H5l-1 6h16l-1-6h-3"/><path d="M12 2c0 0-2 1.5-2 3.5S12 8 12 8s2-1 2-2.5S12 2 12 2z"/><path d="M7 8c0 0 0 6 5 6s5-6 5-6H7z"/></svg>`;
 
     const pjItems = [
       { item: platJour,    key: 'plat_jour',    icon: ICON_PLAT },
