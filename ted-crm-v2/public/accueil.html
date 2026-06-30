@@ -65,6 +65,33 @@
     .soiree-when { font-size: 12px; color: #555; margin-top: 3px; }
     .soiree-chevron { font-size: 16px; color: #444; flex-shrink: 0; margin-left: 12px; }
 
+    /* ── Sélecteur de langue (flottant haut droite) ──────────────────────── */
+    #lang-selector {
+      position: fixed; top: 14px; right: 16px; z-index: 300;
+    }
+    #lang-btn {
+      background: rgba(255,255,255,0.07); border: 1px solid #333;
+      color: #aaa; font-size: 11px; font-weight: 700; letter-spacing: 1px;
+      padding: 5px 10px; border-radius: 6px; cursor: pointer;
+      transition: background 150ms ease; font-family: inherit;
+    }
+    #lang-btn:hover { background: rgba(255,255,255,0.13); color: #fff; }
+    #lang-menu {
+      position: absolute; top: calc(100% + 6px); right: 0;
+      background: #1c1c1c; border: 1px solid #333; border-radius: 8px;
+      overflow: hidden; min-width: 56px; display: none; z-index: 400;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    }
+    #lang-menu.open { display: block; }
+    .lang-opt {
+      display: block; width: 100%; padding: 8px 14px;
+      color: #bbb; font-size: 12px; font-weight: 700; letter-spacing: 0.5px;
+      background: none; border: none; cursor: pointer; text-align: left;
+      transition: background 100ms ease; font-family: inherit;
+    }
+    .lang-opt:hover { background: #2a2a2a; color: #fff; }
+    .lang-opt.active { color: #E8C547; }
+
     /* ── Boutons ────────────────────────────────────────────────────────────── */
     #cta-bar {
       position: fixed; bottom: 0; left: 0; right: 0;
@@ -158,8 +185,18 @@
   </div>
 
   <div id="cta-bar" class="anim">
-    <a href="/menu.html?from=accueil" class="btn-cta btn-primary" data-dest="/menu.html?from=accueil">Consulter la carte</a>
-    <a href="/menu.html?carte=brasero&from=accueil" class="btn-cta btn-outline" data-dest="/menu.html?carte=brasero&from=accueil">Carte Brasero</a>
+    <a href="/menu.html?from=accueil" class="btn-cta btn-primary" data-dest="/menu.html?from=accueil" id="btn-consulter">Consulter la carte</a>
+    <a href="/menu.html?carte=brasero&from=accueil" class="btn-cta btn-outline" data-dest="/menu.html?carte=brasero&from=accueil" id="btn-brasero">Carte Brasero</a>
+  </div>
+
+  <div id="lang-selector">
+    <button id="lang-btn" onclick="toggleLangMenu()">FR</button>
+    <div id="lang-menu">
+      <button class="lang-opt" onclick="setLang('fr')">FR</button>
+      <button class="lang-opt" onclick="setLang('en')">EN</button>
+      <button class="lang-opt" onclick="setLang('es')">ES</button>
+      <button class="lang-opt" onclick="setLang('it')">IT</button>
+    </div>
   </div>
 
   <!-- Popup soirée -->
@@ -183,6 +220,47 @@
   const SUPA_KEY = 'sb_publishable_4-uVtQtXd0jLGkNAFsx4yw_ni17DzN_';
   const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // ── Langue ──────────────────────────────────────────────────────────────────
+  const UI = {
+    fr: { nos_soirees:'Nos soirées', consulter:'Consulter la carte', carte_brasero:'Carte Brasero', reserver:'Réserver une table' },
+    en: { nos_soirees:'Our nights',  consulter:'View the menu',      carte_brasero:'Brasero menu',  reserver:'Book a table' },
+    es: { nos_soirees:'Nuestras noches', consulter:'Ver la carta',   carte_brasero:'Carta Brasero', reserver:'Reservar una mesa' },
+    it: { nos_soirees:'Le nostre serate', consulter:'Vedi il menu',  carte_brasero:'Menu Brasero',  reserver:'Prenota un tavolo' }
+  };
+  let lang = localStorage.getItem('ted_langue') || 'fr';
+
+  function tUI(k) { return (UI[lang] || UI.fr)[k] || UI.fr[k] || k; }
+  function tItem(item, field) {
+    if (lang === 'fr') return item[field] || '';
+    return item[field + '_' + lang] || item[field] || '';
+  }
+
+  function applyLangUI() {
+    document.getElementById('lang-btn').textContent = lang.toUpperCase();
+    document.querySelectorAll('.lang-opt').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase() === lang));
+    document.getElementById('soirees-label').textContent = tUI('nos_soirees');
+    document.getElementById('btn-consulter').textContent = tUI('consulter');
+    document.getElementById('btn-brasero').textContent   = tUI('carte_brasero');
+    document.getElementById('popup-reserver').textContent = tUI('reserver');
+  }
+
+  function toggleLangMenu() { document.getElementById('lang-menu').classList.toggle('open'); }
+
+  function setLang(l) {
+    lang = l;
+    localStorage.setItem('ted_langue', l);
+    document.getElementById('lang-menu').classList.remove('open');
+    applyLangUI();
+    // Re-render soirées avec la nouvelle langue
+    const hit = soireesFromCache();
+    if (hit) renderSoirees(hit.data, false);
+  }
+
+  document.addEventListener('click', e => {
+    const sel = document.getElementById('lang-selector');
+    if (sel && !sel.contains(e.target)) document.getElementById('lang-menu').classList.remove('open');
+  });
+
   // ── Séquence d'animation ────────────────────────────────────────────────────
   const T0 = Date.now();
   function showAt(el, ms) {
@@ -190,6 +268,7 @@
     setTimeout(() => { el.classList.add('visible'); }, Math.max(0, rem));
   }
 
+  applyLangUI();
   setTimeout(() => { document.getElementById('logo-img').classList.add('visible'); }, 100);
   setTimeout(() => { document.getElementById('hero-texte').classList.add('visible'); }, 600);
   setTimeout(() => { document.getElementById('soirees-label').classList.add('visible'); }, 900);
@@ -202,13 +281,14 @@
 
   function openPopup(s) {
     document.getElementById('popup-jour').textContent    = s.jour || '';
-    document.getElementById('popup-nom').textContent     = s.nom  || '';
+    document.getElementById('popup-nom').textContent     = tItem(s, 'nom');
     const djEl = document.getElementById('popup-dj');
     djEl.textContent  = s.dj ? `♪ ${s.dj}` : '';
     djEl.style.display = s.dj ? '' : 'none';
     const descEl = document.getElementById('popup-desc');
-    descEl.textContent  = s.description || '';
-    descEl.style.display = s.description ? '' : 'none';
+    const descText = tItem(s, 'description');
+    descEl.textContent  = descText;
+    descEl.style.display = descText ? '' : 'none';
     document.getElementById('popup-horaire').textContent = s.horaire ? `À partir de ${s.horaire}` : '';
 
     // Reset barre
@@ -261,7 +341,7 @@
   });
 
   // ── Cache sessionStorage soirées (TTL 5 min) ───────────────────────────────
-  const SOIREES_KEY   = 'ted_soirees_v1';
+  const SOIREES_KEY   = 'ted_soirees_v2';
   const SOIREES_TTL   = 5 * 60 * 1000;
   const SOIREES_STALE =     60 * 1000;
 
@@ -291,10 +371,11 @@
       el.className = animate ? 'soiree-item anim' : 'soiree-item anim visible';
       el.setAttribute('role', 'button');
       el.setAttribute('tabindex', '0');
+      const sNom = tItem(s, 'nom');
       const when = [s.jour, s.horaire].filter(Boolean).map(esc).join(' · ');
       el.innerHTML = `
         <div class="soiree-info">
-          <div class="soiree-nom">${esc(s.nom)}</div>
+          <div class="soiree-nom">${esc(sNom)}</div>
           ${when ? `<div class="soiree-when">${when}</div>` : ''}
         </div>
         <div class="soiree-chevron">›</div>
@@ -308,7 +389,7 @@
 
   async function fetchSoirees(silent) {
     const r = await fetch(
-      `${SUPA_URL}/rest/v1/menu_soirees?select=id,nom,description,jour,horaire,dj&visible=eq.true&order=ordre.asc`,
+      `${SUPA_URL}/rest/v1/menu_soirees?select=id,nom,nom_en,nom_es,nom_it,description,description_en,description_es,description_it,jour,horaire,dj&visible=eq.true&order=ordre.asc`,
       { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
     );
     if (!r.ok) return;

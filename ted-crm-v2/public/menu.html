@@ -45,14 +45,14 @@
       background: #111; padding: 20px 20px 0;
       transition: padding 220ms ease;
     }
-    #header.compact { padding-top: 5px; padding-bottom: 0; }
+    #header.compact { padding-top: 6px; padding-bottom: 0; }
 
     #header-title {
       color: #E8C547; font-size: 22px; font-weight: 900; letter-spacing: 1px;
       animation: fadeUp 400ms ease-out both;
       transition: font-size 220ms ease;
     }
-    #header.compact #header-logo { height: 18px; width: 18px; }
+    #header.compact #header-logo { height: 13px; width: 13px; }
     #header.compact #header-title { font-size: 13px; letter-spacing: 0.5px; }
 
     #header-sub {
@@ -71,16 +71,42 @@
       animation: underlineIn 600ms ease-out 200ms both;
       transition: width 220ms ease, margin 220ms ease;
     }
-    #header.compact #header-underline { width: 14px; margin: 2px 0 4px; }
+    #header.compact #header-underline { width: 12px; margin: 1px 0 3px; }
 
     /* Onglets carte */
     #carte-tabs { display: flex; gap: 0; border-bottom: 2px solid #222; }
     .carte-tab {
       padding: 9px 20px; font-size: 13px; font-weight: 700; cursor: pointer;
       color: #666; border: none; background: none; border-bottom: 3px solid transparent;
-      margin-bottom: -2px; transition: color 150ms ease, border-color 150ms ease;
+      margin-bottom: -2px; transition: color 150ms ease, border-color 150ms ease, padding 220ms ease;
     }
     .carte-tab.active { color: #E8C547; border-bottom-color: #E8C547; }
+    #header.compact .carte-tab { padding-top: 5px; padding-bottom: 5px; }
+
+    /* ── Sélecteur de langue ──────────────────────────────────────────────── */
+    #lang-selector { position: relative; flex-shrink: 0; }
+    #lang-btn {
+      background: rgba(255,255,255,0.07); border: 1px solid #333;
+      color: #aaa; font-size: 11px; font-weight: 700; letter-spacing: 1px;
+      padding: 4px 9px; border-radius: 6px; cursor: pointer;
+      transition: background 150ms ease; font-family: inherit;
+    }
+    #lang-btn:hover { background: rgba(255,255,255,0.13); color: #fff; }
+    #lang-menu {
+      position: absolute; top: calc(100% + 6px); right: 0;
+      background: #1c1c1c; border: 1px solid #333; border-radius: 8px;
+      overflow: hidden; min-width: 56px; display: none; z-index: 400;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    }
+    #lang-menu.open { display: block; }
+    .lang-opt {
+      display: block; width: 100%; padding: 8px 14px;
+      color: #bbb; font-size: 12px; font-weight: 700; letter-spacing: 0.5px;
+      background: none; border: none; cursor: pointer; text-align: left;
+      transition: background 100ms ease; font-family: inherit;
+    }
+    .lang-opt:hover { background: #2a2a2a; color: #fff; }
+    .lang-opt.active { color: #E8C547; }
 
     /* ── Pills catégories ─────────────────────────────────────────────────── */
     #cats-bar {
@@ -200,17 +226,28 @@
 <body>
 
 <div id="header">
-  <div style="display:flex;align-items:center;gap:10px;">
-    <img src="/logo192.png" alt="Logo TED" id="header-logo" style="height:36px;width:36px;object-fit:contain;transition:height 220ms ease,width 220ms ease;">
-    <div>
-      <div id="header-title">LE TED</div>
-      <div id="header-sub">RESTAURANT &amp; CLUB</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <img src="/logo192.png" alt="Logo TED" id="header-logo" style="height:36px;width:36px;object-fit:contain;transition:height 220ms ease,width 220ms ease;">
+      <div>
+        <div id="header-title">LE TED</div>
+        <div id="header-sub">RESTAURANT &amp; CLUB</div>
+      </div>
+    </div>
+    <div id="lang-selector">
+      <button id="lang-btn" onclick="toggleLangMenu()">FR</button>
+      <div id="lang-menu">
+        <button class="lang-opt" onclick="setLang('fr')">FR</button>
+        <button class="lang-opt" onclick="setLang('en')">EN</button>
+        <button class="lang-opt" onclick="setLang('es')">ES</button>
+        <button class="lang-opt" onclick="setLang('it')">IT</button>
+      </div>
     </div>
   </div>
   <div id="header-underline"></div>
   <div id="carte-tabs">
-    <button class="carte-tab active" data-carte="restaurant" onclick="switchCarte('restaurant')">Restaurant</button>
-    <button class="carte-tab" data-carte="brasero" onclick="switchCarte('brasero')">Brasero</button>
+    <button class="carte-tab active" id="tab-restaurant" data-carte="restaurant" onclick="switchCarte('restaurant')">Restaurant</button>
+    <button class="carte-tab" id="tab-brasero" data-carte="brasero" onclick="switchCarte('brasero')">Brasero</button>
   </div>
   <div id="cats-bar"></div>
 </div>
@@ -244,8 +281,50 @@
   let platJour = null;
   let dessertJour = null;
 
+  // ── Langue ──────────────────────────────────────────────────────────────────
+  const UI = {
+    fr: { restaurant:'Restaurant', brasero:'Brasero', plat_jour:'Plat du jour', dessert_jour:'Dessert du jour', brasero_banner:'🔥 Carte Brasero disponible le mercredi soir uniquement' },
+    en: { restaurant:'Restaurant', brasero:'Brasero', plat_jour:'Daily special', dessert_jour:'Dessert of the day', brasero_banner:'🔥 Brasero menu available Wednesday evenings only' },
+    es: { restaurant:'Restaurante', brasero:'Brasero', plat_jour:'Plato del día', dessert_jour:'Postre del día', brasero_banner:'🔥 Carta Brasero disponible solo los miércoles por la noche' },
+    it: { restaurant:'Ristorante', brasero:'Brasero', plat_jour:'Piatto del giorno', dessert_jour:'Dolce del giorno', brasero_banner:'🔥 Menu Brasero disponibile solo il mercoledì sera' }
+  };
+  let lang = localStorage.getItem('ted_langue') || 'fr';
+
+  function tUI(k) { return (UI[lang] || UI.fr)[k] || UI.fr[k] || k; }
+  function tItem(item, field) {
+    if (lang === 'fr') return item[field] || '';
+    return item[field + '_' + lang] || item[field] || '';
+  }
+
+  function applyLangUI() {
+    document.getElementById('lang-btn').textContent = lang.toUpperCase();
+    document.querySelectorAll('.lang-opt').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase() === lang));
+    document.getElementById('tab-restaurant').textContent = tUI('restaurant');
+    document.getElementById('tab-brasero').textContent    = tUI('brasero');
+    document.getElementById('brasero-banner').textContent = tUI('brasero_banner');
+    if (allCategories.length) renderMenu();
+  }
+
+  function toggleLangMenu() {
+    const m = document.getElementById('lang-menu');
+    m.classList.toggle('open');
+  }
+
+  function setLang(l) {
+    lang = l;
+    localStorage.setItem('ted_langue', l);
+    document.getElementById('lang-menu').classList.remove('open');
+    applyLangUI();
+  }
+
+  // Ferme le menu si clic ailleurs
+  document.addEventListener('click', e => {
+    const sel = document.getElementById('lang-selector');
+    if (sel && !sel.contains(e.target)) document.getElementById('lang-menu').classList.remove('open');
+  });
+
   // ── Cache sessionStorage (TTL 5 min, revalidation silencieuse > 60s) ─────────
-  const CACHE_KEY = 'ted_menu_v1';
+  const CACHE_KEY = 'ted_menu_v2';
   const CACHE_TTL  = 5 * 60 * 1000;
   const CACHE_STALE =     60 * 1000;
 
@@ -272,8 +351,8 @@
     return r.json();
   }
 
-  const CAT_COLS  = 'id,nom,carte,ordre,visible';
-  const PROD_COLS = 'id,nom,description,prix,accord_vin,badges,ordre,disponible,carte,categorie_id';
+  const CAT_COLS  = 'id,nom,nom_en,nom_es,nom_it,carte,ordre,visible';
+  const PROD_COLS = 'id,nom,nom_en,nom_es,nom_it,description,description_en,description_es,description_it,prix,accord_vin,badges,ordre,disponible,carte,categorie_id';
   const PLAT_COLS = 'id,nom,description,prix,type,carte,actif';
 
   async function fetchFromNetwork(silent = false) {
@@ -379,7 +458,7 @@
       let pjHtml = '';
       if (platJour) {
         pjHtml += `<div class="plat-jour-card">
-          <div class="plat-jour-label">Plat du jour</div>
+          <div class="plat-jour-label">${tUI('plat_jour')}</div>
           ${platJour.nom ? `<div class="plat-jour-nom">${esc(platJour.nom)}</div>` : ''}
           ${platJour.description ? `<div class="plat-jour-desc">${esc(platJour.description)}</div>` : ''}
           ${platJour.prix ? `<div class="plat-jour-prix">${esc(platJour.prix)}</div>` : ''}
@@ -387,7 +466,7 @@
       }
       if (dessertJour) {
         pjHtml += `<div class="plat-jour-card" style="margin-top:8px">
-          <div class="plat-jour-label">Dessert du jour</div>
+          <div class="plat-jour-label">${tUI('dessert_jour')}</div>
           ${dessertJour.nom ? `<div class="plat-jour-nom">${esc(dessertJour.nom)}</div>` : ''}
           ${dessertJour.description ? `<div class="plat-jour-desc">${esc(dessertJour.description)}</div>` : ''}
           ${dessertJour.prix ? `<div class="plat-jour-prix">${esc(dessertJour.prix)}</div>` : ''}
@@ -405,7 +484,7 @@
     cats.forEach(cat => {
       const ps = allProduits.filter(p => p.categorie_id === cat.id && (p.carte === carteActive || p.carte === 'les-deux'));
       if (ps.length === 0) return;
-      pillsHtml += `<button class="cat-pill" onclick="scrollToId('cat-${cat.id}')" id="pill-${cat.id}">${cat.nom}</button>`;
+      pillsHtml += `<button class="cat-pill" onclick="scrollToId('cat-${cat.id}')" id="pill-${cat.id}">${esc(tItem(cat, 'nom'))}</button>`;
     });
     catsBar.innerHTML = pillsHtml;
 
@@ -417,14 +496,16 @@
       if (ps.length === 0) return;
 
       html += `<div class="section reveal-pending" id="cat-${cat.id}">`;
-      html += `<div class="section-title">${esc(cat.nom)}</div>`;
+      html += `<div class="section-title">${esc(tItem(cat, 'nom'))}</div>`;
 
       ps.forEach(p => {
+        const pNom  = tItem(p, 'nom');
+        const pDesc = tItem(p, 'description');
         const badges = (p.badges || []).map(b => `<span class="badge-item">${esc(b)}</span>`).join('');
         html += `<div class="produit">
           <div class="produit-info">
-            <div class="produit-nom">${esc(p.nom)}</div>
-            ${p.description ? `<div class="produit-desc">${esc(p.description)}</div>` : ''}
+            <div class="produit-nom">${esc(pNom)}</div>
+            ${pDesc ? `<div class="produit-desc">${esc(pDesc)}</div>` : ''}
             ${p.accord_vin ? `<div class="produit-accord">— ${esc(p.accord_vin)}</div>` : ''}
             ${badges ? `<div class="produit-badges">${badges}</div>` : ''}
           </div>
@@ -532,6 +613,7 @@
     window.history.replaceState({}, '', clean.toString());
   }
 
+  applyLangUI();
   loadData();
 </script>
 </body>
