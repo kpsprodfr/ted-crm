@@ -187,6 +187,21 @@
       font-size: 18px; font-weight: 900; color: #E8C547;
     }
 
+    /* ── Suggestion du chef ───────────────────────────────────────────────── */
+    .suggestion-card {
+      background: #111; border-radius: 12px; padding: 16px 18px;
+      border-left: 3px solid #E8C547;
+      animation: platJourIn 350ms ease-out 400ms both;
+      position: relative;
+    }
+    .suggestion-label {
+      font-size: 10px; font-weight: 800; color: #E8C547;
+      text-transform: uppercase; letter-spacing: 2px; margin-bottom: 7px;
+    }
+    .suggestion-nom   { font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 4px; line-height: 1.25; }
+    .suggestion-desc  { font-size: 13px; color: #aaa; margin-bottom: 8px; line-height: 1.4; }
+    .suggestion-prix  { font-size: 15px; font-weight: 800; color: #E8C547; }
+
     /* ── Sections catégories ──────────────────────────────────────────────── */
     .section { padding-top: 32px; }
     .section-title {
@@ -292,6 +307,7 @@
 
 <div id="brasero-banner">🔥 Carte Brasero disponible le mercredi soir uniquement</div>
 <div id="plat-jour-container" style="display:none;padding:12px 16px 0;max-width:680px;margin:0 auto;"></div>
+<div id="suggestion-container" style="display:none;padding:8px 16px 0;max-width:680px;margin:0 auto;"></div>
 
 <div id="loading">Chargement de la carte...</div>
 <div id="error" style="display:none"></div>
@@ -527,6 +543,7 @@
     const content = document.getElementById('content');
     const catsBar = document.getElementById('cats-bar');
     const platContainer = document.getElementById('plat-jour-container');
+    const suggContainer = document.getElementById('suggestion-container');
     content.style.display = 'block';
 
     // Exclure les catégories nommées "Plat du jour" ou "Dessert du jour" — gérées séparément
@@ -540,19 +557,16 @@
     const FOOD_CATS = ['Formules midi','Tapas','Nos planches','Salades','Plats froids','Plats signatures','Suggestions','Fromages','Desserts'];
     const isFoodSection = (nom) => FOOD_CATS.some(f => nom.toLowerCase().includes(f.toLowerCase()) || f.toLowerCase().includes(nom.toLowerCase()));
 
-    // ── Bloc menu du jour (card élégante) ──
+    // ── Bloc 1 : Menu du jour (plat + dessert uniquement) ──
     const ICON_PLAT = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E8C547" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11h18"/><path d="M12 3a9 9 0 0 1 9 8H3a9 9 0 0 1 9-8z"/><path d="M5 21h14"/><path d="M12 11v10"/></svg>`;
     const ICON_DESSERT = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E8C547" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 3.5-2 6-5 7v2H10v-2c-3-1-5-3.5-5-7a7 7 0 0 1 7-7z"/><path d="M8 21h8"/></svg>`;
-    const ICON_SUGGESTION = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E8C547" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-1.8 5-5 7-5 11a5 5 0 0 0 10 0c0-4-3.2-6-5-11z"/><path d="M9 17.5c.5 1 1.5 1.5 3 1.5s2.5-.5 3-1.5"/></svg>`;
 
     const pjItems = [
-      { item: platJour,       key: 'plat_jour',    icon: ICON_PLAT },
-      { item: dessertJour,    key: 'dessert_jour', icon: ICON_DESSERT },
-      { item: suggestionJour, key: 'suggestion_chef', icon: ICON_SUGGESTION },
+      { item: platJour,    key: 'plat_jour',    icon: ICON_PLAT },
+      { item: dessertJour, key: 'dessert_jour', icon: ICON_DESSERT },
     ].filter(x => x.item);
 
     if (pjItems.length > 0) {
-      // Formule plat + dessert ?
       const hasFormule = platJour && dessertJour && platJour.prix && dessertJour.prix;
       const formuleVal = hasFormule
         ? (parseFloat(String(platJour.prix).replace(',','.')) + parseFloat(String(dessertJour.prix).replace(',','.'))).toFixed(2).replace('.',',') + ' €'
@@ -589,6 +603,22 @@
     } else {
       platContainer.innerHTML = '';
       platContainer.style.display = 'none';
+    }
+
+    // ── Bloc 2 : Suggestion du chef (fond sombre, séparé) ──
+    if (suggestionJour) {
+      const s = suggestionJour;
+      suggContainer.innerHTML = `
+        <div class="suggestion-card">
+          <div class="suggestion-label">${tUI('suggestion_chef')}</div>
+          ${s.nom ? `<div class="suggestion-nom">${esc(s.nom)}</div>` : ''}
+          ${s.description ? `<div class="suggestion-desc">${esc(s.description)}</div>` : ''}
+          ${(s.prix_detail || s.prix) ? `<div class="suggestion-prix">${esc(s.prix_detail || formatPrix(s.prix))}</div>` : ''}
+        </div>`;
+      suggContainer.style.display = 'block';
+    } else {
+      suggContainer.innerHTML = '';
+      suggContainer.style.display = 'none';
     }
 
     // ── Pills (sans "Plat du jour") ──
