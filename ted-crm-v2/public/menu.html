@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>La Carte — Le TED Chassieu</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
+    body { background: #fff; color: #111; }
+
+    /* Header */
+    #header {
+      position: sticky; top: 0; z-index: 100;
+      background: #111; padding: 14px 20px 0;
+    }
+    #header-title { color: #E8C547; font-size: 20px; font-weight: 900; letter-spacing: 1px; }
+    #header-sub { color: #888; font-size: 11px; letter-spacing: 0.5px; margin-top: 1px; margin-bottom: 12px; }
+
+    /* Onglets carte */
+    #carte-tabs {
+      display: flex; gap: 0; border-bottom: 2px solid #222;
+    }
+    .carte-tab {
+      padding: 9px 20px; font-size: 13px; font-weight: 700; cursor: pointer;
+      color: #666; border: none; background: none; border-bottom: 3px solid transparent;
+      margin-bottom: -2px; transition: color 0.15s;
+    }
+    .carte-tab.active { color: #E8C547; border-bottom-color: #E8C547; }
+
+    /* Pills catégories */
+    #cats-bar {
+      position: sticky; top: 106px; z-index: 99;
+      background: #fff; border-bottom: 1px solid #eee;
+      padding: 10px 16px; display: flex; gap: 8px;
+      overflow-x: auto; scrollbar-width: none;
+    }
+    #cats-bar::-webkit-scrollbar { display: none; }
+    .cat-pill {
+      flex-shrink: 0; padding: 6px 14px; border-radius: 20px; font-size: 13px;
+      font-weight: 600; cursor: pointer; border: 1.5px solid #eee;
+      background: #fff; color: #555; white-space: nowrap; transition: all 0.15s;
+    }
+    .cat-pill.active { background: #111; color: #E8C547; border-color: #111; }
+
+    /* Contenu */
+    #content { padding: 0 16px 60px; max-width: 680px; margin: 0 auto; }
+
+    /* Plat du jour */
+    .plat-jour-card {
+      background: #111; border-radius: 14px; padding: 18px 20px;
+      margin: 20px 0 8px; color: #fff;
+    }
+    .plat-jour-label { font-size: 11px; font-weight: 700; color: #E8C547; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .plat-jour-nom { font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+    .plat-jour-desc { font-size: 13px; color: #bbb; margin-bottom: 8px; }
+    .plat-jour-prix { font-size: 16px; font-weight: 800; color: #E8C547; }
+
+    /* Section catégorie */
+    .section { padding-top: 28px; }
+    .section-title {
+      font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase;
+      letter-spacing: 1.5px; padding-bottom: 10px; border-bottom: 1px solid #f0f0f0;
+      margin-bottom: 12px;
+    }
+
+    /* Produit */
+    .produit {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 13px 0; border-bottom: 1px solid #f5f5f5;
+    }
+    .produit:last-child { border-bottom: none; }
+    .produit-info { flex: 1; min-width: 0; }
+    .produit-nom { font-size: 15px; font-weight: 600; color: #111; margin-bottom: 3px; line-height: 1.3; }
+    .produit-desc { font-size: 13px; color: #888; line-height: 1.5; margin-bottom: 4px; }
+    .produit-accord { font-size: 12px; color: #aaa; font-style: italic; margin-top: 3px; }
+    .produit-badges { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+    .badge-item { font-size: 11px; font-weight: 600; background: #fff8e1; color: #b8860b; border-radius: 20px; padding: 2px 9px; }
+    .produit-prix { font-size: 14px; font-weight: 700; color: #111; white-space: nowrap; padding-top: 1px; flex-shrink: 0; }
+
+    /* Note légale */
+    .note-legale { font-size: 11px; color: #bbb; margin-top: 16px; margin-bottom: 24px; font-style: italic; line-height: 1.6; }
+
+    /* Footer */
+    footer { background: #111; color: #888; text-align: center; padding: 28px 20px; font-size: 12px; line-height: 2; }
+    footer strong { color: #fff; }
+
+    /* Loading */
+    #loading { text-align: center; padding: 60px 20px; color: #888; font-size: 14px; }
+    #error { text-align: center; padding: 60px 20px; color: #dc2626; font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<div id="header">
+  <div id="header-title">LE TED</div>
+  <div id="header-sub">RESTAURANT &amp; CLUB — CHASSIEU</div>
+  <div id="carte-tabs">
+    <button class="carte-tab active" data-carte="restaurant" onclick="switchCarte('restaurant')">Restaurant</button>
+    <button class="carte-tab" data-carte="brasero" onclick="switchCarte('brasero')">Brasero</button>
+  </div>
+</div>
+
+<div id="cats-bar"></div>
+
+<div id="loading">Chargement de la carte...</div>
+<div id="error" style="display:none"></div>
+<div id="content" style="display:none"></div>
+
+<footer>
+  <strong>LE TED</strong><br>
+  28 Av. des Frères Montgolfier, 69680 Chassieu<br>
+  04 72 02 20 20
+</footer>
+
+<script>
+  // ── Configuration Supabase ──────────────────────────────────────────────────
+  // Ces valeurs sont publiques (clé anon avec RLS) — safe à exposer
+  const SUPA_URL = 'REMPLACER_PAR_SUPABASE_URL';   // ex: https://xxx.supabase.co
+  const SUPA_KEY = 'REMPLACER_PAR_SUPABASE_ANON_KEY';
+
+  // ── État ────────────────────────────────────────────────────────────────────
+  let carteActive = 'restaurant';
+  let allCategories = [];
+  let allProduits = [];
+  let platJour = null;
+  let dessertJour = null;
+
+  // ── Fetch Supabase ──────────────────────────────────────────────────────────
+  async function fetchJSON(table, params = '') {
+    const r = await fetch(`${SUPA_URL}/rest/v1/${table}?${params}`, {
+      headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, 'Content-Type': 'application/json' }
+    });
+    if (!r.ok) throw new Error(`Erreur ${r.status} sur ${table}`);
+    return r.json();
+  }
+
+  async function loadData() {
+    try {
+      const [cats, prods, plats] = await Promise.all([
+        fetchJSON('menu_categories', 'select=*&order=ordre'),
+        fetchJSON('menu_produits', 'select=*&disponible=eq.true&order=ordre'),
+        fetchJSON('menu_plat_jour', 'select=*')
+      ]);
+      allCategories = cats;
+      allProduits = prods;
+      updatePlatJour(plats);
+      document.getElementById('loading').style.display = 'none';
+      renderMenu();
+    } catch(e) {
+      document.getElementById('loading').style.display = 'none';
+      const err = document.getElementById('error');
+      err.textContent = 'Impossible de charger la carte. Vérifiez votre connexion.';
+      err.style.display = 'block';
+    }
+  }
+
+  function updatePlatJour(plats) {
+    platJour = plats.find(p => p.type === 'plat' && p.carte === carteActive && p.actif) || null;
+    dessertJour = plats.find(p => p.type === 'dessert' && p.carte === carteActive && p.actif) || null;
+  }
+
+  // ── Switch carte ────────────────────────────────────────────────────────────
+  function switchCarte(carte) {
+    carteActive = carte;
+    document.querySelectorAll('.carte-tab').forEach(t => t.classList.toggle('active', t.dataset.carte === carte));
+    renderMenu();
+  }
+
+  // ── Render ──────────────────────────────────────────────────────────────────
+  function renderMenu() {
+    const content = document.getElementById('content');
+    const catsBar = document.getElementById('cats-bar');
+    content.style.display = 'block';
+
+    const cats = allCategories.filter(c => c.visible !== false && (c.carte === carteActive || c.carte === 'les-deux'));
+    const FOOD_CATS = ['Plat du jour','Formules midi','Tapas','Nos planches','Salades','Plats froids','Plats signatures','Suggestions','Fromages','Desserts'];
+    const isFoodSection = (nom) => FOOD_CATS.some(f => nom.toLowerCase().includes(f.toLowerCase()) || f.toLowerCase().includes(nom.toLowerCase()));
+
+    // Pills
+    let pillsHtml = '';
+    if (platJour || dessertJour) {
+      pillsHtml += `<button class="cat-pill" onclick="scrollToId('plat-jour-section')">Plat du jour</button>`;
+    }
+    cats.forEach(cat => {
+      const ps = allProduits.filter(p => p.categorie_id === cat.id && (p.carte === carteActive || p.carte === 'les-deux'));
+      if (ps.length === 0) return;
+      pillsHtml += `<button class="cat-pill" onclick="scrollToId('cat-${cat.id}')" id="pill-${cat.id}">${cat.nom}</button>`;
+    });
+    catsBar.innerHTML = pillsHtml;
+
+    // Content
+    let html = '';
+
+    // Plat du jour
+    if (platJour || dessertJour) {
+      html += `<div class="section" id="plat-jour-section">`;
+      if (platJour) {
+        html += `<div class="plat-jour-card">
+          <div class="plat-jour-label">🍽 Plat du jour</div>
+          ${platJour.nom ? `<div class="plat-jour-nom">${esc(platJour.nom)}</div>` : ''}
+          ${platJour.description ? `<div class="plat-jour-desc">${esc(platJour.description)}</div>` : ''}
+          ${platJour.prix ? `<div class="plat-jour-prix">${esc(platJour.prix)}</div>` : ''}
+        </div>`;
+      }
+      if (dessertJour) {
+        html += `<div class="plat-jour-card" style="margin-top:8px">
+          <div class="plat-jour-label">🍮 Dessert du jour</div>
+          ${dessertJour.nom ? `<div class="plat-jour-nom">${esc(dessertJour.nom)}</div>` : ''}
+          ${dessertJour.description ? `<div class="plat-jour-desc">${esc(dessertJour.description)}</div>` : ''}
+          ${dessertJour.prix ? `<div class="plat-jour-prix">${esc(dessertJour.prix)}</div>` : ''}
+        </div>`;
+      }
+      html += `</div>`;
+    }
+
+    // Catégories
+    let hasFood = false;
+    cats.forEach(cat => {
+      const ps = allProduits.filter(p => p.categorie_id === cat.id && (p.carte === carteActive || p.carte === 'les-deux'));
+      if (ps.length === 0) return;
+
+      html += `<div class="section" id="cat-${cat.id}">`;
+      html += `<div class="section-title">${esc(cat.nom)}</div>`;
+
+      ps.forEach(p => {
+        const badges = (p.badges || []).map(b => `<span class="badge-item">${esc(b)}</span>`).join('');
+        html += `<div class="produit">
+          <div class="produit-info">
+            <div class="produit-nom">${esc(p.nom)}</div>
+            ${p.description ? `<div class="produit-desc">${esc(p.description)}</div>` : ''}
+            ${p.accord_vin ? `<div class="produit-accord">🍷 ${esc(p.accord_vin)}</div>` : ''}
+            ${badges ? `<div class="produit-badges">${badges}</div>` : ''}
+          </div>
+          ${p.prix ? `<div class="produit-prix">${esc(p.prix)}</div>` : ''}
+        </div>`;
+      });
+
+      // Note légale après les sections food
+      if (isFoodSection(cat.nom) && !hasFood) {
+        hasFood = true;
+      } else if (hasFood && !isFoodSection(cat.nom)) {
+        html += `<p class="note-legale">Prix nets et service compris. Plats faits-maison élaborés sur place à partir de produits bruts.</p>`;
+        hasFood = false;
+      }
+
+      html += `</div>`;
+    });
+
+    if (hasFood) {
+      html += `<p class="note-legale">Prix nets et service compris. Plats faits-maison élaborés sur place à partir de produits bruts.</p>`;
+    }
+
+    content.innerHTML = html;
+    initObserver(cats);
+  }
+
+  // ── IntersectionObserver pour surligner la pill active ─────────────────────
+  function initObserver(cats) {
+    if (window._menuObserver) window._menuObserver.disconnect();
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.id;
+          document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
+          const catId = id.startsWith('cat-') ? id.replace('cat-', '') : null;
+          if (catId) {
+            const pill = document.getElementById(`pill-${catId}`);
+            if (pill) {
+              pill.classList.add('active');
+              pill.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'center' });
+            }
+          }
+        }
+      });
+    }, { rootMargin:'-30% 0px -60% 0px', threshold:0 });
+    cats.forEach(cat => {
+      const el = document.getElementById(`cat-${cat.id}`);
+      if (el) observer.observe(el);
+    });
+    window._menuObserver = observer;
+  }
+
+  function scrollToId(id) {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+
+  function esc(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  loadData();
+</script>
+</body>
+</html>

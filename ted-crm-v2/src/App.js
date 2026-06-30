@@ -3009,6 +3009,385 @@ function SendingProgressModal({ type, total, done, successCount, onClose }) {
   );
 }
 
+// ─── Menu Components ──────────────────────────────────────────────────────────
+
+const MENU_BADGES = ['Fait maison', 'Fumé maison', 'Nouveau', 'Signature du chef', 'Best-seller'];
+const MENU_ALLERGENES = ['Gluten','Crustacés','Œufs','Poisson','Arachides','Soja','Lait','Fruits à coque','Céleri','Moutarde','Graines de sésame','Anhydride sulfureux','Lupin','Mollusques'];
+
+function MenuToggle({ value, onChange }) {
+  return (
+    <div onClick={onChange} style={{ width:44, height:24, borderRadius:12, background: value ? '#E8C547' : '#ddd', cursor:'pointer', position:'relative', transition:'background 0.2s', flexShrink:0 }}>
+      <div style={{ position:'absolute', top:2, left: value ? 22 : 2, width:20, height:20, borderRadius:10, background:'#fff', transition:'left 0.2s', boxShadow:'0 1px 4px rgba(0,0,0,0.2)' }} />
+    </div>
+  );
+}
+
+function ProduitModal({ produit, categories, onSave, onDelete, onClose, saving }) {
+  const [form, setForm] = useState({ ...produit });
+  function toggleArr(field, val) {
+    const arr = form[field] || [];
+    setForm(prev => ({ ...prev, [field]: arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val] }));
+  }
+  return (
+    <Modal
+      title={form.id ? 'Modifier le produit' : 'Nouveau produit'}
+      onClose={onClose}
+      maxW={620}
+      footer={[
+        form.id ? <button key="del" type="button" onClick={() => onDelete(form.id)} style={{ ...btnDanger, marginRight:'auto' }}>Supprimer</button> : null,
+        <button key="c" type="button" onClick={onClose} style={btnSecondary}>Annuler</button>,
+        <button key="s" type="button" onClick={() => onSave(form)} style={btnPrimary} disabled={saving}>{saving ? 'Enregistrement...' : 'Enregistrer'}</button>
+      ].filter(Boolean)}
+    >
+      <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+        <div style={fg}>
+          <label style={lbl}>Nom *</label>
+          <input value={form.nom || ''} onChange={e => setForm(p=>({...p,nom:e.target.value}))} style={inp(false)} placeholder="Nom du produit" />
+        </div>
+        <div style={fg}>
+          <label style={lbl}>Description</label>
+          <textarea value={form.description || ''} onChange={e => setForm(p=>({...p,description:e.target.value}))} style={{ ...inp(false), height:72, resize:'vertical', padding:'10px 12px' }} placeholder="Description" />
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+          <div style={fg}>
+            <label style={lbl}>Prix</label>
+            <input value={form.prix || ''} onChange={e => setForm(p=>({...p,prix:e.target.value}))} style={inp(false)} placeholder="ex: 18 €" />
+          </div>
+          <div style={fg}>
+            <label style={lbl}>Accord vin</label>
+            <input value={form.accord_vin || ''} onChange={e => setForm(p=>({...p,accord_vin:e.target.value}))} style={inp(false)} placeholder="ex: Vacqueyras 7,50 €" />
+          </div>
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr', gap:12 }}>
+          <div style={fg}>
+            <label style={lbl}>Catégorie</label>
+            <select value={form.categorie_id || ''} onChange={e => setForm(p=>({...p,categorie_id:e.target.value}))} style={{ ...inp(false), cursor:'pointer' }}>
+              <option value="">— Choisir —</option>
+              {categories.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+            </select>
+          </div>
+          <div style={fg}>
+            <label style={lbl}>Carte</label>
+            <select value={form.carte || 'restaurant'} onChange={e => setForm(p=>({...p,carte:e.target.value}))} style={{ ...inp(false), cursor:'pointer' }}>
+              <option value="restaurant">Restaurant</option>
+              <option value="brasero">Brasero</option>
+              <option value="les-deux">Les deux</option>
+            </select>
+          </div>
+          <div style={fg}>
+            <label style={lbl}>Ordre</label>
+            <input type="number" value={form.ordre || 0} onChange={e => setForm(p=>({...p,ordre:parseInt(e.target.value)||0}))} style={inp(false)} />
+          </div>
+        </div>
+        <div style={{ display:'flex', gap:24, paddingBottom:4 }}>
+          <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer', fontSize:14, fontWeight:500 }}>
+            <input type="checkbox" checked={!!form.disponible} onChange={e => setForm(p=>({...p,disponible:e.target.checked}))} /> Disponible
+          </label>
+          <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer', fontSize:14, fontWeight:500 }}>
+            <input type="checkbox" checked={!!form.mise_en_avant} onChange={e => setForm(p=>({...p,mise_en_avant:e.target.checked}))} /> Mise en avant
+          </label>
+        </div>
+        <div style={fg}>
+          <label style={lbl}>Badges</label>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+            {MENU_BADGES.map(b => {
+              const on = (form.badges||[]).includes(b);
+              return <button key={b} type="button" onClick={() => toggleArr('badges', b)} style={{ padding:'5px 12px', borderRadius:20, border:`1.5px solid ${on?'#b8860b':'#ddd'}`, background:on?'#fff8e1':'#fff', color:on?'#b8860b':'#666', fontSize:12, fontWeight:600, cursor:'pointer' }}>{b}</button>;
+            })}
+          </div>
+        </div>
+        <div style={fg}>
+          <label style={lbl}>Allergènes</label>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+            {MENU_ALLERGENES.map(a => {
+              const on = (form.allergenes||[]).includes(a);
+              return <button key={a} type="button" onClick={() => toggleArr('allergenes', a)} style={{ padding:'4px 10px', borderRadius:20, border:`1.5px solid ${on?'#dc2626':'#ddd'}`, background:on?'#fef2f2':'#fff', color:on?'#dc2626':'#666', fontSize:12, cursor:'pointer' }}>{a}</button>;
+            })}
+          </div>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function CategoriesModal({ categories, onClose, showToast, carte }) {
+  const [cats, setCats] = useState([...categories]);
+  const [editingId, setEditingId] = useState(null);
+  const [editNom, setEditNom] = useState('');
+  const [newNom, setNewNom] = useState('');
+  const [newCarte, setNewCarte] = useState(carte);
+  const [saving, setSaving] = useState(false);
+
+  async function saveNom(cat) {
+    if (!editNom.trim()) { setEditingId(null); return; }
+    await supabase.from('menu_categories').update({ nom: editNom.trim() }).eq('id', cat.id);
+    setCats(prev => prev.map(c => c.id === cat.id ? { ...c, nom: editNom.trim() } : c));
+    setEditingId(null);
+  }
+
+  async function toggleVisible(cat) {
+    const val = !cat.visible;
+    await supabase.from('menu_categories').update({ visible: val }).eq('id', cat.id);
+    setCats(prev => prev.map(c => c.id === cat.id ? { ...c, visible: val } : c));
+  }
+
+  async function addCat() {
+    if (!newNom.trim()) return;
+    setSaving(true);
+    const ordre = cats.length > 0 ? Math.max(...cats.map(c => c.ordre || 0)) + 1 : 1;
+    const { data } = await supabase.from('menu_categories').insert({ nom: newNom.trim(), carte: newCarte, ordre }).select().single();
+    if (data) { setCats(prev => [...prev, data]); setNewNom(''); showToast('Catégorie ajoutée ✓'); }
+    setSaving(false);
+  }
+
+  return (
+    <Modal title="Gérer les catégories" onClose={onClose} maxW={540} footer={[
+      <button key="c" type="button" onClick={onClose} style={btnPrimary}>Fermer</button>
+    ]}>
+      <div style={{ marginBottom:16, display:'flex', gap:8 }}>
+        <input value={newNom} onChange={e=>setNewNom(e.target.value)} placeholder="Nom de la catégorie..." style={{ ...inp(false), flex:1, height:40 }} onKeyDown={e=>e.key==='Enter'&&addCat()} />
+        <select value={newCarte} onChange={e=>setNewCarte(e.target.value)} style={{ height:40, border:'1.5px solid #ddd', borderRadius:7, padding:'0 8px', fontSize:13, cursor:'pointer' }}>
+          <option value="restaurant">Restaurant</option>
+          <option value="brasero">Brasero</option>
+          <option value="les-deux">Les deux</option>
+        </select>
+        <button onClick={addCat} disabled={saving} style={{ ...btnPrimary, height:40 }}>Ajouter</button>
+      </div>
+      <div style={{ display:'flex', flexDirection:'column', gap:6, maxHeight:420, overflowY:'auto' }}>
+        {cats.map(cat => (
+          <div key={cat.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', background:'#f9f9f9', borderRadius:10 }}>
+            {editingId === cat.id ? (
+              <input value={editNom} onChange={e=>setEditNom(e.target.value)} onBlur={()=>saveNom(cat)} onKeyDown={e=>{if(e.key==='Enter')saveNom(cat);if(e.key==='Escape')setEditingId(null);}} style={{ flex:1, height:34, border:'1.5px solid #E8C547', borderRadius:7, padding:'0 10px', fontSize:13, outline:'none' }} autoFocus />
+            ) : (
+              <span style={{ flex:1, fontSize:14, fontWeight:600, color: cat.visible ? '#111' : '#bbb', cursor:'pointer' }} onDoubleClick={()=>{setEditingId(cat.id);setEditNom(cat.nom);}}>{cat.nom}</span>
+            )}
+            <span style={{ fontSize:11, color:'#aaa', flexShrink:0, background:'#efefef', borderRadius:6, padding:'2px 7px' }}>{cat.carte}</span>
+            <button onClick={()=>{setEditingId(cat.id);setEditNom(cat.nom);}} style={{ background:'none', border:'none', cursor:'pointer', padding:'4px', color:'#888', display:'flex' }}><Pencil size={14} /></button>
+            <MenuToggle value={cat.visible} onChange={()=>toggleVisible(cat)} />
+          </div>
+        ))}
+      </div>
+    </Modal>
+  );
+}
+
+function MenuPage({ showToast }) {
+  const [carte, setCarte] = useState('restaurant');
+  const [categories, setCategories] = useState([]);
+  const [produits, setProduits] = useState([]);
+  const [platJour, setPlatJour] = useState(null);
+  const [dessertJour, setDessertJour] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [editProduit, setEditProduit] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(null);
+  const [showGererCats, setShowGererCats] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => { loadMenu(); }, [carte]);
+
+  async function loadMenu() {
+    setLoading(true);
+    const [cR, pR, jR] = await Promise.all([
+      supabase.from('menu_categories').select('*').order('ordre'),
+      supabase.from('menu_produits').select('*').order('ordre'),
+      supabase.from('menu_plat_jour').select('*')
+    ]);
+    setCategories(cR.data || []);
+    setProduits(pR.data || []);
+    const pj = jR.data || [];
+    setPlatJour(pj.find(p => p.type === 'plat' && p.carte === carte) || null);
+    setDessertJour(pj.find(p => p.type === 'dessert' && p.carte === carte) || null);
+    setLoading(false);
+  }
+
+  async function savePlatJourField(item, field, val) {
+    await supabase.from('menu_plat_jour').update({ [field]: val, updated_at: new Date().toISOString() }).eq('id', item.id);
+  }
+
+  function updatePlatLocal(item, field, val) {
+    const updated = { ...item, [field]: val };
+    item.type === 'plat' ? setPlatJour(updated) : setDessertJour(updated);
+  }
+
+  async function togglePlatActif(item) {
+    const newActif = !item.actif;
+    updatePlatLocal(item, 'actif', newActif);
+    await supabase.from('menu_plat_jour').update({ actif: newActif, updated_at: new Date().toISOString() }).eq('id', item.id);
+  }
+
+  async function toggleDisponible(produit) {
+    const val = !produit.disponible;
+    setProduits(prev => prev.map(p => p.id === produit.id ? { ...p, disponible: val } : p));
+    await supabase.from('menu_produits').update({ disponible: val }).eq('id', produit.id);
+  }
+
+  async function saveProduit(data) {
+    setSaving(true);
+    if (data.id) {
+      const { error } = await supabase.from('menu_produits').update(data).eq('id', data.id);
+      if (!error) {
+        setProduits(prev => prev.map(p => p.id === data.id ? { ...p, ...data } : p));
+        showToast('Produit modifié ✓');
+      }
+    } else {
+      const { data: newP, error } = await supabase.from('menu_produits').insert(data).select().single();
+      if (!error && newP) { setProduits(prev => [...prev, newP]); showToast('Produit ajouté ✓'); }
+    }
+    setSaving(false);
+    setEditProduit(null);
+    setShowAddModal(null);
+  }
+
+  async function deleteProduit(id) {
+    await supabase.from('menu_produits').delete().eq('id', id);
+    setProduits(prev => prev.filter(p => p.id !== id));
+    setEditProduit(null);
+    setConfirmDelete(null);
+    showToast('Produit supprimé');
+  }
+
+  const catsFiltered = categories.filter(c => c.visible !== false && (c.carte === carte || c.carte === 'les-deux'));
+  const produitsForCat = (catId) => produits.filter(p => p.categorie_id === catId && (p.carte === carte || p.carte === 'les-deux'));
+
+  const platItems = [platJour, dessertJour].filter(Boolean);
+
+  if (loading) return (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'60vh', color:'#888', fontSize:15 }}>
+      Chargement du menu...
+    </div>
+  );
+
+  return (
+    <div style={{ padding:'28px 32px', maxWidth:1000, margin:'0 auto' }}>
+      {/* Header */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:28 }}>
+        <div>
+          <h1 style={{ margin:0, fontSize:26, fontWeight:900, color:'#111' }}>Menu</h1>
+          <p style={{ margin:'4px 0 0', fontSize:13, color:'#888' }}>Gérez la carte du TED en temps réel</p>
+        </div>
+        <div style={{ display:'flex', gap:10 }}>
+          <button onClick={() => setShowGererCats(true)} style={btnSecondary}>Gérer les catégories</button>
+          <a href="/menu.html" target="_blank" rel="noopener noreferrer" style={{ ...btnPrimary, display:'inline-flex', alignItems:'center', gap:6, textDecoration:'none', lineHeight:'40px', paddingTop:0, paddingBottom:0 }}>
+            <ExternalLink size={14} strokeWidth={2.5} /> Voir la carte client
+          </a>
+        </div>
+      </div>
+
+      {/* Onglets Restaurant / Brasero */}
+      <div style={{ display:'flex', gap:8, marginBottom:28 }}>
+        {[{id:'restaurant',label:'Restaurant'},{id:'brasero',label:'Brasero'}].map(c => (
+          <button key={c.id} onClick={() => setCarte(c.id)} style={{ padding:'8px 22px', borderRadius:10, fontWeight:700, fontSize:14, cursor:'pointer', background: carte===c.id ? '#111' : '#fff', color: carte===c.id ? '#E8C547' : '#666', border: carte===c.id ? '2px solid #111' : '1.5px solid #ddd', transition:'all 0.15s' }}>
+            {c.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Plat du jour + Dessert du jour */}
+      {platItems.length > 0 && (
+        <div style={{ display:'grid', gridTemplateColumns: platItems.length > 1 ? '1fr 1fr' : '1fr', gap:16, marginBottom:32 }}>
+          {platItems.map(item => (
+            <div key={item.id} style={{ background:'#fff', borderRadius:16, padding:'20px', boxShadow:'0 1px 6px rgba(0,0,0,0.06)', border:`2px solid ${item.actif ? '#E8C547' : '#eee'}`, transition:'border-color 0.2s' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+                <span style={{ fontWeight:800, fontSize:14, color:'#111' }}>{item.type === 'plat' ? '🍽 Plat du jour' : '🍮 Dessert du jour'}</span>
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <span style={{ fontSize:12, color: item.actif ? '#b8860b' : '#999', fontWeight:600 }}>{item.actif ? 'Affiché' : 'Masqué'}</span>
+                  <MenuToggle value={item.actif} onChange={() => togglePlatActif(item)} />
+                </div>
+              </div>
+              <input
+                placeholder="Nom du plat..."
+                value={item.nom || ''}
+                onChange={e => updatePlatLocal(item, 'nom', e.target.value)}
+                onBlur={e => savePlatJourField(item, 'nom', e.target.value)}
+                style={{ width:'100%', height:40, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:14, marginBottom:8, boxSizing:'border-box', outline:'none' }}
+              />
+              <input
+                placeholder="Description..."
+                value={item.description || ''}
+                onChange={e => updatePlatLocal(item, 'description', e.target.value)}
+                onBlur={e => savePlatJourField(item, 'description', e.target.value)}
+                style={{ width:'100%', height:40, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:14, marginBottom:8, boxSizing:'border-box', outline:'none' }}
+              />
+              <input
+                placeholder="Prix (ex: 13,50 €)"
+                value={item.prix || ''}
+                onChange={e => updatePlatLocal(item, 'prix', e.target.value)}
+                onBlur={e => savePlatJourField(item, 'prix', e.target.value)}
+                style={{ width:'100%', height:40, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:14, boxSizing:'border-box', outline:'none' }}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Catégories + Produits */}
+      {catsFiltered.map(cat => {
+        const ps = produitsForCat(cat.id);
+        return (
+          <div key={cat.id} style={{ marginBottom:20 }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10, paddingBottom:8, borderBottom:'1px solid #eee' }}>
+              <h3 style={{ margin:0, fontSize:12, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:1.2 }}>{cat.nom} <span style={{ fontWeight:400, color:'#bbb' }}>({ps.length})</span></h3>
+              <button onClick={() => setShowAddModal(cat.id)} style={{ ...btnSecondary, height:30, fontSize:12, display:'inline-flex', alignItems:'center', gap:4, padding:'0 10px' }}>
+                <Plus size={12} strokeWidth={2.5} /> Ajouter
+              </button>
+            </div>
+            <div style={{ background:'#fff', borderRadius:12, border:'1px solid #eee', overflow:'hidden' }}>
+              {ps.length === 0 ? (
+                <div style={{ padding:'14px 16px', color:'#ccc', fontSize:13, textAlign:'center' }}>Aucun produit dans cette catégorie</div>
+              ) : ps.map((p, i) => (
+                <div key={p.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'11px 14px', borderBottom: i < ps.length-1 ? '1px solid #f5f5f5' : 'none', opacity: p.disponible ? 1 : 0.5 }}>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontWeight:600, fontSize:14, color:'#111', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                      {p.nom}
+                      {p.mise_en_avant && <span style={{ marginLeft:6, fontSize:10, background:'#fffbea', color:'#b8860b', borderRadius:6, padding:'1px 6px', fontWeight:700 }}>★</span>}
+                    </div>
+                    {p.prix && <div style={{ fontSize:12, color:'#888', marginTop:1 }}>{p.prix}</div>}
+                  </div>
+                  <MenuToggle value={p.disponible} onChange={() => toggleDisponible(p)} />
+                  <button onClick={() => setEditProduit({...p})} style={{ background:'#f5f5f5', border:'none', borderRadius:8, padding:'6px 12px', fontSize:12, fontWeight:600, cursor:'pointer', color:'#333', whiteSpace:'nowrap' }}>Modifier</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Modals */}
+      {(editProduit || showAddModal) && (
+        <ProduitModal
+          produit={editProduit || { categorie_id: showAddModal, carte, disponible: true, mise_en_avant: false, ordre: 0, badges: [], allergenes: [] }}
+          categories={categories}
+          onSave={saveProduit}
+          onDelete={id => setConfirmDelete(id)}
+          onClose={() => { setEditProduit(null); setShowAddModal(null); }}
+          saving={saving}
+        />
+      )}
+
+      {confirmDelete && (
+        <ConfirmModal
+          title="Supprimer ce produit ?"
+          msg="Cette action est irréversible. Le produit sera définitivement supprimé de la carte."
+          danger
+          okLabel="Supprimer"
+          onOk={() => deleteProduit(confirmDelete)}
+          onCancel={() => setConfirmDelete(null)}
+        />
+      )}
+
+      {showGererCats && (
+        <CategoriesModal
+          categories={categories}
+          onClose={() => { setShowGererCats(false); loadMenu(); }}
+          showToast={showToast}
+          carte={carte}
+        />
+      )}
+    </div>
+  );
+}
+
 // ─── Main CRM App ─────────────────────────────────────────────────────────────
 
 function CRMApp({ user, onLogout }) {
@@ -3414,6 +3793,7 @@ function CRMApp({ user, onLogout }) {
         { id:'reservations', label:'Réservations', icon:<CalendarDays size={24} strokeWidth={1.8} /> },
         { id:'clients', label:'Clients', icon:<Users size={24} strokeWidth={1.8} /> },
         { id:'communications', label:'Communications', icon:<Megaphone size={24} strokeWidth={1.8} /> },
+        { id:'menu', label:'Menu', icon:<UtensilsCrossed size={24} strokeWidth={1.8} /> },
       ].map(item => {
         const nbAttenteSidebar = item.id === 'reservations' ? resaAttenteCount : 0;
         return (
@@ -3520,6 +3900,17 @@ function CRMApp({ user, onLogout }) {
     </>
   );
 
+
+  if (!isMobile && activeView === 'menu') return (
+    <>
+      {sidebarDesktop}
+      <div style={{ marginLeft:120, minHeight:'100vh', background:'#f5f5f5' }}>
+        <MenuPage showToast={showToast} />
+      </div>
+      {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
+      {notifPrePromptModal}
+    </>
+  );
 
   if (activeView === 'communications' && !isMobile) {
     const limiteCommDate = (() => { const d = new Date(); d.setMonth(d.getMonth() - filtreAbsentsMois); return d.toISOString().split('T')[0]; })();
