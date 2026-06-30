@@ -3303,18 +3303,48 @@ async function extractLinesFromPdf(source) {
   const allLines = [];
 
   for (let p = 1; p <= pdf.numPages; p++) {
-    const page   = await pdf.getPage(p);
+    const page    = await pdf.getPage(p);
     const content = await page.getTextContent();
-    const byY    = {};
-    for (const item of content.items) {
-      const y = Math.round(item.transform[5]);
-      if (!byY[y]) byY[y] = [];
-      byY[y].push({ x: item.transform[4], str: item.str });
+    const items   = content.items.filter(i => i.str && i.str.trim());
+    if (!items.length) continue;
+
+    // ── Groupe les items en lignes visuelles par proximité Y (tolérance 3pt) ──
+    const LINE_TOL = 3;
+    const sorted = [...items].sort((a, b) => {
+      const dy = b.transform[5] - a.transform[5]; // Y décroissant (haut → bas PDF)
+      return Math.abs(dy) > LINE_TOL ? dy : a.transform[4] - b.transform[4];
+    });
+
+    const visualLines = [];
+    let curLine = [];
+    let curY = null;
+    for (const item of sorted) {
+      const y = item.transform[5];
+      if (curY === null || Math.abs(y - curY) > LINE_TOL) {
+        if (curLine.length) visualLines.push(curLine);
+        curLine = [item];
+        curY = y;
+      } else {
+        curLine.push(item);
+      }
     }
-    const ys = Object.keys(byY).map(Number).sort((a, b) => b - a);
-    for (const y of ys) {
-      const txt = byY[y].sort((a,b) => a.x - b.x).map(i => i.str).join(' ').trim();
-      if (txt) allLines.push(txt);
+    if (curLine.length) visualLines.push(curLine);
+
+    // ── Reconstitue le texte de chaque ligne avec espaces selon gap X ──────────
+    for (const lineItems of visualLines) {
+      const lr = lineItems.sort((a, b) => a.transform[4] - b.transform[4]);
+      let text = lr[0].str;
+      for (let i = 1; i < lr.length; i++) {
+        const prev      = lr[i - 1];
+        const curr      = lr[i];
+        const prevRight = prev.transform[4] + (prev.width || 0);
+        const gap       = curr.transform[4] - prevRight;
+        // Seuil : 20% de la taille de police estimée (transform[0] ≈ fontSize)
+        const fontSize  = Math.abs(prev.transform[0]) || 10;
+        text += gap > fontSize * 0.2 ? ' ' + curr.str : curr.str;
+      }
+      const clean = text.trim();
+      if (clean) allLines.push(clean);
     }
   }
   return allLines;
