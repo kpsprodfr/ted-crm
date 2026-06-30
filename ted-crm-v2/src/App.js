@@ -3022,152 +3022,229 @@ function MenuToggle({ value, onChange }) {
   );
 }
 
-function ProduitModal({ produit, categories, onSave, onDelete, onClose, saving }) {
-  const [form, setForm] = useState({ ...produit });
-  function toggleArr(field, val) {
-    const arr = form[field] || [];
-    setForm(prev => ({ ...prev, [field]: arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val] }));
-  }
-  return (
-    <Modal
-      title={form.id ? 'Modifier le produit' : 'Nouveau produit'}
-      onClose={onClose}
-      maxW={620}
-      footer={[
-        form.id ? <button key="del" type="button" onClick={() => onDelete(form.id)} style={{ ...btnDanger, marginRight:'auto' }}>Supprimer</button> : null,
-        <button key="c" type="button" onClick={onClose} style={btnSecondary}>Annuler</button>,
-        <button key="s" type="button" onClick={() => onSave(form)} style={btnPrimary} disabled={saving}>{saving ? 'Enregistrement...' : 'Enregistrer'}</button>
-      ].filter(Boolean)}
-    >
-      <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-        <div style={fg}>
-          <label style={lbl}>Nom *</label>
-          <input value={form.nom || ''} onChange={e => setForm(p=>({...p,nom:e.target.value}))} style={inp(false)} placeholder="Nom du produit" />
-        </div>
-        <div style={fg}>
-          <label style={lbl}>Description</label>
-          <textarea value={form.description || ''} onChange={e => setForm(p=>({...p,description:e.target.value}))} style={{ ...inp(false), height:72, resize:'vertical', padding:'10px 12px' }} placeholder="Description" />
-        </div>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-          <div style={fg}>
-            <label style={lbl}>Prix</label>
-            <input value={form.prix || ''} onChange={e => setForm(p=>({...p,prix:e.target.value}))} style={inp(false)} placeholder="ex: 18 €" />
-          </div>
-          <div style={fg}>
-            <label style={lbl}>Accord vin</label>
-            <input value={form.accord_vin || ''} onChange={e => setForm(p=>({...p,accord_vin:e.target.value}))} style={inp(false)} placeholder="ex: Vacqueyras 7,50 €" />
-          </div>
-        </div>
-        <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr', gap:12 }}>
-          <div style={fg}>
-            <label style={lbl}>Catégorie</label>
-            <select value={form.categorie_id || ''} onChange={e => setForm(p=>({...p,categorie_id:e.target.value}))} style={{ ...inp(false), cursor:'pointer' }}>
-              <option value="">— Choisir —</option>
-              {categories.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
-            </select>
-          </div>
-          <div style={fg}>
-            <label style={lbl}>Carte</label>
-            <select value={form.carte || 'restaurant'} onChange={e => setForm(p=>({...p,carte:e.target.value}))} style={{ ...inp(false), cursor:'pointer' }}>
-              <option value="restaurant">Restaurant</option>
-              <option value="brasero">Brasero</option>
-              <option value="les-deux">Les deux</option>
-            </select>
-          </div>
-          <div style={fg}>
-            <label style={lbl}>Ordre</label>
-            <input type="number" value={form.ordre || 0} onChange={e => setForm(p=>({...p,ordre:parseInt(e.target.value)||0}))} style={inp(false)} />
-          </div>
-        </div>
-        <div style={{ display:'flex', gap:24, paddingBottom:4 }}>
-          <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer', fontSize:14, fontWeight:500 }}>
-            <input type="checkbox" checked={!!form.disponible} onChange={e => setForm(p=>({...p,disponible:e.target.checked}))} /> Disponible
-          </label>
-          <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer', fontSize:14, fontWeight:500 }}>
-            <input type="checkbox" checked={!!form.mise_en_avant} onChange={e => setForm(p=>({...p,mise_en_avant:e.target.checked}))} /> Mise en avant
-          </label>
-        </div>
-        <div style={fg}>
-          <label style={lbl}>Badges</label>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-            {MENU_BADGES.map(b => {
-              const on = (form.badges||[]).includes(b);
-              return <button key={b} type="button" onClick={() => toggleArr('badges', b)} style={{ padding:'5px 12px', borderRadius:20, border:`1.5px solid ${on?'#b8860b':'#ddd'}`, background:on?'#fff8e1':'#fff', color:on?'#b8860b':'#666', fontSize:12, fontWeight:600, cursor:'pointer' }}>{b}</button>;
-            })}
-          </div>
-        </div>
-        <div style={fg}>
-          <label style={lbl}>Allergènes</label>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-            {MENU_ALLERGENES.map(a => {
-              const on = (form.allergenes||[]).includes(a);
-              return <button key={a} type="button" onClick={() => toggleArr('allergenes', a)} style={{ padding:'4px 10px', borderRadius:20, border:`1.5px solid ${on?'#dc2626':'#ddd'}`, background:on?'#fef2f2':'#fff', color:on?'#dc2626':'#666', fontSize:12, cursor:'pointer' }}>{a}</button>;
-            })}
-          </div>
+function MenuBottomSheet({ title, onClose, children, footer }) {
+  const isMobile = window.innerWidth < 768;
+  const [vis, setVis] = useState(false);
+  useEffect(() => { const id = requestAnimationFrame(() => setVis(true)); return () => cancelAnimationFrame(id); }, []);
+  function close() { setVis(false); setTimeout(onClose, 260); }
+
+  const overlayBase = { position:'fixed', inset:0, background: vis ? 'rgba(0,0,0,0.45)' : 'rgba(0,0,0,0)', transition:'background 0.25s', zIndex:3000 };
+  const headerBar = (
+    <div style={{ padding:'10px 20px 14px', borderBottom:'1px solid #f0f0f0', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
+      <span style={{ fontWeight:700, fontSize:15, color:'#111' }}>{title}</span>
+      <button onClick={close} style={{ background:'none', border:'none', fontSize:22, cursor:'pointer', color:'#aaa', lineHeight:1, padding:0 }}>✕</button>
+    </div>
+  );
+
+  if (!isMobile) {
+    return (
+      <div style={{ ...overlayBase, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }} onClick={close}>
+        <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:540, maxHeight:'90vh', display:'flex', flexDirection:'column', overflow:'hidden', transform: vis ? 'scale(1)' : 'scale(0.96)', transition:'transform 0.2s' }} onClick={e => e.stopPropagation()}>
+          {headerBar}
+          <div style={{ flex:1, overflowY:'auto', padding:'16px 20px' }}>{children}</div>
+          {footer && <div style={{ padding:'12px 20px', borderTop:'1px solid #f0f0f0', display:'flex', gap:8, justifyContent:'flex-end', flexShrink:0 }}>{footer}</div>}
         </div>
       </div>
-    </Modal>
+    );
+  }
+
+  return (
+    <div style={overlayBase} onClick={close}>
+      <div style={{ position:'absolute', bottom:0, left:0, right:0, background:'#fff', borderRadius:'20px 20px 0 0', maxHeight:'92vh', display:'flex', flexDirection:'column', transform: vis ? 'translateY(0)' : 'translateY(100%)', transition:'transform 0.26s cubic-bezier(0.32,0.72,0,1)', paddingBottom:'env(safe-area-inset-bottom,16px)' }} onClick={e => e.stopPropagation()}>
+        <div style={{ width:36, height:4, background:'#ddd', borderRadius:2, margin:'12px auto 4px', flexShrink:0 }} />
+        {headerBar}
+        <div style={{ flex:1, overflowY:'auto', padding:'16px 20px', WebkitOverflowScrolling:'touch' }}>{children}</div>
+        {footer && <div style={{ padding:'12px 20px', borderTop:'1px solid #f0f0f0', display:'flex', gap:8, background:'#fff', flexShrink:0 }}>{footer}</div>}
+      </div>
+    </div>
   );
 }
 
-function CategoriesModal({ categories, onClose, showToast, carte }) {
-  const [cats, setCats] = useState([...categories]);
-  const [editingId, setEditingId] = useState(null);
-  const [editNom, setEditNom] = useState('');
+function PlatJourSheet({ item, onClose, onSaved }) {
+  const [form, setForm] = useState({ ...item });
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    setSaving(true);
+    await supabase.from('menu_plat_jour').update({ nom: form.nom, description: form.description, prix: form.prix, actif: form.actif, updated_at: new Date().toISOString() }).eq('id', form.id);
+    onSaved(form);
+    setSaving(false);
+    onClose();
+  }
+
+  return (
+    <MenuBottomSheet
+      title={form.type === 'plat' ? '🍽 Plat du jour' : '🍮 Dessert du jour'}
+      onClose={onClose}
+      footer={<><button onClick={onClose} style={{ ...btnSecondary, flex:1 }}>Annuler</button><button onClick={save} disabled={saving} style={{ ...btnPrimary, flex:2 }}>{saving ? '...' : 'Enregistrer'}</button></>}
+    >
+      <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'4px 0' }}>
+          <span style={{ fontSize:14, fontWeight:600, color:'#333' }}>Affiché sur la carte</span>
+          <MenuToggle value={!!form.actif} onChange={() => setForm(p => ({ ...p, actif: !p.actif }))} />
+        </div>
+        <div><label style={lbl}>Nom</label><input value={form.nom||''} onChange={e=>setForm(p=>({...p,nom:e.target.value}))} style={inp(false)} placeholder="Nom du plat" autoFocus /></div>
+        <div><label style={lbl}>Description courte</label><input value={form.description||''} onChange={e=>setForm(p=>({...p,description:e.target.value}))} style={inp(false)} placeholder="Description" /></div>
+        <div><label style={lbl}>Prix</label><input value={form.prix||''} onChange={e=>setForm(p=>({...p,prix:e.target.value}))} style={inp(false)} placeholder="ex: 13,50 €" /></div>
+      </div>
+    </MenuBottomSheet>
+  );
+}
+
+function ProduitSheet({ produit, categories, carte: defaultCarte, onSave, onClose, saving }) {
+  const [form, setForm] = useState({ carte: defaultCarte, disponible: true, mise_en_avant: false, badges: [], allergenes: [], ordre: 0, ...produit });
+  const [showMore, setShowMore] = useState(!!produit._focusCat);
+  const [showBadges, setShowBadges] = useState(false);
+  const [showAllergenes, setShowAllergenes] = useState(false);
+
+  function toggleArr(field, val) {
+    const arr = form[field] || [];
+    setForm(p => ({ ...p, [field]: arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val] }));
+  }
+
+  return (
+    <MenuBottomSheet
+      title={produit.id ? 'Modifier le produit' : 'Nouveau produit'}
+      onClose={onClose}
+      footer={<><button onClick={onClose} style={{ ...btnSecondary, flex:1 }}>Annuler</button><button onClick={() => onSave(form)} disabled={saving || !form.nom?.trim()} style={{ ...btnPrimary, flex:2 }}>{saving ? 'Enregistrement...' : 'Enregistrer'}</button></>}
+    >
+      <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+        <div><label style={lbl}>Nom *</label><input value={form.nom||''} onChange={e=>setForm(p=>({...p,nom:e.target.value}))} style={inp(false)} placeholder="Nom du produit" autoFocus /></div>
+        <div><label style={lbl}>Prix</label><input value={form.prix||''} onChange={e=>setForm(p=>({...p,prix:e.target.value}))} style={inp(false)} placeholder="ex: 18 €" /></div>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'2px 0' }}>
+          <span style={{ fontSize:14, fontWeight:500, color:'#333' }}>Disponible</span>
+          <MenuToggle value={!!form.disponible} onChange={() => setForm(p=>({...p,disponible:!p.disponible}))} />
+        </div>
+
+        <button onClick={() => setShowMore(s=>!s)} style={{ background:'none', border:'none', color:'#888', fontSize:13, fontWeight:600, cursor:'pointer', textAlign:'left', padding:'2px 0', display:'flex', alignItems:'center', gap:4 }}>
+          <ChevronRight size={14} strokeWidth={2.5} style={{ transform: showMore ? 'rotate(90deg)' : 'none', transition:'transform 0.2s' }} />
+          {showMore ? "Moins d'options" : "Plus d'options ›"}
+        </button>
+
+        {showMore && <>
+          <div><label style={lbl}>Description</label><textarea value={form.description||''} onChange={e=>setForm(p=>({...p,description:e.target.value}))} style={{...inp(false),height:70,resize:'vertical',padding:'10px 12px'}} placeholder="Description" /></div>
+          <div><label style={lbl}>Accord vin</label><input value={form.accord_vin||''} onChange={e=>setForm(p=>({...p,accord_vin:e.target.value}))} style={inp(false)} placeholder="ex: Vacqueyras 7,50 €" /></div>
+          <div>
+            <label style={lbl}>Catégorie</label>
+            <select value={form.categorie_id||''} onChange={e=>setForm(p=>({...p,categorie_id:e.target.value}))} style={{...inp(false),cursor:'pointer'}}>
+              <option value="">— Choisir —</option>
+              {categories.map(c=><option key={c.id} value={c.id}>{c.nom}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={lbl}>Carte</label>
+            <div style={{ display:'flex', gap:8 }}>
+              {[['restaurant','Restaurant'],['brasero','Brasero'],['les-deux','Les deux']].map(([v,l])=>(
+                <button key={v} type="button" onClick={()=>setForm(p=>({...p,carte:v}))} style={{ flex:1, height:38, borderRadius:10, border:`1.5px solid ${form.carte===v?'#111':'#ddd'}`, background:form.carte===v?'#111':'#fff', color:form.carte===v?'#E8C547':'#666', fontSize:12, fontWeight:600, cursor:'pointer' }}>{l}</button>
+              ))}
+            </div>
+          </div>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'2px 0' }}>
+            <span style={{ fontSize:14, fontWeight:500, color:'#333' }}>Mise en avant</span>
+            <MenuToggle value={!!form.mise_en_avant} onChange={() => setForm(p=>({...p,mise_en_avant:!p.mise_en_avant}))} />
+          </div>
+          <div>
+            <button onClick={()=>setShowBadges(s=>!s)} style={{ width:'100%', background:'#f5f5f5', border:'none', borderRadius:10, padding:'10px 14px', textAlign:'left', cursor:'pointer', fontSize:13, fontWeight:600, color:'#333', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <span>Badges — {(form.badges||[]).length} sélectionné(s)</span>
+              <ChevronRight size={14} style={{ color:'#aaa', transform:showBadges?'rotate(90deg)':'none', transition:'transform 0.2s' }} />
+            </button>
+            {showBadges && <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginTop:8, paddingLeft:2 }}>
+              {MENU_BADGES.map(b=>{const on=(form.badges||[]).includes(b);return <button key={b} type="button" onClick={()=>toggleArr('badges',b)} style={{padding:'6px 14px',borderRadius:20,border:`1.5px solid ${on?'#b8860b':'#ddd'}`,background:on?'#fff8e1':'#fff',color:on?'#b8860b':'#666',fontSize:12,fontWeight:600,cursor:'pointer'}}>{b}</button>;})}
+            </div>}
+          </div>
+          <div>
+            <button onClick={()=>setShowAllergenes(s=>!s)} style={{ width:'100%', background:'#f5f5f5', border:'none', borderRadius:10, padding:'10px 14px', textAlign:'left', cursor:'pointer', fontSize:13, fontWeight:600, color:'#333', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <span>Allergènes — {(form.allergenes||[]).length} sélectionné(s)</span>
+              <ChevronRight size={14} style={{ color:'#aaa', transform:showAllergenes?'rotate(90deg)':'none', transition:'transform 0.2s' }} />
+            </button>
+            {showAllergenes && <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginTop:8, paddingLeft:2 }}>
+              {MENU_ALLERGENES.map(a=>{const on=(form.allergenes||[]).includes(a);return <button key={a} type="button" onClick={()=>toggleArr('allergenes',a)} style={{padding:'5px 11px',borderRadius:20,border:`1.5px solid ${on?'#dc2626':'#ddd'}`,background:on?'#fef2f2':'#fff',color:on?'#dc2626':'#666',fontSize:12,cursor:'pointer'}}>{a}</button>;})}
+            </div>}
+          </div>
+        </>}
+      </div>
+    </MenuBottomSheet>
+  );
+}
+
+function CatsSheet({ categories: initCats, onClose, showToast, carte }) {
+  const [cats, setCats] = useState([...initCats]);
   const [newNom, setNewNom] = useState('');
   const [newCarte, setNewCarte] = useState(carte);
-  const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editNom, setEditNom] = useState('');
+  const [adding, setAdding] = useState(false);
+  const dragIdx = useRef(null);
+  const dragOverIdx = useRef(null);
+
+  async function addCat() {
+    if (!newNom.trim()) return;
+    setAdding(true);
+    const ordre = cats.length > 0 ? Math.max(...cats.map(c=>c.ordre||0))+1 : 1;
+    const { data } = await supabase.from('menu_categories').insert({ nom: newNom.trim(), carte: newCarte, ordre }).select().single();
+    if (data) { setCats(prev=>[...prev,data]); setNewNom(''); showToast('Catégorie ajoutée ✓'); }
+    setAdding(false);
+  }
 
   async function saveNom(cat) {
     if (!editNom.trim()) { setEditingId(null); return; }
     await supabase.from('menu_categories').update({ nom: editNom.trim() }).eq('id', cat.id);
-    setCats(prev => prev.map(c => c.id === cat.id ? { ...c, nom: editNom.trim() } : c));
+    setCats(prev=>prev.map(c=>c.id===cat.id?{...c,nom:editNom.trim()}:c));
     setEditingId(null);
+    showToast('Renommée ✓');
   }
 
   async function toggleVisible(cat) {
-    const val = !cat.visible;
+    const val = cat.visible === false ? true : false;
     await supabase.from('menu_categories').update({ visible: val }).eq('id', cat.id);
-    setCats(prev => prev.map(c => c.id === cat.id ? { ...c, visible: val } : c));
+    setCats(prev=>prev.map(c=>c.id===cat.id?{...c,visible:val}:c));
   }
 
-  async function addCat() {
-    if (!newNom.trim()) return;
-    setSaving(true);
-    const ordre = cats.length > 0 ? Math.max(...cats.map(c => c.ordre || 0)) + 1 : 1;
-    const { data } = await supabase.from('menu_categories').insert({ nom: newNom.trim(), carte: newCarte, ordre }).select().single();
-    if (data) { setCats(prev => [...prev, data]); setNewNom(''); showToast('Catégorie ajoutée ✓'); }
-    setSaving(false);
+  async function dropCat() {
+    if (dragIdx.current === null || dragOverIdx.current === null || dragIdx.current === dragOverIdx.current) { dragIdx.current=null; dragOverIdx.current=null; return; }
+    const next = [...cats];
+    const [moved] = next.splice(dragIdx.current, 1);
+    next.splice(dragOverIdx.current, 0, moved);
+    const updated = next.map((c,i) => ({ ...c, ordre: i+1 }));
+    setCats(updated);
+    await Promise.all(updated.map(c => supabase.from('menu_categories').update({ ordre: c.ordre }).eq('id', c.id)));
+    dragIdx.current=null; dragOverIdx.current=null;
   }
 
   return (
-    <Modal title="Gérer les catégories" onClose={onClose} maxW={540} footer={[
-      <button key="c" type="button" onClick={onClose} style={btnPrimary}>Fermer</button>
-    ]}>
-      <div style={{ marginBottom:16, display:'flex', gap:8 }}>
-        <input value={newNom} onChange={e=>setNewNom(e.target.value)} placeholder="Nom de la catégorie..." style={{ ...inp(false), flex:1, height:40 }} onKeyDown={e=>e.key==='Enter'&&addCat()} />
-        <select value={newCarte} onChange={e=>setNewCarte(e.target.value)} style={{ height:40, border:'1.5px solid #ddd', borderRadius:7, padding:'0 8px', fontSize:13, cursor:'pointer' }}>
+    <MenuBottomSheet title="Gérer les catégories" onClose={onClose} footer={<button onClick={onClose} style={{ ...btnPrimary, width:'100%' }}>Fermer</button>}>
+      <div style={{ display:'flex', gap:8, marginBottom:16 }}>
+        <input value={newNom} onChange={e=>setNewNom(e.target.value)} placeholder="Nouvelle catégorie..." style={{ ...inp(false), flex:1, height:42 }} onKeyDown={e=>e.key==='Enter'&&addCat()} />
+        <select value={newCarte} onChange={e=>setNewCarte(e.target.value)} style={{ height:42, border:'1.5px solid #ddd', borderRadius:7, padding:'0 8px', fontSize:12, cursor:'pointer', outline:'none' }}>
           <option value="restaurant">Restaurant</option>
           <option value="brasero">Brasero</option>
           <option value="les-deux">Les deux</option>
         </select>
-        <button onClick={addCat} disabled={saving} style={{ ...btnPrimary, height:40 }}>Ajouter</button>
+        <button onClick={addCat} disabled={adding} style={{ ...btnPrimary, height:42, whiteSpace:'nowrap' }}>+ Ajouter</button>
       </div>
-      <div style={{ display:'flex', flexDirection:'column', gap:6, maxHeight:420, overflowY:'auto' }}>
-        {cats.map(cat => (
-          <div key={cat.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', background:'#f9f9f9', borderRadius:10 }}>
+      <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+        {cats.map((cat, i) => (
+          <div key={cat.id}
+            draggable
+            onDragStart={() => { dragIdx.current=i; }}
+            onDragEnter={() => { dragOverIdx.current=i; }}
+            onDragEnd={dropCat}
+            onDragOver={e => e.preventDefault()}
+            style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 12px', background:'#f9f9f9', borderRadius:10, cursor:'grab', userSelect:'none' }}
+          >
+            <span style={{ color:'#ccc', fontSize:16, flexShrink:0 }}>⠿</span>
             {editingId === cat.id ? (
               <input value={editNom} onChange={e=>setEditNom(e.target.value)} onBlur={()=>saveNom(cat)} onKeyDown={e=>{if(e.key==='Enter')saveNom(cat);if(e.key==='Escape')setEditingId(null);}} style={{ flex:1, height:34, border:'1.5px solid #E8C547', borderRadius:7, padding:'0 10px', fontSize:13, outline:'none' }} autoFocus />
             ) : (
-              <span style={{ flex:1, fontSize:14, fontWeight:600, color: cat.visible ? '#111' : '#bbb', cursor:'pointer' }} onDoubleClick={()=>{setEditingId(cat.id);setEditNom(cat.nom);}}>{cat.nom}</span>
+              <span style={{ flex:1, fontSize:13, fontWeight:600, color: cat.visible===false ? '#bbb' : '#111' }}>{cat.nom}</span>
             )}
-            <span style={{ fontSize:11, color:'#aaa', flexShrink:0, background:'#efefef', borderRadius:6, padding:'2px 7px' }}>{cat.carte}</span>
-            <button onClick={()=>{setEditingId(cat.id);setEditNom(cat.nom);}} style={{ background:'none', border:'none', cursor:'pointer', padding:'4px', color:'#888', display:'flex' }}><Pencil size={14} /></button>
-            <MenuToggle value={cat.visible} onChange={()=>toggleVisible(cat)} />
+            <span style={{ fontSize:10, color:'#aaa', background:'#e8e8e8', borderRadius:5, padding:'2px 6px', flexShrink:0 }}>{cat.carte}</span>
+            <button onClick={()=>{setEditingId(cat.id);setEditNom(cat.nom);}} style={{ background:'none', border:'none', cursor:'pointer', color:'#888', display:'flex', padding:4, flexShrink:0 }}><Pencil size={13}/></button>
+            <MenuToggle value={cat.visible!==false} onChange={()=>toggleVisible(cat)} />
           </div>
         ))}
       </div>
-    </Modal>
+    </MenuBottomSheet>
   );
 }
 
@@ -3178,18 +3255,36 @@ function MenuPage({ showToast }) {
   const [platJour, setPlatJour] = useState(null);
   const [dessertJour, setDessertJour] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [openCats, setOpenCats] = useState(new Set());
+  const [menuSearch, setMenuSearch] = useState('');
   const [editProduit, setEditProduit] = useState(null);
-  const [showAddModal, setShowAddModal] = useState(null);
+  const [platSheet, setPlatSheet] = useState(null);
   const [showGererCats, setShowGererCats] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [menuSearch, setMenuSearch] = useState('');
-  const [openCats, setOpenCats] = useState(null); // Set of open cat ids, null = first cat only on load
+  const [ctxMenu, setCtxMenu] = useState(null);
+  const [editingPrice, setEditingPrice] = useState(null);
+  const dragProd = useRef(null);
+  const dragOverProd = useRef(null);
 
-  useEffect(() => { loadMenu(); setMenuSearch(''); }, [carte]);
+  useEffect(() => { loadMenu(); setMenuSearch(''); setOpenCats(new Set()); }, [carte]);
+
+  useEffect(() => {
+    const ch = supabase.channel('menu-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_produits' }, () => loadMenu())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_categories' }, () => loadMenu())
+      .subscribe();
+    return () => supabase.removeChannel(ch);
+  }, []);
+
+  useEffect(() => {
+    if (!ctxMenu) return;
+    function handle() { setCtxMenu(null); }
+    document.addEventListener('pointerdown', handle);
+    return () => document.removeEventListener('pointerdown', handle);
+  }, [ctxMenu]);
 
   async function loadMenu() {
-    setLoading(true);
     const [cR, pR, jR] = await Promise.all([
       supabase.from('menu_categories').select('*').order('ordre'),
       supabase.from('menu_produits').select('*').order('ordre'),
@@ -3203,205 +3298,191 @@ function MenuPage({ showToast }) {
     setLoading(false);
   }
 
-  async function savePlatJourField(item, field, val) {
-    await supabase.from('menu_plat_jour').update({ [field]: val, updated_at: new Date().toISOString() }).eq('id', item.id);
-  }
-
-  function updatePlatLocal(item, field, val) {
-    const updated = { ...item, [field]: val };
-    item.type === 'plat' ? setPlatJour(updated) : setDessertJour(updated);
-  }
-
-  async function togglePlatActif(item) {
-    const newActif = !item.actif;
-    updatePlatLocal(item, 'actif', newActif);
-    await supabase.from('menu_plat_jour').update({ actif: newActif, updated_at: new Date().toISOString() }).eq('id', item.id);
-  }
-
   async function toggleDisponible(produit) {
     const val = !produit.disponible;
     setProduits(prev => prev.map(p => p.id === produit.id ? { ...p, disponible: val } : p));
     await supabase.from('menu_produits').update({ disponible: val }).eq('id', produit.id);
   }
 
+  async function savePrixInline(id, val) {
+    setProduits(prev => prev.map(p => p.id === id ? { ...p, prix: val } : p));
+    await supabase.from('menu_produits').update({ prix: val }).eq('id', id);
+    setEditingPrice(null);
+    showToast('Prix mis à jour ✓');
+  }
+
   async function saveProduit(data) {
     setSaving(true);
-    if (data.id) {
-      const { error } = await supabase.from('menu_produits').update(data).eq('id', data.id);
-      if (!error) {
-        setProduits(prev => prev.map(p => p.id === data.id ? { ...p, ...data } : p));
-        showToast('Produit modifié ✓');
-      }
+    const { _focusCat, ...clean } = data;
+    if (clean.id) {
+      const { error } = await supabase.from('menu_produits').update(clean).eq('id', clean.id);
+      if (!error) { setProduits(prev => prev.map(p => p.id === clean.id ? { ...p, ...clean } : p)); showToast('Produit modifié ✓'); }
     } else {
-      const { data: newP, error } = await supabase.from('menu_produits').insert(data).select().single();
+      const { data: newP, error } = await supabase.from('menu_produits').insert(clean).select().single();
       if (!error && newP) { setProduits(prev => [...prev, newP]); showToast('Produit ajouté ✓'); }
     }
     setSaving(false);
     setEditProduit(null);
-    setShowAddModal(null);
   }
 
   async function deleteProduit(id) {
     await supabase.from('menu_produits').delete().eq('id', id);
     setProduits(prev => prev.filter(p => p.id !== id));
-    setEditProduit(null);
     setConfirmDelete(null);
     showToast('Produit supprimé');
   }
 
-  const catsFiltered = categories.filter(c => c.visible !== false && (c.carte === carte || c.carte === 'les-deux'));
-  const produitsForCat = (catId) => produits.filter(p => p.categorie_id === catId && (p.carte === carte || p.carte === 'les-deux'));
-
-  const searchQ = menuSearch.trim().toLowerCase();
-  const produitsForCatFiltered = (catId) => {
-    const base = produitsForCat(catId);
-    if (!searchQ) return base;
-    return base.filter(p => normalizeStr(p.nom).includes(normalizeStr(searchQ)));
-  };
-  const catsVisible = searchQ
-    ? catsFiltered.filter(c => produitsForCatFiltered(c.id).length > 0)
-    : catsFiltered;
-
-  // openCats: Set of open cat ids. On first load (null) open only first cat.
-  const firstCatId = catsFiltered[0]?.id;
-  const resolvedOpen = openCats ?? (firstCatId ? new Set([firstCatId]) : new Set());
-  function toggleCat(id) {
-    const next = new Set(resolvedOpen);
-    next.has(id) ? next.delete(id) : next.add(id);
-    setOpenCats(next);
+  async function dropProd() {
+    if (!dragProd.current || !dragOverProd.current) return;
+    if (dragProd.current.catId !== dragOverProd.current.catId || dragProd.current.idx === dragOverProd.current.idx) { dragProd.current=null; dragOverProd.current=null; return; }
+    const catId = dragProd.current.catId;
+    const catProds = [...produits.filter(p => p.categorie_id === catId)].sort((a,b) => (a.ordre||0)-(b.ordre||0));
+    const [moved] = catProds.splice(dragProd.current.idx, 1);
+    catProds.splice(dragOverProd.current.idx, 0, moved);
+    const updated = catProds.map((p,i) => ({ ...p, ordre: i+1 }));
+    setProduits(prev => { const ids = new Set(updated.map(u=>u.id)); return [...prev.filter(p=>!ids.has(p.id)), ...updated]; });
+    await Promise.all(updated.map(p => supabase.from('menu_produits').update({ ordre: p.ordre }).eq('id', p.id)));
+    dragProd.current=null; dragOverProd.current=null;
   }
 
+  function toggleCat(id) {
+    setOpenCats(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }
+
+  function highlight(text, q) {
+    if (!q || !text) return text;
+    const t = String(text);
+    const idx = normalizeStr(t).indexOf(normalizeStr(q));
+    if (idx < 0) return t;
+    return <>{t.slice(0,idx)}<mark style={{ background:'#fffbea', color:'#b8860b', borderRadius:3, padding:'0 1px' }}>{t.slice(idx,idx+q.length)}</mark>{t.slice(idx+q.length)}</>;
+  }
+
+  const catsFiltered = categories.filter(c => c.visible !== false && (c.carte === carte || c.carte === 'les-deux'));
+  const searchQ = menuSearch.trim();
+
+  function produitsForCat(catId) {
+    const base = produits.filter(p => p.categorie_id === catId && (p.carte === carte || p.carte === 'les-deux')).sort((a,b) => (a.ordre||0)-(b.ordre||0));
+    if (!searchQ) return base;
+    return base.filter(p => normalizeStr(p.nom||'').includes(normalizeStr(searchQ)) || normalizeStr(p.description||'').includes(normalizeStr(searchQ)));
+  }
+
+  const catsVisible = searchQ ? catsFiltered.filter(c => produitsForCat(c.id).length > 0) : catsFiltered;
   const platItems = [platJour, dessertJour].filter(Boolean);
 
-  if (loading) return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'60vh', color:'#888', fontSize:15 }}>
-      Chargement du menu...
-    </div>
-  );
+  if (loading) return <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'60vh', color:'#888', fontSize:15 }}>Chargement du menu...</div>;
 
   return (
-    <div style={{ padding:'28px 32px', maxWidth:1000, margin:'0 auto' }}>
+    <div style={{ padding:'24px 28px', maxWidth:900, margin:'0 auto' }}>
+
       {/* Header */}
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:28 }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
         <div>
-          <h1 style={{ margin:0, fontSize:26, fontWeight:900, color:'#111' }}>Menu</h1>
-          <p style={{ margin:'4px 0 0', fontSize:13, color:'#888' }}>Gérez la carte du TED en temps réel</p>
+          <h1 style={{ margin:0, fontSize:24, fontWeight:900, color:'#111' }}>Menu</h1>
+          <p style={{ margin:'3px 0 0', fontSize:13, color:'#aaa' }}>Gérez la carte en temps réel</p>
         </div>
-        <div style={{ display:'flex', gap:10 }}>
-          <button onClick={() => setShowGererCats(true)} style={btnSecondary}>Gérer les catégories</button>
-          <a href="/menu.html" target="_blank" rel="noopener noreferrer" style={{ ...btnPrimary, display:'inline-flex', alignItems:'center', gap:6, textDecoration:'none', lineHeight:'40px', paddingTop:0, paddingBottom:0 }}>
-            <ExternalLink size={14} strokeWidth={2.5} /> Voir la carte client
-          </a>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <button onClick={() => setShowGererCats(true)} style={{ background:'none', border:'none', cursor:'pointer', color:'#888', fontSize:20, padding:'6px', borderRadius:8, display:'flex', alignItems:'center' }} title="Gérer les catégories">⚙️</button>
+          <button onClick={() => setEditProduit({ carte, disponible: true, mise_en_avant: false, badges: [], allergenes: [] })} style={{ ...btnPrimary, height:38, fontSize:13 }}>+ Ajouter</button>
         </div>
       </div>
 
-      {/* Onglets Restaurant / Brasero */}
-      <div style={{ display:'flex', gap:8, marginBottom:28 }}>
-        {[{id:'restaurant',label:'Restaurant'},{id:'brasero',label:'Brasero'}].map(c => (
-          <button key={c.id} onClick={() => setCarte(c.id)} style={{ padding:'8px 22px', borderRadius:10, fontWeight:700, fontSize:14, cursor:'pointer', background: carte===c.id ? '#111' : '#fff', color: carte===c.id ? '#E8C547' : '#666', border: carte===c.id ? '2px solid #111' : '1.5px solid #ddd', transition:'all 0.15s' }}>
-            {c.label}
-          </button>
-        ))}
+      {/* Onglets + lien carte client */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
+        <div style={{ display:'flex', gap:6 }}>
+          {[{id:'restaurant',l:'Restaurant'},{id:'brasero',l:'Brasero'}].map(c => (
+            <button key={c.id} onClick={() => setCarte(c.id)} style={{ padding:'7px 18px', borderRadius:20, fontWeight:700, fontSize:13, cursor:'pointer', border:'none', background: carte===c.id ? '#E8C547' : '#efefef', color: carte===c.id ? '#111' : '#888', transition:'all 0.15s' }}>{c.l}</button>
+          ))}
+        </div>
+        <a href="/menu.html" target="_blank" rel="noopener noreferrer" style={{ fontSize:12, color:'#888', display:'flex', alignItems:'center', gap:4, textDecoration:'none', border:'1px solid #ddd', borderRadius:8, padding:'5px 10px', background:'#fff' }}>
+          <ExternalLink size={12} strokeWidth={2} /> Carte client
+        </a>
       </div>
 
-      {/* Plat du jour + Dessert du jour */}
+      {/* Plat du jour / Dessert du jour */}
       {platItems.length > 0 && (
-        <div style={{ display:'grid', gridTemplateColumns: platItems.length > 1 ? '1fr 1fr' : '1fr', gap:16, marginBottom:32 }}>
+        <div style={{ display:'grid', gridTemplateColumns: `repeat(${platItems.length},1fr)`, gap:12, marginBottom:24 }}>
           {platItems.map(item => (
-            <div key={item.id} style={{ background:'#fff', borderRadius:16, padding:'20px', boxShadow:'0 1px 6px rgba(0,0,0,0.06)', border:`2px solid ${item.actif ? '#E8C547' : '#eee'}`, transition:'border-color 0.2s' }}>
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
-                <span style={{ fontWeight:800, fontSize:14, color:'#111' }}>{item.type === 'plat' ? '🍽 Plat du jour' : '🍮 Dessert du jour'}</span>
-                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  <span style={{ fontSize:12, color: item.actif ? '#b8860b' : '#999', fontWeight:600 }}>{item.actif ? 'Affiché' : 'Masqué'}</span>
-                  <MenuToggle value={item.actif} onChange={() => togglePlatActif(item)} />
-                </div>
+            <div key={item.id} style={{ background:'#fff', borderRadius:14, padding:'14px 16px', border:`1.5px solid ${item.actif ? '#E8C547' : '#eee'}`, transition:'border-color 0.2s' }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+                <span style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:0.5 }}>{item.type==='plat' ? '🍽 Plat du jour' : '🍮 Dessert du jour'}</span>
+                <MenuToggle value={!!item.actif} onChange={async () => { const v=!item.actif; item.type==='plat'?setPlatJour(p=>({...p,actif:v})):setDessertJour(p=>({...p,actif:v})); await supabase.from('menu_plat_jour').update({actif:v,updated_at:new Date().toISOString()}).eq('id',item.id); }} />
               </div>
-              <input
-                placeholder="Nom du plat..."
-                value={item.nom || ''}
-                onChange={e => updatePlatLocal(item, 'nom', e.target.value)}
-                onBlur={e => savePlatJourField(item, 'nom', e.target.value)}
-                style={{ width:'100%', height:40, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:14, marginBottom:8, boxSizing:'border-box', outline:'none' }}
-              />
-              <input
-                placeholder="Description..."
-                value={item.description || ''}
-                onChange={e => updatePlatLocal(item, 'description', e.target.value)}
-                onBlur={e => savePlatJourField(item, 'description', e.target.value)}
-                style={{ width:'100%', height:40, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:14, marginBottom:8, boxSizing:'border-box', outline:'none' }}
-              />
-              <input
-                placeholder="Prix (ex: 13,50 €)"
-                value={item.prix || ''}
-                onChange={e => updatePlatLocal(item, 'prix', e.target.value)}
-                onBlur={e => savePlatJourField(item, 'prix', e.target.value)}
-                style={{ width:'100%', height:40, border:'1.5px solid #eee', borderRadius:8, padding:'0 12px', fontSize:14, boxSizing:'border-box', outline:'none' }}
-              />
+              <div style={{ fontSize:14, fontWeight:600, color: item.actif ? '#111' : '#bbb', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:2 }}>
+                {item.nom || <span style={{ color:'#ddd', fontStyle:'italic', fontWeight:400 }}>Non défini</span>}
+              </div>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginTop:4 }}>
+                <span style={{ fontSize:12, color:'#aaa' }}>{item.prix||''}</span>
+                <button onClick={() => setPlatSheet(item)} style={{ fontSize:12, color:'#666', background:'none', border:'none', cursor:'pointer', fontWeight:600, textDecoration:'underline', padding:0 }}>Modifier</button>
+              </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Barre de recherche */}
+      {/* Recherche */}
       <div style={{ position:'relative', marginBottom:20 }}>
-        <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#bbb', fontSize:15, pointerEvents:'none' }}>🔍</span>
-        <input
-          value={menuSearch}
-          onChange={e => { setMenuSearch(e.target.value); if (e.target.value.trim()) setOpenCats(new Set(catsFiltered.map(c => c.id))); }}
-          placeholder="Rechercher un produit..."
-          style={{ width:'100%', height:44, border:'1.5px solid #ddd', borderRadius:12, padding:'0 36px 0 38px', fontSize:14, outline:'none', boxSizing:'border-box', background:'#fff' }}
-        />
-        {menuSearch && (
-          <button onClick={() => { setMenuSearch(''); setOpenCats(null); }} style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', fontSize:16, cursor:'pointer', color:'#aaa', lineHeight:1 }}>✕</button>
-        )}
+        <span style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', color:'#bbb', fontSize:14, pointerEvents:'none' }}>🔍</span>
+        <input value={menuSearch} onChange={e => { setMenuSearch(e.target.value); if (e.target.value.trim()) setOpenCats(new Set(catsFiltered.map(c => c.id))); }} placeholder="Rechercher un produit..." style={{ width:'100%', height:44, border:'1.5px solid #eee', borderRadius:12, padding:'0 36px 0 38px', fontSize:14, outline:'none', boxSizing:'border-box', background:'#f9f9f9' }} />
+        {menuSearch && <button onClick={() => { setMenuSearch(''); setOpenCats(new Set()); }} style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', fontSize:16, cursor:'pointer', color:'#aaa' }}>✕</button>}
       </div>
 
-      {/* Catégories en accordéon */}
-      {searchQ && catsVisible.length === 0 && (
-        <div style={{ textAlign:'center', padding:'40px 0', color:'#bbb', fontSize:14 }}>Aucun produit ne correspond à "{menuSearch}"</div>
-      )}
+      {searchQ && catsVisible.length === 0 && <div style={{ textAlign:'center', padding:'40px 0', color:'#bbb', fontSize:14 }}>Aucun produit pour "{menuSearch}"</div>}
+
+      {/* Accordéon catégories */}
       {catsVisible.map(cat => {
-        const ps = produitsForCatFiltered(cat.id);
-        const isOpen = searchQ ? true : resolvedOpen.has(cat.id);
+        const ps = produitsForCat(cat.id);
+        const allPs = produits.filter(p => p.categorie_id === cat.id).length;
+        const isOpen = searchQ ? true : openCats.has(cat.id);
         return (
-          <div key={cat.id} style={{ marginBottom:10, borderRadius:14, border:'1px solid #eee', background:'#fff', overflow:'hidden' }}>
-            {/* En-tête accordéon */}
-            <div
-              onClick={() => !searchQ && toggleCat(cat.id)}
-              style={{ display:'flex', alignItems:'center', gap:10, padding:'13px 16px', cursor: searchQ ? 'default' : 'pointer', userSelect:'none', background: isOpen ? '#fafafa' : '#fff', borderBottom: isOpen ? '1px solid #f0f0f0' : 'none', transition:'background 0.15s' }}
-            >
-              <ChevronRight size={16} strokeWidth={2.5} style={{ color:'#bbb', flexShrink:0, transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition:'transform 0.2s ease', display: searchQ ? 'none' : 'block' }} />
-              <span style={{ flex:1, fontSize:12, fontWeight:700, color:'#666', textTransform:'uppercase', letterSpacing:1.1 }}>
+          <div key={cat.id} style={{ marginBottom:8, borderRadius:14, background:'#fff', border:'1px solid #eee', overflow:'hidden' }}>
+            <div onClick={() => !searchQ && toggleCat(cat.id)} style={{ display:'flex', alignItems:'center', gap:10, padding:'13px 16px', cursor: searchQ ? 'default' : 'pointer', userSelect:'none', borderBottom: isOpen ? '1px solid #f5f5f5' : 'none' }}>
+              {!searchQ && <ChevronRight size={15} strokeWidth={2.5} style={{ color:'#ccc', flexShrink:0, transform: isOpen ? 'rotate(90deg)' : 'none', transition:'transform 0.2s' }} />}
+              <span style={{ flex:1, fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:1.1 }}>
                 {cat.nom}
-                <span style={{ fontWeight:500, color:'#ccc', marginLeft:6, textTransform:'none', letterSpacing:0 }}>({produitsForCat(cat.id).length})</span>
-                {searchQ && ps.length < produitsForCat(cat.id).length && (
-                  <span style={{ fontWeight:600, color:'#E8C547', marginLeft:6, fontSize:11 }}>{ps.length} résultat{ps.length > 1 ? 's' : ''}</span>
-                )}
+                <span style={{ fontWeight:400, color:'#ccc', marginLeft:6, textTransform:'none', letterSpacing:0 }}>({allPs})</span>
+                {searchQ && ps.length < allPs && <span style={{ color:'#E8C547', marginLeft:6, fontWeight:700 }}> · {ps.length} résultat{ps.length>1?'s':''}</span>}
               </span>
-              <button
-                onClick={e => { e.stopPropagation(); setShowAddModal(cat.id); }}
-                style={{ ...btnSecondary, height:28, fontSize:11, display:'inline-flex', alignItems:'center', gap:3, padding:'0 9px', flexShrink:0 }}
-              >
+              <button onClick={e => { e.stopPropagation(); setEditProduit({ categorie_id: cat.id, carte, disponible: true, mise_en_avant: false, badges: [], allergenes: [], ordre: allPs+1 }); }} style={{ ...btnSecondary, height:28, fontSize:11, display:'inline-flex', alignItems:'center', gap:3, padding:'0 9px', flexShrink:0 }}>
                 <Plus size={11} strokeWidth={2.5} /> Ajouter
               </button>
             </div>
 
-            {/* Corps accordéon */}
             {isOpen && (
               <div>
                 {ps.length === 0 ? (
-                  <div style={{ padding:'14px 16px', color:'#ccc', fontSize:13, textAlign:'center' }}>Aucun produit dans cette catégorie</div>
+                  <div style={{ padding:'14px 16px', color:'#ccc', fontSize:13, textAlign:'center' }}>Aucun produit</div>
                 ) : ps.map((p, i) => (
-                  <div key={p.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'11px 16px', borderBottom: i < ps.length-1 ? '1px solid #f7f7f7' : 'none', opacity: p.disponible ? 1 : 0.45, transition:'opacity 0.15s' }}>
+                  <div key={p.id}
+                    draggable
+                    onDragStart={() => { dragProd.current = { catId: cat.id, idx: i }; }}
+                    onDragEnter={() => { dragOverProd.current = { catId: cat.id, idx: i }; }}
+                    onDragEnd={dropProd}
+                    onDragOver={e => e.preventDefault()}
+                    style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 16px', borderBottom: i < ps.length-1 ? '1px solid #f7f7f7' : 'none', opacity: p.disponible ? 1 : 0.45, transition:'opacity 0.15s', background:'#fff' }}
+                  >
+                    <span style={{ color:'#ddd', fontSize:15, cursor:'grab', flexShrink:0, userSelect:'none' }}>⠿</span>
+
                     <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontWeight:600, fontSize:14, color:'#111', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                        {p.nom}
-                        {p.mise_en_avant && <span style={{ marginLeft:6, fontSize:10, background:'#fffbea', color:'#b8860b', borderRadius:6, padding:'1px 6px', fontWeight:700 }}>★</span>}
+                      <div style={{ fontWeight:500, fontSize:13, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                        {highlight(p.nom, searchQ)}
+                        {p.mise_en_avant && <span style={{ marginLeft:5, fontSize:10, background:'#fffbea', color:'#b8860b', borderRadius:5, padding:'1px 5px', fontWeight:700 }}>★</span>}
                       </div>
-                      {p.prix && <div style={{ fontSize:12, color:'#aaa', marginTop:1 }}>{p.prix}</div>}
                     </div>
-                    <MenuToggle value={p.disponible} onChange={() => toggleDisponible(p)} />
-                    <button onClick={() => setEditProduit({...p})} style={{ background:'#f5f5f5', border:'none', borderRadius:8, padding:'6px 12px', fontSize:12, fontWeight:600, cursor:'pointer', color:'#333', whiteSpace:'nowrap' }}>Modifier</button>
+
+                    {editingPrice?.id === p.id ? (
+                      <input value={editingPrice.val} onChange={e => setEditingPrice(prev => ({ ...prev, val: e.target.value }))} onBlur={() => savePrixInline(p.id, editingPrice.val)} onKeyDown={e => { if(e.key==='Enter') savePrixInline(p.id, editingPrice.val); if(e.key==='Escape') setEditingPrice(null); }} style={{ width:80, height:30, border:'1.5px solid #E8C547', borderRadius:7, padding:'0 8px', fontSize:12, outline:'none', textAlign:'right' }} autoFocus />
+                    ) : (
+                      <span onClick={() => setEditingPrice({ id: p.id, val: p.prix||'' })} style={{ fontSize:12, color:'#999', cursor:'pointer', whiteSpace:'nowrap', minWidth:50, textAlign:'right', padding:'4px 6px', borderRadius:6, border:'1px solid transparent' }} onMouseEnter={e => e.currentTarget.style.borderColor='#eee'} onMouseLeave={e => e.currentTarget.style.borderColor='transparent'}>
+                        {p.prix || <span style={{ color:'#ddd' }}>—</span>}
+                      </span>
+                    )}
+
+                    <MenuToggle value={!!p.disponible} onChange={() => toggleDisponible(p)} />
+
+                    <button
+                      onClick={e => { e.stopPropagation(); const r=e.currentTarget.getBoundingClientRect(); setCtxMenu({ produit: p, x: r.right, y: r.bottom+4 }); }}
+                      style={{ background:'none', border:'none', cursor:'pointer', color:'#bbb', fontSize:17, padding:'4px 5px', borderRadius:6, lineHeight:1, flexShrink:0 }}
+                    >···</button>
                   </div>
                 ))}
               </div>
@@ -3410,22 +3491,48 @@ function MenuPage({ showToast }) {
         );
       })}
 
-      {/* Modals */}
-      {(editProduit || showAddModal) && (
-        <ProduitModal
-          produit={editProduit || { categorie_id: showAddModal, carte, disponible: true, mise_en_avant: false, ordre: 0, badges: [], allergenes: [] }}
-          categories={categories}
+      {/* Context menu ••• */}
+      {ctxMenu && (
+        <div onPointerDown={e => e.stopPropagation()} style={{ position:'fixed', top: ctxMenu.y, right: `calc(100vw - ${ctxMenu.x}px)`, background:'#fff', borderRadius:10, boxShadow:'0 4px 20px rgba(0,0,0,0.14)', zIndex:4000, minWidth:170, overflow:'hidden', border:'1px solid #eee' }}>
+          {[
+            { label:'Modifier', action: () => { setEditProduit({ ...ctxMenu.produit }); setCtxMenu(null); } },
+            { label:'Changer de catégorie', action: () => { setEditProduit({ ...ctxMenu.produit, _focusCat: true }); setCtxMenu(null); } },
+            { label:'Supprimer', danger: true, action: () => { setConfirmDelete(ctxMenu.produit.id); setCtxMenu(null); } },
+          ].map(item => (
+            <button key={item.label} onClick={item.action} style={{ display:'block', width:'100%', textAlign:'left', padding:'12px 16px', border:'none', background:'none', cursor:'pointer', fontSize:14, color: item.danger ? '#dc2626' : '#111', fontWeight: item.danger ? 600 : 500 }}
+              onMouseEnter={e => e.currentTarget.style.background='#f9f9f9'} onMouseLeave={e => e.currentTarget.style.background='none'}>
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Bottom sheet produit */}
+      {editProduit && (
+        <ProduitSheet
+          produit={editProduit}
+          categories={catsFiltered}
+          carte={carte}
           onSave={saveProduit}
-          onDelete={id => setConfirmDelete(id)}
-          onClose={() => { setEditProduit(null); setShowAddModal(null); }}
+          onClose={() => setEditProduit(null)}
           saving={saving}
         />
       )}
 
+      {/* Bottom sheet plat du jour */}
+      {platSheet && (
+        <PlatJourSheet
+          item={platSheet}
+          onClose={() => setPlatSheet(null)}
+          onSaved={updated => { updated.type==='plat' ? setPlatJour(updated) : setDessertJour(updated); showToast('Enregistré ✓'); }}
+        />
+      )}
+
+      {/* Confirmation suppression */}
       {confirmDelete && (
         <ConfirmModal
           title="Supprimer ce produit ?"
-          msg="Cette action est irréversible. Le produit sera définitivement supprimé de la carte."
+          msg="Cette action est irréversible."
           danger
           okLabel="Supprimer"
           onOk={() => deleteProduit(confirmDelete)}
@@ -3433,9 +3540,10 @@ function MenuPage({ showToast }) {
         />
       )}
 
+      {/* Gestion catégories */}
       {showGererCats && (
-        <CategoriesModal
-          categories={categories}
+        <CatsSheet
+          categories={catsFiltered}
           onClose={() => { setShowGererCats(false); loadMenu(); }}
           showToast={showToast}
           carte={carte}
