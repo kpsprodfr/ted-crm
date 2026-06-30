@@ -4387,7 +4387,7 @@ function MenuPage({ showToast }) {
         const prixStyle = { ...inpStyle, width:84, flexShrink:0, textAlign:'right' };
 
         return (
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, marginBottom:24 }}>
+          <div style={{ display:'flex', flexDirection:'column', gap:10, marginBottom:24 }}>
 
             {/* Encart 1 — Menu du jour */}
             <div style={{ background:'#fff', borderRadius:16, border:`2px solid ${anyActif ? '#E8C547' : '#eee'}`, overflow:'hidden', transition:'border-color 0.2s' }}>
@@ -4459,44 +4459,40 @@ function MenuPage({ showToast }) {
               </div>
             </div>
 
-            {/* Encart 2 — Suggestion du chef */}
-            <div style={{ background:'#fff', borderRadius:16, border:`2px solid ${suggestionJour?.actif ? '#333' : '#eee'}`, overflow:'hidden', transition:'border-color 0.2s' }}>
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'11px 16px', borderBottom:'1px solid #f5f5f5' }}>
-                <span style={{ fontSize:12, fontWeight:800, color:'#111', textTransform:'uppercase', letterSpacing:1 }}>👨‍🍳 Suggestion du chef</span>
+            {/* Encart 2 — Suggestion du chef (compact) */}
+            <div style={{ background:'#fff', borderRadius:12, border:`1.5px solid ${suggestionJour?.actif ? '#E8C547' : '#eee'}`, overflow:'hidden', transition:'border-color 0.2s' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 14px' }}>
                 <MenuToggle value={!!suggestionJour?.actif} onChange={async () => {
                   const v = !suggestionJour?.actif;
                   setSuggestionJour(p => p ? ({...p, actif:v}) : p);
                   if (suggestionJour) await supabase.from('menu_plat_jour').update({ actif:v, updated_at:new Date().toISOString() }).eq('id', suggestionJour.id);
                 }} />
-              </div>
-              <div style={{ padding:'12px 16px', display:'flex', flexDirection:'column', gap:10 }}>
-                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  <input
-                    value={suggestionJour?.nom || ''}
-                    onChange={e => setSuggestionJour(p => p ? ({...p, nom: e.target.value}) : p)}
-                    onBlur={e => suggestionJour && saveField(suggestionJour, setSuggestionJour, 'nom', e.target.value)}
-                    placeholder="Nom de la suggestion…"
-                    style={{ ...inpStyle, flex:1 }}
-                    onFocus={e => e.target.style.borderColor='#333'}
-                    onBlurCapture={e => e.target.style.borderColor='#eee'}
-                  />
-                  <input
-                    value={suggestionJour?.prix || ''}
-                    onChange={e => setSuggestionJour(p => p ? ({...p, prix: e.target.value}) : p)}
-                    onBlur={e => suggestionJour && saveField(suggestionJour, setSuggestionJour, 'prix', e.target.value)}
-                    placeholder="Prix"
-                    style={{ ...prixStyle }}
-                    onFocus={e => e.target.style.borderColor='#333'}
-                    onBlurCapture={e => e.target.style.borderColor='#eee'}
-                  />
-                </div>
+                <span style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:1, whiteSpace:'nowrap' }}>👨‍🍳 Suggestion du chef</span>
+                <input
+                  value={suggestionJour?.nom || ''}
+                  onChange={e => setSuggestionJour(p => p ? ({...p, nom: e.target.value}) : p)}
+                  onBlur={e => suggestionJour && saveField(suggestionJour, setSuggestionJour, 'nom', e.target.value)}
+                  placeholder="Nom…"
+                  style={{ ...inpStyle, flex:1 }}
+                  onFocus={e => e.target.style.borderColor='#E8C547'}
+                  onBlurCapture={e => e.target.style.borderColor='#eee'}
+                />
                 <input
                   value={suggestionJour?.description || ''}
                   onChange={e => setSuggestionJour(p => p ? ({...p, description: e.target.value}) : p)}
                   onBlur={e => suggestionJour && saveField(suggestionJour, setSuggestionJour, 'description', e.target.value)}
-                  placeholder="Courte description (optionnel)…"
-                  style={{ ...descStyle, flex:1 }}
-                  onFocus={e => e.target.style.borderColor='#333'}
+                  placeholder="Description…"
+                  style={{ ...inpStyle, flex:1 }}
+                  onFocus={e => e.target.style.borderColor='#E8C547'}
+                  onBlurCapture={e => e.target.style.borderColor='#eee'}
+                />
+                <input
+                  value={suggestionJour?.prix || ''}
+                  onChange={e => setSuggestionJour(p => p ? ({...p, prix: e.target.value}) : p)}
+                  onBlur={e => suggestionJour && saveField(suggestionJour, setSuggestionJour, 'prix', e.target.value)}
+                  placeholder="Prix"
+                  style={{ ...prixStyle }}
+                  onFocus={e => e.target.style.borderColor='#E8C547'}
                   onBlurCapture={e => e.target.style.borderColor='#eee'}
                 />
               </div>
