@@ -14,7 +14,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 0 0 calc(200px + env(safe-area-inset-bottom, 0px));
+      padding: 0 0 220px;
     }
 
     .anim {
@@ -99,7 +99,6 @@
       padding: 16px 20px calc(16px + env(safe-area-inset-bottom, 0px));
       background: linear-gradient(to bottom, transparent 0%, #111 28%);
       display: flex; flex-direction: column; gap: 10px;
-      max-width: 480px; margin: 0 auto;
     }
     .btn-cta {
       display: block; width: 100%; padding: 16px; border-radius: 14px;
@@ -440,6 +439,20 @@
   function esc(str) {
     return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
+
+  // ── Padding dynamique selon hauteur réelle des boutons fixes ────────────────
+  function adjustBodyPadding() {
+    const bar = document.getElementById('cta-bar');
+    if (!bar) return;
+    const h = bar.getBoundingClientRect().height;
+    document.body.style.paddingBottom = (h + 24) + 'px';
+  }
+  // Après rendu initial
+  window.addEventListener('load', adjustBodyPadding);
+  // Au resize (rotation d'écran, clavier virtuel…)
+  window.addEventListener('resize', adjustBodyPadding);
+  // Appel immédiat après que le DOM soit prêt
+  adjustBodyPadding();
 </script>
 </body>
 </html>
