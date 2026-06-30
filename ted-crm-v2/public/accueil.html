@@ -146,8 +146,8 @@
     </div>
   </div>
 
-  <div id="soirees-section" class="anim">
-    <div id="soirees-label">Nos soirées</div>
+  <div id="soirees-section">
+    <div id="soirees-label" class="anim">Nos soirées</div>
     <div id="soirees-list"></div>
   </div>
 
@@ -160,26 +160,26 @@
   const SUPA_URL = 'https://mwpfaytccypvdrgapptk.supabase.co';
   const SUPA_KEY = 'sb_publishable_4-uVtQtXd0jLGkNAFsx4yw_ni17DzN_';
 
-  // ── Révélation progressive ──────────────────────────────────────────────────
-  function show(id, delay) {
-    setTimeout(() => {
-      const el = document.getElementById(id);
-      if (el) el.classList.add('visible');
-    }, delay);
+  // Référence de temps pour respecter les délais absolus même si le fetch est lent
+  const T0 = Date.now();
+
+  function showAt(el, ms) {
+    const remaining = ms - (Date.now() - T0);
+    setTimeout(() => { el.classList.add('visible'); }, Math.max(0, remaining));
   }
 
-  const logo      = document.getElementById('logo-img');
-  const heroTexte = document.getElementById('hero-texte');
-  const soirSect  = document.getElementById('soirees-section');
-  const ctaBar    = document.getElementById('cta-bar');
+  const logo         = document.getElementById('logo-img');
+  const heroTexte    = document.getElementById('hero-texte');
+  const soireesLabel = document.getElementById('soirees-label');
+  const ctaBar       = document.getElementById('cta-bar');
 
-  // Logo : clip-path reveal
+  // 1. Logo            → 100ms
   setTimeout(() => { logo.classList.add('visible'); }, 100);
-  // Titre + sous-titre : juste après
+  // 2. Titre + sub     → 600ms
   setTimeout(() => { heroTexte.classList.add('visible'); }, 600);
-  // Section soirées : structure vide d'abord
-  setTimeout(() => { soirSect.classList.add('visible'); }, 900);
-  // Boutons : toujours à 2s, indépendant du fetch
+  // 3. Label "NOS SOIRÉES" → 900ms
+  setTimeout(() => { soireesLabel.classList.add('visible'); }, 900);
+  // 5. Boutons         → 2000ms  (toujours, indépendant du fetch)
   setTimeout(() => { ctaBar.classList.add('visible'); }, 2000);
 
   // ── Chargement Supabase — découplé, ne bloque RIEN ─────────────────────────
@@ -195,15 +195,21 @@
         document.getElementById('soirees-section').style.display = 'none';
         return;
       }
-      document.getElementById('soirees-list').innerHTML = soirees.map(s => `
-        <div class="soiree-item">
+      const list = document.getElementById('soirees-list');
+      soirees.forEach((s, i) => {
+        const el = document.createElement('div');
+        el.className = 'soiree-item anim';
+        el.innerHTML = `
           <div style="flex:1;min-width:0;">
             <div class="soiree-nom">${esc(s.nom)}</div>
             ${s.description ? `<div class="soiree-desc">${esc(s.description)}</div>` : ''}
           </div>
           <div class="soiree-meta">${[s.jour, s.horaire].filter(Boolean).map(esc).join(' · ')}</div>
-        </div>
-      `).join('');
+        `;
+        list.appendChild(el);
+        // 4. Item i → 1100ms + i × 150ms
+        showAt(el, 1100 + i * 150);
+      });
     } catch(e) { /* silencieux — les boutons s'affichent quand même */ }
   })();
 
