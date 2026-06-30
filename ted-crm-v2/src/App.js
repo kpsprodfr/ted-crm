@@ -3859,11 +3859,12 @@ function MenuPage({ showToast }) {
     return <>{t.slice(0,idx)}<mark style={{ background:'#fffbea', color:'#b8860b', borderRadius:3, padding:'0 1px' }}>{t.slice(idx,idx+q.length)}</mark>{t.slice(idx+q.length)}</>;
   }
 
-  const catsFiltered = categories.filter(c => c.visible !== false && (c.carte === carte || c.carte === 'les-deux') && c.nom !== 'Plat du jour');
+  const CORE_CARTES = ['restaurant', 'brasero'];
+  const catsFiltered = categories.filter(c => c.visible !== false && (c.carte === carte || (CORE_CARTES.includes(carte) && c.carte === 'les-deux')) && c.nom !== 'Plat du jour');
   const searchQ = menuSearch.trim();
 
   function produitsForCat(catId) {
-    const base = produits.filter(p => p.categorie_id === catId && (p.carte === carte || p.carte === 'les-deux')).sort((a,b) => (a.ordre||0)-(b.ordre||0));
+    const base = produits.filter(p => p.categorie_id === catId && (p.carte === carte || (CORE_CARTES.includes(carte) && p.carte === 'les-deux'))).sort((a,b) => (a.ordre||0)-(b.ordre||0));
     if (!searchQ) return base;
     return base.filter(p => normalizeStr(p.nom||'').includes(normalizeStr(searchQ)) || normalizeStr(p.description||'').includes(normalizeStr(searchQ)));
   }
