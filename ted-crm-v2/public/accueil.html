@@ -398,7 +398,7 @@
         <div>
           <div style="font-size:12px;font-weight:600;color:rgba(0,0,0,0.5);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Genre</div>
           <div style="display:flex;gap:10px;">
-            <button id="roue-gender-m" onclick="rouSelectM()" style="flex:1;padding:14px;border-radius:12px;border:2px solid #1a1200;background:#1a1200;color:#FFD700;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">M.</button>
+            <button id="roue-gender-m" onclick="rouSelectM()" style="flex:1;padding:14px;border-radius:12px;border:2.5px solid #1a1200;background:#E8C547;color:#1a1200;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">M.</button>
             <button id="roue-gender-mme" onclick="rouSelectMme()" style="flex:1;padding:14px;border-radius:12px;border:2px solid rgba(0,0,0,0.2);background:#E8C547;color:#1a1200;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">Mme</button>
           </div>
           <div id="roue-genre-error" style="display:none;font-size:11px;color:#e53935;margin-top:5px;padding-left:2px;">Veuillez sélectionner votre genre</div>
@@ -772,12 +772,12 @@
       const m   = document.getElementById('roue-gender-m');
       const mme = document.getElementById('roue-gender-mme');
       if (!m || !mme) return;
-      m.style.border      = gender === 'M.'  ? '2px solid #1a1200' : '2px solid rgba(0,0,0,0.2)';
-      m.style.background  = gender === 'M.'  ? '#1a1200' : '#E8C547';
-      m.style.color       = gender === 'M.'  ? '#FFD700' : '#1a1200';
-      mme.style.border    = gender === 'Mme' ? '2px solid #1a1200' : '2px solid rgba(0,0,0,0.2)';
-      mme.style.background= gender === 'Mme' ? '#1a1200' : '#E8C547';
-      mme.style.color     = gender === 'Mme' ? '#FFD700' : '#1a1200';
+      m.style.border      = gender === 'M.'  ? '2.5px solid #1a1200' : '2px solid rgba(0,0,0,0.2)';
+      m.style.background  = '#E8C547';
+      m.style.color       = '#1a1200';
+      mme.style.border    = gender === 'Mme' ? '2.5px solid #1a1200' : '2px solid rgba(0,0,0,0.2)';
+      mme.style.background= '#E8C547';
+      mme.style.color     = '#1a1200';
     }
 
     // ── Chargement Supabase ────────────────────────────────────────────────────
