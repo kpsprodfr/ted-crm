@@ -1,5 +1,4 @@
 export async function onRequestPost(context) {
-  console.log('BREVO_API_KEY value:', context.env.BREVO_API_KEY ? 'PRESENTE - ' + context.env.BREVO_API_KEY.substring(0, 20) : 'ABSENTE')
   const { to, toName, subject, html } = await context.request.json();
   const apiKey = context.env.BREVO_API_KEY;
 
