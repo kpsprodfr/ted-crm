@@ -368,7 +368,7 @@
       <div style="position:relative;width:100%;max-width:320px;background:#111;border-radius:24px;padding:36px 28px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,0.6);animation:winReveal .5s cubic-bezier(.34,1.56,.64,1);">
         <div style="font-size:48px;margin-bottom:16px;">🎰</div>
         <div style="font-size:20px;font-weight:900;color:#E8C547;margin-bottom:12px;">Vous avez déjà participé</div>
-        <div style="font-size:14px;color:#aaa;line-height:1.6;margin-bottom:28px;">Vous avez déjà participé au Grand Jeux du TED.<br>Votre récompense vous a déjà été attribuée.</div>
+        <div style="font-size:14px;color:#aaa;line-height:1.6;margin-bottom:28px;">Vous avez déjà participé au Grand Jeu du TED.<br>Votre récompense vous a déjà été attribuée.</div>
         <button onclick="document.getElementById('roue-dejà-overlay').style.display='none';closeRoue();setTimeout(()=>{window.location.href='/menu.html?from=accueil';},300);" style="width:100%;padding:16px;border-radius:14px;border:none;background:#E8C547;color:#1a1200;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;">Retour à la carte</button>
       </div>
     </div>
@@ -465,7 +465,7 @@
           <input id="roue-consent" type="checkbox" checked style="width:18px;height:18px;margin-top:2px;accent-color:#1a1200;flex-shrink:0;">
           <span style="font-size:11px;color:rgba(0,0,0,0.55);line-height:1.5;">J'accepte que mes données soient utilisées par l'établissement pour m'envoyer ma récompense. Ces données ne seront pas transmises à des tiers. <strong>*</strong></span>
         </label>
-        <div id="roue-rejeu-msg" style="display:none;background:#FFC200;border-radius:12px;padding:16px;font-size:13px;font-weight:600;color:#1a1200;line-height:1.5;">⚠️ Vous avez déjà participé au Grand Jeux du TED. Votre récompense vous a été attribuée.</div>
+        <div id="roue-rejeu-msg" style="display:none;background:#FFC200;border-radius:12px;padding:16px;font-size:13px;font-weight:600;color:#1a1200;line-height:1.5;">⚠️ Vous avez déjà participé au Grand Jeu du TED. Votre récompense vous a été attribuée.</div>
         <div style="font-size:11px;color:rgba(0,0,0,0.4);text-align:center;padding-bottom:8px;">⚠️ Une seule participation par personne</div>
       </div>
       </div>
@@ -1605,7 +1605,7 @@
               service: service_favori,
               statut: 'venue',
               nb_personnes: 1,
-              note_interne: `Grand Jeux du TED - récompense : ${gainResult.nom || 'inconnu'}`,
+              note_interne: `Grand Jeu du TED - récompense : ${gainResult.nom || 'inconnu'}`,
               source: 'Grand Jeux du TED',
               created_at: new Date().toISOString()
             })
@@ -1693,40 +1693,36 @@
       drawWheel(currentAngle);
       requestAnimationFrame(idleLoop);
 
-      // Countdown fermeture
+      // Fermeture immédiate (plus de countdown)
       const closeBtn = document.getElementById('roue-close');
       const closeLabel = document.getElementById('roue-close-label');
-      const unlockClose = () => {
-        if (closeLabel) closeLabel.textContent = '✕';
-        closeBtn.disabled = false;
-        closeBtn.style.color  = 'rgba(0,0,0,0.6)';
-        closeBtn.style.cursor = 'pointer';
-        closeBtn.style.fontSize = '14px';
-        closeBtn.style.fontWeight = 'normal';
-        const svgWrap = document.getElementById('roue-countdown-svg');
-        if (svgWrap) svgWrap.style.display = 'none';
-      };
-      let seconds = rouCloseDelay;
-      if (seconds <= 0) {
-        unlockClose();
-        var cInterval = null;
-      } else {
-        if (closeLabel) closeLabel.textContent = seconds;
-        var cInterval = setInterval(() => {
-          seconds--;
-          if (seconds > 0) {
-            if (closeLabel) closeLabel.textContent = seconds;
-          } else {
-            clearInterval(cInterval);
-            unlockClose();
-          }
-        }, 1000);
-      }
+      if (closeLabel) closeLabel.textContent = '✕';
+      closeBtn.disabled = false;
+      closeBtn.style.color  = 'rgba(0,0,0,0.6)';
+      closeBtn.style.cursor = 'pointer';
+      closeBtn.style.fontSize = '14px';
+      closeBtn.style.fontWeight = 'normal';
+      const svgWrap = document.getElementById('roue-countdown-svg');
+      if (svgWrap) svgWrap.style.display = 'none';
 
-      closeBtn.onclick = () => { if (!closeBtn.disabled) { clearInterval(cInterval); closeRoue(); } };
-      ov.addEventListener('click', e => {
-        if (e.target === ov && !closeBtn.disabled) { clearInterval(cInterval); closeRoue(); }
-      });
+      const handleRoueClose = () => {
+        // Si l'utilisateur n'a pas encore joué, afficher le bouton de réouverture
+        if (!spinning && triesLeft === maxTries) {
+          let reopenBtn = document.getElementById('roue-reopen-btn');
+          if (!reopenBtn) {
+            reopenBtn = document.createElement('button');
+            reopenBtn.id = 'roue-reopen-btn';
+            reopenBtn.textContent = '🎰 Jouer au Grand Jeu du TED';
+            reopenBtn.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:150;padding:14px 28px;border-radius:20px;border:none;background:#E8C547;color:#1a1200;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(232,197,71,0.45);white-space:nowrap;transition:opacity .2s;';
+            reopenBtn.onclick = () => { reopenBtn.remove(); openRouePopup(); };
+            document.body.appendChild(reopenBtn);
+          }
+        }
+        closeRoue();
+      };
+
+      closeBtn.onclick = handleRoueClose;
+      ov.addEventListener('click', e => { if (e.target === ov) handleRoueClose(); });
 
       document.getElementById('roue-jouer-btn').onclick = spin;
       canvas.onclick = () => { if (!spinning && triesLeft > 0) spin(); };

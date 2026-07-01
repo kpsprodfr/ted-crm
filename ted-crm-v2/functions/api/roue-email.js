@@ -23,7 +23,7 @@ export async function onRequestPost(context) {
   const p = {};
   (paramsData || []).forEach(r => { p[r.cle] = r.valeur; });
 
-  const defaultObjet = '🎉 {prenom}, vous avez gagné {emoji} {recompense} au Grand Jeux du TED !';
+  const defaultObjet = '🎉 {prenom}, vous avez gagné {emoji} {recompense} au Grand Jeu du TED !';
   let objet = p[objetCle] || defaultObjet;
   const messagePerso = p['roue_email_message'] || '';
 

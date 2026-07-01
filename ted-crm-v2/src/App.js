@@ -1972,7 +1972,7 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
             {resa.source === 'Grand Jeux du TED' && (
               <div style={{gridColumn:'1/-1',background:'#fffbea',borderRadius:10,padding:'10px 14px',display:'flex',alignItems:'center',gap:8}}>
                 <span style={{fontSize:18}}>🎰</span>
-                <span style={{fontSize:13,fontWeight:700,color:'#92400e'}}>Grand Jeux du TED</span>
+                <span style={{fontSize:13,fontWeight:700,color:'#92400e'}}>Grand Jeu du TED</span>
               </div>
             )}
             {resa.note_interne && (
@@ -3597,7 +3597,7 @@ function OriginesSheet({ onClose, showToast }) {
 
 // ── Roue cadeaux — back-office ───────────────────────────────────────────────
 
-const DEFAULT_EMAIL1_OBJET = 'Votre récompense au Grand Jeux du TED';
+const DEFAULT_EMAIL1_OBJET = 'Votre récompense au Grand Jeu du TED';
 const DEFAULT_EMAIL1_CORPS = `Bonjour {prenom},
 
 Félicitations ! Vous remportez : {emoji} {recompense}
@@ -4103,7 +4103,7 @@ function RouePage({ showToast }) {
     <div style="color:#888;font-size:11px;margin-bottom:3px;">28 Avenue des Frères Montgolfier, 69680 Chassieu</div>
     <div style="color:#888;font-size:11px;margin-bottom:3px;">04 78 90 67 80</div>
     <div style="margin-bottom:10px;"><a href="https://www.leted.fr" style="color:#888;font-size:11px;">www.leted.fr</a></div>
-    <div style="color:#555;font-size:10px;">Vous recevez cet email car vous avez participé au Grand Jeux du TED.</div>
+    <div style="color:#555;font-size:10px;">Vous recevez cet email car vous avez participé au Grand Jeu du TED.</div>
   </div>
 </div>`;
 
@@ -6693,7 +6693,7 @@ function CRMApp({ user, onLogout }) {
                   )}
                   {c.source === 'Grand Jeux du TED' && (
                     <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:12, fontWeight:700, padding:'4px 10px', borderRadius:20, background:'#E8C547', color:'#111', border:'1.5px solid #d4a800' }}>
-                      🎰 Grand Jeux du TED
+                      🎰 Grand Jeu du TED
                     </span>
                   )}
                 </div>
