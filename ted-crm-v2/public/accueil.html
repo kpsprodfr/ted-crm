@@ -1185,6 +1185,33 @@
         }
       } catch(e) { console.error('clients block exception', e); }
 
+      // ── INSERT réservation ────────────────────────────────────────────────────
+      if (clientId) {
+        try {
+          const maintenant2 = new Date();
+          const hh = String(maintenant2.getHours()).padStart(2, '0');
+          const mm = String(maintenant2.getMinutes()).padStart(2, '0');
+          const dateAuj = maintenant2.toISOString().split('T')[0];
+          const resaRes = await fetch(`${SUPA_URL}/rest/v1/reservations`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, Prefer: 'return=minimal' },
+            body: JSON.stringify({
+              client_id: clientId,
+              date: dateAuj,
+              heure: `${hh}:${mm}`,
+              service: service_favori,
+              statut: 'venue',
+              nb_personnes: 1,
+              note_interne: `Grand Jeux du TED - récompense : ${gainResult.nom || 'inconnu'}`,
+              source: 'Grand Jeux du TED',
+              created_at: new Date().toISOString()
+            })
+          });
+          if (!resaRes.ok) console.error('reservations insert error', resaRes.status, await resaRes.text());
+          else console.log('reservations insert OK');
+        } catch(e) { console.error('reservations block exception', e); }
+      }
+
       // ── Décrémente stock ──────────────────────────────────────────────────────
       if (!gainResult.stock_illimite && gainResult.id) await tryDecrementStock(gainResult.id);
 

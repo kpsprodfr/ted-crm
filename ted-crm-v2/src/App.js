@@ -1964,6 +1964,18 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
                 <div style={{fontSize:14,fontWeight:600,color:'#111'}}>{item.value}</div>
               </div>
             ))}
+            {resa.source === 'Grand Jeux du TED' && (
+              <div style={{gridColumn:'1/-1',background:'#fffbea',borderRadius:10,padding:'10px 14px',display:'flex',alignItems:'center',gap:8}}>
+                <span style={{fontSize:18}}>🎰</span>
+                <span style={{fontSize:13,fontWeight:700,color:'#92400e'}}>Grand Jeux du TED</span>
+              </div>
+            )}
+            {resa.note_interne && (
+              <div style={{gridColumn:'1/-1',background:'#f9f9f9',borderRadius:10,padding:'12px 14px'}}>
+                <div style={{fontSize:10,fontWeight:700,color:'#999',textTransform:'uppercase',letterSpacing:0.5,marginBottom:4}}>Note</div>
+                <div style={{fontSize:14,color:'#555'}}>{resa.note_interne}</div>
+              </div>
+            )}
             {resa.commentaire_client && (
               <div style={{gridColumn:'1/-1',background:'#f9f9f9',borderRadius:10,padding:'12px 14px'}}>
                 <div style={{fontSize:10,fontWeight:700,color:'#999',textTransform:'uppercase',letterSpacing:0.5,marginBottom:4}}>Commentaire</div>
@@ -2837,7 +2849,10 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                       </div>
                       <div style={{ fontSize:12, color:'#999' }}>{r.nb_personnes} pers.</div>
                     </div>
-                    <span style={{ background:s.bg, color:s.color, borderRadius:20, padding:'3px 10px', fontSize:11, fontWeight:700, flexShrink:0, whiteSpace:'nowrap' }}>{s.label}</span>
+                    {r.source === 'Grand Jeux du TED'
+                      ? <span style={{ background:'#E8C547', color:'#111', borderRadius:20, padding:'3px 10px', fontSize:11, fontWeight:700, flexShrink:0, whiteSpace:'nowrap' }}>🎰 Jeux</span>
+                      : <span style={{ background:s.bg, color:s.color, borderRadius:20, padding:'3px 10px', fontSize:11, fontWeight:700, flexShrink:0, whiteSpace:'nowrap' }}>{s.label}</span>
+                    }
                   </div>
                 );
               })}
