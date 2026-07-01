@@ -3713,6 +3713,7 @@ function RouePage({ showToast }) {
   const [email1Delai, setEmail1Delai] = useState('1');
   const [email1Objet, setEmail1Objet] = useState(DEFAULT_EMAIL1_OBJET);
   const [email1Corps, setEmail1Corps] = useState(DEFAULT_EMAIL1_CORPS);
+  const [email1Date, setEmail1Date] = useState('');
   const [savingParam, setSavingParam] = useState(false);
   const [showEmail1TestModal, setShowEmail1TestModal] = useState(false);
   const [email1TestMail, setEmail1TestMail] = useState('');
@@ -3746,6 +3747,7 @@ function RouePage({ showToast }) {
       if (p['roue_email1_delai']) setEmail1Delai(p['roue_email1_delai']);
       if (p['roue_email1_objet']) setEmail1Objet(p['roue_email1_objet']);
       if (p['roue_email1_corps']) setEmail1Corps(p['roue_email1_corps']);
+      if (p['roue_email_date']) setEmail1Date(p['roue_email_date']);
     } finally {
       setLoading(false);
     }
@@ -3815,8 +3817,9 @@ function RouePage({ showToast }) {
         saveParam('roue_email1_delai', email1Delai),
         saveParam('roue_email1_objet', email1Objet),
         saveParam('roue_email1_corps', email1Corps),
+        saveParam('roue_email_date', email1Date),
       ]);
-      showToast('✅ Email enregistré');
+      showToast('✅ Modifications enregistrées');
     } catch(e) {
       console.error('handleSaveEmail1 error', e);
       showToast('❌ Erreur sauvegarde email');
@@ -4004,70 +4007,121 @@ function RouePage({ showToast }) {
             <span>📧 Email de confirmation du gain</span>
             <ChevronDown size={18} style={{ transform: accordion==='email1' ? 'rotate(180deg)' : 'none', transition:'transform .2s' }} />
           </button>
-          {accordion === 'email1' && (
+          {accordion === 'email1' && (() => {
+            const dateAffichee = email1Date
+              ? new Date(email1Date + 'T00:00:00').toLocaleDateString('fr-FR')
+              : 'À définir par le restaurant';
+            const previewHtml = `<div style="font-family:Arial,sans-serif;font-size:13px;">
+  <div style="background:linear-gradient(180deg,#fff8c0 0%,#FFE033 50%,#FFC200 100%);padding:24px 18px;text-align:center;">
+    <div style="width:44px;height:44px;background:#111;border-radius:50%;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;color:#E8C547;">TED</div>
+    <div style="color:#111;font-size:22px;font-weight:700;line-height:1.1;">Grand Jeux du <span style="font-weight:900;font-size:20px;letter-spacing:1px;">TED</span></div>
+    <div style="color:#5a4500;font-size:10px;letter-spacing:2px;margin-top:6px;text-transform:uppercase;">Restaurant &amp; Club</div>
+  </div>
+  <div style="background:#fff;padding:20px 18px;">
+    <p style="color:#333;font-size:13px;margin:0 0 18px;line-height:1.6;">Bonjour <strong style="color:#111;">Karl Sounier</strong>,</p>
+    <div style="background:rgba(232,197,71,0.12);border:1.5px solid rgba(232,197,71,0.4);border-radius:12px;padding:20px 16px;text-align:center;margin-bottom:16px;">
+      <div style="color:#111;font-size:20px;font-weight:700;margin-bottom:12px;">Votre récompense</div>
+      <div style="background:#fff;border:1.5px solid rgba(232,197,71,0.5);border-radius:8px;padding:12px 16px;margin-bottom:12px;">
+        <div style="color:#B8960C;font-size:15px;font-weight:700;">🍾 Bouteille de Champagne</div>
+      </div>
+      <div style="font-size:32px;margin-bottom:8px;">🥳</div>
+      <div style="color:#888;font-size:11px;font-style:italic;">Disponible à partir du ${dateAffichee}</div>
+    </div>
+    <div style="border:1.5px solid #E8C547;border-radius:10px;padding:16px;margin-bottom:18px;">
+      <div style="color:#111;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;">Conditions de retrait</div>
+      <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;"><span style="font-size:16px;">📋</span><div><div style="font-size:12px;font-weight:700;color:#111;margin-bottom:2px;">Présentation de ce mail</div><div style="font-size:12px;color:#666;">À montrer à notre équipe à votre arrivée</div></div></div>
+      <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;"><span style="font-size:16px;">📅</span><div><div style="font-size:12px;font-weight:700;color:#111;margin-bottom:2px;">Date de retrait de votre cadeau</div><div style="font-size:12px;color:#B8960C;font-weight:700;">${dateAffichee}</div></div></div>
+      <div style="display:flex;gap:10px;align-items:flex-start;"><span style="font-size:16px;">👥</span><div><div style="font-size:12px;font-weight:700;color:#111;margin-bottom:2px;">Réservation requise</div><div style="font-size:12px;color:#666;">5 personnes minimum</div></div></div>
+    </div>
+    <div style="text-align:center;margin-bottom:18px;"><a href="#" style="display:inline-block;background:#E8C547;color:#111;font-weight:700;font-size:13px;padding:12px 28px;border-radius:8px;text-decoration:none;">Réserver ma table</a></div>
+    <p style="color:#666;font-size:12px;line-height:1.8;margin:0;border-top:0.5px solid #eee;padding-top:14px;">On vous attend avec impatience.<br>À très bientôt,<br><strong style="color:#111;">L'équipe du TED</strong></p>
+  </div>
+  <div style="background:#111;padding:16px;text-align:center;">
+    <div style="color:#E8C547;font-size:12px;font-weight:700;margin-bottom:3px;">Le TED — Restaurant &amp; Club</div>
+    <div style="color:#888;font-size:11px;margin-bottom:3px;">5 Rue Professeur Rochaix, 69003 Lyon</div>
+    <div style="color:#888;font-size:11px;margin-bottom:10px;">04 72 02 20 20</div>
+    <div style="color:#555;font-size:10px;">Vous recevez cet email car vous avez participé au Grand Jeux du TED.</div>
+  </div>
+</div>`;
+            return (
             <div style={{ padding:'0 24px 24px', borderTop:'1px solid #f0f0f0' }}>
-              <div style={{ paddingTop:16, display:'flex', flexDirection:'column', gap:14 }}>
-                <div>
-                  <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Délai après le jeu (minutes)</label>
-                  <input type="number" min={0} value={email1Delai} onChange={e=>setEmail1Delai(e.target.value)} style={{ ...iS, marginTop:6 }} />
-                </div>
-                <div>
-                  <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Objet</label>
-                  <input type="text" value={email1Objet} onChange={e=>setEmail1Objet(e.target.value)} style={{ ...iS, marginTop:6 }} />
-                </div>
-                <div>
-                  <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Corps du mail</label>
-                  <textarea ref={email1CorpsRef} id="email1-corps-ta" value={email1Corps} onChange={e=>setEmail1Corps(e.target.value)} rows={8} style={{ ...iS, marginTop:6, resize:'vertical', lineHeight:1.6 }} />
-                  {/* Variables cliquables sous la textarea */}
-                  <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:8, position:'relative' }}>
-                    {[
-                      { label:'{prenom}', val:'{prenom}' },
-                      { label:'{nom}', val:'{nom}' },
-                      { label:'{recompense}', val:'{recompense}' },
-                      { label:'{date}', val:'{date}' },
-                      { label:'{lien_reservation}', val:'https://ted-crm.pages.dev/reserver.html' },
-                    ].map(v => (
-                      <span key={v.label} onClick={() => {
-                        const ta = email1CorpsRef.current || document.getElementById('email1-corps-ta');
-                        if (!ta) return;
-                        const start = ta.selectionStart, end = ta.selectionEnd;
-                        const next = email1Corps.slice(0, start) + v.val + email1Corps.slice(end);
-                        setEmail1Corps(next);
-                        setTimeout(() => { ta.focus(); ta.setSelectionRange(start + v.val.length, start + v.val.length); }, 0);
-                      }} style={{ background:'#f0f0f0', borderRadius:8, padding:'4px 10px', fontSize:12, cursor:'pointer', fontFamily:'monospace', userSelect:'none' }}>{v.label}</span>
-                    ))}
-                    {/* Bouton emoji picker */}
-                    <span onClick={() => setShowEmail1EmojiPicker(v => !v)} style={{ background:'#f0f0f0', borderRadius:8, padding:'4px 10px', fontSize:12, cursor:'pointer', userSelect:'none' }}>😀 Emoji</span>
-                    {showEmail1EmojiPicker && (
-                      <>
-                        <div onClick={() => setShowEmail1EmojiPicker(false)} style={{ position:'fixed', inset:0, zIndex:998 }} />
-                        <div style={{ position:'absolute', top:'100%', left:0, marginTop:4, background:'#fff', border:'1.5px solid #eee', borderRadius:12, padding:12, zIndex:999, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', display:'flex', flexWrap:'wrap', gap:4, width:280 }}>
-                          {['😀','😂','🥰','😍','🤩','😎','🥳','🎉','🎊','🏆','🥇','⭐','✨','💫','🌟','🍾','🥂','🍷','🥩','🍽️','🦁','🎰','🎁','💎','👑','🙏','❤️','🔥','💪','👏'].map(em => (
-                            <span key={em} onClick={() => {
-                              const ta = email1CorpsRef.current || document.getElementById('email1-corps-ta');
-                              if (!ta) return;
-                              const start = ta.selectionStart, end = ta.selectionEnd;
-                              const next = email1Corps.slice(0, start) + em + email1Corps.slice(end);
-                              setEmail1Corps(next);
-                              setShowEmail1EmojiPicker(false);
-                              setTimeout(() => { ta.focus(); ta.setSelectionRange(start + em.length, start + em.length); }, 0);
-                            }} style={{ fontSize:20, cursor:'pointer', padding:4, borderRadius:6, lineHeight:1 }}
-                              onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'}
-                              onMouseLeave={e=>e.currentTarget.style.background='transparent'}
-                            >{em}</span>
-                          ))}
-                        </div>
-                      </>
-                    )}
+              <div style={{ paddingTop:16, display:'flex', gap:24, flexWrap:'wrap' }}>
+                {/* Colonne gauche : éditeur */}
+                <div style={{ flex:'1 1 320px', display:'flex', flexDirection:'column', gap:14 }}>
+                  <div>
+                    <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Délai après le jeu (minutes)</label>
+                    <input type="number" min={0} value={email1Delai} onChange={e=>setEmail1Delai(e.target.value)} style={{ ...iS, marginTop:6 }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Objet</label>
+                    <input type="text" value={email1Objet} onChange={e=>setEmail1Objet(e.target.value)} style={{ ...iS, marginTop:6 }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Date de retrait du cadeau</label>
+                    <input type="date" value={email1Date} onChange={e=>setEmail1Date(e.target.value)} style={{ ...iS, marginTop:6 }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Corps du mail</label>
+                    <textarea ref={email1CorpsRef} id="email1-corps-ta" value={email1Corps} onChange={e=>setEmail1Corps(e.target.value)} rows={8} style={{ ...iS, marginTop:6, resize:'vertical', lineHeight:1.6 }} />
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:8, position:'relative' }}>
+                      {[
+                        { label:'{prenom}', val:'{prenom}' },
+                        { label:'{nom}', val:'{nom}' },
+                        { label:'{recompense}', val:'{recompense}' },
+                        { label:'{date}', val:'{date}' },
+                        { label:'{lien_reservation}', val:'https://ted-crm.pages.dev/reserver.html' },
+                      ].map(v => (
+                        <span key={v.label} onClick={() => {
+                          const ta = email1CorpsRef.current || document.getElementById('email1-corps-ta');
+                          if (!ta) return;
+                          const start = ta.selectionStart, end = ta.selectionEnd;
+                          const next = email1Corps.slice(0, start) + v.val + email1Corps.slice(end);
+                          setEmail1Corps(next);
+                          setTimeout(() => { ta.focus(); ta.setSelectionRange(start + v.val.length, start + v.val.length); }, 0);
+                        }} style={{ background:'#f0f0f0', borderRadius:8, padding:'4px 10px', fontSize:12, cursor:'pointer', fontFamily:'monospace', userSelect:'none' }}>{v.label}</span>
+                      ))}
+                      <span onClick={() => setShowEmail1EmojiPicker(v => !v)} style={{ background:'#f0f0f0', borderRadius:8, padding:'4px 10px', fontSize:12, cursor:'pointer', userSelect:'none' }}>😀 Emoji</span>
+                      {showEmail1EmojiPicker && (
+                        <>
+                          <div onClick={() => setShowEmail1EmojiPicker(false)} style={{ position:'fixed', inset:0, zIndex:998 }} />
+                          <div style={{ position:'absolute', top:'100%', left:0, marginTop:4, background:'#fff', border:'1.5px solid #eee', borderRadius:12, padding:12, zIndex:999, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', display:'flex', flexWrap:'wrap', gap:4, width:280 }}>
+                            {['😀','😂','🥰','😍','🤩','😎','🥳','🎉','🎊','🏆','🥇','⭐','✨','💫','🌟','🍾','🥂','🍷','🥩','🍽️','🦁','🎰','🎁','💎','👑','🙏','❤️','🔥','💪','👏'].map(em => (
+                              <span key={em} onClick={() => {
+                                const ta = email1CorpsRef.current || document.getElementById('email1-corps-ta');
+                                if (!ta) return;
+                                const start = ta.selectionStart, end = ta.selectionEnd;
+                                const next = email1Corps.slice(0, start) + em + email1Corps.slice(end);
+                                setEmail1Corps(next);
+                                setShowEmail1EmojiPicker(false);
+                                setTimeout(() => { ta.focus(); ta.setSelectionRange(start + em.length, start + em.length); }, 0);
+                              }} style={{ fontSize:20, cursor:'pointer', padding:4, borderRadius:6, lineHeight:1 }}
+                                onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'}
+                                onMouseLeave={e=>e.currentTarget.style.background='transparent'}
+                              >{em}</span>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ display:'flex', justifyContent:'space-between', gap:10 }}>
+                    <button onClick={() => setShowEmail1TestModal(true)} style={{ ...btnG, display:'flex', alignItems:'center', gap:6, border:'1.5px solid #E8C547' }}><Send size={13} strokeWidth={2}/> Envoyer un test</button>
+                    <button onClick={handleSaveEmail1} disabled={savingParam} style={{ padding:'12px 24px', borderRadius:12, border:'none', background:'#E8C547', color:'#111', fontSize:14, fontWeight:700, cursor:savingParam?'not-allowed':'pointer', display:'flex', alignItems:'center', gap:6, opacity:savingParam?0.7:1 }}><Save size={13} strokeWidth={2}/> Enregistrer</button>
                   </div>
                 </div>
-                <div style={{ display:'flex', justifyContent:'space-between', gap:10 }}>
-                  <button onClick={() => setShowEmail1TestModal(true)} style={{ ...btnG, display:'flex', alignItems:'center', gap:6, border:'1.5px solid #E8C547' }}><Send size={13} strokeWidth={2}/> Envoyer un test</button>
-                  <button onClick={handleSaveEmail1} disabled={savingParam} style={{ padding:'12px 24px', borderRadius:12, border:'none', background:'#E8C547', color:'#111', fontSize:14, fontWeight:700, cursor:savingParam?'not-allowed':'pointer', display:'flex', alignItems:'center', gap:6, opacity:savingParam?0.7:1 }}><Save size={13} strokeWidth={2}/> Enregistrer</button>
+
+                {/* Colonne droite : aperçu live */}
+                <div style={{ flex:'1 1 320px' }}>
+                  <p style={{ fontSize:11, fontWeight:600, color:'#999', textTransform:'uppercase', letterSpacing:'.05em', margin:'0 0 8px' }}>Aperçu du mail</p>
+                  <div
+                    style={{ border:'1px solid #eee', borderRadius:12, background:'#fff', maxHeight:600, overflowY:'auto' }}
+                    dangerouslySetInnerHTML={{ __html: previewHtml }}
+                  />
                 </div>
               </div>
             </div>
-          )}
+            );
+          })()}
           {/* Modal test email */}
           {showEmail1TestModal && (
             <>
