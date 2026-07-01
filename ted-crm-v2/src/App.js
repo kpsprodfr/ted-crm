@@ -4414,7 +4414,6 @@ function MenuPage({ showToast }) {
                     <div key={label} style={{ borderRadius:10, border:`1px solid ${active ? '#f0e88a' : '#f0f0f0'}`, padding:'10px 12px', background: active ? '#fffef5' : '#fafafa', transition:'all 0.15s' }}>
                       {/* Ligne nom + prix + toggle */}
                       <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:7 }}>
-                        <MenuToggle value={active} onChange={() => item && toggleItem(item, setter)} />
                         <span style={{ fontSize:11, fontWeight:700, color: active ? '#888' : '#ccc', width:48, flexShrink:0 }}>{icon} {label}</span>
                         <input
                           value={item?.nom || ''}
@@ -4425,15 +4424,19 @@ function MenuPage({ showToast }) {
                           onFocus={e => e.target.style.borderColor='#E8C547'}
                           onBlurCapture={e => e.target.style.borderColor='#eee'}
                         />
-                        <input
-                          value={item?.prix || ''}
-                          onChange={e => setter(p => p ? ({...p, prix: e.target.value}) : p)}
-                          onBlur={e => item && saveField(item, setter, 'prix', e.target.value)}
-                          placeholder="Prix"
-                          style={{ ...prixStyle, opacity: active ? 1 : 0.5 }}
-                          onFocus={e => e.target.style.borderColor='#E8C547'}
-                          onBlurCapture={e => e.target.style.borderColor='#eee'}
-                        />
+                        <div style={{ display:'flex', alignItems:'center', border:'1px solid #eee', borderRadius:8, background:'#fafafa', overflow:'hidden', flexShrink:0, opacity: active ? 1 : 0.5 }}>
+                          <input
+                            value={item?.prix || ''}
+                            onChange={e => setter(p => p ? ({...p, prix: e.target.value}) : p)}
+                            onBlur={e => item && saveField(item, setter, 'prix', e.target.value)}
+                            placeholder="0"
+                            style={{ ...prixStyle, border:'none', borderRadius:0, background:'transparent', width:52 }}
+                            onFocus={e => e.target.parentNode.style.borderColor='#E8C547'}
+                            onBlurCapture={e => e.target.parentNode.style.borderColor='#eee'}
+                          />
+                          <span style={{ paddingRight:8, fontSize:13, color:'#aaa', fontWeight:600, userSelect:'none' }}>€</span>
+                        </div>
+                        <MenuToggle value={active} onChange={() => item && toggleItem(item, setter)} />
                       </div>
                       {/* Description */}
                       <input
