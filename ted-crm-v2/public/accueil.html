@@ -814,6 +814,9 @@
 
   document.getElementById('popup-close').addEventListener('click', closePopup);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closePopup(); });
+  document.getElementById('popup-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('popup-overlay')) closePopup();
+  });
 
   document.getElementById('popup-arrow-left').addEventListener('click', () => {
     if (soireesData.length < 2) return;
