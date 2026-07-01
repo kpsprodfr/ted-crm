@@ -726,6 +726,9 @@
     if (!recompenses.length) { console.log('2f. 0 récompenses disponibles → abort'); return; }
     if (!isPreview && localStorage.getItem('ted_roue_soumis')) { console.log('2g. formulaire déjà soumis (localStorage) → abort'); return; }
 
+    // ── Canvas (scope externe pour openRouePopup) ──────────────────────────────
+    const canvas = document.getElementById('roue-canvas');
+
     // ── 10 sections alternées GAGNÉ/PERDU ──────────────────────────────────────
     const gainItems = recompenses.length > 0 ? recompenses : [{ nom: 'Cadeau', emoji: '🎁' }];
     const roueSections = [];
@@ -1249,17 +1252,13 @@
       canvas.onclick = () => { if (!spinning && triesLeft > 0) spin(); };
 
       document.getElementById('roue-recuperer-btn').onclick = () => {
+        console.log('claim button clicked');
         document.getElementById('roue-win-overlay').style.display = 'none';
         document.getElementById('roue-form-overlay').style.display = 'block';
       };
       document.getElementById('roue-skip-btn').onclick = () => {
         document.getElementById('roue-win-overlay').style.display = 'none';
-        if (triesLeft <= 0) {
-          closeRoue();
-        } else {
-          const btn = document.getElementById('roue-jouer-btn');
-          if (btn) { btn.disabled = false; btn.textContent = 'Retenter sa chance'; }
-        }
+        closeRoue();
       };
       document.getElementById('roue-confirmer-btn').onclick = confirmer;
       document.getElementById('roue-vers-carte-btn').onclick = () => {
