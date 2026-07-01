@@ -476,23 +476,23 @@
     if (sel && !sel.contains(e.target)) document.getElementById('lang-menu').classList.remove('open');
   });
 
-  // ── Cache sessionStorage (TTL 5 min, revalidation silencieuse > 60s) ─────────
+  // ── Cache localStorage (TTL 5 min, revalidation silencieuse > 60s) ─────────
   const CACHE_KEY = 'ted_menu_v2';
   const CACHE_TTL  = 5 * 60 * 1000;
   const CACHE_STALE =     60 * 1000;
 
   function cacheGet() {
     try {
-      const raw = sessionStorage.getItem(CACHE_KEY);
+      const raw = localStorage.getItem(CACHE_KEY);
       if (!raw) return null;
       const { ts, cats, prods, plats } = JSON.parse(raw);
-      if (Date.now() - ts > CACHE_TTL) { sessionStorage.removeItem(CACHE_KEY); return null; }
+      if (Date.now() - ts > CACHE_TTL) { localStorage.removeItem(CACHE_KEY); return null; }
       return { cats, prods, plats, age: Date.now() - ts };
     } catch(e) { return null; }
   }
 
   function cacheSet(cats, prods, plats) {
-    try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), cats, prods, plats })); } catch(e) {}
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), cats, prods, plats })); } catch(e) {}
   }
 
   // ── Fetch Supabase ──────────────────────────────────────────────────────────
@@ -572,7 +572,7 @@
         pollPlatJour._last = sig;
         updatePlatJour(plats);
         renderSpecials();
-        // Met à jour le cache sessionStorage avec les nouvelles données plat
+        // Met à jour le cache localStorage avec les nouvelles données plat
         const hit = cacheGet();
         if (hit) cacheSet(hit.cats, hit.prods, plats);
       }
@@ -584,7 +584,7 @@
   // ── bfcache : retour navigateur — pas de refetch si données déjà en mémoire ─
   window.addEventListener('pageshow', e => {
     if (e.persisted && allCategories.length === 0) {
-      // Edge case : JS state perdu malgré bfcache — recharge depuis sessionStorage
+      // Edge case : JS state perdu malgré bfcache — recharge depuis localStorage
       const hit = cacheGet();
       if (hit) {
         allCategories = hit.cats; allProduits = hit.prods;

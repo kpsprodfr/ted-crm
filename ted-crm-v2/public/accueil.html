@@ -1028,27 +1028,44 @@
 
     // ── Chargement Supabase ────────────────────────────────────────────────────
     try {
-      const [resParam, resEssais, resRec, resCountdown] = await Promise.all([
-        fetch(`${SUPA_URL}/rest/v1/roue_config?cle=eq.roue_active&select=valeur`, { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }),
-        fetch(`${SUPA_URL}/rest/v1/roue_config?cle=eq.roue_essais_max&select=valeur`, { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }),
-        fetch(`${SUPA_URL}/rest/v1/roue_recompenses?actif=eq.true&order=ordre`, { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }),
-        fetch(`${SUPA_URL}/rest/v1/roue_config?cle=eq.roue_countdown&select=valeur`, { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }),
-      ]);
-      const paramData = resParam.ok ? await resParam.json() : [];
-      const essaisData = resEssais.ok ? await resEssais.json() : [];
-      const countdownData = resCountdown.ok ? await resCountdown.json() : [];
+      // Cache localStorage TTL 10 min (config + récompenses de la roue).
+      // Le stock reste protégé côté serveur (rpc decrement_stock_roue atomique).
+      const ROUE_CACHE_KEY = 'ted_roue_cache_v1';
+      const ROUE_CACHE_TTL = 10 * 60 * 1000;
+      let cached = null;
+      try {
+        const raw = localStorage.getItem(ROUE_CACHE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Date.now() - parsed.ts < ROUE_CACHE_TTL) cached = parsed;
+          else localStorage.removeItem(ROUE_CACHE_KEY);
+        }
+      } catch(e) {}
+
+      let paramData, essaisData, countdownData, recData;
+      if (cached) {
+        ({ paramData, essaisData, countdownData, recData } = cached);
+      } else {
+        const [resParam, resEssais, resRec, resCountdown] = await Promise.all([
+          fetch(`${SUPA_URL}/rest/v1/roue_config?cle=eq.roue_active&select=valeur`, { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }),
+          fetch(`${SUPA_URL}/rest/v1/roue_config?cle=eq.roue_essais_max&select=valeur`, { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }),
+          fetch(`${SUPA_URL}/rest/v1/roue_recompenses?actif=eq.true&order=ordre`, { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }),
+          fetch(`${SUPA_URL}/rest/v1/roue_config?cle=eq.roue_countdown&select=valeur`, { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }),
+        ]);
+        paramData = resParam.ok ? await resParam.json() : [];
+        essaisData = resEssais.ok ? await resEssais.json() : [];
+        countdownData = resCountdown.ok ? await resCountdown.json() : [];
+        recData = resRec.ok ? await resRec.json() : [];
+        try { localStorage.setItem(ROUE_CACHE_KEY, JSON.stringify({ ts: Date.now(), paramData, essaisData, countdownData, recData })); } catch(e) {}
+      }
       if (countdownData[0]?.valeur) rouCloseDelay = parseInt(countdownData[0].valeur) || 5;
       maxTries = parseInt(essaisData[0]?.valeur) || 3;
       const essaisUtilises = parseInt(localStorage.getItem('ted_roue_essais_utilises') || '0');
       triesLeft = Math.max(0, maxTries - essaisUtilises);
       const rouueActive = (paramData[0]?.valeur === 'true');
-      console.log('2. roue_active =', rouueActive, '| paramData =', paramData);
-      if (!rouueActive) { console.log('2b. roue inactive → abort'); return; }
-      if (!resRec.ok) { console.log('2c. fetch recompenses KO', resRec.status); return; }
-      const data = await resRec.json();
-      recompenses = (data || []).filter(r => r.stock_illimite || (r.stock != null && r.stock > 0));
-      console.log('2d. recompenses filtrées =', recompenses.length, recompenses);
-    } catch(e) { console.error('2e. erreur fetch Supabase', e); return; }
+      if (!rouueActive) return;
+      recompenses = (recData || []).filter(r => r.stock_illimite || (r.stock != null && r.stock > 0));
+    } catch(e) { console.error('erreur chargement roue', e); return; }
 
     const isPreview = new URLSearchParams(window.location.search).get('preview') === 'roue';
 
