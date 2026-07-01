@@ -4086,7 +4086,7 @@ function RouePage({ showToast }) {
     <div style="background:rgba(232,197,71,0.12);border:1.5px solid rgba(232,197,71,0.4);border-radius:12px;padding:20px 16px;text-align:center;margin-bottom:16px;">
       <div style="color:#111;font-size:20px;font-weight:700;margin-bottom:12px;">Votre récompense</div>
       <div style="background:#fff;border:1.5px solid rgba(232,197,71,0.5);border-radius:8px;padding:12px 16px;margin-bottom:12px;">
-        <div style="color:#B8960C;font-size:15px;font-weight:700;">🍾 Bouteille de Champagne</div>
+        <div style="color:#999;font-size:14px;font-weight:400;font-style:italic;">La récompense gagnée apparaîtra ici</div>
       </div>
       <div style="font-size:32px;margin-bottom:8px;">🥳</div>
       <div style="color:#888;font-size:11px;font-style:italic;">${dispoLabel}</div>
