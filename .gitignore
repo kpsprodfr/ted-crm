@@ -1,2 +1,6 @@
 ted-crm-v2/build/
 ted-crm-v2/node_modules/
+node_modules/
+*.zip
+audit_uxui/
+.claude/launch.json
