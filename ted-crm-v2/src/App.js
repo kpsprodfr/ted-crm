@@ -98,15 +98,18 @@ const fg = { marginBottom:14 };
 
 // ─── Brevo Email ─────────────────────────────────────────────────────────────
 async function sendBrevoEmail(toEmail, toName, subject, htmlContent) {
-  if (!toEmail) return;
+  if (!toEmail) { console.warn('[sendBrevoEmail] Annulé : toEmail vide'); return; }
+  const body = { to: toEmail, toName, subject, html: htmlContent };
+  console.log('1. Envoi mail réservation à', toEmail);
+  console.log('2. Body envoyé', body);
   try {
     const res = await fetch('/send-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to: toEmail, toName, subject, html: htmlContent })
+      body: JSON.stringify(body)
     });
     const data = await res.json();
-    console.log('[sendBrevoEmail] to:', toEmail, '| status:', res.status, '| response:', data);
+    console.log('3. Réponse /send-email', { status: res.status, data });
     return { success: data.success };
   } catch(e) {
     console.error('[sendBrevoEmail] exception:', e);

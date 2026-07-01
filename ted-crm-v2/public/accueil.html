@@ -1244,19 +1244,24 @@
 
       // ── Email configurable (roue-email) ───────────────────────────────────────
       try {
-        await fetch('/api/roue-email', {
+        const roueEmailBody = {
+          type: 'email1',
+          to_email: email,
+          to_prenom: prenom,
+          to_nom: nom,
+          recompense: gainResult.nom || '',
+          emoji: gainResult.emoji || '',
+          gain_id: gainId || null
+        };
+        console.log('1. Envoi mail jeu à', email);
+        console.log('2. Body envoyé', roueEmailBody);
+        const roueEmailRes = await fetch('/api/roue-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'email1',
-            to_email: email,
-            to_prenom: prenom,
-            to_nom: nom,
-            recompense: gainResult.nom || '',
-            emoji: gainResult.emoji || '',
-            gain_id: gainId || null
-          })
+          body: JSON.stringify(roueEmailBody)
         });
+        const roueEmailData = await roueEmailRes.json().catch(() => ({}));
+        console.log('3. Réponse', { status: roueEmailRes.status, data: roueEmailData });
       } catch(e) { console.error('roue-email exception', e); }
 
       localStorage.setItem('ted_roue_soumis', 'true');
