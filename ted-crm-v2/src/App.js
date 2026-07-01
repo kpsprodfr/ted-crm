@@ -3842,6 +3842,14 @@ function RouePage({ showToast }) {
     setRecompenses(prev => prev.filter(x => x.id !== r.id));
   }
 
+  async function supprimerGain(g) {
+    if (!window.confirm('Supprimer ce participant du tableau des jeux ?')) return;
+    // Supprime uniquement dans roue_gains, ne touche pas clients ni reservations
+    await supabase.from('roue_gains').delete().eq('id', g.id);
+    setGains(prev => prev.filter(x => x.id !== g.id));
+    showToast('Participant supprimé');
+  }
+
   async function planifierVisite() {
     if (!planDate) return;
     await supabase.from('roue_gains').update({
@@ -4108,7 +4116,7 @@ function RouePage({ showToast }) {
           <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
             <thead>
               <tr style={{ background:'#fafafa', borderBottom:'2px solid #f0f0f0' }}>
-                {['Date','Prénom','Nom','Téléphone','Email','Récompense','Statut','Date visite','Actions'].map(h => (
+                {['Date','Prénom','Nom','Téléphone','Email','Récompense','Statut','🗑️'].map(h => (
                   <th key={h} style={{ padding:'12px 14px', textAlign:'left', fontWeight:700, fontSize:11, color:'#888', textTransform:'uppercase', letterSpacing:'.04em', whiteSpace:'nowrap' }}>{h}</th>
                 ))}
               </tr>
@@ -4132,12 +4140,14 @@ function RouePage({ showToast }) {
                       {g.recupere ? '✓ Récupéré' : 'En attente'}
                     </button>
                   </td>
-                  <td style={{ padding:'12px 14px', fontSize:12, whiteSpace:'nowrap' }}>
-                    {g.date_venue ? new Date(g.date_venue+'T00:00:00').toLocaleDateString('fr-FR')+(g.heure_venue ? ' '+String(g.heure_venue).slice(0,5) : '') : '—'}
-                  </td>
                   <td style={{ padding:'12px 14px', whiteSpace:'nowrap' }}>
-                    <button onClick={() => { setPlanModal(g); setPlanDate(g.date_venue||''); setPlanHeure(g.heure_venue ? String(g.heure_venue).slice(0,5) : '19:00'); }}
-                      style={{ ...btnG, padding:'4px 8px', fontSize:11 }} title="Noter la date de visite">📅</button>
+                    <button
+                      onClick={() => supprimerGain(g)}
+                      title="Supprimer ce participant"
+                      style={{ background:'none', border:'none', cursor:'pointer', color:'#999', display:'flex', alignItems:'center', padding:4, borderRadius:6, transition:'color 0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                      onMouseLeave={e => e.currentTarget.style.color = '#999'}
+                    ><Trash2 size={15} strokeWidth={2} /></button>
                   </td>
                 </tr>
               ))}
