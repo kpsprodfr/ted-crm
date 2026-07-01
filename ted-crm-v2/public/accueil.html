@@ -137,9 +137,8 @@
       #popup-overlay, #popup-card { transition: none !important; }
     }
 
-    #popup-progress-track { height: 3px; background: #222; width: 100%; }
-    #popup-progress-bar   { height: 100%; width: 0%; background: #E8C547; transition: width 4000ms linear; }
-    #popup-progress-bar.running { width: 100%; }
+    #popup-progress-track { display: none; }
+    #popup-progress-bar   { display: none; }
 
     #popup-close {
       position: absolute; top: 14px; right: 14px;
@@ -577,22 +576,8 @@
       card.classList.remove('has-flyer');
     }
 
-    // Reset barre
-    progressBar.style.transition = 'none';
-    progressBar.style.width = '0%';
-    progressBar.classList.remove('running');
-
     overlay.classList.add('open');
     document.body.style.overflow = 'hidden';
-
-    const barDelay = prefersReduced ? 0 : 320;
-    setTimeout(() => {
-      progressBar.style.transition = 'width 4000ms linear';
-      progressBar.classList.add('running');
-    }, barDelay);
-
-    clearTimeout(autoCloseTimer);
-    autoCloseTimer = setTimeout(closePopup, barDelay + 4000);
   }
 
   function closePopup() {
@@ -617,14 +602,8 @@
     }, 260);
   }
 
-  overlay.addEventListener('click', e => { if (e.target === overlay) closePopup(); });
   document.getElementById('popup-close').addEventListener('click', closePopup);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closePopup(); });
-
-  // Bouton réserver — annule le timer et navigue
-  document.getElementById('popup-reserver').addEventListener('click', () => {
-    clearTimeout(autoCloseTimer);
-  });
 
   // ── Cache sessionStorage soirées (TTL 5 min) ───────────────────────────────
   const SOIREES_KEY   = 'ted_soirees_v2';
