@@ -5155,6 +5155,14 @@ function SystemePage({ showToast }) {
   const [restoreTable, setRestoreTable] = useState('clients');
   const [confirmText, setConfirmText] = useState('');
   const [restoring, setRestoring] = useState(false);
+  const [health, setHealth] = useState(null);
+  const [errLogs, setErrLogs] = useState([]);
+
+  useEffect(() => {
+    fetch('/api/health').then(r => r.json()).then(setHealth).catch(() => setHealth({ status: 'down', components: {} }));
+    safeQuery(() => supabase.from('error_logs').select('*').order('created_at', { ascending: false }).limit(50), { fallback: [], context: 'systeme:errorLogs' })
+      .then(({ data }) => setErrLogs(data || []));
+  }, []);
 
   async function authHeaders() {
     const { data: { session } } = await supabase.auth.getSession();
@@ -5221,6 +5229,32 @@ function SystemePage({ showToast }) {
       </h1>
       <p style={{ color:'#888', fontSize:14, margin:'0 0 28px' }}>Sauvegardes automatiques (tous les jours à 2h), restauration et état du CRM.</p>
 
+      {/* ── Santé du système ── */}
+      <div style={{ background:'#fff', borderRadius:16, padding:'24px 26px', boxShadow:'0 1px 4px rgba(0,0,0,0.06)', marginBottom:24 }}>
+        <h2 style={{ fontSize:16, fontWeight:800, color:'#111', margin:'0 0 16px', display:'flex', alignItems:'center', gap:8 }}>
+          <ShieldCheck size={18} /> Santé du système
+          {health && (
+            <span style={{ marginLeft:'auto', fontSize:12, fontWeight:800, padding:'4px 12px', borderRadius:20, background: health.status==='ok' ? '#dcfce7' : health.status==='degraded' ? '#fef3c7' : '#fee2e2', color: health.status==='ok' ? '#15803d' : health.status==='degraded' ? '#b45309' : '#b91c1c' }}>
+              {health.status==='ok' ? 'Tout fonctionne' : health.status==='degraded' ? 'Dégradé' : 'Panne'}
+            </span>
+          )}
+        </h2>
+        {!health ? (
+          <div style={{ color:'#999', fontSize:14 }}>Vérification…</div>
+        ) : (
+          <div style={{ display:'flex', flexWrap:'wrap', gap:10 }}>
+            {Object.entries(health.components || {}).map(([name, c]) => (
+              <div key={name} title={c.detail || ''} style={{ display:'flex', alignItems:'center', gap:8, border:'1.5px solid #f0f0f0', borderRadius:10, padding:'10px 14px', fontSize:13 }}>
+                <span style={{ width:9, height:9, borderRadius:'50%', background: c.status==='ok' ? '#22c55e' : c.status==='degraded' ? '#f59e0b' : '#dc2626', boxShadow:`0 0 6px ${c.status==='ok' ? '#22c55e' : c.status==='degraded' ? '#f59e0b' : '#dc2626'}` }} />
+                <span style={{ fontWeight:700, color:'#333' }}>{{ env_vars:'Variables', supabase:'Base de données', brevo:'Emails (Brevo)', backups:'Backups' }[name] || name}</span>
+                {c.latency_ms != null && <span style={{ color:'#aaa', fontSize:11 }}>{c.latency_ms} ms</span>}
+                {c.detail && <span style={{ color:'#b45309', fontSize:11, maxWidth:260, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.detail}</span>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div style={{ background:'#fff', borderRadius:16, padding:'24px 26px', boxShadow:'0 1px 4px rgba(0,0,0,0.06)', marginBottom:24 }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:18 }}>
           <h2 style={{ fontSize:16, fontWeight:800, color:'#111', margin:0, display:'flex', alignItems:'center', gap:8 }}>
@@ -5273,6 +5307,37 @@ function SystemePage({ showToast }) {
               ))}
             </tbody>
           </table>
+        )}
+      </div>
+
+      {/* ── Dernières erreurs ── */}
+      <div style={{ background:'#fff', borderRadius:16, padding:'24px 26px', boxShadow:'0 1px 4px rgba(0,0,0,0.06)', marginBottom:24 }}>
+        <h2 style={{ fontSize:16, fontWeight:800, color:'#111', margin:'0 0 16px', display:'flex', alignItems:'center', gap:8 }}>
+          <AlertCircle size={18} /> Dernières erreurs ({errLogs.length})
+        </h2>
+        {errLogs.length === 0 ? (
+          <div style={{ color:'#999', fontSize:14 }}>Aucune erreur enregistrée. 👌</div>
+        ) : (
+          <div style={{ maxHeight:320, overflowY:'auto' }}>
+            <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
+              <thead>
+                <tr>
+                  {['Date','Contexte','Message'].map(h => (
+                    <th key={h} style={{ textAlign:'left', padding:'6px 10px', color:'#999', fontWeight:700, fontSize:11, letterSpacing:0.5, textTransform:'uppercase', borderBottom:'1.5px solid #f0f0f0', position:'sticky', top:0, background:'#fff' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {errLogs.map(e => (
+                  <tr key={e.id}>
+                    <td style={{ padding:'8px 10px', color:'#888', whiteSpace:'nowrap', borderBottom:'1px solid #f7f7f7' }}>{new Date(e.created_at).toLocaleString('fr-FR')}</td>
+                    <td style={{ padding:'8px 10px', color:'#333', fontWeight:600, borderBottom:'1px solid #f7f7f7' }}>{e.context || '—'}</td>
+                    <td style={{ padding:'8px 10px', color:'#666', borderBottom:'1px solid #f7f7f7', wordBreak:'break-word' }}>{e.error_message}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
@@ -5355,7 +5420,26 @@ function CRMApp({ user, onLogout }) {
   const [showPlusSheet, setShowPlusSheet] = useState(false);
   const [mobileTab, setMobileTab] = useState(window.innerWidth < 768 ? 'reservations' : 'clients'); // 'clients' | 'reservations'
   const [showAddResa, setShowAddResa] = useState(false);
-  const [activeView, setActiveView] = useState('reservations'); // 'reservations' | 'clients' | 'communications'
+  const [activeView, setActiveView] = useState('reservations'); // 'reservations' | 'clients' | 'communications' | 'roue' | 'menu' | 'systeme'
+  const [healthStatus, setHealthStatus] = useState(null); // null | 'ok' | 'degraded' | 'down'
+  const [healthDetail, setHealthDetail] = useState('');
+
+  useEffect(() => {
+    let stop = false;
+    const check = () => {
+      fetch('/api/health')
+        .then(r => r.json())
+        .then(d => {
+          if (stop) return;
+          setHealthStatus(d.status || 'down');
+          setHealthDetail(Object.entries(d.components || {}).filter(([, c]) => c.status !== 'ok').map(([n, c]) => `${n}: ${c.detail || c.status}`).join('\n') || 'Tous les composants fonctionnent');
+        })
+        .catch(() => { if (!stop) { setHealthStatus('down'); setHealthDetail('API injoignable'); } });
+    };
+    check();
+    const iv = setInterval(check, 60000);
+    return () => { stop = true; clearInterval(iv); };
+  }, []);
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
   const [showConfirmQuitter, setShowConfirmQuitter] = useState(false);
   const [pendingFermer, setPendingFermer] = useState(null);
@@ -5729,6 +5813,12 @@ function CRMApp({ user, onLogout }) {
         );
       })}
       <div style={{ flex:1 }} />
+      {healthStatus && (
+        <button onClick={()=>setActiveView('systeme')} title={healthDetail} style={{ border:'none', background:'none', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:5, padding:'10px 8px', marginBottom:2 }}>
+          <span style={{ width:10, height:10, borderRadius:'50%', background: healthStatus==='ok' ? '#22c55e' : healthStatus==='degraded' ? '#f59e0b' : '#dc2626', boxShadow:`0 0 8px ${healthStatus==='ok' ? 'rgba(34,197,94,0.8)' : healthStatus==='degraded' ? 'rgba(245,158,11,0.8)' : 'rgba(220,38,38,0.9)'}` }} />
+          <span style={{ fontSize:9, fontWeight:600, color:'#555' }}>{healthStatus==='ok' ? 'Système OK' : healthStatus==='degraded' ? 'Dégradé' : 'Panne'}</span>
+        </button>
+      )}
       <button onClick={()=>setShowConfirmDeconnexion(true)} style={{ width:'100%', padding:'12px 8px', border:'none', background:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer', color:'#555' }}>
         <LogOut size={22} strokeWidth={1.8} />
         <span style={{ fontSize:10, fontWeight:600 }}>Déconnexion</span>
