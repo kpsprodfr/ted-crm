@@ -1119,6 +1119,11 @@
           const t     = Math.min((now - startTime) / duration, 1);
           const eased = easeOutQuint(t);
           const angle = startAngle + (targetAngle - startAngle) * eased;
+          // Commence à clignoter dès que la roue ralentit (t > 0.82)
+          if (t > 0.82) {
+            winSegmentIdx = targetSlot;
+            winGlowAlpha = Math.abs(Math.sin((t - 0.82) / 0.18 * Math.PI * 4)) * ((t - 0.82) / 0.18);
+          }
           drawWheel(angle);
           if (t < 1) { requestAnimationFrame(animate); return; }
           currentAngle = targetAngle;
