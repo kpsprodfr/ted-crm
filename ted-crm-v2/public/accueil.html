@@ -1142,37 +1142,49 @@
 
       if (btn) btn.textContent = 'Enregistrement…';
 
-      // ── Lookup ou INSERT dans clients ─────────────────────────────────────────
+      // ── Lookup, INSERT ou UPDATE dans clients (mail = colonne email dans clients) ──
       let clientId = null;
       try {
         const clientRes = await fetch(
-          `${SUPA_URL}/rest/v1/clients?or=(tel.eq.${encodeURIComponent(tel)},email.eq.${encodeURIComponent(email)})&select=id&limit=1`,
+          `${SUPA_URL}/rest/v1/clients?or=(tel.eq.${encodeURIComponent(tel)},mail.eq.${encodeURIComponent(email)})&select=id&limit=1`,
           { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
         );
-        if (clientRes.ok) {
-          const clients = await clientRes.json();
-          if (clients && clients.length > 0) {
-            clientId = clients[0].id;
+        if (!clientRes.ok) {
+          console.error('clients lookup error', clientRes.status, await clientRes.text());
+        } else {
+          const existingClients = await clientRes.json();
+          if (existingClients && existingClients.length > 0) {
+            // Client trouvé → UPDATE prenom, nom, genre
+            clientId = existingClients[0].id;
+            const upd = await fetch(`${SUPA_URL}/rest/v1/clients?id=eq.${clientId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json', apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, Prefer: 'return=minimal' },
+              body: JSON.stringify({ prenom, nom, genre: gender, updated_at: new Date().toISOString() })
+            });
+            if (!upd.ok) console.error('clients update error', upd.status, await upd.text());
           } else {
+            // Client inconnu → INSERT
             const insertRes = await fetch(`${SUPA_URL}/rest/v1/clients`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, Prefer: 'return=representation' },
-              body: JSON.stringify({ prenom, nom, tel, email, genre: gender, source: 'roue_jeux', created_at: new Date().toISOString() })
+              body: JSON.stringify({ prenom, nom, tel, tel_normalise: tel, mail: email, genre: gender, source: 'Grand Jeux du TED', created_at: new Date().toISOString() })
             });
-            if (insertRes.ok) {
+            if (!insertRes.ok) {
+              console.error('clients insert error', insertRes.status, await insertRes.text());
+            } else {
               const newClients = await insertRes.json();
               if (newClients && newClients.length > 0) clientId = newClients[0].id;
             }
           }
         }
-      } catch(e) {}
+      } catch(e) { console.error('clients block exception', e); }
 
       // ── Décrémente stock ──────────────────────────────────────────────────────
       if (!gainResult.stock_illimite && gainResult.id) await tryDecrementStock(gainResult.id);
 
       // ── INSERT roue_gains ─────────────────────────────────────────────────────
       try {
-        await fetch(`${SUPA_URL}/rest/v1/roue_gains`, {
+        const gainsRes = await fetch(`${SUPA_URL}/rest/v1/roue_gains`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, Prefer: 'return=minimal' },
           body: JSON.stringify({
@@ -1182,10 +1194,13 @@
             client_id: clientId || null,
             consent_marketing: consent,
             date_gain: new Date().toISOString(),
-            email1_envoye: false
+            email1_envoye: false,
+            recupere: false
           })
         });
-      } catch(e) {}
+        if (!gainsRes.ok) console.error('roue_gains insert error', gainsRes.status, await gainsRes.text());
+        else console.log('roue_gains insert OK, client_id=', clientId);
+      } catch(e) { console.error('roue_gains block exception', e); }
 
       // ── Notification ──────────────────────────────────────────────────────────
       try {
