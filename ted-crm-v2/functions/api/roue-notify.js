@@ -1,23 +1,32 @@
+// Endpoint legacy (plus aucun appelant dans le code) — conservé mais verrouillé :
+// JWT CRM requis, origine restreinte, rate limit, échappement HTML.
+import { guard, secureJson, verifyUser, escapeHtml, isValidEmail, isValidTelFR } from '../_utils.js';
+
 export async function onRequestPost(context) {
   const { env, request } = context;
+
+  const blocked = await guard(env, request, { limit: 10, bucket: 'roue-notify' });
+  if (blocked) return blocked;
+
+  const user = await verifyUser(env, request);
+  if (!user) return secureJson({ error: 'Non autorisé' }, { status: 401 });
+
   const apiKey = env.BREVO_API_KEY;
   const SUPA_URL = env.SUPABASE_URL || 'https://mwpfaytccypvdrgapptk.supabase.co';
   const SUPA_KEY = env.SUPABASE_ANON_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
 
-  const cors = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-  };
-
-  if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
-
   let body;
-  try { body = await request.json(); } catch { return Response.json({ error: 'JSON invalide' }, { status: 400, headers: cors }); }
+  try { body = await request.json(); } catch { return secureJson({ error: 'JSON invalide' }, { status: 400 }); }
 
   const { tel, email, prenom, recompense_nom, recompense_emoji, conditions, date_debut_validite } = body;
-  if (!tel || !email) return Response.json({ error: 'tel et email requis' }, { status: 400, headers: cors });
+  if (!tel || !email) return secureJson({ error: 'tel et email requis' }, { status: 400 });
+  if (!isValidEmail(email)) return secureJson({ error: 'email invalide' }, { status: 400 });
+  if (!isValidTelFR(tel)) return secureJson({ error: 'tel invalide' }, { status: 400 });
 
-  const prenomStr = prenom ? prenom.trim() : '';
+  const prenomStr = escapeHtml(prenom ? String(prenom).trim().slice(0, 50) : '');
+  const recompenseSafe = escapeHtml(recompense_nom || '');
+  const emojiSafe = escapeHtml(recompense_emoji || '');
+  const conditionsSafe = escapeHtml(conditions || '');
   const dateStr = date_debut_validite
     ? new Date(date_debut_validite).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
     : "dès maintenant";
@@ -67,14 +76,14 @@ export async function onRequestPost(context) {
         </td></tr>
         <!-- Body -->
         <tr><td style="padding:32px;">
-          <div style="text-align:center;font-size:48px;margin-bottom:16px;">${recompense_emoji || '🎉'}</div>
+          <div style="text-align:center;font-size:48px;margin-bottom:16px;">${emojiSafe || '🎉'}</div>
           <h1 style="color:#fff;font-size:22px;font-weight:800;text-align:center;margin:0 0 8px;">Félicitations${prenomStr ? ' ' + prenomStr : ''}&nbsp;!</h1>
           <p style="color:#999;font-size:14px;text-align:center;margin:0 0 24px;">Vous avez participé à la roue des cadeaux du TED.</p>
 
           <div style="background:#1a1a1a;border:2px solid #E8C547;border-radius:14px;padding:24px;text-align:center;margin-bottom:24px;">
             <div style="font-size:12px;font-weight:700;color:#E8C547;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;">Votre récompense</div>
-            <div style="font-size:26px;font-weight:900;color:#fff;">${recompense_emoji || ''} ${recompense_nom}</div>
-            ${conditions ? `<div style="font-size:13px;color:#888;margin-top:10px;">${conditions}</div>` : ''}
+            <div style="font-size:26px;font-weight:900;color:#fff;">${emojiSafe} ${recompenseSafe}</div>
+            ${conditionsSafe ? `<div style="font-size:13px;color:#888;margin-top:10px;">${conditionsSafe}</div>` : ''}
             <div style="font-size:13px;color:#E8C547;font-weight:700;margin-top:12px;">Valable ${dateStr}</div>
           </div>
 
@@ -102,7 +111,7 @@ export async function onRequestPost(context) {
         body: JSON.stringify({
           sender: { name: 'Le TED', email: 'com.astegal@gmail.com' },
           to: [{ email, name: prenomStr || 'Client' }],
-          subject: `🎉 ${prenomStr ? prenomStr + ', v' : 'V'}ous avez gagné ${recompense_emoji || ''} ${recompense_nom} !`,
+          subject: `🎉 ${prenomStr ? prenomStr + ', v' : 'V'}ous avez gagné ${recompense_emoji || ''} ${String(recompense_nom).slice(0,80)} !`,
           htmlContent: htmlEmail,
         }),
       });
@@ -110,5 +119,5 @@ export async function onRequestPost(context) {
     } catch (e) { results.email = { ok: false, error: e.message }; }
   }
 
-  return Response.json({ success: true, results }, { headers: cors });
+  return secureJson({ success: true, results });
 }

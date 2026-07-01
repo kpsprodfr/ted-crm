@@ -8,23 +8,23 @@
 //
 // Stockage : KV `BACKUPS` (namespace ted-crm-backups), clé backup:YYYY-MM-DD,
 // rétention 30 jours, checksum SHA-256, email récap à com.astegal@gmail.com.
-import { fetchT, getSupa, supaHeaders, sendBrevoEmail, sha256Hex, verifyUser, BACKUP_TABLES } from '../_utils.js';
+import { fetchT, getSupa, supaHeaders, sendBrevoEmail, sha256Hex, verifyUser, BACKUP_TABLES, secureJson } from '../_utils.js';
 
 const RETENTION = 30;
 
 export async function onRequest(context) {
   const { request, env } = context;
   if (request.method !== 'GET' && request.method !== 'POST') {
-    return Response.json({ error: 'Méthode non autorisée' }, { status: 405 });
+    return secureJson({ error: 'Méthode non autorisée' }, { status: 405 });
   }
 
   if (!env.BACKUPS) {
-    return Response.json({ ok: false, error: 'Binding KV "BACKUPS" absent — à ajouter dans Cloudflare Pages → Settings → Bindings (namespace ted-crm-backups). Voir MAINTENANCE.md.' }, { status: 500 });
+    return secureJson({ ok: false, error: 'Binding KV "BACKUPS" absent — à ajouter dans Cloudflare Pages → Settings → Bindings (namespace ted-crm-backups). Voir MAINTENANCE.md.' }, { status: 500 });
   }
 
   const { url, key, isService } = getSupa(env);
   if (!isService) {
-    return Response.json({ ok: false, error: 'SUPABASE_SERVICE_ROLE_KEY manquante — export impossible.' }, { status: 500 });
+    return secureJson({ ok: false, error: 'SUPABASE_SERVICE_ROLE_KEY manquante — export impossible.' }, { status: 500 });
   }
 
   const today = new Date().toISOString().split('T')[0];
@@ -33,7 +33,7 @@ export async function onRequest(context) {
   let force = false;
   if (request.method === 'POST') {
     const user = await verifyUser(env, request);
-    if (!user) return Response.json({ error: 'Non autorisé' }, { status: 401 });
+    if (!user) return secureJson({ error: 'Non autorisé' }, { status: 401 });
     force = true;
   }
 
@@ -42,7 +42,7 @@ export async function onRequest(context) {
     const existing = await env.BACKUPS.getWithMetadata(kvKey, { type: 'stream' });
     if (existing && existing.value) {
       try { await existing.value.cancel(); } catch { /* noop */ }
-      return Response.json({ ok: true, skipped: true, date: today, info: 'Backup du jour déjà présent' });
+      return secureJson({ ok: true, skipped: true, date: today, info: 'Backup du jour déjà présent' });
     }
   }
 
@@ -98,7 +98,7 @@ ${errors.length ? `<p style="color:#c00;font-family:Arial,sans-serif;">Erreurs :
 <p style="font-family:Arial,sans-serif;color:#888;font-size:12px;">Stocké dans Cloudflare KV (rétention 30 jours). Restauration : CRM → Système.</p>`,
   });
 
-  return Response.json({
+  return secureJson({
     ok: errors.length === 0,
     date: today,
     counts,

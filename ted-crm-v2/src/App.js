@@ -97,23 +97,27 @@ const inp = (err) => ({ width:"100%", height:44, border:`1.5px solid ${err?"#dc2
 const lbl = { display:"block", fontSize:12, fontWeight:600, color:"#444", marginBottom:5 };
 const fg = { marginBottom:14 };
 
+// ─── Auth CRM pour les endpoints protégés ────────────────────────────────────
+// Les Cloudflare Functions sensibles exigent le JWT Supabase de l'utilisateur.
+async function crmAuthHeaders() {
+  const { data: { session } } = await supabase.auth.getSession();
+  return { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` };
+}
+
 // ─── Brevo Email ─────────────────────────────────────────────────────────────
 async function sendBrevoEmail(toEmail, toName, subject, htmlContent) {
-  if (!toEmail) { console.warn('[sendBrevoEmail] Annulé : toEmail vide'); return; }
+  if (!toEmail) return { success: false };
   const body = { to: toEmail, toName, subject, html: htmlContent };
-  console.log('1. Envoi mail réservation à', toEmail);
-  console.log('2. Body envoyé', body);
   try {
     const res = await fetch('/send-email', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await crmAuthHeaders(),
       body: JSON.stringify(body)
     });
     const data = await res.json();
-    console.log('3. Réponse /send-email', { status: res.status, data });
     return { success: data.success };
   } catch(e) {
-    console.error('[sendBrevoEmail] exception:', e);
+    logError(e.message, 'sendBrevoEmail');
     return { success: false };
   }
 }
@@ -1009,6 +1013,10 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
   async function handleSave() {
     if (submitLockRef.current) return;
     if (!tel.trim()) { showToast('Téléphone requis', 'error'); return; }
+    // Même validation que les formulaires publics : formats tel FR / email
+    if (!/^(\+33|0)[1-9]\d{8}$/.test(tel.replace(/[\s.\-()]/g, ''))) { showToast('Numéro de téléphone invalide', 'error'); return; }
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) { showToast('Email invalide', 'error'); return; }
+    if (prenom.trim().length > 50 || nom.trim().length > 50) { showToast('Nom/prénom trop long (max 50 caractères)', 'error'); return; }
     if (!clientFound) {
       if (!genre) { showToast('Genre requis', 'error'); return; }
       if (genre !== 'Entreprise' && !prenom.trim()) { showToast('Prénom requis', 'error'); return; }
@@ -2181,7 +2189,12 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
     setLoading(false);
   }
 
+  const accepterLockRef = useRef(false);
   async function accepter(r) {
+    // Verrou anti double-clic : évite double update + double email de confirmation
+    if (accepterLockRef.current) return;
+    accepterLockRef.current = true;
+    setTimeout(() => { accepterLockRef.current = false; }, 3000);
     const { error } = await supabase.from('reservations').update({
       statut: 'confirmee', traited_at: new Date().toISOString(), traited_by: user?.email
     }).eq('id', r.id);
@@ -3808,7 +3821,7 @@ function RouePage({ showToast }) {
   async function sendEmail1Test() {
     if (!email1TestMail) return;
     try {
-      const res = await fetch('/api/roue-email', { method:'POST', headers:{ 'Content-Type':'application/json' },
+      const res = await fetch('/api/roue-email', { method:'POST', headers: await crmAuthHeaders(),
         body: JSON.stringify({ type:'email1', to_email:email1TestMail, to_prenom:'Test', to_nom:'TED', recompense:'Magnum de rosé', emoji:'🍾' }) });
       if (res.ok) { showToast('Email de test envoyé ✓'); setShowEmail1TestModal(false); setEmail1TestMail(''); }
       else showToast('❌ Erreur envoi email');
@@ -5588,7 +5601,7 @@ function CRMApp({ user, onLogout }) {
         setResaAttenteCount(prev => { const n = prev + 1; updateBadge(n); return n; });
         await fetch('/send-push-onesignal', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: await crmAuthHeaders(),
           body: JSON.stringify({
             title: 'Nouvelle réservation !',
             body: `${nom} · ${date} · ${payload.new.heure || ''} · ${payload.new.nb_personnes} pers.`
@@ -5996,7 +6009,7 @@ function CRMApp({ user, onLogout }) {
       let sent = 0;
       for (const client of selectedClients) {
         try {
-          const res = await fetch('/send-email', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ to:client.mail, toName:`${client.prenom||''} ${client.nom||''}`.trim(), subject:commObjet, html:buildHtml(client) }) });
+          const res = await fetch('/send-email', { method:'POST', headers: await crmAuthHeaders(), body:JSON.stringify({ to:client.mail, toName:`${client.prenom||''} ${client.nom||''}`.trim(), subject:commObjet, html:buildHtml(client) }) });
           const text = await res.text(); let data = {}; try { data = JSON.parse(text); } catch(_) {}
           if (data.success) sent++;
         } catch(e) { console.error('[Comm] Erreur réseau pour', client.mail, e); }
@@ -6018,8 +6031,6 @@ function CRMApp({ user, onLogout }) {
     const containsEmoji = (str) => /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/u.test(str);
     const smsLimit = containsEmoji(smsMessage) ? 70 : 160;
     const doSendSms = async () => {
-      const BREVO_KEY = process.env.REACT_APP_BREVO_API_KEY;
-
       let destinatairesFinaux = [...smsSelected];
       setSendingModal(null); // reset au cas où
       try {
@@ -6045,10 +6056,10 @@ function CRMApp({ user, onLogout }) {
 
       setSendingModal({ type:'sms', total: destinatairesMobiles.length, done: false, successCount: 0 });
       let success = 0, errors = 0;
+      const smsHeaders = await crmAuthHeaders();
       for (const id of destinatairesMobiles) {
         const client = clients.find(c => c.id === id);
         if (!client?.tel) { errors++; continue; }
-        const tel = client.tel.replace(/[\s.\-()]/g, '').replace(/^0/, '+33');
         const msg = smsMessage
           .replace(/{prenom}/g, client.prenom || client.entreprise || '')
           .replace(/{nom}/g, client.nom || '')
@@ -6056,17 +6067,16 @@ function CRMApp({ user, onLogout }) {
           .replace(/{entreprise}/g, client.entreprise || '')
           .replace(/{lien_resa}/g, 'https://ted-crm.pages.dev/reserver.html');
         try {
-          const res = await fetch('https://api.brevo.com/v3/transactionalSMS/sms', {
+          // Envoi via la function protégée (la clé Brevo ne quitte jamais le serveur)
+          const res = await fetch('/send-sms', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'api-key': BREVO_KEY },
-            body: JSON.stringify({ sender: 'LE TED', recipient: tel, content: msg, type: 'marketing' })
+            headers: smsHeaders,
+            body: JSON.stringify({ to: client.tel, message: msg, type: 'marketing' })
           });
-          const data = await res.json();
-          console.log('Status Brevo:', res.status);
-          console.log('Réponse Brevo complète:', JSON.stringify(data));
-          if (!res.ok) { console.error('ERREUR Brevo:', data.message || data.error || JSON.stringify(data)); errors++; }
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok || !data.success) { logError(`SMS ${res.status}: ${data.error || ''}`, 'doSendSms'); errors++; }
           else { success++; }
-        } catch(err) { errors++; console.error('Fetch erreur:', err); }
+        } catch(err) { errors++; logError(err.message, 'doSendSms'); }
         await new Promise(r => setTimeout(r, 100));
       }
 

@@ -1526,14 +1526,19 @@
       return v;
     }
 
+    // Sanitisation : suppression de tout HTML/script + longueur bornée
+    function sanitize(v, max) {
+      return (v || '').replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim().slice(0, max || 50);
+    }
+
     // ── Confirmer formulaire ───────────────────────────────────────────────────
     async function confirmer() {
       clearFieldErrors();
 
-      const prenom  = (document.getElementById('roue-prenom').value || '').trim();
-      const nom     = (document.getElementById('roue-nom').value    || '').trim();
+      const prenom  = sanitize(document.getElementById('roue-prenom').value, 50);
+      const nom     = sanitize(document.getElementById('roue-nom').value, 50);
       const tel     = normaliseTel(document.getElementById('roue-tel').value);
-      const email   = (document.getElementById('roue-email').value  || '').trim().toLowerCase();
+      const email   = sanitize(document.getElementById('roue-email').value, 254).toLowerCase();
       const consent = document.getElementById('roue-consent').checked;
 
       // Validation
@@ -1547,8 +1552,8 @@
       if (!tel) {
         setFieldError('roue-tel', 'roue-tel-error', 'Ce champ est obligatoire');
         hasError = true;
-      } else if (!/^0[0-9]{9}$/.test(tel)) {
-        setFieldError('roue-tel', 'roue-tel-error', 'Numéro invalide (ex: 06 12 34 56 78)');
+      } else if (!/^0[67][0-9]{8}$/.test(tel)) {
+        setFieldError('roue-tel', 'roue-tel-error', 'Numéro mobile invalide (ex: 06 12 34 56 78)');
         hasError = true;
       }
       if (!email) {

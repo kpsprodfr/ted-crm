@@ -4,7 +4,7 @@
 //
 // Réponse publique : statuts et latences uniquement (jamais de données).
 // Statuts : ok | degraded | down.
-import { fetchT, getSupa, supaHeaders, sendBrevoEmail, queueEmail } from '../_utils.js';
+import { fetchT, getSupa, supaHeaders, sendBrevoEmail, queueEmail, secureJson } from '../_utils.js';
 
 const CRITICAL_TABLES = ['clients', 'reservations', 'roue_gains', 'parametres'];
 
@@ -108,5 +108,5 @@ export async function onRequestGet(context) {
     }
   }
 
-  return Response.json(body, { status: global === 'down' ? 503 : 200 });
+  return secureJson(body, { status: global === 'down' ? 503 : 200 });
 }

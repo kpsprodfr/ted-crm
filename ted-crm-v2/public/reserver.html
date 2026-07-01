@@ -442,7 +442,18 @@ function renderStep3() {
   `;
 }
 
+// Sanitisation : suppression de tout HTML + longueur bornée
+function sanitizeField(v, max) {
+  return (v || '').replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim().slice(0, max || 50);
+}
+
 function validateStep3() {
+  // Nettoyage systématique avant validation (anti-injection)
+  state.prenom = sanitizeField(state.prenom, 50);
+  state.nom = sanitizeField(state.nom, 50);
+  state.societe = sanitizeField(state.societe, 80);
+  state.email = sanitizeField(state.email, 254);
+  state.commentaire = sanitizeField(state.commentaire, 500);
   const e = {};
   if (!state.genre) e.genre = 'Veuillez sélectionner une option';
   if (state.genre === 'Entreprise' && !state.societe.trim()) e.societe = "Nom de l'entreprise obligatoire";
@@ -450,7 +461,7 @@ function validateStep3() {
   if (!state.nom.trim()) e.nom = 'Nom obligatoire';
   const tel = normalizeTel(state.tel);
   if (!tel || !/^0[0-9]{9}$/.test(tel)) e.tel = 'Numéro invalide. Formats acceptés : 0612345678, +33612345678, +336…';
-  if (!state.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email)) e.email = 'Email invalide';
+  if (!state.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(state.email)) e.email = 'Email invalide';
   if (!state.rgpd) e.rgpd = 'Vous devez accepter la politique de confidentialité';
   step3Errors = e;
   if (Object.keys(e).length > 0) { renderStep3(); return; }

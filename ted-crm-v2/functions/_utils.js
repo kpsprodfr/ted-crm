@@ -58,6 +58,76 @@ export async function queueEmail(env, { to_email, to_name, subject, html, error_
   }
 }
 
+// ── Headers de sécurité sur toutes les réponses ──────────────────────────────
+export const SECURITY_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+  'Content-Security-Policy': "default-src 'none'",
+  'Referrer-Policy': 'no-referrer',
+};
+
+export function secureJson(data, init = {}) {
+  return Response.json(data, { ...init, headers: { ...SECURITY_HEADERS, ...(init.headers || {}) } });
+}
+
+// ── Vérification d'origine ───────────────────────────────────────────────────
+// Les POST des navigateurs portent toujours un header Origin : on n'accepte que
+// le site (+ previews Pages et localhost pour le dev). Les GET server-to-server
+// (pg_cron) n'ont pas d'Origin → autorisés.
+export function checkOrigin(request) {
+  const src = request.headers.get('Origin') || request.headers.get('Referer') || '';
+  if (!src) return request.method === 'GET' || request.method === 'HEAD';
+  try {
+    const h = new URL(src).hostname;
+    return h === 'ted-crm.pages.dev' || h.endsWith('.ted-crm.pages.dev') || h === 'localhost' || h === '127.0.0.1';
+  } catch {
+    return false;
+  }
+}
+
+// ── Rate limiting simple : 10 req/min/IP via KV ──────────────────────────────
+// Approximatif (KV est à cohérence éventuelle) mais suffisant pour stopper les abus.
+// Sans binding KV : pas de rate limit (dégradé, signalé par /api/health).
+export async function rateLimit(env, request, { limit = 10, windowSec = 60, bucket = 'fn' } = {}) {
+  if (!env.BACKUPS) return true;
+  try {
+    const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+    const windowId = Math.floor(Date.now() / (windowSec * 1000));
+    const kvKey = `rl:${bucket}:${ip}:${windowId}`;
+    const current = parseInt((await env.BACKUPS.get(kvKey)) || '0', 10);
+    if (current >= limit) return false;
+    await env.BACKUPS.put(kvKey, String(current + 1), { expirationTtl: windowSec * 2 });
+    return true;
+  } catch {
+    return true;
+  }
+}
+
+// Garde standard pour les endpoints exposés : origine + rate limit.
+// Retourne une Response d'erreur, ou null si tout est OK.
+export async function guard(env, request, { limit = 10, bucket = 'fn' } = {}) {
+  if (!checkOrigin(request)) return secureJson({ error: 'Origine non autorisée' }, { status: 403 });
+  if (!(await rateLimit(env, request, { limit, bucket }))) {
+    return secureJson({ error: 'Trop de requêtes, réessayez dans une minute' }, { status: 429 });
+  }
+  return null;
+}
+
+// ── Échappement HTML (anti-injection dans les emails) ────────────────────────
+export function escapeHtml(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// ── Validations serveur (jamais confiance au client) ─────────────────────────
+export const isValidEmail = (v) => typeof v === 'string' && v.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+export const isValidTelFR = (v) => typeof v === 'string' && /^(\+33|0)[1-9]\d{8}$/.test(String(v).replace(/[\s.\-()]/g, ''));
+
 // ── Vérification d'un utilisateur CRM connecté (JWT Supabase Auth) ──────────
 // Les actions sensibles (backup manuel, restauration) exigent un JWT valide
 // d'un utilisateur du CRM : Authorization: Bearer <access_token>.

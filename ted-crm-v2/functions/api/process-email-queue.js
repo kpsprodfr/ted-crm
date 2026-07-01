@@ -7,7 +7,7 @@
 //  - la réponse ne contient que des compteurs, jamais de données ;
 //  - nécessite SUPABASE_SERVICE_ROLE_KEY côté Cloudflare pour lire la file
 //    (RLS : anon = écriture seule) — sinon no-op explicite.
-import { fetchT, sendBrevoEmail, supaHeaders, getSupa } from '../_utils.js';
+import { fetchT, sendBrevoEmail, supaHeaders, getSupa, secureJson } from '../_utils.js';
 
 const MAX_ATTEMPTS = 5;
 const BATCH = 20;
@@ -17,7 +17,7 @@ export async function onRequest(context) {
   const { env } = context;
   const { url, key, isService } = getSupa(env);
   if (!isService) {
-    return Response.json({
+    return secureJson({
       processed: 0,
       error: 'SUPABASE_SERVICE_ROLE_KEY manquante dans Cloudflare — impossible de lire la file (RLS). Voir MAINTENANCE.md.',
     });
@@ -45,9 +45,9 @@ export async function onRequest(context) {
     if (!res.ok) throw new Error(`Supabase ${res.status}`);
     candidates = await res.json();
   } catch (e) {
-    return Response.json({ processed: 0, error: `Lecture file impossible: ${e.message}` }, { status: 502 });
+    return secureJson({ processed: 0, error: `Lecture file impossible: ${e.message}` }, { status: 502 });
   }
-  if (!candidates.length) return Response.json({ ok: true, pending: 0, sent: 0, retried: 0, failed_permanently: 0 });
+  if (!candidates.length) return secureJson({ ok: true, pending: 0, sent: 0, retried: 0, failed_permanently: 0 });
 
   // 2. Claim atomique : seules les lignes ENCORE pending sont flippées et retournées.
   //    Un appel concurrent obtient [] et s'arrête → aucun double envoi possible.
@@ -65,7 +65,7 @@ export async function onRequest(context) {
     if (!res.ok) throw new Error(`Supabase ${res.status}`);
     claimed = await res.json();
   } catch (e) {
-    return Response.json({ processed: 0, error: `Claim impossible: ${e.message}` }, { status: 502 });
+    return secureJson({ processed: 0, error: `Claim impossible: ${e.message}` }, { status: 502 });
   }
 
   const report = { pending: claimed.length, sent: 0, retried: 0, failed_permanently: 0 };
@@ -103,5 +103,5 @@ export async function onRequest(context) {
     }
   }
 
-  return Response.json({ ok: true, ...report });
+  return secureJson({ ok: true, ...report });
 }

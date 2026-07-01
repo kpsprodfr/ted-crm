@@ -1,14 +1,46 @@
-import { fetchT, sendBrevoEmail, queueEmail, getSupa, supaHeaders } from '../_utils.js';
+import { fetchT, sendBrevoEmail, queueEmail, getSupa, supaHeaders, guard, secureJson, verifyUser, escapeHtml, isValidEmail } from '../_utils.js';
 
 export async function onRequestPost(context) {
   const { env, request } = context;
-  let body;
-  try { body = await request.json(); } catch { return new Response(JSON.stringify({ error: 'JSON invalide' }), { status: 400 }); }
-  const { type, to_email, to_prenom, to_nom, recompense, emoji, date_venue, heure_venue, gain_id } = body || {};
 
-  if (!to_email) return new Response(JSON.stringify({ error: 'to_email requis' }), { status: 400 });
+  const blocked = await guard(env, request, { limit: 10, bucket: 'roue-email' });
+  if (blocked) return blocked;
+
+  let body;
+  try { body = await request.json(); } catch { return secureJson({ error: 'JSON invalide' }, { status: 400 }); }
+  let { type, to_email, to_prenom, to_nom, recompense, emoji, date_venue, heure_venue, gain_id } = body || {};
+
+  if (!to_email || !isValidEmail(to_email)) return secureJson({ error: 'to_email invalide' }, { status: 400 });
 
   const { url: SUPA_URL, key: SUPA_KEY } = getSupa(env);
+
+  // Appel non authentifié (formulaire public de la roue) : le payload ne fait
+  // pas foi. Le gain en base est LA source (prénom, nom, récompense), l'email
+  // doit correspondre, et un email déjà envoyé n'est jamais renvoyé.
+  const user = await verifyUser(env, request);
+  if (!user) {
+    if (!gain_id || !/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(String(gain_id))) {
+      return secureJson({ error: 'gain_id requis' }, { status: 400 });
+    }
+    let gain = null;
+    try {
+      const gRes = await fetchT(
+        `${SUPA_URL}/rest/v1/roue_gains?id=eq.${gain_id}&select=id,email,prenom,nom,email1_envoye,email2_envoye,roue_recompenses(nom,emoji)&limit=1`,
+        { headers: supaHeaders(SUPA_KEY) }
+      );
+      gain = gRes.ok ? (await gRes.json())[0] : null;
+    } catch { /* traité ci-dessous */ }
+    if (!gain) return secureJson({ error: 'Gain introuvable' }, { status: 404 });
+    if ((gain.email || '').toLowerCase() !== to_email.toLowerCase()) {
+      return secureJson({ error: 'Email ne correspond pas au gain' }, { status: 403 });
+    }
+    const dejaEnvoye = type === 'email1' ? gain.email1_envoye : gain.email2_envoye;
+    if (dejaEnvoye) return secureJson({ ok: true, already_sent: true });
+    to_prenom = gain.prenom || '';
+    to_nom = gain.nom || '';
+    recompense = (gain.roue_recompenses && gain.roue_recompenses.nom) || recompense || '';
+    emoji = (gain.roue_recompenses && gain.roue_recompenses.emoji) || emoji || '';
+  }
 
   const objetCle = type === 'email1' ? 'roue_email1_objet' : 'roue_email2_objet';
 
@@ -51,7 +83,14 @@ export async function onRequestPost(context) {
 
   objet = replace(objet);
 
-  const preheader = `Félicitations ${to_prenom || ''}, votre récompense vous attend au TED !`;
+  // Échappement anti-injection HTML : tout ce qui vient de l'extérieur
+  const safePrenom     = escapeHtml(to_prenom || '');
+  const safeNom        = escapeHtml(to_nom || '');
+  const safeRecompense = escapeHtml(recompense || '');
+  const safeEmoji      = escapeHtml(emoji || '');
+  const safeMessage    = escapeHtml(messagePerso).replace(/\n/g, '<br>');
+
+  const preheader = `Félicitations ${safePrenom}, votre récompense vous attend au TED !`;
   const serialCode = 'TED-' + Math.random().toString(36).slice(2, 7).toUpperCase();
   const logoUrl    = 'https://ted-crm.pages.dev/logo-Le-TED.png';
   const hasMessage = messagePerso.trim().length > 0;
@@ -98,7 +137,7 @@ export async function onRequestPost(context) {
     <!-- ══ WINNER HERO ══ -->
     <tr><td bgcolor="#111111" style="background-color:#111111;padding:48px 40px 40px;text-align:center;">
       <p style="margin:0 0 4px;font-size:10px;font-weight:800;letter-spacing:5px;color:#F0A830;text-transform:uppercase;">&#10022; Vous avez gagné &#10022;</p>
-      <h1 style="margin:14px 0 8px;font-size:36px;font-weight:700;color:#ffffff;line-height:1.15;">${to_prenom || ''} ${to_nom || ''}</h1>
+      <h1 style="margin:14px 0 8px;font-size:36px;font-weight:700;color:#ffffff;line-height:1.15;">${safePrenom} ${safeNom}</h1>
       <p style="margin:0 0 40px;font-size:13px;color:rgba(255,255,255,0.45);letter-spacing:0.5px;">vous repart avec une récompense exclusive</p>
 
       <!-- ══ TICKET BON GAGNANT ══ -->
@@ -126,9 +165,9 @@ export async function onRequestPost(context) {
         <!-- Body -->
         <tr><td bgcolor="#111111" style="background-color:#111111;padding:36px 28px 28px;text-align:center;">
           <p style="margin:0 0 16px;font-size:9px;letter-spacing:7px;color:rgba(240,168,48,0.4);">&#10022; &nbsp; &#10022; &nbsp; &#10022;</p>
-          <p style="margin:0 0 16px;font-size:56px;line-height:1;">${emoji || '🎁'}</p>
+          <p style="margin:0 0 16px;font-size:56px;line-height:1;">${safeEmoji || '🎁'}</p>
           <p style="margin:0 0 10px;font-size:9px;font-weight:600;letter-spacing:4px;color:rgba(240,168,48,0.5);text-transform:uppercase;">Votre récompense</p>
-          <p style="margin:0 0 24px;font-size:24px;font-weight:700;color:#ffffff;line-height:1.2;">${recompense || ''}</p>
+          <p style="margin:0 0 24px;font-size:24px;font-weight:700;color:#ffffff;line-height:1.2;">${safeRecompense}</p>
 
           <!-- Valable pill -->
           <table cellpadding="0" cellspacing="0" border="0" align="center" style="margin-bottom:20px;">
@@ -170,7 +209,7 @@ export async function onRequestPost(context) {
         <tr>
           <td width="3" style="background:rgba(240,168,48,0.4);border-radius:2px;">&nbsp;</td>
           <td style="padding:16px 20px;background:rgba(255,255,255,0.03);border-radius:0 6px 6px 0;text-align:left;">
-            <p style="margin:0 0 8px;font-style:italic;font-size:16px;color:rgba(255,255,255,0.6);line-height:1.7;">&laquo;&nbsp;${messagePerso.replace(/\n/g, '<br>')}&nbsp;&raquo;</p>
+            <p style="margin:0 0 8px;font-style:italic;font-size:16px;color:rgba(255,255,255,0.6);line-height:1.7;">&laquo;&nbsp;${safeMessage}&nbsp;&raquo;</p>
             <p style="margin:0;font-size:10px;letter-spacing:2.5px;color:rgba(240,168,48,0.5);text-transform:uppercase;">L'équipe du TED</p>
           </td>
         </tr>
