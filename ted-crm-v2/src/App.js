@@ -4473,11 +4473,6 @@ function MenuPage({ showToast }) {
             {/* Encart 2 — Suggestion du chef (compact) */}
             <div style={{ background:'#fff', borderRadius:12, border:`1.5px solid ${suggestionJour?.actif ? '#E8C547' : '#eee'}`, overflow:'hidden', transition:'border-color 0.2s' }}>
               <div style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 14px' }}>
-                <MenuToggle value={!!suggestionJour?.actif} onChange={async () => {
-                  const v = !suggestionJour?.actif;
-                  setSuggestionJour(p => p ? ({...p, actif:v}) : p);
-                  if (suggestionJour) await supabase.from('menu_plat_jour').update({ actif:v, updated_at:new Date().toISOString() }).eq('id', suggestionJour.id);
-                }} />
                 <span style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:1, whiteSpace:'nowrap' }}>👨‍🍳 Suggestion du chef</span>
                 <input
                   value={suggestionJour?.nom || ''}
@@ -4506,6 +4501,11 @@ function MenuPage({ showToast }) {
                   onFocus={e => e.target.style.borderColor='#E8C547'}
                   onBlurCapture={e => e.target.style.borderColor='#eee'}
                 />
+                <MenuToggle value={!!suggestionJour?.actif} onChange={async () => {
+                  const v = !suggestionJour?.actif;
+                  setSuggestionJour(p => p ? ({...p, actif:v}) : p);
+                  if (suggestionJour) await supabase.from('menu_plat_jour').update({ actif:v, updated_at:new Date().toISOString() }).eq('id', suggestionJour.id);
+                }} />
               </div>
             </div>
 
