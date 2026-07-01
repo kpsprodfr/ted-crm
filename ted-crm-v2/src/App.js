@@ -708,7 +708,7 @@ function ImportModal({ onImport, onCancel, existingClients }) {
           {dups.length > 0 && <div style={{ background:"#fffbeb", border:"1.5px solid #fbbf24", borderRadius:8, padding:"10px 14px", fontSize:13, color:"#92400e", marginBottom:12 }}>⚠ {dups.length} doublon(s) potentiel(s) détecté(s).</div>}
           <p style={{ fontWeight:600, marginBottom:8 }}>{parsed.length} client(s) détecté(s)</p>
           <div style={{ maxHeight:180, overflowY:"auto", fontSize:12, border:"1px solid #eee", borderRadius:6, padding:"8px" }}>
-            {parsed.map((c,i) => <div key={i} style={{ padding:"3px 0", borderBottom:"1px solid #f0f0f0" }}><span style={{fontWeight:600}}>{c.nom} {c.prenom}</span><span style={{color:"#999",marginLeft:8}}>{c.tel} {c.mail}</span></div>)}
+            {parsed.map((c,i) => <div key={i} style={{ padding:"3px 0", borderBottom:"1px solid #f0f0f0" }}><span style={{fontWeight:600}}>{c.prenom} {c.nom}</span><span style={{color:"#999",marginLeft:8}}>{c.tel} {c.mail}</span></div>)}
           </div>
           <p style={{ fontSize:11, color:"#999", marginTop:8 }}>Les clients existants ne seront pas écrasés.</p>
         </>
@@ -750,7 +750,7 @@ function CorbeilleModal({ onClose, showToast }) {
   }
 
   function nomClient(c) {
-    return c.genre === "Entreprise" ? (c.entreprise || c.nom) : `${c.nom || ""} ${c.prenom || ""}`.trim();
+    return c.genre === "Entreprise" ? (c.entreprise || c.nom) : `${c.prenom || ""} ${c.nom || ""}`.trim();
   }
 
   return (
