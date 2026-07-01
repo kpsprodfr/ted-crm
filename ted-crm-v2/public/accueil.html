@@ -757,6 +757,7 @@
     let winGlowAlpha  = 0;
     let maxTries     = 3;
     let triesLeft    = 3;
+    let rouCloseDelay = 5;
     let gender       = 'M.';
     let idleTimer    = null;
 
@@ -779,13 +780,16 @@
 
     // ── Chargement Supabase ────────────────────────────────────────────────────
     try {
-      const [resParam, resEssais, resRec] = await Promise.all([
+      const [resParam, resEssais, resRec, resCountdown] = await Promise.all([
         fetch(`${SUPA_URL}/rest/v1/roue_config?cle=eq.roue_active&select=valeur`, { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }),
         fetch(`${SUPA_URL}/rest/v1/roue_config?cle=eq.roue_essais_max&select=valeur`, { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }),
         fetch(`${SUPA_URL}/rest/v1/roue_recompenses?actif=eq.true&order=ordre`, { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }),
+        fetch(`${SUPA_URL}/rest/v1/roue_config?cle=eq.roue_countdown&select=valeur`, { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }),
       ]);
       const paramData = resParam.ok ? await resParam.json() : [];
       const essaisData = resEssais.ok ? await resEssais.json() : [];
+      const countdownData = resCountdown.ok ? await resCountdown.json() : [];
+      if (countdownData[0]?.valeur) rouCloseDelay = parseInt(countdownData[0].valeur) || 5;
       maxTries = parseInt(essaisData[0]?.valeur) || 3;
       const essaisUtilises = parseInt(localStorage.getItem('ted_roue_essais_utilises') || '0');
       triesLeft = Math.max(0, maxTries - essaisUtilises);
@@ -1461,23 +1465,32 @@
       // Countdown fermeture
       const closeBtn = document.getElementById('roue-close');
       const closeLabel = document.getElementById('roue-close-label');
-      let seconds = 5;
-      const cInterval = setInterval(() => {
-        seconds--;
-        if (seconds > 0) {
-          if (closeLabel) closeLabel.textContent = seconds;
-        } else {
-          clearInterval(cInterval);
-          if (closeLabel) closeLabel.textContent = '✕';
-          closeBtn.disabled = false;
-          closeBtn.style.color  = 'rgba(0,0,0,0.6)';
-          closeBtn.style.cursor = 'pointer';
-          closeBtn.style.fontSize = '14px';
-          closeBtn.style.fontWeight = 'normal';
-          const svgWrap = document.getElementById('roue-countdown-svg');
-          if (svgWrap) svgWrap.style.display = 'none';
-        }
-      }, 1000);
+      const unlockClose = () => {
+        if (closeLabel) closeLabel.textContent = '✕';
+        closeBtn.disabled = false;
+        closeBtn.style.color  = 'rgba(0,0,0,0.6)';
+        closeBtn.style.cursor = 'pointer';
+        closeBtn.style.fontSize = '14px';
+        closeBtn.style.fontWeight = 'normal';
+        const svgWrap = document.getElementById('roue-countdown-svg');
+        if (svgWrap) svgWrap.style.display = 'none';
+      };
+      let seconds = rouCloseDelay;
+      if (seconds <= 0) {
+        unlockClose();
+        var cInterval = null;
+      } else {
+        if (closeLabel) closeLabel.textContent = seconds;
+        var cInterval = setInterval(() => {
+          seconds--;
+          if (seconds > 0) {
+            if (closeLabel) closeLabel.textContent = seconds;
+          } else {
+            clearInterval(cInterval);
+            unlockClose();
+          }
+        }, 1000);
+      }
 
       closeBtn.onclick = () => { if (!closeBtn.disabled) { clearInterval(cInterval); closeRoue(); } };
       ov.addEventListener('click', e => {
