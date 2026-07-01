@@ -474,6 +474,18 @@
         <div id="popup-dots"></div>
       </div>
     </div>
+    <!-- Carte adjacente pour le swipe carousel -->
+    <div id="popup-card2" style="display:none;position:absolute;pointer-events:none;background:linear-gradient(160deg,#1c1c1c 0%,#111 100%);border:1px solid #2a2a2a;border-radius:20px;overflow:hidden;will-change:transform;">
+      <div id="popup2-flyer" style="display:none;width:100%;overflow:hidden;border-radius:20px 20px 0 0;"><img id="popup2-flyer-img" src="" alt="" style="width:100%;height:auto;display:block;" /></div>
+      <div style="padding:16px 16px 14px;">
+        <div id="popup2-jour" style="font-size:20px;font-weight:800;color:#E8C547;letter-spacing:1px;text-transform:uppercase;line-height:1;"></div>
+        <div id="popup2-nom" style="font-size:13px;font-weight:600;color:#fff;margin-top:4px;"></div>
+        <div id="popup2-dj" style="font-size:11px;color:#c9a93a;margin-top:3px;font-style:italic;"></div>
+        <div id="popup2-desc" style="font-size:11px;color:#999;margin-top:7px;line-height:1.5;"></div>
+        <div id="popup2-horaire" style="font-size:10px;color:#555;margin-top:8px;letter-spacing:0.3px;"></div>
+        <div style="display:block;width:100%;margin-top:14px;padding:16px;border-radius:14px;border:none;background:#E8C547;color:#111;font-size:15px;font-weight:700;text-align:center;">Réserver une table</div>
+      </div>
+    </div>
   </div>
 
 <script>
@@ -636,39 +648,73 @@
     }
   }
 
-  function navigatePopup(direction) {
-    const outX   = direction === 'left' ? '-102%' : '102%';
-    const inX    = direction === 'left' ?  '102%' : '-102%';
-    const newIdx = direction === 'left' ? currentPopupIdx + 1 : currentPopupIdx - 1;
-    if (newIdx < 0 || newIdx >= soireesData.length) {
-      card.style.transition = 'transform 200ms cubic-bezier(0.34,1.4,0.64,1)';
-      card.style.transform  = '';
-      return;
-    }
-    card.style.transition = 'transform 140ms cubic-bezier(0.4,0,1,1)';
-    card.style.transform  = `translateX(${outX})`;
-    setTimeout(() => {
-      currentPopupIdx = newIdx;
-      fillCard(soireesData[newIdx]);
-      card.style.transition = 'none';
-      card.style.transform  = `translateX(${inX})`;
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        card.style.transition = 'transform 160ms cubic-bezier(0.25,0.46,0.45,0.94)';
-        card.style.transform  = '';
-      }));
-    }, 140);
+  // ── Swipe carousel (deux cartes côte à côte) ──────────────────────────────
+  const card  = document.getElementById('popup-card');
+  const card2 = document.getElementById('popup-card2');
+  let tsX = 0, tsY = 0, tCurX = 0, swipeActive = false, swipeLocked = false, swipeDir = null;
+
+  function fillCard2(s) {
+    document.getElementById('popup2-jour').textContent = s.jour || '';
+    document.getElementById('popup2-nom').textContent  = tItem(s, 'nom');
+    const dj = document.getElementById('popup2-dj');
+    dj.textContent = s.dj ? `♪ ${s.dj}` : ''; dj.style.display = s.dj ? '' : 'none';
+    const desc = document.getElementById('popup2-desc');
+    const dt = tItem(s, 'description');
+    desc.textContent = dt; desc.style.display = dt ? '' : 'none';
+    document.getElementById('popup2-horaire').textContent = s.horaire ? `À partir de ${s.horaire}` : '';
+    const fl = document.getElementById('popup2-flyer'), fi = document.getElementById('popup2-flyer-img');
+    if (s.image_url) { fi.src = s.image_url; fl.style.display = 'block'; }
+    else             { fl.style.display = 'none'; fi.src = ''; }
   }
 
-  // ── Swipe touch ────────────────────────────────────────────────────────────
-  let tsX = 0, tsY = 0, tCurX = 0, swipeActive = false, swipeLocked = false;
-  const card = document.getElementById('popup-card');
+  function positionCard2(direction) {
+    const rect = card.getBoundingClientRect();
+    const gap  = 16;
+    card2.style.width  = rect.width  + 'px';
+    card2.style.top    = rect.top    + 'px';
+    card2.style.height = rect.height + 'px';
+    if (direction === 'left') {
+      card2.style.left = (rect.right + gap) + 'px';
+    } else {
+      card2.style.left = (rect.left - rect.width - gap) + 'px';
+    }
+    card2.style.transform = 'translateX(0)';
+    card2.style.transition = 'none';
+    card2.style.display = '';
+  }
+
+  function commitNavigate(direction, dx) {
+    const step = direction === 'left'
+      ? -(card.offsetWidth + 16)
+      :  (card.offsetWidth + 16);
+    const dur = Math.max(80, Math.min(180, Math.abs(step - dx) / 3));
+    card.style.transition  = `transform ${dur}ms ease-out`;
+    card2.style.transition = `transform ${dur}ms ease-out`;
+    card.style.transform   = `translateX(${step}px)`;
+    card2.style.transform  = `translateX(${step}px)`;
+    setTimeout(() => {
+      currentPopupIdx += direction === 'left' ? 1 : -1;
+      fillCard(soireesData[currentPopupIdx]);
+      card.style.transition  = 'none';
+      card.style.transform   = '';
+      card2.style.transition = 'none';
+      card2.style.display    = 'none';
+      card2.style.transform  = '';
+    }, dur);
+  }
+
+  function navigatePopup(direction) {
+    const newIdx = direction === 'left' ? currentPopupIdx + 1 : currentPopupIdx - 1;
+    if (newIdx < 0 || newIdx >= soireesData.length) return;
+    fillCard2(soireesData[newIdx]);
+    positionCard2(direction);
+    commitNavigate(direction, 0);
+  }
 
   overlay.addEventListener('touchstart', e => {
-    tsX = e.touches[0].clientX;
+    tsX = tCurX = e.touches[0].clientX;
     tsY = e.touches[0].clientY;
-    tCurX = tsX;
-    swipeActive = true;
-    swipeLocked = false;
+    swipeActive = true; swipeLocked = false; swipeDir = null;
     card.style.transition = 'none';
   }, { passive: true });
 
@@ -677,26 +723,37 @@
     const dx = e.touches[0].clientX - tsX;
     const dy = e.touches[0].clientY - tsY;
     tCurX = e.touches[0].clientX;
-    // Si mouvement principalement vertical, on désactive le swipe horizontal
-    if (!swipeLocked && Math.abs(dy) > Math.abs(dx) + 6) { swipeActive = false; card.style.transform = ''; return; }
+    if (!swipeLocked && Math.abs(dy) > Math.abs(dx) + 8) { swipeActive = false; return; }
+    if (Math.abs(dx) < 4) return;
     swipeLocked = true;
-    const atStart = currentPopupIdx === 0 && dx > 0;
-    const atEnd   = currentPopupIdx === soireesData.length - 1 && dx < 0;
-    const r = (atStart || atEnd) ? 0.18 : 1;
-    card.style.transform = `translateX(${dx * r}px)`;
+    if (!swipeDir) {
+      swipeDir = dx < 0 ? 'left' : 'right';
+      const adjIdx = swipeDir === 'left' ? currentPopupIdx + 1 : currentPopupIdx - 1;
+      if (adjIdx >= 0 && adjIdx < soireesData.length) {
+        fillCard2(soireesData[adjIdx]);
+        positionCard2(swipeDir);
+      }
+    }
+    const atEdge = (currentPopupIdx === 0 && dx > 0) || (currentPopupIdx === soireesData.length - 1 && dx < 0);
+    const r = atEdge ? 0.15 : 1;
+    card.style.transform  = `translateX(${dx * r}px)`;
+    if (card2.style.display !== 'none') card2.style.transform = `translateX(${dx * r}px)`;
   }, { passive: true });
 
   overlay.addEventListener('touchend', () => {
     if (!swipeActive) return;
     swipeActive = false;
     const dx = tCurX - tsX;
-    if (dx < -55 && currentPopupIdx < soireesData.length - 1) {
-      navigatePopup('left');
-    } else if (dx > 55 && currentPopupIdx > 0) {
-      navigatePopup('right');
+    if (dx < -40 && currentPopupIdx < soireesData.length - 1) {
+      commitNavigate('left', dx);
+    } else if (dx > 40 && currentPopupIdx > 0) {
+      commitNavigate('right', dx);
     } else {
-      card.style.transition = 'transform 180ms cubic-bezier(0.34,1.4,0.64,1)';
-      card.style.transform  = '';
+      card.style.transition  = 'transform 200ms cubic-bezier(0.34,1.4,0.64,1)';
+      card.style.transform   = '';
+      card2.style.transition = 'transform 200ms ease-out';
+      card2.style.transform  = '';
+      setTimeout(() => { card2.style.display = 'none'; }, 200);
     }
   }, { passive: true });
 
