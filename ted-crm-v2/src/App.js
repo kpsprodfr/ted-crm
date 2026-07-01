@@ -6376,9 +6376,25 @@ function CRMApp({ user, onLogout }) {
                 </div>
               )}
               {c.created_at && <div style={{ fontSize:12, color:'#999' }}>📋 Client depuis le {formatDate(c.created_at)}</div>}
-              {c.service_favori && <div style={{ fontSize:13, color:'#555' }}>🕐 Service favori : {c.service_favori === 'midi' ? 'Midi' : 'Soir'}</div>}
-              {c.jour_favori && <div style={{ fontSize:13, color:'#555' }}>📅 Jour favori : {c.jour_favori}</div>}
-              {c.source && c.source !== 'manuel' && <div style={{ fontSize:13, color:'#555' }}>🎰 Source : {c.source}</div>}
+              {(c.service_favori || c.jour_favori || (c.source && c.source !== 'manuel')) && (
+                <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:2 }}>
+                  {c.service_favori && (
+                    <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:12, fontWeight:700, padding:'4px 10px', borderRadius:20, background: c.service_favori==='midi' ? '#fffbea' : '#1e1b4b', color: c.service_favori==='midi' ? '#92400e' : '#c7d2fe', border: c.service_favori==='midi' ? '1.5px solid #fde68a' : '1.5px solid #4338ca' }}>
+                      {c.service_favori === 'midi' ? '🕐 Midi' : '🌙 Soir'}
+                    </span>
+                  )}
+                  {c.jour_favori && (
+                    <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:12, fontWeight:700, padding:'4px 10px', borderRadius:20, background:'#f0fdf4', color:'#166534', border:'1.5px solid #bbf7d0' }}>
+                      📅 {c.jour_favori}
+                    </span>
+                  )}
+                  {c.source === 'Grand Jeux du TED' && (
+                    <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:12, fontWeight:700, padding:'4px 10px', borderRadius:20, background:'#E8C547', color:'#111', border:'1.5px solid #d4a800' }}>
+                      🎰 Grand Jeux du TED
+                    </span>
+                  )}
+                </div>
+              )}
               {c.commentaire && <div style={{ fontSize:13, color:'#555', background:'#f9f9f9', borderRadius:8, padding:'10px 12px', fontStyle:'italic' }}>"{c.commentaire}"</div>}
               <div style={{ background:'#f9f9f9', borderRadius:10, padding:'12px 16px', display:'flex', gap:16 }}>
                 <div style={{ textAlign:'center', flex:1 }}><div style={{ fontSize:22, fontWeight:800, color:'#111' }}>{s.total}</div><div style={{ fontSize:11, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Résa total</div></div>
