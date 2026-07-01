@@ -242,7 +242,7 @@
     <div id="roue-particle-layer" style="position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:1;"></div>
 
     <!-- Popup card -->
-    <div id="roue-card" style="position:relative;z-index:2;width:100%;max-width:390px;border-radius:22px;max-height:92vh;overflow-y:auto;background:linear-gradient(180deg,rgba(255,248,192,0.92) 0%,rgba(255,224,51,0.88) 25%,rgba(255,194,0,0.85) 60%,rgba(255,149,0,0.82) 100%);box-shadow:0 32px 80px rgba(0,0,0,0.6),0 0 0 0.5px rgba(255,200,0,0.3);animation:fadeUp .3s cubic-bezier(.25,.46,.45,.94);">
+    <div id="roue-card" style="position:relative;z-index:2;width:100%;max-width:390px;border-radius:22px;max-height:92vh;overflow-y:auto;background:linear-gradient(180deg,#fff8c0 0%,#FFE033 25%,#FFC200 60%,#FF9500 100%);box-shadow:0 32px 80px rgba(0,0,0,0.6),0 0 0 0.5px rgba(255,200,0,0.3);animation:fadeUp .3s cubic-bezier(.25,.46,.45,.94);">
 
       <!-- Close with countdown -->
       <div style="position:absolute;top:12px;right:14px;width:34px;height:34px;z-index:10;">
@@ -674,6 +674,7 @@
 
   // ── Roue cadeaux ─────────────────────────────────────────────────────────────
   (async function initRoue() {
+    console.log('1. initRoue appelé');
     // ── État ──────────────────────────────────────────────────────────────────
     let recompenses  = [];
     let gainResult   = null;
@@ -706,16 +707,18 @@
       ]);
       const paramData = resParam.ok ? await resParam.json() : [];
       const rouueActive = (paramData[0]?.valeur === 'true');
-      if (!rouueActive) return;
-      if (!resRec.ok) return;
+      console.log('2. roue_active =', rouueActive, '| paramData =', paramData);
+      if (!rouueActive) { console.log('2b. roue inactive → abort'); return; }
+      if (!resRec.ok) { console.log('2c. fetch recompenses KO', resRec.status); return; }
       const data = await resRec.json();
       recompenses = (data || []).filter(r => r.stock_illimite || (r.stock != null && r.stock > 0));
-    } catch(e) { return; }
+      console.log('2d. recompenses filtrées =', recompenses.length, recompenses);
+    } catch(e) { console.error('2e. erreur fetch Supabase', e); return; }
 
     const isPreview = new URLSearchParams(window.location.search).get('preview') === 'roue';
 
-    if (!recompenses.length) return;
-    if (!isPreview && localStorage.getItem('ted_roue_joue')) return;
+    if (!recompenses.length) { console.log('2f. 0 récompenses disponibles → abort'); return; }
+    if (!isPreview && localStorage.getItem('ted_roue_joue')) { console.log('2g. déjà joué (localStorage) → abort'); return; }
 
     // ── Canvas ─────────────────────────────────────────────────────────────────
     const canvas = document.getElementById('roue-canvas');
@@ -736,45 +739,42 @@
       }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const S = displaySize, cx = S / 2, cy = S / 2;
-      const outerR = S / 2 - 1;
-      const rimW   = 16;
-      const innerR = outerR - rimW;
+      const outerR = S / 2;  // 140
+      const rimW   = 14;
+      const innerR = outerR - rimW;  // 126
       const total  = totalProba();
 
       ctx.clearRect(0, 0, S, S);
 
       // Outer glow
       ctx.save();
-      ctx.shadowColor = '#FFD700'; ctx.shadowBlur = 30;
+      ctx.shadowColor = '#C9A84C'; ctx.shadowBlur = 28;
       ctx.beginPath(); ctx.arc(cx, cy, outerR, 0, 2 * Math.PI);
-      ctx.strokeStyle = 'rgba(255,215,0,0.6)'; ctx.lineWidth = 4; ctx.stroke();
+      ctx.strokeStyle = 'rgba(201,168,76,0.7)'; ctx.lineWidth = 3; ctx.stroke();
       ctx.restore();
 
       // Drop shadow
       ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 24; ctx.shadowOffsetY = 8;
+      ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 24; ctx.shadowOffsetY = 8;
       ctx.beginPath(); ctx.arc(cx, cy, outerR, 0, 2 * Math.PI);
-      ctx.fillStyle = '#000'; ctx.fill();
+      ctx.fillStyle = '#1a1200'; ctx.fill();
       ctx.restore();
 
-      // Outer rim bevel
-      const rimShadow = ctx.createLinearGradient(cx - outerR, cy - outerR, cx + outerR, cy + outerR);
-      rimShadow.addColorStop(0, '#555560'); rimShadow.addColorStop(0.35, '#222228');
-      rimShadow.addColorStop(0.65, '#111116'); rimShadow.addColorStop(1, '#33333a');
+      // Outer rim — #1a1200 épais avec biseau doré
       ctx.beginPath(); ctx.arc(cx, cy, outerR, 0, 2 * Math.PI);
-      ctx.fillStyle = rimShadow; ctx.fill();
+      ctx.fillStyle = '#1a1200'; ctx.fill();
 
-      const rimHL = ctx.createLinearGradient(cx - outerR, cy - outerR, cx + outerR * 0.3, cy + outerR * 0.3);
-      rimHL.addColorStop(0, 'rgba(255,255,255,0.18)'); rimHL.addColorStop(0.4, 'rgba(255,255,255,0.04)');
-      rimHL.addColorStop(1, 'rgba(0,0,0,0.1)');
+      // Rim bevel highlight (bord supérieur doré)
+      const rimHL = ctx.createLinearGradient(cx - outerR, cy - outerR, cx + outerR * 0.4, cy + outerR * 0.4);
+      rimHL.addColorStop(0, 'rgba(201,168,76,0.35)');
+      rimHL.addColorStop(0.5, 'rgba(201,168,76,0.08)');
+      rimHL.addColorStop(1, 'rgba(0,0,0,0.15)');
       ctx.beginPath(); ctx.arc(cx, cy, outerR, 0, 2 * Math.PI);
       ctx.fillStyle = rimHL; ctx.fill();
 
-      // Inner rim lip
-      ctx.beginPath(); ctx.arc(cx, cy, outerR - rimW + 2, 0, 2 * Math.PI);
-      ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 2; ctx.stroke();
-      ctx.beginPath(); ctx.arc(cx, cy, outerR - rimW + 2, 0, 2 * Math.PI);
-      ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1; ctx.stroke();
+      // Inner rim lip — trait doré
+      ctx.beginPath(); ctx.arc(cx, cy, innerR + 1, 0, 2 * Math.PI);
+      ctx.strokeStyle = '#C9A84C'; ctx.lineWidth = 1.5; ctx.stroke();
 
       // Segments
       let start = rotation - Math.PI / 2;
@@ -784,33 +784,41 @@
         const midAngle = start + slice / 2;
         const ci       = i % 2;
 
-        const gx1 = cx + (innerR * 0.2) * Math.cos(midAngle);
-        const gy1 = cy + (innerR * 0.2) * Math.sin(midAngle);
+        const gx1 = cx + (innerR * 0.15) * Math.cos(midAngle);
+        const gy1 = cy + (innerR * 0.15) * Math.sin(midAngle);
         const gx2 = cx + innerR * Math.cos(midAngle);
         const gy2 = cy + innerR * Math.sin(midAngle);
         const segGrad = ctx.createLinearGradient(gx1, gy1, gx2, gy2);
         if (ci === 0) {
-          segGrad.addColorStop(0, '#FFFACC'); segGrad.addColorStop(0.45, '#FFD700'); segGrad.addColorStop(1, '#B87800');
+          // Doré brillant
+          segGrad.addColorStop(0, '#FFE08C');
+          segGrad.addColorStop(0.4, '#C9A84C');
+          segGrad.addColorStop(1, '#8A6820');
         } else {
-          segGrad.addColorStop(0, '#2c2c36'); segGrad.addColorStop(0.45, '#111116'); segGrad.addColorStop(1, '#000');
+          // Noir profond
+          segGrad.addColorStop(0, '#2a1a00');
+          segGrad.addColorStop(0.5, '#1a1200');
+          segGrad.addColorStop(1, '#0d0900');
         }
         ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, innerR, start, end); ctx.closePath();
         ctx.fillStyle = segGrad; ctx.fill();
-        ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1.5; ctx.stroke();
 
-        // Gloss
+        // Dividers — biseau doré
+        ctx.strokeStyle = '#C9A84C'; ctx.lineWidth = 1.5; ctx.stroke();
+
+        // Gloss overlay
         const glossGrad = ctx.createRadialGradient(cx, cy - innerR * 0.1, 0, cx, cy, innerR);
-        glossGrad.addColorStop(0, 'rgba(255,255,255,0.22)'); glossGrad.addColorStop(0.4, 'rgba(255,255,255,0.06)');
-        glossGrad.addColorStop(1, 'rgba(0,0,0,0.15)');
+        glossGrad.addColorStop(0, 'rgba(255,255,255,0.18)'); glossGrad.addColorStop(0.4, 'rgba(255,255,255,0.04)');
+        glossGrad.addColorStop(1, 'rgba(0,0,0,0.12)');
         ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, innerR, start, end); ctx.closePath();
         ctx.fillStyle = glossGrad; ctx.fill();
 
-        // Text
+        // Text — blanc bold
         ctx.save();
         ctx.translate(cx, cy); ctx.rotate(midAngle); ctx.textAlign = 'right';
-        ctx.font = '800 11px -apple-system, Inter, sans-serif';
-        ctx.fillStyle = ci === 0 ? '#3a2000' : 'rgba(255,255,255,0.9)';
-        ctx.shadowColor = ci === 0 ? 'rgba(255,240,100,0.5)' : 'rgba(0,0,0,0.7)';
+        ctx.font = 'bold 11px -apple-system, Inter, sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = ci === 0 ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.8)';
         ctx.shadowBlur = 4;
         const isWin = !(r.nom || '').toLowerCase().includes('perdu');
         ctx.fillText(isWin ? 'GAGNÉ' : 'PERDU', innerR - 10, 4);
@@ -1067,6 +1075,7 @@
     }
 
     function openRouePopup() {
+      console.log('3. openRouePopup appelé');
       const ov = document.getElementById('roue-overlay');
       if (!ov) return;
       requestAnimationFrame(() => requestAnimationFrame(() => ov.classList.add('open')));
