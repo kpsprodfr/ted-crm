@@ -399,7 +399,7 @@
           <div style="font-size:12px;font-weight:600;color:rgba(0,0,0,0.5);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Genre</div>
           <div style="display:flex;gap:10px;">
             <button id="roue-gender-m" onclick="rouSelectM()" style="flex:1;padding:14px;border-radius:12px;border:2px solid #1a1200;background:#1a1200;color:#FFD700;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">M.</button>
-            <button id="roue-gender-mme" onclick="rouSelectMme()" style="flex:1;padding:14px;border-radius:12px;border:2px solid rgba(0,0,0,0.15);background:rgba(255,255,255,0.6);color:#1a1200;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">Mme</button>
+            <button id="roue-gender-mme" onclick="rouSelectMme()" style="flex:1;padding:14px;border-radius:12px;border:2px solid rgba(0,0,0,0.2);background:#E8C547;color:#1a1200;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">Mme</button>
           </div>
           <div id="roue-genre-error" style="display:none;font-size:11px;color:#e53935;margin-top:5px;padding-left:2px;">Veuillez sélectionner votre genre</div>
         </div>
@@ -772,11 +772,11 @@
       const m   = document.getElementById('roue-gender-m');
       const mme = document.getElementById('roue-gender-mme');
       if (!m || !mme) return;
-      m.style.border      = gender === 'M.'  ? '2px solid #1a1200' : '2px solid rgba(0,0,0,0.15)';
-      m.style.background  = gender === 'M.'  ? '#1a1200' : 'rgba(255,255,255,0.6)';
+      m.style.border      = gender === 'M.'  ? '2px solid #1a1200' : '2px solid rgba(0,0,0,0.2)';
+      m.style.background  = gender === 'M.'  ? '#1a1200' : '#E8C547';
       m.style.color       = gender === 'M.'  ? '#FFD700' : '#1a1200';
-      mme.style.border    = gender === 'Mme' ? '2px solid #1a1200' : '2px solid rgba(0,0,0,0.15)';
-      mme.style.background= gender === 'Mme' ? '#1a1200' : 'rgba(255,255,255,0.6)';
+      mme.style.border    = gender === 'Mme' ? '2px solid #1a1200' : '2px solid rgba(0,0,0,0.2)';
+      mme.style.background= gender === 'Mme' ? '#1a1200' : '#E8C547';
       mme.style.color     = gender === 'Mme' ? '#FFD700' : '#1a1200';
     }
 
@@ -1474,6 +1474,26 @@
         closeRoue();
       };
       document.getElementById('roue-confirmer-btn').onclick = confirmer;
+
+      // ── Validation formulaire : grise le bouton tant que tout n'est pas rempli ──
+      const confirmBtn = document.getElementById('roue-confirmer-btn');
+      function checkFormReady() {
+        const nom    = (document.getElementById('roue-nom').value   || '').trim();
+        const prenom = (document.getElementById('roue-prenom').value|| '').trim();
+        const tel    = (document.getElementById('roue-tel').value   || '').trim();
+        const email  = (document.getElementById('roue-email').value || '').trim();
+        const ready  = nom && prenom && tel && email;
+        confirmBtn.disabled       = !ready;
+        confirmBtn.style.background = ready ? '#1a1200' : '#aaa';
+        confirmBtn.style.color      = ready ? '#fff'    : '#ddd';
+        confirmBtn.style.cursor     = ready ? 'pointer' : 'not-allowed';
+        confirmBtn.style.boxShadow  = ready ? '0 4px 20px rgba(0,0,0,0.25)' : 'none';
+      }
+      ['roue-nom','roue-prenom','roue-tel','roue-email'].forEach(id => {
+        document.getElementById(id).addEventListener('input', checkFormReady);
+      });
+      checkFormReady();
+
       document.getElementById('roue-vers-carte-btn').onclick = () => {
         document.getElementById('roue-form-overlay').style.display = 'none';
         closeRoue();
