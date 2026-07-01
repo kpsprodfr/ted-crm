@@ -150,14 +150,14 @@ if (window.AbortSignal && AbortSignal.timeout) {
 const SUPABASE_URL = 'https://mwpfaytccypvdrgapptk.supabase.co';
 const SUPABASE_ANON = 'sb_publishable_4-uVtQtXd0jLGkNAFsx4yw_ni17DzN_';
 
-async function sbFetch(path, method = 'GET', body = null) {
+async function sbFetch(path, method = 'GET', body = null, prefer = null) {
   const opts = {
     method,
     headers: {
       'Content-Type': 'application/json',
       'apikey': SUPABASE_ANON,
       'Authorization': 'Bearer ' + SUPABASE_ANON,
-      'Prefer': (method === 'POST' || method === 'PATCH') ? 'return=representation' : ''
+      'Prefer': prefer !== null ? prefer : ((method === 'POST' || method === 'PATCH') ? 'return=representation' : '')
     }
   };
   if (body) opts.body = JSON.stringify(body);
@@ -570,6 +570,8 @@ async function submitForm() {
     }
 
     // Crée la réservation avec client_id
+    // return=minimal obligatoire : la RLS n'autorise pas anon à relire la ligne
+    // (return=representation ferait rejeter l'INSERT par PostgREST)
     await sbFetch('reservations', 'POST', {
       client_id: clientId || null,
       date: state.date,
@@ -580,7 +582,7 @@ async function submitForm() {
       commentaire_client: state.commentaire || null,
       statut: 'attente',
       source: 'formulaire'
-    });
+    }, 'return=minimal');
 
     try {
       localStorage.setItem('ted_client_info', JSON.stringify({
