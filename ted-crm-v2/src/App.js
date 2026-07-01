@@ -3718,13 +3718,22 @@ function RouePage({ showToast }) {
   }
 
   async function saveParam(cle, valeur) {
-    await supabase.from('parametres').upsert({ cle, valeur }, { onConflict: 'cle' });
+    const { error } = await supabase.from('parametres').upsert({ cle, valeur }, { onConflict: 'cle' });
+    if (error) {
+      console.error('saveParam error', cle, error);
+      throw error;
+    }
   }
 
   async function toggleRoueActive(v) {
     setRoueActive(v);
-    await saveParam('roue_active', v ? 'true' : 'false');
-    showToast(v ? 'Roue activée ✓' : 'Roue désactivée');
+    try {
+      await saveParam('roue_active', v ? 'true' : 'false');
+      showToast(v ? '🟢 Jeux activé ✓' : '⚫ Jeux désactivé');
+    } catch(e) {
+      setRoueActive(!v); // rollback visuel
+      showToast('❌ Erreur sauvegarde — vérifiez les permissions Supabase');
+    }
   }
 
   async function saveConfigBase() {
