@@ -51,12 +51,14 @@ L'équipe du TED 🦁`;
   const dateVenue = date_venue ? new Date(date_venue + 'T00:00:00') : null;
   const joursFR = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 
+  const dateFormatee = dateVenue ? dateVenue.toLocaleDateString('fr-FR') : 'À définir par le restaurant';
+
   const replace = str => str
     .replace(/{prenom}/g, to_prenom || '')
     .replace(/{nom}/g, to_nom || '')
     .replace(/{recompense}/g, recompense || '')
     .replace(/{emoji}/g, emoji || '')
-    .replace(/{date}/g, dateVenue ? dateVenue.toLocaleDateString('fr-FR') : '')
+    .replace(/{date}/g, dateFormatee)
     .replace(/{jour}/g, dateVenue ? joursFR[dateVenue.getDay()] : '')
     .replace(/{heure}/g, heure_venue ? String(heure_venue).slice(0, 5) : '');
 
@@ -69,55 +71,89 @@ L'équipe du TED 🦁`;
   const preheader = replace('Félicitations {prenom}, votre récompense vous attend au TED !');
 
   const htmlContent = `<!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="x-apple-disable-message-reformatting">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="x-apple-disable-message-reformatting">
+<!-- Preheader (invisible, aperçu Gmail) -->
+<div style="display:none;max-height:0;overflow:hidden;font-size:1px;color:#f5f5f5;">${preheader}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&display=swap" rel="stylesheet">
 </head>
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;">
-  <!-- Preheader (invisible, aperçu Gmail) -->
-  <div style="display:none;max-height:0;overflow:hidden;font-size:1px;color:#f5f5f5;">${preheader}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:32px 16px;">
-    <tr><td align="center">
-      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#111111;border-radius:12px 12px 0 0;overflow:hidden;">
-        <!-- HEADER -->
-        <tr><td style="background:#111111;padding:28px 24px;text-align:center;border-bottom:4px solid #E8C547;">
-          <img src="https://www.leted.fr/wp-content/uploads/2024/01/Logo-Le-TED.png" alt="Le TED" style="height:60px;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;" />
-          <div style="font-size:22px;font-weight:900;color:#E8C547;letter-spacing:2px;text-transform:uppercase;">Grand Jeux du TED</div>
-          <div style="font-size:12px;color:#888;letter-spacing:2px;margin-top:4px;text-transform:uppercase;">Restaurant &amp; Club · Lyon</div>
-        </td></tr>
-      </table>
-      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;">
-        <!-- CORPS -->
-        <tr><td style="padding:32px 24px;color:#111111;font-size:15px;line-height:1.8;font-family:Arial,sans-serif;">
-          ${htmlCorps}
-          <!-- Encadré récompense -->
-          <div style="background:#FFF8DC;border-left:4px solid #E8C547;border-radius:0 8px 8px 0;padding:20px 24px;margin:24px 0;">
-            <div style="font-size:12px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Votre récompense</div>
-            <div style="font-size:28px;margin-bottom:6px;">${recompenseEmoji}</div>
-            <div style="font-size:18px;font-weight:800;color:#111111;">${recompenseNom}</div>
-          </div>
-          <div style="text-align:center;margin-top:28px;">
-            <a href="https://ted-crm.pages.dev/reserver.html" style="display:inline-block;background:#E8C547;color:#111111;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:800;font-size:15px;font-family:Arial,sans-serif;">📅 Réserver ma table</a>
-          </div>
-        </td></tr>
-      </table>
-      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#111111;border-radius:0 0 12px 12px;overflow:hidden;">
-        <!-- FOOTER -->
-        <tr><td style="padding:24px;text-align:center;">
-          <p style="margin:0 0 6px;font-size:14px;font-weight:700;color:#E8C547;">Le TED — Restaurant &amp; Club</p>
-          <p style="margin:0 0 4px;font-size:12px;color:#aaa;">5 Rue Professeur Rochaix, 69003 Lyon</p>
-          <p style="margin:0 0 12px;font-size:12px;color:#aaa;">📞 04 72 02 20 20</p>
-          <p style="margin:0 0 8px;font-size:12px;">
-            <a href="https://ted-crm.pages.dev/reserver.html" style="color:#E8C547;text-decoration:none;font-weight:700;">Réserver en ligne</a>
-          </p>
-          <p style="margin:0;font-size:11px;color:#555;">Vous recevez cet email car vous avez participé au Grand Jeux du TED.<br>
-          <a href="mailto:contact@le-ted.fr?subject=Désinscription" style="color:#666;text-decoration:underline;">Se désinscrire</a></p>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
+<div style="max-width:560px;margin:0 auto;">
+
+  <div style="background:linear-gradient(180deg,#fff8c0 0%,#FFE033 50%,#FFC200 100%);padding:32px 24px;text-align:center;">
+    <div style="width:60px;height:60px;background:#111;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;color:#E8C547;">TED</div>
+    <div style="font-family:'Caveat',cursive;color:#111;font-size:34px;font-weight:700;line-height:1.1;">Grand Jeux du <span style="font-family:Arial,sans-serif;font-weight:900;font-size:30px;letter-spacing:1px;">TED</span></div>
+    <div style="color:#5a4500;font-size:11px;letter-spacing:2px;margin-top:8px;text-transform:uppercase;">Restaurant &amp; Club</div>
+  </div>
+
+  <div style="background:#ffffff;padding:32px 28px;">
+    <p style="color:#333;font-size:15px;margin:0 0 28px;line-height:1.6;">
+      Bonjour <strong style="color:#111;font-size:16px;">${replace('{prenom} {nom}')}</strong>,
+    </p>
+
+    <div style="background:rgba(232,197,71,0.12);border:1.5px solid rgba(232,197,71,0.4);border-radius:14px;padding:28px 24px;text-align:center;margin-bottom:24px;">
+      <div style="color:#111;font-size:28px;font-weight:700;margin-bottom:16px;">Votre récompense</div>
+      <div style="background:#fff;border:1.5px solid rgba(232,197,71,0.5);border-radius:10px;padding:16px 20px;margin-bottom:16px;display:inline-block;min-width:80%;">
+        <div style="color:#B8960C;font-size:18px;font-weight:700;">${replace('{emoji} {recompense}')}</div>
+      </div>
+      <div style="font-size:42px;margin-bottom:12px;">🥳</div>
+      <div style="color:#888;font-size:12px;font-style:italic;">Disponible à partir du ${dateFormatee}</div>
+    </div>
+
+    <div style="border:1.5px solid #E8C547;border-radius:12px;padding:22px 24px;margin-bottom:28px;">
+      <div style="color:#111;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:18px;">Conditions de retrait</div>
+
+      <div style="display:flex;gap:14px;margin-bottom:16px;align-items:flex-start;">
+        <span style="font-size:20px;flex-shrink:0;">📋</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#111;margin-bottom:2px;">Présentation de ce mail</div>
+          <div style="font-size:13px;color:#666;">À montrer à notre équipe à votre arrivée</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:14px;margin-bottom:16px;align-items:flex-start;">
+        <span style="font-size:20px;flex-shrink:0;">📅</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#111;margin-bottom:2px;">Date de retrait de votre cadeau</div>
+          <div style="font-size:13px;color:#B8960C;font-weight:700;">${dateFormatee}</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:14px;align-items:flex-start;">
+        <span style="font-size:20px;flex-shrink:0;">👥</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#111;margin-bottom:2px;">Réservation requise</div>
+          <div style="font-size:13px;color:#666;">5 personnes minimum — cette récompense accompagnera votre repas</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-bottom:28px;">
+      <a href="https://ted-crm.pages.dev/reserver.html" style="display:inline-block;background:#E8C547;color:#111;font-weight:700;font-size:14px;padding:14px 36px;border-radius:8px;text-decoration:none;">Réserver ma table</a>
+    </div>
+
+    <p style="color:#666;font-size:13px;line-height:1.9;margin:0;border-top:0.5px solid #eee;padding-top:20px;">
+      On vous attend avec impatience.<br>
+      À très bientôt,<br>
+      <strong style="color:#111;">L'équipe du TED</strong>
+    </p>
+  </div>
+
+  <div style="background:#111;padding:22px 24px;text-align:center;">
+    <div style="color:#E8C547;font-size:13px;font-weight:700;margin-bottom:4px;">Le TED — Restaurant &amp; Club</div>
+    <div style="color:#888;font-size:12px;margin-bottom:4px;">5 Rue Professeur Rochaix, 69003 Lyon</div>
+    <div style="color:#888;font-size:12px;margin-bottom:14px;">04 72 02 20 20</div>
+    <a href="https://ted-crm.pages.dev/reserver.html" style="color:#E8C547;font-size:12px;text-decoration:none;">Réserver en ligne</a>
+    <div style="color:#555;font-size:11px;margin-top:14px;">
+      Vous recevez cet email car vous avez participé au Grand Jeux du TED.<br>
+      <a href="mailto:contact@le-ted.fr?subject=Désinscription" style="color:#555;">Se désinscrire</a>
+    </div>
+  </div>
+
+</div>
 </body>
 </html>`;
 
