@@ -701,7 +701,7 @@
     // ── Chargement Supabase ────────────────────────────────────────────────────
     try {
       const [resParam, resRec] = await Promise.all([
-        fetch(`${SUPA_URL}/rest/v1/parametres?cle=eq.roue_active&select=valeur`, { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }),
+        fetch(`${SUPA_URL}/rest/v1/roue_config?cle=eq.roue_active&select=valeur`, { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }),
         fetch(`${SUPA_URL}/rest/v1/roue_recompenses?actif=eq.true&order=ordre`, { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }),
       ]);
       const paramData = resParam.ok ? await resParam.json() : [];

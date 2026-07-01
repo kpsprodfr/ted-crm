@@ -3700,7 +3700,7 @@ function RouePage({ showToast }) {
       const [{ data: recData }, { data: gainsData }, { data: paramsData }] = await Promise.all([
         supabase.from('roue_recompenses').select('*').order('ordre'),
         supabase.from('roue_gains').select('*, roue_recompenses(nom,emoji)').order('date_gain', { ascending: false }).limit(500),
-        supabase.from('parametres').select('cle,valeur').like('cle', 'roue%'),
+        supabase.from('roue_config').select('cle,valeur'),
       ]);
       setRecompenses(recData || []);
       setGains(gainsData || []);
@@ -3718,7 +3718,7 @@ function RouePage({ showToast }) {
   }
 
   async function saveParam(cle, valeur) {
-    const { error } = await supabase.from('parametres').upsert({ cle, valeur }, { onConflict: 'cle' });
+    const { error } = await supabase.from('roue_config').upsert({ cle, valeur }, { onConflict: 'cle' });
     if (error) {
       console.error('saveParam error', cle, error);
       throw error;
