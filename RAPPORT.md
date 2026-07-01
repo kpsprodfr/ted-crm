@@ -101,3 +101,54 @@ Démarré le 2026-07-01. Une ligne par phase : fait / testé / résultat.
 
 **Données de test nettoyées** (1 résa, 1 gain, 1 client, 1 email de file). **Phase 1 validée.**
 
+---
+
+## PHASE 2 — Sauvegarde et restauration
+
+**Fait** : `/api/backup-daily` (12 tables → KV `backup:YYYY-MM-DD`, rétention 30 j, checksum SHA-256, email récap à com.astegal@gmail.com, idempotent — GET cron sans secret, POST forcé JWT) · `/api/backups` (liste, JWT) · `/api/backup-restore` (upsert par lots de 200, non destructif, confirmation « RESTAURER », JWT) · page **Système** dans la sidebar CRM (liste des backups, bouton « Backup maintenant », restauration avec double confirmation) · namespace KV `ted-crm-backups` créé via l'API Cloudflare · cron pg_cron 02:00 UTC posé.
+**Testé** : build ✅ ; endpoints déployés et répondent ✅.
+**⏳ En attente d'une action manuelle** : le binding KV `BACKUPS` doit être ajouté dans le dashboard Cloudflare Pages (30 s — voir MAINTENANCE.md §2 ; l'ajout par wrangler.toml écraserait la config du dashboard, risque refusé). Dès le binding posé : le premier backup réel + une restauration de test valideront la phase.
+
+## PHASE 3 — Surveillance autonome
+
+**Fait** : `/api/health` (Supabase avec latence + 4 tables critiques, Brevo via GET /v3/account, variables d'env, fraîcheur des backups → `ok`/`degraded`/`down`) · pg_cron toutes les 15 min avec `?notify=1` → alerte email si down, dédupliquée à 1/h (KV TTL), mise en file si Brevo est lui-même en panne · pastille verte/orange/rouge en bas de la sidebar (refresh 60 s, tooltip détaillé, clic → page Système) · journal des 50 dernières `error_logs` dans la page Système, alimenté par `logError()` (front + functions).
+**Testé (prod)** : `/api/health` → supabase ok 128 ms, brevo ok 256 ms, env_vars ok ✅. Statut global `degraded` uniquement à cause du binding KV manquant → passera vert avec la Phase 2.
+
+## PHASE 4 — Sécurité
+
+**Fait** :
+- **Endpoints verrouillés** : JWT Supabase obligatoire sur `/send-email`, `/send-sms`, `/send-push-onesignal`, `/api/roue-notify` (avant : n'importe qui pouvait envoyer des emails/SMS avec le compte Brevo du TED). `/api/roue-email` reste public pour la roue mais : `gain_id` obligatoire et vérifié en base, l'email doit correspondre au gain, données (prénom/récompense) lues en base et plus dans le payload, idempotent (jamais 2 envois pour le même gain).
+- **Origin + rate limit** : `guard()` sur tout — origine `ted-crm.pages.dev` uniquement (403 sinon), 10 req/min/IP via KV (actif dès le binding posé).
+- **Headers** : nosniff, X-Frame-Options DENY, HSTS, CSP `default-src 'none'`, Referrer-Policy sur toutes les réponses ; CORS `*` supprimé.
+- **Anti-injection** : échappement HTML de toutes les interpolations dans les 2 templates d'email.
+- **Clé Brevo hors du navigateur** : SMS marketing CRM routés par `/send-sms`, `REACT_APP_BREVO_API_KEY` supprimée du `.env`.
+- **Validation** : formulaires publics (sanitisation HTML, longueurs max 50/254/500, tel mobile 06/07 pour la roue) + formulaire client CRM (formats tel FR/email, longueurs) + verrou anti double-clic sur la confirmation de résa (évitait double email) + validations serveur dans les functions (`isValidEmail`, `isValidTelFR`).
+- **Hygiène** : `.gitignore` complété, `npm audit fix` appliqué (2 passes) — les high restantes sont dans les devDependencies de react-scripts (build-time, non exploitables en prod ; `--force` casserait CRA, refusé).
+
+**Testé (prod, après déploiement)** : Origin bidon → 403 ✅ · send-email/send-sms/roue-notify sans JWT → 401 ✅ · roue-email gain inexistant → 404 ✅ · sans gain_id → 400 ✅ · email ne correspondant pas au gain → 403 ✅ · **parcours roue réel : gain inséré → email envoyé `{ok:true}` → rejeu → `{already_sent:true}`** ✅ · headers présents sur les réponses ✅ · formulaire résa public toujours fonctionnel (INSERT anon 201) ✅. Advisories Supabase : **0 ERROR** (4 au départ) ; les WARN restants sont volontaires (INSERT publics des formulaires, rpc roue) ou hors code (protection mots de passe divulgués à activer dans le dashboard Auth, pg_net géré par Supabase).
+
+## PHASE 5 — Performance
+
+**Fait** : index vérifiés à l'EXPLAIN (`reservations.date` → Index Scan ✅ ; `clients.mail` seq scan normal à 34 lignes, l'index `idx_clients_mail` prendra le relais en volume) · cache menu migré sessionStorage → **localStorage** (TTL 5 min, stale-while-revalidate 60 s conservé, toujours invalidé par le Realtime) · config + récompenses de la roue en cache localStorage **10 min** (stock protégé côté serveur par le rpc atomique) · fuites : 3 setInterval/4 clearInterval, 3 channels realtime tous nettoyés au démontage par `resilientChannel` ✅ · syntaxe des scripts inline vérifiée (node --check) ✅.
+
+## PHASE 6 — Tests et documentation
+
+**Fait** : `/api/run-tests` (X-Test-Key: BACKUP_SECRET **ou** JWT CRM) — env vars, binding KV, lecture des 12 tables, **écriture/suppression réelles** (error_logs), clé Brevo (GET /v3/account, sans envoi), fraîcheur du dernier backup, file emails sans échec définitif → rapport JSON · bouton « Lancer les tests » + badges dans la page Système · `MAINTENANCE.md` complet (architecture, tableau des variables avec régénération, procédures de panne par composant, restauration, checklist mensuelle, accès) · scripts npm `security-audit` / `update-deps`.
+**Note** : le workflow GitHub Actions hebdomadaire n'a pas pu être poussé (PAT local sans scope `workflow`) — remplacé par la checklist mensuelle + `npm run security-audit`, documenté.
+
+---
+
+## BILAN FINAL
+
+**Failles corrigées** : suppression/lecture anonymes de la base clients et des réservations (RLS) · 4 endpoints ouverts en relais de spam (JWT) · injection HTML dans 2 templates d'email · clé Brevo dans le bundle navigateur · CORS `*` · absence totale de validation serveur.
+
+**Désormais automatique** : backups quotidiens 02:00 (30 j, checksum, email récap) · reprise horaire des emails échoués (aucun email de gain ne peut plus être perdu) · surveillance 15 min + alerte email dédupliquée · retries réseau + reconnexion realtime dans le CRM · rate limiting · déploiement continu.
+
+**Reste à faire manuellement (une fois)** :
+1. **Binding KV** : Cloudflare Pages → ted-crm → Settings → Bindings → Add → KV namespace → nom `BACKUPS`, namespace `ted-crm-backups` → puis relancer un déploiement. Active : backups, rate limiting, dédup d'alertes → pastille verte.
+2. (Optionnel) `BACKUP_SECRET` dans les variables Cloudflare (`openssl rand -hex 24`) pour appeler `/api/run-tests` hors CRM.
+3. (Recommandé) Supabase → Authentication → activer la protection « leaked passwords ».
+
+**À surveiller (mensuel, 5 min)** : quota Brevo (~300 emails/jour gratuit, crédits SMS), page Système (tests verts, erreurs, file emails), espace Supabase. Checklist détaillée dans MAINTENANCE.md §5.
+
+
