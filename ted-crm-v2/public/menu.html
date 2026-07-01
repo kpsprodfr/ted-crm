@@ -376,6 +376,7 @@
   04 72 02 20 20
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
   // ── Configuration Supabase ──────────────────────────────────────────────────
   // Ces valeurs sont publiques (clé anon avec RLS) — safe à exposer
@@ -875,6 +876,39 @@
     } catch(e) {}
   }
   loadOrigines();
+
+  // ── Supabase Realtime — mise à jour instantanée sans rechargement ────────────
+  (function initRealtime() {
+    if (typeof supabase === 'undefined') return;
+    const client = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+    function fadeRefreshContent() {
+      const content = document.getElementById('content');
+      const specials = document.getElementById('specials-container');
+      [content, specials].forEach(el => {
+        if (!el) return;
+        el.style.transition = 'opacity 200ms ease';
+        el.style.opacity = '0';
+        setTimeout(() => { el.style.opacity = '1'; }, 220);
+      });
+    }
+
+    client
+      .channel('menu-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_produits' }, async () => {
+        await fetchFromNetwork(true);
+        fadeRefreshContent();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_categories' }, async () => {
+        await fetchFromNetwork(true);
+        fadeRefreshContent();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_plat_jour' }, async () => {
+        await pollPlatJour();
+        fadeRefreshContent();
+      })
+      .subscribe();
+  })();
 </script>
 </body>
 </html>
