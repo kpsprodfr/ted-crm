@@ -1097,28 +1097,28 @@
         currentAngle = targetAngle;
         spinning = false;
         winSegmentIdx = targetSlot;
-        winGlowAlpha = 1;
-        drawWheel(currentAngle); // allume immédiatement
 
-        // Pulse animation: 3 flashes then show result
-        const pulseDuration = 500;
-        // décale le départ d'un quart de période pour commencer plein et décliner
-        const phaseOffset = Math.PI / 2;
-        const pulseStart = performance.now();
-        const pulses = 3;
-        function animateGlow(now) {
-          const pt = Math.min((now - pulseStart) / pulseDuration, 1);
-          winGlowAlpha = Math.abs(Math.sin(phaseOffset + pt * Math.PI * pulses));
+        // Flash instantané : 3 clignotements rapides puis résultat
+        let glowStep = 0;
+        const glowSteps = 6; // 3 on + 3 off = 3 clignotements
+        function stepGlow() {
+          glowStep++;
+          winGlowAlpha = (glowStep % 2 === 1) ? 1 : 0;
           drawWheel(currentAngle);
-          if (pt < 1) { requestAnimationFrame(animateGlow); return; }
-          winGlowAlpha = 0;
-          winSegmentIdx = null;
-          drawWheel(currentAngle);
-          const isWin = !(gainResult.nom || '').toLowerCase().includes('perdu');
-          if (isWin) spawnConfetti();
-          showResult(isWin);
+          if (glowStep < glowSteps) {
+            setTimeout(stepGlow, 80);
+          } else {
+            winGlowAlpha = 0;
+            winSegmentIdx = null;
+            drawWheel(currentAngle);
+            const isWin = !(gainResult.nom || '').toLowerCase().includes('perdu');
+            if (isWin) spawnConfetti();
+            showResult(isWin);
+          }
         }
-        requestAnimationFrame(animateGlow);
+        winGlowAlpha = 1;
+        drawWheel(currentAngle);
+        setTimeout(stepGlow, 80);
       }
       requestAnimationFrame(animate);
     }
