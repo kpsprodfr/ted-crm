@@ -4070,40 +4070,96 @@ function RouePage({ showToast }) {
               );
             };
 
-            // ── aperçu HTML ────────────────────────────────────────────
-            const previewHtml = `<div style="font-family:Arial,sans-serif;font-size:13px;background:#ffffff;">
-  <div style="background:linear-gradient(180deg,#fff8c0 0%,#FFE033 50%,#FFC200 100%);padding:24px 18px;text-align:center;">
-    <img src="/logo-Le-TED.png" width="80" height="80" style="margin-bottom:14px;object-fit:contain;filter:brightness(0);" />
-    <div style="color:#111;font-size:22px;font-weight:700;line-height:1.1;">Grand Jeux du <span style="font-weight:900;font-size:20px;letter-spacing:1px;">TED</span></div>
-    <div style="color:#5a4500;font-size:10px;letter-spacing:2px;margin-top:6px;text-transform:uppercase;">Restaurant &amp; Club</div>
-  </div>
-  <div style="background:#fff;padding:20px 18px;">
-    <p style="color:#333;font-size:13px;margin:0 0 18px;line-height:1.6;">Bonjour <strong style="color:#111;">Karl Sounier</strong>,</p>
-    <div style="background:rgba(232,197,71,0.12);border:1.5px solid rgba(232,197,71,0.4);border-radius:12px;padding:20px 16px;text-align:center;margin-bottom:16px;">
-      <div style="color:#111;font-size:20px;font-weight:700;margin-bottom:12px;">Votre récompense</div>
-      <div style="background:#fff;border:1.5px solid rgba(232,197,71,0.5);border-radius:8px;padding:12px 16px;margin-bottom:12px;">
-        <div style="color:#999;font-size:14px;font-weight:400;font-style:italic;">La récompense gagnée apparaîtra ici</div>
+            // ── aperçu HTML (nouveau design premium) ───────────────────
+            const serialPreview = 'TED-' + Math.random().toString(36).slice(2,7).toUpperCase();
+            const previewHtml = `<div style="font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;background:#181818;padding:24px 12px;">
+  <div style="max-width:480px;margin:0 auto;">
+
+    <!-- HEADER -->
+    <div style="background:#111111;border-radius:10px 10px 0 0;padding:32px 28px 24px;text-align:center;">
+      <img src="/logo-Le-TED.png" width="60" height="60" style="display:block;margin:0 auto 12px;border-radius:50%;" />
+      <div style="font-weight:800;font-size:18px;letter-spacing:8px;text-transform:uppercase;color:#F0A830;">LE TED</div>
+      <div style="font-size:9px;letter-spacing:3px;color:rgba(255,255,255,0.25);text-transform:uppercase;margin-top:4px;">Restaurant &amp; Club · Chassieu</div>
+    </div>
+
+    <!-- Gold bar -->
+    <div style="height:3px;background:linear-gradient(90deg,#c47e10,#F0A830,#ffd278,#F0A830,#c47e10);"></div>
+
+    <!-- WINNER HERO -->
+    <div style="background:#111111;padding:32px 28px 28px;text-align:center;">
+      <div style="font-weight:800;font-size:10px;letter-spacing:5px;color:#F0A830;text-transform:uppercase;margin-bottom:10px;">✦ Vous avez gagné ✦</div>
+      <div style="font-size:28px;font-weight:700;color:#ffffff;margin-bottom:6px;line-height:1.15;">Prénom Nom</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.45);margin-bottom:28px;">vous repart avec une récompense exclusive</div>
+
+      <!-- TICKET -->
+      <div style="border:1px solid rgba(240,168,48,0.35);border-radius:14px;overflow:hidden;margin-bottom:28px;">
+        <div style="height:4px;background:linear-gradient(90deg,#c47e10,#F0A830,#ffd278,#F0A830,#c47e10);"></div>
+        <div style="background:#1a1300;padding:10px 18px;display:flex;justify-content:space-between;align-items:center;">
+          <div style="display:flex;align-items:center;gap:7px;">
+            <img src="/logo-Le-TED.png" width="18" height="18" style="opacity:0.85;vertical-align:middle;" />
+            <span style="font-size:8px;font-weight:700;letter-spacing:3px;color:#F0A830;text-transform:uppercase;">Bon Gagnant</span>
+          </div>
+          <span style="font-family:'Courier New',monospace;font-size:9px;color:rgba(240,168,48,0.35);">${serialPreview}</span>
+        </div>
+        <div style="background:#111;border-top:1px dashed rgba(240,168,48,0.2);height:1px;"></div>
+        <div style="background:#111111;padding:28px 20px 22px;text-align:center;">
+          <div style="font-size:9px;letter-spacing:6px;color:rgba(240,168,48,0.4);margin-bottom:14px;">✦ &nbsp; ✦ &nbsp; ✦</div>
+          <div style="font-size:48px;line-height:1;margin-bottom:14px;">🥳</div>
+          <div style="font-size:8px;font-weight:600;letter-spacing:4px;color:rgba(240,168,48,0.5);text-transform:uppercase;margin-bottom:8px;">Votre récompense</div>
+          <div style="font-size:20px;font-weight:700;color:#ffffff;margin-bottom:18px;line-height:1.2;">La récompense gagnée apparaîtra ici</div>
+          <div style="display:inline-block;background:rgba(240,168,48,0.08);border:1px solid rgba(240,168,48,0.2);border-radius:40px;padding:7px 16px;margin-bottom:16px;">
+            <span style="font-size:12px;color:rgba(255,255,255,0.5);">Valable </span>
+            <span style="font-size:12px;font-weight:700;color:#F0A830;">${dateAffichee}</span>
+          </div>
+        </div>
+        <div style="background:#111;padding:6px 0;display:flex;align-items:center;">
+          <div style="width:12px;height:12px;background:#181818;border-radius:0 50% 50% 0;border:1px solid rgba(240,168,48,0.2);"></div>
+          <div style="flex:1;border-top:1.5px dashed rgba(240,168,48,0.2);"></div>
+          <div style="width:12px;height:12px;background:#181818;border-radius:50% 0 0 50%;border:1px solid rgba(240,168,48,0.2);"></div>
+        </div>
+        <div style="background:#0e0e0e;padding:10px 18px;text-align:center;">
+          <span style="font-size:10px;color:rgba(255,255,255,0.4);text-decoration:underline;">Conditions de retrait ci-dessous ↓</span>
+        </div>
+        <div style="height:3px;background:linear-gradient(90deg,#c47e10,#F0A830,#ffd278,#F0A830,#c47e10);opacity:0.6;"></div>
       </div>
-      <div style="font-size:32px;margin-bottom:8px;">🥳</div>
-      <div style="color:#888;font-size:11px;font-style:italic;">${dispoLabel}</div>
-      ${previewMessage ? `<div style="color:#888;font-size:12px;font-style:italic;margin-top:8px;line-height:1.5;">${previewMessage}</div>` : ''}
+
+      ${previewMessage ? `<div style="margin-bottom:28px;padding:14px 18px;border-left:2px solid rgba(240,168,48,0.4);text-align:left;background:rgba(255,255,255,0.03);border-radius:0 6px 6px 0;"><p style="font-style:italic;font-size:14px;color:rgba(255,255,255,0.6);margin:0 0 6px;line-height:1.7;">« ${previewMessage} »</p><p style="font-size:9px;letter-spacing:2px;color:rgba(240,168,48,0.5);text-transform:uppercase;margin:0;">L'équipe du TED</p></div>` : ''}
     </div>
-    <div style="border:1.5px solid #E8C547;border-radius:10px;padding:16px;margin-bottom:18px;">
-      <div style="color:#111;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;">Conditions de retrait</div>
-      <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;"><span style="font-size:16px;">📋</span><div><div style="font-size:12px;font-weight:700;color:#111;margin-bottom:2px;">Présentation de ce mail</div><div style="font-size:12px;color:#666;">À montrer à notre équipe à votre arrivée</div></div></div>
-      <div style="display:flex;gap:10px;${previewMessage ? '' : 'margin-bottom:12px;'}align-items:flex-start;"><span style="font-size:16px;">📅</span><div><div style="font-size:12px;font-weight:700;color:#111;margin-bottom:2px;">Date de retrait de votre cadeau</div><div style="font-size:12px;color:#B8960C;font-weight:700;">${dateAffichee}</div>${previewMessage ? `<div style="font-size:13px;color:#B8960C;font-weight:700;margin-top:5px;line-height:1.5;">${previewMessage}</div>` : ''}</div></div>
-      <div style="display:flex;gap:10px;margin-top:12px;align-items:flex-start;"><span style="font-size:16px;">👥</span><div><div style="font-size:12px;font-weight:700;color:#111;margin-bottom:2px;">Réservation requise</div><div style="font-size:12px;color:#666;">5 personnes minimum</div></div></div>
+
+    <!-- CONDITIONS -->
+    <div style="background:#FDFAF5;padding:28px 24px 24px;">
+      <div style="font-size:16px;font-weight:700;letter-spacing:0.5px;color:#999;text-transform:uppercase;margin-bottom:18px;">Conditions de retrait</div>
+      <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #f0ece4;align-items:flex-start;">
+        <div style="width:34px;height:34px;background:#111;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;">📋</div>
+        <div><div style="font-size:13px;font-weight:700;color:#111;margin-bottom:2px;">Présentation obligatoire</div><div style="font-size:11px;color:#777;line-height:1.6;">Présentez <strong style="color:#111;">cet email</strong> à votre arrivée.</div></div>
+      </div>
+      <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #f0ece4;align-items:flex-start;">
+        <div style="width:34px;height:34px;background:#111;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;">📅</div>
+        <div><div style="font-size:13px;font-weight:700;color:#111;margin-bottom:2px;">Date de retrait</div><div style="font-size:11px;color:#777;line-height:1.6;">${dateAffichee}</div></div>
+      </div>
+      <div style="display:flex;gap:12px;padding:12px 0;align-items:flex-start;">
+        <div style="width:34px;height:34px;background:#111;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;">👥</div>
+        <div><div style="font-size:13px;font-weight:700;color:#111;margin-bottom:2px;">5 personnes minimum</div><div style="font-size:11px;color:#777;line-height:1.6;">Valable en groupe d'<strong style="color:#111;">au moins 5 personnes</strong>.</div></div>
+      </div>
+      <div style="margin-top:24px;text-align:center;">
+        <a href="#" style="display:inline-block;background:#F0A830;color:#111111;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;text-decoration:none;padding:14px 36px;border-radius:4px;">Réserver ma table</a>
+        <div style="font-size:11px;color:#bbb;margin-top:10px;">ou appelez-nous · <span style="color:#F0A830;font-weight:600;">04 78 90 67 80</span></div>
+      </div>
+      <div style="margin-top:32px;padding-top:24px;border-top:1px solid #ece8e0;text-align:center;">
+        <div style="font-style:italic;font-size:15px;color:#555;line-height:1.85;margin-bottom:4px;">On vous attend avec impatience.</div>
+        <div style="font-size:13px;color:#777;margin-bottom:12px;">À très bientôt,</div>
+        <div style="font-family:Georgia,serif;font-size:26px;color:#F0A830;font-style:italic;">L'équipe du TED</div>
+      </div>
     </div>
-    <div style="text-align:center;margin-bottom:18px;"><a href="#" style="display:inline-block;background:#E8C547;color:#111;font-weight:700;font-size:13px;padding:12px 28px;border-radius:8px;text-decoration:none;">Réserver ma table</a></div>
-    <p style="color:#666;font-size:12px;line-height:1.8;margin:0;border-top:0.5px solid #eee;padding-top:14px;">On vous attend avec impatience.<br>À très bientôt,<br><strong style="color:#111;">L'équipe du TED</strong></p>
-  </div>
-  <div style="background:#111;padding:16px;text-align:center;">
-    <div style="width:50px;height:50px;background:#fff;border-radius:50%;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;"><img src="/logo-Le-TED.png" width="36" height="36" style="object-fit:contain;" /></div>
-    <div style="color:#E8C547;font-size:12px;font-weight:700;margin-bottom:3px;">Le TED — Restaurant &amp; Club</div>
-    <div style="color:#888;font-size:11px;margin-bottom:3px;">28 Avenue des Frères Montgolfier, 69680 Chassieu</div>
-    <div style="color:#888;font-size:11px;margin-bottom:3px;">04 78 90 67 80</div>
-    <div style="margin-bottom:10px;"><a href="https://www.leted.fr" style="color:#888;font-size:11px;">www.leted.fr</a></div>
-    <div style="color:#555;font-size:10px;">Vous recevez cet email car vous avez participé au Grand Jeu du TED.</div>
+
+    <!-- FOOTER -->
+    <div style="background:#0d0d0d;border-radius:0 0 10px 10px;padding:24px 28px;text-align:center;">
+      <img src="/logo-Le-TED.png" width="36" height="36" style="display:block;margin:0 auto 10px;border-radius:50%;opacity:0.7;" />
+      <div style="font-weight:800;font-size:11px;letter-spacing:6px;color:#F0A830;margin-bottom:12px;text-transform:uppercase;">Le Ted</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.25);line-height:2;margin-bottom:8px;">28 Avenue des Frères Montgolfier, 69680 Chassieu<br><span style="color:rgba(240,168,48,0.5);">04 78 90 67 80</span> · <span style="color:rgba(240,168,48,0.5);">leted.fr</span></div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.12);line-height:1.7;">© 2026 Le TED — Restaurant &amp; Club — Chassieu, Lyon</div>
+    </div>
+
   </div>
 </div>`;
 
