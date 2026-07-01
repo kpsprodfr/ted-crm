@@ -3853,7 +3853,7 @@ function RouePage({ showToast }) {
         <Dices size={28} strokeWidth={1.8} color="#111"/>
         <h1 style={{ margin:0, fontSize:28, fontWeight:900, color:'#111' }}>Grand Jeux du TED</h1>
         <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:10 }}>
-          <a href="/accueil.html" target="_blank" rel="noopener noreferrer" style={{ display:'flex', alignItems:'center', gap:6, fontSize:13, fontWeight:600, color:'#555', textDecoration:'none', border:'1px solid #ddd', borderRadius:8, padding:'5px 12px', background:'#fff', marginRight:8 }}>
+          <a href="/accueil.html?preview=roue" target="_blank" rel="noopener noreferrer" style={{ display:'flex', alignItems:'center', gap:6, fontSize:13, fontWeight:600, color:'#555', textDecoration:'none', border:'1px solid #ddd', borderRadius:8, padding:'5px 12px', background:'#fff', marginRight:8 }}>
             <ExternalLink size={13} strokeWidth={2} /> Voir le jeu
           </a>
           <span style={{ fontSize:13, fontWeight:600, color: rouеActive ? '#111' : '#aaa' }}>{rouеActive ? '🟢 Jeux actif' : '⚫ Jeux inactif'}</span>

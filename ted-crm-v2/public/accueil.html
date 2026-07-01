@@ -712,8 +712,10 @@
       recompenses = (data || []).filter(r => r.stock_illimite || (r.stock != null && r.stock > 0));
     } catch(e) { return; }
 
+    const isPreview = new URLSearchParams(window.location.search).get('preview') === 'roue';
+
     if (!recompenses.length) return;
-    if (localStorage.getItem('ted_roue_joue')) return;
+    if (!isPreview && localStorage.getItem('ted_roue_joue')) return;
 
     // ── Canvas ─────────────────────────────────────────────────────────────────
     const canvas = document.getElementById('roue-canvas');
@@ -1116,8 +1118,8 @@
       };
     }
 
-    // Délai pour laisser la page s'animer d'abord
-    setTimeout(openRouePopup, 1800);
+    // Délai pour laisser la page s'animer d'abord (0 en mode preview admin)
+    setTimeout(openRouePopup, isPreview ? 0 : 1800);
   })();
 </script>
 </body>
