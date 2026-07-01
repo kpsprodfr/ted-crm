@@ -3593,20 +3593,23 @@ function OriginesSheet({ onClose, showToast }) {
 // ── Roue cadeaux — back-office ───────────────────────────────────────────────
 
 const DEFAULT_EMAIL1_OBJET = '🎉 {prenom}, vous avez gagné {emoji} {recompense} au Grand Jeux du TED !';
-const DEFAULT_EMAIL1_CORPS = `🎉 {prenom}, vous avez gagné !
+const DEFAULT_EMAIL1_CORPS = `Bonjour {prenom},
 
-Le destin a parlé — et il a choisi votre nom. 🎰
+Félicitations ! Vous remportez : {emoji} {recompense}
 
-Votre {emoji} {recompense} vous attend au TED le {date}.
+Votre récompense vous attend au TED le {date}.
 
-Une victoire comme celle-là, ça se fête en grand. Réunissez vos plus belles personnes autour de vous — parce que les meilleurs moments de la vie se vivent ensemble. 🥂
+Pour en profiter, il vous suffit de venir accompagné(e) d'au moins 4 personnes, soit une table de 5 personnes minimum, autour d'un repas au TED.
 
-Pour profiter de votre récompense, venez à minimum 5 personnes autour d'un repas au TED. Notre équipe se fera un honneur de vous l'offrir dès votre arrivée.
+À votre arrivée, présentez simplement cet e-mail à notre équipe : votre récompense vous sera offerte. 🥂
+
+Une belle occasion de réunir vos proches et de célébrer cette victoire comme il se doit !
 
 📞 Réservation par téléphone : 04 72 02 20 20
 🔗 Réservation en ligne : https://ted-crm.pages.dev/reserver.html
 
-On vous attend avec impatience,
+Nous avons hâte de vous accueillir.
+À très bientôt,
 L'équipe du TED 🦁`;
 
 function RecompenseSheet({ item, onClose, onSaved, showToast }) {
@@ -3709,7 +3712,7 @@ function RouePage({ showToast }) {
 
   useEffect(() => {
     loadAll();
-    const interval = setInterval(loadAll, 30000);
+    const interval = setInterval(loadStats, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -3724,7 +3727,6 @@ function RouePage({ showToast }) {
       if (recRes.error) console.error('[Jeux] roue_recompenses error:', recRes.error);
       if (gainsRes.error) console.error('[Jeux] roue_gains error:', gainsRes.error);
       if (paramsRes.error) console.error('[Jeux] roue_config error:', paramsRes.error);
-      console.log('[Jeux] roue_gains count:', (gainsRes.data||[]).length, '| sample:', gainsRes.data?.[0]);
       setRecompenses(recRes.data || []);
       setGains(gainsRes.data || []);
       const p = {};
@@ -3738,6 +3740,15 @@ function RouePage({ showToast }) {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function loadStats() {
+    const [recRes, gainsRes] = await Promise.all([
+      supabase.from('roue_recompenses').select('*').order('ordre'),
+      supabase.from('roue_gains').select('*, roue_recompenses(nom,emoji)').order('date_gain', { ascending: false }).limit(500),
+    ]);
+    if (!recRes.error) setRecompenses(recRes.data || []);
+    if (!gainsRes.error) setGains(gainsRes.data || []);
   }
 
   async function saveParam(cle, valeur) {
