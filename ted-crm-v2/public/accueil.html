@@ -115,37 +115,61 @@
     #popup-overlay {
       position: fixed; inset: 0; z-index: 200;
       background: rgba(0,0,0,0.78);
-      display: flex; align-items: center; justify-content: center; padding: 24px;
+      display: flex; align-items: center; justify-content: center; padding: 16px;
       opacity: 0; transition: opacity 200ms ease; pointer-events: none;
     }
     #popup-overlay.open { opacity: 1; pointer-events: all; }
 
+    #popup-wrapper {
+      position: relative;
+      display: flex; flex-direction: column; align-items: center;
+      width: min(460px, 94vw);
+    }
+
     #popup-card {
       background: linear-gradient(160deg, #1c1c1c 0%, #111 100%);
       border: 1px solid #2a2a2a; border-radius: 20px;
-      width: min(420px, 92vw); overflow: hidden;
+      width: 100%; overflow: hidden;
       transform: scale(0.92); opacity: 0;
       transition: transform 300ms cubic-bezier(0.34, 1.4, 0.64, 1), opacity 300ms ease;
       position: relative; will-change: transform;
       display: flex; flex-direction: column;
     }
     @media (max-width: 480px) {
-      #popup-card { width: 92vw; border-radius: 16px; }
+      #popup-card { border-radius: 16px; }
     }
+
     .popup-arrow {
-      position: absolute; top: 50%; transform: translateY(-50%);
-      width: 36px; height: 36px; border-radius: 50%;
-      background: rgba(232,197,71,0.12); border: 1px solid rgba(232,197,71,0.35);
-      color: #E8C547; font-size: 18px; cursor: pointer;
+      position: absolute; top: 42%;
+      width: 40px; height: 40px; border-radius: 50%;
+      background: rgba(232,197,71,0.15); border: 1.5px solid rgba(232,197,71,0.5);
+      color: #E8C547; font-size: 20px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      transition: background 150ms ease, opacity 200ms ease;
+      transition: background 150ms ease, opacity 200ms ease, transform 150ms ease;
       opacity: 0; pointer-events: none; z-index: 10;
-      user-select: none;
+      user-select: none; backdrop-filter: blur(4px);
     }
-    #popup-arrow-left  { left: -50px; }
-    #popup-arrow-right { right: -50px; }
+    #popup-arrow-left  { left: -52px; }
+    #popup-arrow-right { right: -52px; }
+    @media (max-width: 600px) {
+      #popup-arrow-left  { left: -44px; width:34px; height:34px; font-size:16px; }
+      #popup-arrow-right { right: -44px; width:34px; height:34px; font-size:16px; }
+    }
     #popup-overlay.open .popup-arrow { opacity: 1; pointer-events: all; }
-    .popup-arrow:active { background: rgba(232,197,71,0.28); }
+    .popup-arrow:hover { background: rgba(232,197,71,0.28); transform: scale(1.08); }
+    .popup-arrow:active { background: rgba(232,197,71,0.38); }
+
+    #popup-swipe-hint {
+      margin-top: 10px; font-size: 11px; color: rgba(255,255,255,0.35);
+      letter-spacing: 1.5px; text-transform: uppercase;
+      display: flex; align-items: center; gap: 6px;
+      opacity: 0; transition: opacity 400ms ease;
+    }
+    #popup-swipe-hint.show { opacity: 1; }
+    @keyframes nudge-left  { 0%,100%{transform:translateX(0)} 50%{transform:translateX(-4px)} }
+    @keyframes nudge-right { 0%,100%{transform:translateX(0)} 50%{transform:translateX(4px)} }
+    .hint-l { animation: nudge-left  1.4s ease-in-out infinite; }
+    .hint-r { animation: nudge-right 1.4s ease-in-out infinite; }
     #popup-dots {
       display: flex; justify-content: center; gap: 6px;
       padding: 10px 0 14px;
@@ -478,9 +502,10 @@
 
   <!-- Popup soirée -->
   <div id="popup-overlay" role="dialog" aria-modal="true" aria-labelledby="popup-nom">
-    <button class="popup-arrow" id="popup-arrow-left" aria-label="Soirée précédente">&#8592;</button>
-    <button class="popup-arrow" id="popup-arrow-right" aria-label="Soirée suivante">&#8594;</button>
-    <div id="popup-card">
+    <div id="popup-wrapper">
+      <button class="popup-arrow" id="popup-arrow-left" aria-label="Soirée précédente">&#8592;</button>
+      <button class="popup-arrow" id="popup-arrow-right" aria-label="Soirée suivante">&#8594;</button>
+      <div id="popup-card">
       <div id="popup-progress-track"><div id="popup-progress-bar"></div></div>
       <button id="popup-close" aria-label="Fermer">✕</button>
       <div id="popup-flyer"><img id="popup-flyer-img" src="" alt="" /></div>
@@ -494,6 +519,13 @@
         <div id="popup-dots"></div>
       </div>
     </div>
+      <!-- Hint swipe -->
+      <div id="popup-swipe-hint">
+        <span class="hint-l">&#8592;</span>
+        swiper
+        <span class="hint-r">&#8594;</span>
+      </div>
+    </div><!-- /popup-wrapper -->
     <!-- Carte adjacente pour le swipe carousel -->
     <div id="popup-card2" style="display:none;position:absolute;pointer-events:none;background:linear-gradient(160deg,#1c1c1c 0%,#111 100%);border:1px solid #2a2a2a;border-radius:20px;overflow:hidden;will-change:transform;">
       <div id="popup2-flyer" style="display:none;width:100%;height:clamp(140px,40vw,200px);overflow:hidden;border-radius:20px 20px 0 0;flex-shrink:0;"><img id="popup2-flyer-img" src="" alt="" style="width:100%;height:100%;display:block;object-fit:cover;object-position:bottom center;" /></div>
@@ -657,6 +689,8 @@
     const showArrows = soireesData.length > 1;
     document.getElementById('popup-arrow-left').style.display  = showArrows ? '' : 'none';
     document.getElementById('popup-arrow-right').style.display = showArrows ? '' : 'none';
+    const hint = document.getElementById('popup-swipe-hint');
+    if (hint) hint.classList.toggle('show', showArrows);
     // Peek hint : légère poussée à gauche si une soirée suivante existe
     if (soireesData.length > 1 && currentPopupIdx < soireesData.length - 1) {
       clearTimeout(peekTimer);
