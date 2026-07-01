@@ -343,12 +343,36 @@
   <div id="roue-form-overlay" style="display:none;position:fixed;inset:0;background:linear-gradient(180deg,#fff8c0 0%,#FFE033 30%,#FFC200 70%,#FF9500 100%);z-index:500;overflow-y:auto;padding:0 0 40px;animation:fadeUp .35s cubic-bezier(.25,.46,.45,.94);">
 
     <!-- État succès -->
-    <div id="roue-form-done" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px;text-align:center;">
-      <div style="font-size:64px;margin-bottom:20px;">🎁</div>
-      <h2 style="font-size:26px;font-weight:900;color:#1a1200;margin-bottom:10px;">🎉 Votre récompense vient de vous être envoyée !</h2>
-      <p style="font-size:15px;color:#1a1200;max-width:300px;line-height:1.6;margin-bottom:10px;">À bientôt au TED !</p>
-      <p style="font-size:13px;color:rgba(0,0,0,0.45);font-style:italic;max-width:280px;line-height:1.6;margin-bottom:32px;">Pensez à vérifier vos spams si vous ne la voyez pas dans votre boîte principale.</p>
-      <button id="roue-vers-carte-btn" style="padding:16px 36px;border-radius:14px;border:none;background:#1a1200;color:#fff;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.25);">Retour à la carte</button>
+    <div id="roue-form-done" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;text-align:center;">
+      <div style="width:100%;max-width:340px;background:linear-gradient(160deg,#fff8c0,#FFE033 40%,#FFC200);border-radius:22px;padding:36px 28px;box-shadow:0 20px 60px rgba(0,0,0,0.18);text-align:center;">
+
+        <!-- Checkmark animé -->
+        <style>
+          @keyframes checkBounce { 0%{transform:scale(0)} 60%{transform:scale(1.15)} 100%{transform:scale(1)} }
+          .roue-check-circle { animation: checkBounce 0.35s cubic-bezier(.34,1.56,.64,1) forwards; }
+        </style>
+        <div class="roue-check-circle" style="width:72px;height:72px;background:#22c55e;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none"><polyline points="7,19 15,27 29,11" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+
+        <!-- Titre -->
+        <h2 style="font-size:26px;font-weight:900;color:#1a1200;margin:0 0 10px;">Félicitations ! 🎉</h2>
+
+        <!-- Sous-titre -->
+        <p style="font-size:15px;color:#1a1200;margin:0 0 22px;line-height:1.6;">Votre récompense a bien été envoyée par email.</p>
+
+        <!-- Encadré spam -->
+        <div style="background:#fff;border:3px solid #f59e0b;border-radius:12px;padding:16px;margin-bottom:24px;text-align:left;display:flex;gap:12px;align-items:flex-start;">
+          <span style="font-size:26px;line-height:1;flex-shrink:0;">📬</span>
+          <div>
+            <div style="font-size:14px;font-weight:800;color:#111;margin-bottom:4px;">Vérifiez vos spams !</div>
+            <div style="font-size:13px;color:#666;line-height:1.5;">Notre email peut parfois atterrir dans vos courriers indésirables. Pensez à le déplacer dans votre boîte principale.</div>
+          </div>
+        </div>
+
+        <!-- Bouton -->
+        <button id="roue-vers-carte-btn" style="width:100%;padding:16px;border-radius:14px;border:none;background:#1a1200;color:#fff;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.25);">Retour à la carte</button>
+      </div>
     </div>
 
     <!-- Formulaire -->
