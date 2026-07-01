@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus, UserPlus, Trophy, ArrowUpDown, LayoutGrid, Settings, MapPin, Dices } from 'lucide-react';
+import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus, UserPlus, Trophy, ArrowUpDown, LayoutGrid, Settings, MapPin, Dices, Bell, X, Award, Gift, Image as ImageIcon, BadgeCheck } from 'lucide-react';
 import { supabase } from "./supabase";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -535,7 +535,7 @@ function ClientForm({ initial, onSave, onCancel, existingClients, reservations =
                     onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor=errors.tel?'#dc2626':'#eee'}/>
                 </div>
                 {errors.tel && <p style={{ fontSize:12, color:'#dc2626', marginTop:4 }}>{errors.tel}</p>}
-                {dupClient && <div style={{ background:'#fef2f2', border:'2px solid #dc2626', borderRadius:10, padding:'10px 14px', marginTop:8, fontSize:13, color:'#dc2626' }}>⚠️ Ce numéro est déjà utilisé par <strong>{dupClient.prenom} {dupClient.nom}</strong></div>}
+                {dupClient && <div style={{ background:'#fef2f2', border:'2px solid #dc2626', borderRadius:10, padding:'10px 14px', marginTop:8, fontSize:13, color:'#dc2626' }}><AlertCircle size={14} color="currentColor" style={{display:'inline',verticalAlign:'middle'}} /> Ce numéro est déjà utilisé par <strong>{dupClient.prenom} {dupClient.nom}</strong></div>}
               </div>
 
               {/* Email */}
@@ -602,7 +602,7 @@ function ClientForm({ initial, onSave, onCancel, existingClients, reservations =
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             boxShadow: success ? "0 4px 20px rgba(34,197,94,0.4)" : "none"
           }}>
-            {success ? (<><span style={{ display:"inline-block", animation:"scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)" }}>✓</span>Enregistré !</>) : dupClient ? "⚠ Client existant" : isEdit ? "Modifier" : "Enregistrer"}
+            {success ? (<><span style={{ display:"inline-block", animation:"scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)" }}>✓</span>Enregistré !</>) : dupClient ? <><AlertCircle size={14} color="currentColor" style={{display:'inline',verticalAlign:'middle'}} /> Client existant</> : isEdit ? "Modifier" : "Enregistrer"}
           </button>
         ]}
       >
@@ -623,11 +623,11 @@ function ClientForm({ initial, onSave, onCancel, existingClients, reservations =
           {errors.tel && <p style={{ fontSize: 12, color: "#dc2626", marginTop: 4 }}>{errors.tel}</p>}
           {dupClient && (
             <div style={{ background:"#fef2f2", border:"2px solid #dc2626", borderRadius:10, padding:"12px 14px", marginTop:8, display:"flex", alignItems:"center", gap:10 }}>
-              <span style={{fontSize:24}}>⚠️</span>
+              <AlertCircle size={24} color="currentColor" style={{display:'inline',verticalAlign:'middle'}} />
               <div>
                 <p style={{fontWeight:700, color:"#dc2626", fontSize:14, margin:0}}>Client déjà existant !</p>
                 <p style={{fontSize:13, color:"#333", margin:"4px 0 0"}}><strong>{dupClient.prenom} {dupClient.nom}{dupClient.entreprise ? ` — ${dupClient.entreprise}` : ""}</strong></p>
-                <p style={{fontSize:12, color:"#666", margin:"2px 0 0"}}>📞 {dupClient.tel}{dupClient.mail ? ` · ${dupClient.mail}` : ""}</p>
+                <p style={{fontSize:12, color:"#666", margin:"2px 0 0"}}><Phone size={14} style={{display:'inline',verticalAlign:'middle'}} /> {dupClient.tel}{dupClient.mail ? ` · ${dupClient.mail}` : ""}</p>
               </div>
             </div>
           )}
@@ -710,7 +710,7 @@ function ImportModal({ onImport, onCancel, existingClients }) {
       )}
       {parsed && (
         <>
-          {dups.length > 0 && <div style={{ background:"#fffbeb", border:"1.5px solid #fbbf24", borderRadius:8, padding:"10px 14px", fontSize:13, color:"#92400e", marginBottom:12 }}>⚠ {dups.length} doublon(s) potentiel(s) détecté(s).</div>}
+          {dups.length > 0 && <div style={{ background:"#fffbeb", border:"1.5px solid #fbbf24", borderRadius:8, padding:"10px 14px", fontSize:13, color:"#92400e", marginBottom:12 }}><AlertCircle size={14} color="currentColor" style={{display:'inline',verticalAlign:'middle'}} /> {dups.length} doublon(s) potentiel(s) détecté(s).</div>}
           <p style={{ fontWeight:600, marginBottom:8 }}>{parsed.length} client(s) détecté(s)</p>
           <div style={{ maxHeight:180, overflowY:"auto", fontSize:12, border:"1px solid #eee", borderRadius:6, padding:"8px" }}>
             {parsed.map((c,i) => <div key={i} style={{ padding:"3px 0", borderBottom:"1px solid #f0f0f0" }}><span style={{fontWeight:600}}>{c.prenom} {c.nom}</span><span style={{color:"#999",marginLeft:8}}>{c.tel} {c.mail}</span></div>)}
@@ -776,7 +776,7 @@ function CorbeilleModal({ onClose, showToast }) {
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"24px 28px 20px", borderBottom:"1.5px solid #f0f0f0", flexShrink:0 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
             <div style={{ width:40, height:40, borderRadius:12, background:"#fef2f2", display:"flex", alignItems:"center", justifyContent:"center" }}>
-              <span style={{ fontSize:20 }}>🗑</span>
+              <Trash2 size={20} color="#dc2626" />
             </div>
             <div>
               <div style={{ fontWeight:800, fontSize:18, color:"#111" }}>Corbeille</div>
@@ -793,7 +793,7 @@ function CorbeilleModal({ onClose, showToast }) {
           )}
           {!loading && deleted.length === 0 && (
             <div style={{ textAlign:"center", padding:"48px 0" }}>
-              <div style={{ fontSize:52, marginBottom:12 }}>🗑</div>
+              <div style={{ marginBottom:12 }}><Trash2 size={52} color="#dc2626" /></div>
               <div style={{ fontWeight:700, fontSize:16, color:"#333", marginBottom:6 }}>La corbeille est vide</div>
               <div style={{ fontSize:13, color:"#bbb" }}>Les clients supprimés apparaîtront ici</div>
             </div>
@@ -805,7 +805,7 @@ function CorbeilleModal({ onClose, showToast }) {
                   <span style={badge(c.genre)}>{c.genre}</span>
                   <span style={{ fontWeight:700, fontSize:15, color:"#111" }}>{nomClient(c)}</span>
                 </div>
-                {c.tel && <div style={{ fontSize:13, color:"#666", marginBottom:2 }}>📞 {c.tel}</div>}
+                {c.tel && <div style={{ fontSize:13, color:"#666", marginBottom:2 }}><Phone size={14} style={{display:'inline',verticalAlign:'middle'}} /> {c.tel}</div>}
                 <div style={{ fontSize:11, color:"#bbb" }}>
                   Supprimé le {new Date(c.deleted_at).toLocaleDateString("fr-FR")} à {new Date(c.deleted_at).toLocaleTimeString("fr-FR", { hour:"2-digit", minute:"2-digit" })}
                   {c.deleted_by ? ` par ${c.deleted_by}` : ""}
@@ -1258,12 +1258,12 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
   const ctaFooter = !resaCree ? (
     <div style={{ width:'100%' }}>
       <button onClick={formValide ? handleSave : handleClickBoutonDisabled} disabled={saving} style={{ width:'100%', height:56, background: formValide ? '#E8C547' : '#f0f0f0', color: formValide ? '#111' : '#bbb', border:'none', borderRadius:14, fontSize:17, fontWeight:800, cursor: formValide ? 'pointer' : 'not-allowed', display:'flex', alignItems:'center', justifyContent:'center', gap:8, opacity: saving ? 0.6 : 1, transition:'all 0.3s', boxShadow: formValide ? '0 2px 8px rgba(232,197,71,0.3)' : 'none' }}>
-        {saving ? 'Enregistrement…' : (isEdit ? '✏️ Modifier la réservation' : (formValide ? '✓ Créer la réservation' : 'Créer la réservation'))}
+        {saving ? 'Enregistrement…' : (isEdit ? <><Pencil size={15} style={{display:'inline',verticalAlign:'middle'}} /> Modifier la réservation</> : (formValide ? '✓ Créer la réservation' : 'Créer la réservation'))}
       </button>
       <div style={{ textAlign:'center', fontSize:12, marginTop:8, minHeight:20, transition:'opacity 0.2s' }}>
         {consigne && (
           <span style={{ color: consigne.invalide ? '#dc2626' : '#999' }}>
-            {consigne.invalide ? '⚠️ ' : '→ '}{consigne.msg}
+            {consigne.invalide ? <AlertCircle size={13} color="currentColor" style={{display:'inline',verticalAlign:'middle'}} /> : '→ '}{consigne.msg}
           </span>
         )}
       </div>
@@ -1285,7 +1285,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
             </div>
             <div style={{ display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid #eee' }}>
               <span style={{ color:'#999', fontSize:14 }}>Service</span>
-              <span style={{ fontWeight:700, fontSize:14 }}>{resaCree.service==='midi'?'☀️ Midi':'🌙 Soir'}</span>
+              <span style={{ fontWeight:700, fontSize:14 }}>{resaCree.service==='midi'?<><Sun size={14} style={{display:'inline',verticalAlign:'middle'}} /> Midi</>:<><Moon size={14} style={{display:'inline',verticalAlign:'middle'}} /> Soir</>}</span>
             </div>
             <div style={{ display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid #eee' }}>
               <span style={{ color:'#999', fontSize:14 }}>Heure</span>
@@ -1302,7 +1302,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
       )}
       {!resaCree && <>
       {!isEdit && <div style={{ background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:10, padding:'10px 14px', marginBottom:16, display:'flex', alignItems:'center', gap:10 }}>
-        <span style={{ fontSize:20 }}>⏳</span>
+        <Clock size={20} color="#92400e" />
         <p style={{ margin:0, fontSize:13, color:'#92400e' }}>Cette réservation sera créée comme <strong>demande en attente</strong>.</p>
       </div>}
 
@@ -1312,14 +1312,14 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
         <div ref={refTel}>
           <div style={{ fontSize:13, fontWeight:800, color:'#555', marginBottom:8, textTransform:'uppercase', letterSpacing:0.5 }}>1. Téléphone du client</div>
           <div style={{ position:'relative' }}>
-            <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', fontSize:16, pointerEvents:'none' }}>📞</span>
+            <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }}><Phone size={16} style={{display:'block'}} /></span>
             <input value={tel} onChange={e=>handleTelChange(e.target.value)} placeholder="06 12 34 56 78" type="tel" style={{ ...inp(false), paddingLeft:40 }} />
             {lookingUp && <span style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', fontSize:12, color:'#888' }}>Recherche…</span>}
           </div>
           {clientFound && (
             <div style={{ marginTop:8 }}>
               <div style={{ background:'#f0fdf4', border:'1.5px solid #22c55e', borderRadius:10, padding:'10px 14px', display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-                <span style={{ fontSize:14 }}>✅</span>
+                <CheckCircle size={14} color="#16a34a" style={{display:'inline',verticalAlign:'middle'}} />
                 <span onClick={()=>{ if(onViewClient) onViewClient(clientFound); }} style={{ fontSize:14, fontWeight:800, color:'#111', flex:1, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', cursor: onViewClient ? 'pointer' : 'default', textDecoration: onViewClient ? 'underline' : 'none', textDecorationColor:'#E8C547' }}>{clientFound.prenom} {clientFound.nom}</span>
                 {statsClient && <>
                   <span style={{ fontSize:12, color:'#555', whiteSpace:'nowrap' }}>·&nbsp;{statsClient.total} résa</span>
@@ -1409,13 +1409,13 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
         <div ref={refDate}>
           <div style={{ fontSize:13, fontWeight:800, color:'#555', marginBottom:8, textTransform:'uppercase', letterSpacing:0.5 }}>2. Quand ?</div>
           <button onPointerDown={()=>setShowCalPicker(!showCalPicker)} style={{ width:'100%', height:48, border:`1.5px solid ${showCalPicker ? '#E8C547' : '#ddd'}`, borderRadius:10, background:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', textAlign:'left', padding:'0 14px', color: dateIso ? '#111' : '#aaa', display:'flex', alignItems:'center', justifyContent:'space-between', touchAction:'manipulation', WebkitTapHighlightColor:'transparent' }}>
-            <span>📅 {dateIso ? new Date(dateIso+'T12:00:00').toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'}) : 'Choisir une date'}</span>
+            <span><CalendarDays size={14} style={{display:'inline',verticalAlign:'middle'}} /> {dateIso ? new Date(dateIso+'T12:00:00').toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'}) : 'Choisir une date'}</span>
             <span style={{ color:'#ccc', fontSize:20 }}>›</span>
           </button>
           {calendarJSX}
           <div ref={refService} style={{ display:'flex', gap:8, marginTop:10 }}>
-            <button style={btnSvc('midi')} onClick={()=>{ setService('midi'); setHeure(''); setHeureError(false); }}>☀️ Midi</button>
-            <button style={btnSvc('soir')} onClick={()=>{ setService('soir'); setHeure(''); setHeureError(false); }}>🌙 Soir</button>
+            <button style={btnSvc('midi')} onClick={()=>{ setService('midi'); setHeure(''); setHeureError(false); }}><Sun size={13} style={{display:'inline',verticalAlign:'middle',marginRight:4}}/> Midi</button>
+            <button style={btnSvc('soir')} onClick={()=>{ setService('soir'); setHeure(''); setHeureError(false); }}><Moon size={13} style={{display:'inline',verticalAlign:'middle',marginRight:4}}/> Soir</button>
           </div>
           {service && (
             <div ref={refHeure} style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:10 }}>
@@ -1491,7 +1491,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
                 <h2 style={{ fontSize:22, fontWeight:800, color:'#111', margin:'0 0 8px' }}>Réservation créée !</h2>
                 <p style={{ color:'#666', fontSize:15, margin:'0 0 24px' }}>{resaCree.client.prenom} {resaCree.client.nom}</p>
                 <div style={{ background:'#f9f9f9', borderRadius:12, padding:16, width:'100%', marginBottom:24, textAlign:'left' }}>
-                  {[['Date', new Date(resaCree.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})],['Service',resaCree.service==='midi'?'☀️ Midi':'🌙 Soir'],['Heure',resaCree.heure],['Personnes',`${resaCree.nb_personnes} pers.`]].map(([k,v],i,arr)=>(
+                  {[['Date', new Date(resaCree.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})],['Service',resaCree.service==='midi'?<><Sun size={13} style={{display:'inline',verticalAlign:'middle',marginRight:4}}/> Midi</>:<><Moon size={13} style={{display:'inline',verticalAlign:'middle',marginRight:4}}/> Soir</>],['Heure',resaCree.heure],['Personnes',`${resaCree.nb_personnes} pers.`]].map(([k,v],i,arr)=>(
                     <div key={k} style={{ display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:i<arr.length-1?'1px solid #eee':'none' }}>
                       <span style={{ color:'#999', fontSize:14 }}>{k}</span>
                       <span style={{ fontWeight:700, fontSize:14 }}>{v}</span>
@@ -1691,12 +1691,12 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
           {!resaCree && (
             <div style={{ flexShrink:0, padding:'16px 28px', borderTop:'1px solid #eee', background:'#fff' }}>
               <button onClick={formValide ? handleSave : handleClickBoutonDisabled} disabled={saving} style={{ width:'100%', height:54, background:formValide?'#E8C547':'#f0f0f0', color:formValide?'#111':'#bbb', border:'none', borderRadius:14, fontSize:16, fontWeight:800, cursor:formValide?'pointer':'not-allowed', transition:'all 0.3s', boxShadow:formValide?'0 2px 8px rgba(232,197,71,0.3)':'none' }}>
-                {saving ? 'Enregistrement...' : (isEdit ? '✏️ Modifier la réservation' : (formValide ? '✓ Créer la réservation' : 'Créer la réservation'))}
+                {saving ? 'Enregistrement...' : (isEdit ? <><Pencil size={15} style={{display:'inline',verticalAlign:'middle'}} /> Modifier la réservation</> : (formValide ? '✓ Créer la réservation' : 'Créer la réservation'))}
               </button>
               <div style={{ textAlign:'center', fontSize:12, marginTop:8, minHeight:20, transition:'opacity 0.2s' }}>
                 {consigne && (
                   <span style={{ color: consigne.invalide ? '#dc2626' : '#999' }}>
-                    {consigne.invalide ? '⚠️ ' : '→ '}{consigne.msg}
+                    {consigne.invalide ? <AlertCircle size={13} color="currentColor" style={{display:'inline',verticalAlign:'middle'}} /> : '→ '}{consigne.msg}
                   </span>
                 )}
               </div>
@@ -1709,7 +1709,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
     {showConfirmQuitter && (
       <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:6000, display:'flex', alignItems:'center', justifyContent:'center', pointerEvents:'all', cursor:'default', touchAction:'none' }} onMouseDown={e=>{e.preventDefault();e.stopPropagation();}}>
         <div style={{ background:'#fff', borderRadius:16, padding:'28px 24px', maxWidth:320, width:'90%', textAlign:'center', boxShadow:'0 20px 60px rgba(0,0,0,0.2)' }}>
-          <div style={{ fontSize:40, marginBottom:12 }}>⚠️</div>
+          <div style={{ marginBottom:12 }}><AlertCircle size={40} color="#dc2626" style={{display:'block',margin:'0 auto'}} /></div>
           <h3 style={{ margin:'0 0 8px', fontSize:17, fontWeight:800, color:'#111' }}>Quitter sans enregistrer ?</h3>
           <p style={{ margin:'0 0 20px', fontSize:14, color:'#666' }}>Les informations saisies seront perdues.</p>
           <div style={{ display:'flex', gap:10 }}>
@@ -1797,8 +1797,8 @@ function AccepterModal({ resa, onConfirm, onCancel }) {
           <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10}}>
             {[
               {label:'Date', value: fmtResaDate(resa.date)},
-              {label:'Service', value: resa.service==='midi'?`☀️ Midi · ${resa.heure}`:`🌙 Soir · ${resa.heure}`},
-              {label:'Personnes', value: `👥 ${resa.nb_personnes} pers.`},
+              {label:'Service', value: resa.service==='midi'?<><Sun size={13} style={{display:'inline',verticalAlign:'middle',marginRight:4}}/>{` Midi · ${resa.heure}`}</>:<><Moon size={13} style={{display:'inline',verticalAlign:'middle',marginRight:4}}/>{` Soir · ${resa.heure}`}</>},
+              {label:'Personnes', value: <><Users size={13} style={{display:'inline',verticalAlign:'middle',marginRight:4}}/>{`${resa.nb_personnes} pers.`}</>},
             ].map((item,i)=>(
               <div key={i} style={{background:'#f9f9f9', borderRadius:10, padding:'10px 12px', textAlign:'center'}}>
                 <div style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, marginBottom:4}}>{item.label}</div>
@@ -1959,7 +1959,7 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
           {/* Infos réservation */}
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
             {[
-              {label:'Service', value: resa.service==='midi'?'☀️ Midi':'🌙 Soir'},
+              {label:'Service', value: resa.service==='midi'?<><Sun size={13} style={{display:'inline',verticalAlign:'middle',marginRight:4}}/> Midi</>:<><Moon size={13} style={{display:'inline',verticalAlign:'middle',marginRight:4}}/> Soir</>},
               {label:'Heure', value: resa.heure||'—'},
               {label:'Personnes', value: `${resa.nb_personnes} pers.`},
               {label:'Occasion', value: resa.occasion||'—'},
@@ -1971,7 +1971,7 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
             ))}
             {resa.source === 'Grand Jeux du TED' && (
               <div style={{gridColumn:'1/-1',background:'#fffbea',borderRadius:10,padding:'10px 14px',display:'flex',alignItems:'center',gap:8}}>
-                <span style={{fontSize:18}}>🎰</span>
+                <Dices size={18} style={{display:'inline',verticalAlign:'middle'}} />
                 <span style={{fontSize:13,fontWeight:700,color:'#92400e'}}>Grand Jeu du TED</span>
               </div>
             )}
@@ -2044,7 +2044,7 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
                 style={{width:'100%',height:70,border:'1.5px solid #eee',borderRadius:8,padding:'8px 12px',fontSize:13,resize:'none',outline:'none',fontFamily:'inherit',boxSizing:'border-box'}}/>
               <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
                 <span style={{fontSize:11,color:'#999',alignSelf:'center'}}>Insérer :</span>
-                {[{label:'{prénom}',val:c.prenom||'{prénom}'},{label:'{nom}',val:c.nom||'{nom}'},{label:'🔗 Lien',val:'https://ted-crm.pages.dev/reserver.html'}].map(v=>(
+                {[{label:'{prénom}',val:c.prenom||'{prénom}'},{label:'{nom}',val:c.nom||'{nom}'},{label:'Lien',val:'https://ted-crm.pages.dev/reserver.html'}].map(v=>(
                   <button key={v.label} onClick={()=>setSmsTexte((smsTexte+v.val).slice(0,smsLimit))} style={{background:'#fffbea',border:'1.5px solid #E8C547',borderRadius:6,padding:'3px 10px',fontSize:12,fontWeight:600,color:'#111',cursor:'pointer'}}>{v.label}</button>
                 ))}
               </div>
@@ -2076,7 +2076,7 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
         <div style={{flexShrink:0,padding:'16px 28px',borderTop:'1px solid #eee',background:'#fff',display:'flex',gap:10}}>
           <button onClick={fermerModal} style={{flex:1,height:52,border:'1.5px solid #eee',borderRadius:12,background:'#fff',fontSize:15,fontWeight:600,cursor:'pointer',color:'#666'}}>Fermer</button>
           {onEdit && (
-            <button onClick={()=>{onClose();onEdit(resa);}} style={{flex:1,height:52,border:'none',borderRadius:12,background:'#f0f0f0',fontSize:15,fontWeight:700,cursor:'pointer',color:'#111',display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>✏️ Modifier</button>
+            <button onClick={()=>{onClose();onEdit(resa);}} style={{flex:1,height:52,border:'none',borderRadius:12,background:'#f0f0f0',fontSize:15,fontWeight:700,cursor:'pointer',color:'#111',display:'flex',alignItems:'center',justifyContent:'center',gap:6}}><Pencil size={15} style={{display:'inline',verticalAlign:'middle'}} /> Modifier</button>
           )}
           {statutModifie && (
             <button onClick={sauvegarderStatut} disabled={saving} style={{flex:2,height:52,border:'none',borderRadius:12,background:saving?'#ddd':'#E8C547',fontSize:15,fontWeight:800,cursor:saving?'not-allowed':'pointer',color:saving?'#999':'#111',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
@@ -2337,22 +2337,22 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
       {!inline && (
         <header style={{ background:'#111', color:'#fff', padding:'0 20px', height:56, display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:`3px solid ${G}`, flexShrink:0 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-            <span style={{ fontWeight:700, fontSize:15, color:'#fff' }}>📅 <span style={{ color:G }}>TED</span> — Réservations</span>
+            <span style={{ fontWeight:700, fontSize:15, color:'#fff' }}><CalendarDays size={14} style={{display:'inline',verticalAlign:'middle',marginRight:4}} /><span style={{ color:G }}>TED</span> — Réservations</span>
             <div id="formulaire-dropdown" style={{ position:'relative' }}>
-              <button onClick={() => setShowFormDropdown(v => !v)} style={{ background:'rgba(255,255,255,0.08)', border:'1px solid #444', borderRadius:8, height:34, padding:'0 14px', color:'#ccc', fontWeight:600, fontSize:13, cursor:'pointer' }}>🔗 Formulaire</button>
+              <button onClick={() => setShowFormDropdown(v => !v)} style={{ background:'rgba(255,255,255,0.08)', border:'1px solid #444', borderRadius:8, height:34, padding:'0 14px', color:'#ccc', fontWeight:600, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}><Link size={13} /> Formulaire</button>
               {showFormDropdown && (
                 <div style={{ position:'absolute', top:40, left:0, background:'#fff', borderRadius:10, border:'1.5px solid #eee', boxShadow:'0 8px 24px rgba(0,0,0,0.12)', padding:8, zIndex:200, minWidth:180 }}>
-                  <button type="button" onMouseDown={async(e)=>{ e.preventDefault(); e.stopPropagation(); try{ await navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver.html'); }catch{ const t=document.createElement('textarea'); t.value='https://ted-crm.pages.dev/reserver.html'; document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t); } showToast('✅ Lien copié !'); setShowFormDropdown(false); }} style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}>📋 Copier</button>
-                  <button type="button" onMouseDown={(e)=>{ e.preventDefault(); e.stopPropagation(); window.open('https://ted-crm.pages.dev/reserver.html','_blank'); setShowFormDropdown(false); }} style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}>🔗 Ouvrir</button>
-                  <button type="button" onMouseDown={async(e)=>{ e.preventDefault(); e.stopPropagation(); const url='https://ted-crm.pages.dev/reserver.html'; if(navigator.share){ try{ await navigator.share({title:'Réservation Le TED',url}); }catch{} }else{ try{ await navigator.clipboard.writeText(url); }catch{} showToast('✅ Lien copié !'); } setShowFormDropdown(false); }} style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}>📤 Partager</button>
+                  <button type="button" onMouseDown={async(e)=>{ e.preventDefault(); e.stopPropagation(); try{ await navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver.html'); }catch{ const t=document.createElement('textarea'); t.value='https://ted-crm.pages.dev/reserver.html'; document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t); } showToast('✅ Lien copié !'); setShowFormDropdown(false); }} style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}><ClipboardList size={14} style={{display:'inline',verticalAlign:'middle',marginRight:6}} />Copier</button>
+                  <button type="button" onMouseDown={(e)=>{ e.preventDefault(); e.stopPropagation(); window.open('https://ted-crm.pages.dev/reserver.html','_blank'); setShowFormDropdown(false); }} style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}><Link size={14} style={{display:'inline',verticalAlign:'middle',marginRight:6}} />Ouvrir</button>
+                  <button type="button" onMouseDown={async(e)=>{ e.preventDefault(); e.stopPropagation(); const url='https://ted-crm.pages.dev/reserver.html'; if(navigator.share){ try{ await navigator.share({title:'Réservation Le TED',url}); }catch{} }else{ try{ await navigator.clipboard.writeText(url); }catch{} showToast('✅ Lien copié !'); } setShowFormDropdown(false); }} style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}><Share2 size={14} style={{display:'inline',verticalAlign:'middle',marginRight:6}} />Partager</button>
                 </div>
               )}
             </div>
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <button onClick={onBack} style={{ background:'rgba(255,255,255,0.08)', border:'1px solid #444', borderRadius:8, height:34, padding:'0 14px', color:'#ccc', fontWeight:600, fontSize:13, cursor:'pointer' }}>👥 Mes Clients</button>
-            <button onClick={()=>onBack('communications')} style={{ background:'rgba(255,255,255,0.08)', border:'1px solid #444', borderRadius:8, height:34, padding:'0 14px', color:'#ccc', fontWeight:600, fontSize:13, cursor:'pointer' }}>📣 Communications</button>
-            <button onClick={()=>setShowConfirmDecoRP(true)} style={{ background:'transparent', color:'#ccc', border:'1px solid #444', borderRadius:7, padding:'0 12px', height:32, fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>🔓 Déconnexion</button>
+            <button onClick={onBack} style={{ background:'rgba(255,255,255,0.08)', border:'1px solid #444', borderRadius:8, height:34, padding:'0 14px', color:'#ccc', fontWeight:600, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}><Users size={14} style={{display:'inline',verticalAlign:'middle'}} /> Mes Clients</button>
+            <button onClick={()=>onBack('communications')} style={{ background:'rgba(255,255,255,0.08)', border:'1px solid #444', borderRadius:8, height:34, padding:'0 14px', color:'#ccc', fontWeight:600, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}><Megaphone size={14} style={{display:'inline',verticalAlign:'middle'}} /> Communications</button>
+            <button onClick={()=>setShowConfirmDecoRP(true)} style={{ background:'transparent', color:'#ccc', border:'1px solid #444', borderRadius:7, padding:'0 12px', height:32, fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}><LockKeyhole size={14} style={{display:'inline',verticalAlign:'middle'}} /> Déconnexion</button>
           </div>
         </header>
       )}
@@ -2454,7 +2454,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                   {/* 2. Bouton toggle (mobile only) */}
                   {isMobile && (
                     <button onClick={()=>setCalMensuelOuvert(v=>!v)} style={{ width:'100%', padding:'10px 12px', background:'#f8f8f8', border:'1.5px solid #eee', borderRadius:8, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: calMensuelOuvert ? 12 : 0 }}>
-                      <span style={{ fontSize:13, fontWeight:700, color:'#555' }}>📅 Calendrier</span>
+                      <span style={{ fontSize:13, fontWeight:700, color:'#555' }}><CalendarDays size={13} style={{display:'inline',verticalAlign:'middle',marginRight:4}} />Calendrier</span>
                       <span style={{ fontSize:12, color:'#999' }}>{calMensuelOuvert ? '▲' : '▼'}</span>
                     </button>
                   )}
@@ -2578,12 +2578,12 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                       <p style={{ fontSize:12, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0 }}>SERVICE</p>
                       <p style={{ fontSize:14, color:'#666', margin:0 }}>{dateLabel || 'Sélectionner un jour'}</p>
                       <button onClick={() => setCalServiceSelectionne('midi')} style={{ width:'100%', padding:'20px 16px', borderRadius:12, border: calServiceSelectionne==='midi' ? '2px solid #111' : '1.5px solid #eee', background: calServiceSelectionne==='midi' ? '#111' : '#fff', cursor:'pointer', textAlign:'center' }}>
-                        <div style={{ fontSize:22 }}>☀️</div>
+                        <div style={{ display:'flex', justifyContent:'center' }}><Sun size={22} /></div>
                         <div style={{ fontSize:16, fontWeight:800, color: calServiceSelectionne==='midi' ? '#E8C547' : '#111', marginTop:6 }}>Midi</div>
                         <div style={{ fontSize:13, color:'#999', marginTop:4 }}>{couvertsMidi} couvert{couvertsMidi > 1 ? 's' : ''}</div>
                       </button>
                       <button onClick={() => setCalServiceSelectionne('soir')} style={{ width:'100%', padding:'20px 16px', borderRadius:12, border: calServiceSelectionne==='soir' ? '2px solid #111' : '1.5px solid #eee', background: calServiceSelectionne==='soir' ? '#111' : '#fff', cursor:'pointer', textAlign:'center' }}>
-                        <div style={{ fontSize:22 }}>🌙</div>
+                        <div style={{ display:'flex', justifyContent:'center' }}><Moon size={22} /></div>
                         <div style={{ fontSize:16, fontWeight:800, color: calServiceSelectionne==='soir' ? '#E8C547' : '#111', marginTop:6 }}>Soir</div>
                         <div style={{ fontSize:13, color:'#999', marginTop:4 }}>{couvertsSoir} couvert{couvertsSoir > 1 ? 's' : ''}</div>
                       </button>
@@ -2599,7 +2599,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                               style={{ height:40, borderRadius:9, border:'1.5px solid', fontSize:13, fontWeight:700, cursor:'pointer',
                                 background: calServiceSelectionne === 'midi' ? '#111' : '#fff',
                                 color: calServiceSelectionne === 'midi' ? '#E8C547' : '#111',
-                                borderColor: calServiceSelectionne === 'midi' ? '#111' : '#ddd' }}>☀️ Midi</button>
+                                borderColor: calServiceSelectionne === 'midi' ? '#111' : '#ddd' }}><Sun size={13} style={{display:'inline',verticalAlign:'middle',marginRight:4}}/> Midi</button>
                             <div style={{ textAlign:'center', fontSize:11, color:'#888' }}>{couvertsMidi} couvert{couvertsMidi > 1 ? 's' : ''}</div>
                           </div>
                           <div style={{ flex:1, display:'flex', flexDirection:'column', gap:4 }}>
@@ -2607,7 +2607,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                               style={{ height:40, borderRadius:9, border:'1.5px solid', fontSize:13, fontWeight:700, cursor:'pointer',
                                 background: calServiceSelectionne === 'soir' ? '#111' : '#fff',
                                 color: calServiceSelectionne === 'soir' ? '#E8C547' : '#111',
-                                borderColor: calServiceSelectionne === 'soir' ? '#111' : '#ddd' }}>🌙 Soir</button>
+                                borderColor: calServiceSelectionne === 'soir' ? '#111' : '#ddd' }}><Moon size={13} style={{display:'inline',verticalAlign:'middle',marginRight:4}}/> Soir</button>
                             <div style={{ textAlign:'center', fontSize:11, color:'#888' }}>{couvertsSoir} couvert{couvertsSoir > 1 ? 's' : ''}</div>
                           </div>
                         </div>
@@ -2626,7 +2626,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
             .filter(r => (r.statut === 'confirmee' || r.statut === 'annulee' || r.statut === 'absente') && r.date === calJourSelectionne && r.service === calServiceSelectionne)
             .sort((a,b) => (a.heure||'').localeCompare(b.heure||''));
           const dateLabel = new Date(calJourSelectionne + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
-          const serviceLabel = calServiceSelectionne === 'midi' ? '☀️ Midi' : '🌙 Soir';
+          const serviceLabel = calServiceSelectionne === 'midi' ? 'Midi' : 'Soir';
           return (
             <div style={{ background:'#fff', borderRadius:14, padding:'14px 16px', marginBottom:12, boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
@@ -2635,7 +2635,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                   <div style={{ fontSize:13, color:'#888', marginTop:2 }}>{dateLabel} — {serviceLabel}</div>
                 </div>
                 <button onClick={() => telechargerTableau(calJourSelectionne, calServiceSelectionne, resasDuJour)} style={{ background:'#111', color:'#fff', border:'none', borderRadius:9, padding:'0 18px', height:38, fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
-                  📥 Télécharger
+                  <Download size={14} style={{display:'inline',verticalAlign:'middle',marginRight:4}} /> Télécharger
                 </button>
               </div>
               <div id="print-tableau">
@@ -2687,7 +2687,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                               <span style={{ color:'#666', minWidth:50 }}>{r.heure || '—'}</span>
                               <span style={{ color:'#666', minWidth:60 }}>{r.nb_personnes} pers.</span>
                               {r.clients?.tel && (
-                                <a href={`tel:${r.clients.tel}`} onClick={e => e.stopPropagation()} style={{ display:'inline-flex', alignItems:'center', gap:4, background:'#f0f0f0', borderRadius:6, padding:'3px 10px', fontSize:12, color:'#111', textDecoration:'none', fontWeight:600, whiteSpace:'nowrap' }}>📞 {r.clients.tel}</a>
+                                <a href={`tel:${r.clients.tel}`} onClick={e => e.stopPropagation()} style={{ display:'inline-flex', alignItems:'center', gap:4, background:'#f0f0f0', borderRadius:6, padding:'3px 10px', fontSize:12, color:'#111', textDecoration:'none', fontWeight:600, whiteSpace:'nowrap' }}><Phone size={12} style={{display:'inline',verticalAlign:'middle'}} /> {r.clients.tel}</a>
                               )}
                               {r.commentaire_client && (
                                 <span style={{ fontSize:12, color:'#999', fontStyle:'italic' }}>{r.commentaire_client}</span>
@@ -2747,7 +2747,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8,marginBottom:14}}>
                         {[
                           {label:'Date', value:new Date(r.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})},
-                          {label:'Service', value:r.service==='midi'?'☀️ Midi':'🌙 Soir'},
+                          {label:'Service', value:r.service==='midi'?<><Sun size={13} style={{display:'inline',verticalAlign:'middle',marginRight:4}}/> Midi</>:<><Moon size={13} style={{display:'inline',verticalAlign:'middle',marginRight:4}}/> Soir</>},
                           {label:'Heure', value:r.heure||'—'},
                           {label:'Personnes', value:`${r.nb_personnes} pers.`},
                           {label:'Occasion', value:r.occasion||'—'},
@@ -2758,7 +2758,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                           </div>
                         ))}
                       </div>
-                      {r.commentaire_client && <div style={{background:'#fffbea',borderRadius:8,padding:'8px 12px',marginBottom:14,fontSize:13,color:'#666',fontStyle:'italic'}}>💬 {r.commentaire_client}</div>}
+                      {r.commentaire_client && <div style={{background:'#fffbea',borderRadius:8,padding:'8px 12px',marginBottom:14,fontSize:13,color:'#666',fontStyle:'italic'}}><MessageSquare size={14} style={{display:'inline',verticalAlign:'middle',marginRight:4}} />{r.commentaire_client}</div>}
                       <div style={{display:'flex',gap:10}}>
                         <button onClick={()=>setRefusResa(r)} style={{flex:1,height:44,border:'none',borderRadius:10,background:'#dc2626',fontSize:14,fontWeight:700,cursor:'pointer',color:'#fff'}}>✕ Refuser</button>
                         <button onClick={()=>setAcceptResa(r)} style={{flex:2,height:44,border:'none',borderRadius:10,background:'#16a34a',fontSize:14,fontWeight:800,cursor:'pointer',color:'#fff'}}>✓ Accepter la réservation</button>
@@ -2809,7 +2809,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
               </div>
               <h3 style={{margin:'0 0 8px', fontSize:16, fontWeight:800, color:'#111'}}>
                 {calJourSelectionne ? new Date(calJourSelectionne+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}) : 'Sélectionner un jour'}
-                {calServiceSelectionne ? ` — ${calServiceSelectionne==='midi'?'☀️ Midi':'🌙 Soir'}` : ''}
+                {calServiceSelectionne ? <> — {calServiceSelectionne==='midi'?<><Sun size={13} style={{display:'inline',verticalAlign:'middle'}} /> Midi</>:<><Moon size={13} style={{display:'inline',verticalAlign:'middle'}} /> Soir</>}</> : ''}
               </h3>
               {calJourSelectionne && calServiceSelectionne && (
                 <div style={{display:'flex', gap:16, fontSize:12, color:'#666', marginBottom:10}}>
@@ -2855,7 +2855,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                       <div style={{ fontSize:12, color:'#999' }}>{r.nb_personnes} pers.</div>
                     </div>
                     {r.source === 'Grand Jeux du TED'
-                      ? <span style={{ background:'#E8C547', color:'#111', borderRadius:20, padding:'3px 10px', fontSize:11, fontWeight:700, flexShrink:0, whiteSpace:'nowrap' }}>🎰 Jeux</span>
+                      ? <span style={{ background:'#E8C547', color:'#111', borderRadius:20, padding:'3px 10px', fontSize:11, fontWeight:700, flexShrink:0, whiteSpace:'nowrap', display:'inline-flex', alignItems:'center', gap:4 }}><Dices size={11} /> Jeux</span>
                       : <span style={{ background:s.bg, color:s.color, borderRadius:20, padding:'3px 10px', fontSize:11, fontWeight:700, flexShrink:0, whiteSpace:'nowrap' }}>{s.label}</span>
                     }
                   </div>
@@ -2981,7 +2981,7 @@ function SendingProgressModal({ type, total, done, successCount, onClose }) {
   }, [done]);
 
   const isEmail = type === 'email';
-  const emoji = isEmail ? '✉️' : '📱';
+  const emoji = isEmail ? <Mail size={40} style={{display:'block',margin:'0 auto'}} /> : <MessageSquare size={40} style={{display:'block',margin:'0 auto'}} />;
   const label = isEmail ? 'email' : 'SMS';
   const labelP = isEmail ? 'emails' : 'SMS';
 
@@ -2994,7 +2994,7 @@ function SendingProgressModal({ type, total, done, successCount, onClose }) {
 
         {!showSuccess ? (
           <>
-            <div style={{ fontSize:44, marginBottom:18, filter:'drop-shadow(0 4px 8px rgba(0,0,0,0.12))' }}>{emoji}</div>
+            <div style={{ marginBottom:18, filter:'drop-shadow(0 4px 8px rgba(0,0,0,0.12))' }}>{emoji}</div>
             <h2 style={{ margin:'0 0 6px', fontSize:22, fontWeight:900, color:'#111', letterSpacing:-0.5 }}>Envoi en cours…</h2>
             <p style={{ margin:'0 0 32px', fontSize:14, color:'#999', fontWeight:500 }}>
               {total} destinataire{total > 1 ? 's' : ''}
@@ -3103,7 +3103,7 @@ function PlatJourSheet({ item, onClose, onSaved }) {
     onClose();
   }
 
-  const sheetTitle = form.type === 'plat' ? '🍽 Plat du jour' : form.type === 'dessert' ? '🍮 Dessert du jour' : '👨‍🍳 Suggestion du chef';
+  const sheetTitle = form.type === 'plat' ? <><UtensilsCrossed size={14} style={{display:'inline',verticalAlign:'middle',marginRight:4}} />Plat du jour</> : form.type === 'dessert' ? <><UtensilsCrossed size={14} style={{display:'inline',verticalAlign:'middle',marginRight:4}} />Dessert du jour</> : <><UtensilsCrossed size={14} style={{display:'inline',verticalAlign:'middle',marginRight:4}} />Suggestion du chef</>;
   return (
     <MenuBottomSheet
       title={sheetTitle}
@@ -3281,7 +3281,7 @@ function CartesSheet({ onClose, showToast, produits }) {
     {confirmForce && (
       <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:4500, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }} onClick={() => setConfirmForce(null)}>
         <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:400, padding:'24px 20px', boxShadow:'0 8px 40px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
-          <div style={{ fontSize:32, textAlign:'center', marginBottom:12 }}>⚠️</div>
+          <div style={{ textAlign:'center', marginBottom:12 }}><AlertCircle size={32} color="#dc2626" style={{display:'block',margin:'0 auto'}} /></div>
           <h3 style={{ margin:'0 0 10px', fontSize:16, fontWeight:800, color:'#111', textAlign:'center' }}>
             Supprimer « {confirmForce.carte.nom} » ?
           </h3>
@@ -3393,7 +3393,7 @@ function CatsSheet({ categories: initCats, onClose, showToast, carte, produits }
     {confirmDel && (
       <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:4500, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }} onClick={() => setConfirmDel(null)}>
         <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:400, padding:'24px 20px', boxShadow:'0 8px 40px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
-          <div style={{ fontSize:32, textAlign:'center', marginBottom:12 }}>⚠️</div>
+          <div style={{ textAlign:'center', marginBottom:12 }}><AlertCircle size={32} color="#dc2626" style={{display:'block',margin:'0 auto'}} /></div>
           <h3 style={{ margin:'0 0 10px', fontSize:16, fontWeight:800, color:'#111', textAlign:'center' }}>
             Supprimer « {confirmDel.cat.nom} » ?
           </h3>
@@ -3936,7 +3936,7 @@ function RouePage({ showToast }) {
           <a href="/accueil.html?preview=roue" target="_blank" rel="noopener noreferrer" style={{ display:'flex', alignItems:'center', gap:6, fontSize:13, fontWeight:600, color:'#555', textDecoration:'none', border:'1px solid #ddd', borderRadius:8, padding:'5px 12px', background:'#fff', marginRight:8 }}>
             <ExternalLink size={13} strokeWidth={2} /> Voir le jeu
           </a>
-          <span style={{ fontSize:13, fontWeight:600, color: rouеActive ? '#111' : '#aaa' }}>{rouеActive ? '🟢 Jeux actif' : '⚫ Jeux inactif'}</span>
+          <span style={{ fontSize:13, fontWeight:600, color: rouеActive ? '#111' : '#aaa' }}>{rouеActive ? <><div style={{width:8,height:8,borderRadius:'50%',background:'#22c55e',display:'inline-block',marginRight:4,verticalAlign:'middle'}} />Jeux actif</> : <><div style={{width:8,height:8,borderRadius:'50%',background:'#888',display:'inline-block',marginRight:4,verticalAlign:'middle'}} />Jeux inactif</>}</span>
           <div onClick={() => toggleRoueActive(!rouеActive)} style={{ width:48, height:26, borderRadius:13, background: rouеActive ? '#E8C547' : '#ddd', position:'relative', cursor:'pointer', transition:'background .2s', flexShrink:0 }}>
             <div style={{ position:'absolute', top:3, left: rouеActive ? 25 : 3, width:20, height:20, borderRadius:'50%', background:'#fff', boxShadow:'0 1px 4px rgba(0,0,0,0.25)', transition:'left .2s' }} />
           </div>
@@ -4200,7 +4200,7 @@ function RouePage({ showToast }) {
                         <div onClick={()=>setEmail1CalOpen(c=>c==='debut'?null:'debut')}
                           style={{ ...iS, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', userSelect:'none' }}>
                           <span style={{ color: email1Date ? '#111' : '#aaa' }}>{dateDebut || 'Choisir une date…'}</span>
-                          <span style={{ fontSize:14 }}>📅</span>
+                          <CalendarDays size={14} style={{display:'inline',verticalAlign:'middle'}} />
                         </div>
                         {email1CalOpen === 'debut' && <CalPicker which="debut" />}
                       </div>
@@ -4211,7 +4211,7 @@ function RouePage({ showToast }) {
                           <div onClick={()=>setEmail1CalOpen(c=>c==='debut'?null:'debut')}
                             style={{ ...iS, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', userSelect:'none' }}>
                             <span style={{ color: email1Date ? '#111' : '#aaa', fontSize:13 }}>{dateDebut || 'Début…'}</span>
-                            <span style={{ fontSize:13 }}>📅</span>
+                            <CalendarDays size={13} style={{display:'inline',verticalAlign:'middle'}} />
                           </div>
                           {email1CalOpen === 'debut' && <CalPicker which="debut" />}
                         </div>
@@ -4220,7 +4220,7 @@ function RouePage({ showToast }) {
                           <div onClick={()=>setEmail1CalOpen(c=>c==='fin'?null:'fin')}
                             style={{ ...iS, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', userSelect:'none' }}>
                             <span style={{ color: email1DateFin ? '#111' : '#aaa', fontSize:13 }}>{dateFin || 'Fin…'}</span>
-                            <span style={{ fontSize:13 }}>📅</span>
+                            <CalendarDays size={13} style={{display:'inline',verticalAlign:'middle'}} />
                           </div>
                           {email1CalOpen === 'fin' && <CalPicker which="fin" />}
                         </div>
@@ -4288,7 +4288,7 @@ function RouePage({ showToast }) {
           <option value="semaine">Cette semaine</option>
           <option value="mois">Ce mois</option>
         </select>
-        <input type="text" placeholder="🔍 Rechercher…" value={recherche} onChange={e=>setRecherche(e.target.value)} style={{ ...iS, width:200, background:'#fff' }} />
+        <input type="text" placeholder="Rechercher…" value={recherche} onChange={e=>setRecherche(e.target.value)} style={{ ...iS, width:200, background:'#fff', paddingLeft:32, backgroundImage:'none', position:'relative' }} />
         <div style={{ marginLeft:'auto' }}>
           <button onClick={exportCSV} style={{ ...btnG, display:'flex', alignItems:'center', gap:6 }}>
             <Download size={14} /> Exporter CSV
@@ -4302,7 +4302,7 @@ function RouePage({ showToast }) {
           <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
             <thead>
               <tr style={{ background:'#fafafa', borderBottom:'2px solid #f0f0f0' }}>
-                {['Date','Prénom','Nom','Téléphone','Email','Récompense','Statut','🗑️'].map(h => (
+                {['Date','Prénom','Nom','Téléphone','Email','Récompense','Statut',''].map(h => (
                   <th key={h} style={{ padding:'12px 14px', textAlign:'left', fontWeight:700, fontSize:11, color:'#888', textTransform:'uppercase', letterSpacing:'.04em', whiteSpace:'nowrap' }}>{h}</th>
                 ))}
               </tr>
@@ -4349,7 +4349,7 @@ function RouePage({ showToast }) {
       {planModal && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:999, display:'flex', alignItems:'center', justifyContent:'center' }}>
           <div style={{ background:'#fff', borderRadius:20, padding:32, width:340, boxShadow:'0 20px 60px rgba(0,0,0,0.25)' }}>
-            <h3 style={{ margin:'0 0 20px', fontSize:18, fontWeight:900 }}>📅 Date de visite</h3>
+            <h3 style={{ margin:'0 0 20px', fontSize:18, fontWeight:900, display:'flex', alignItems:'center', gap:8 }}><CalendarDays size={18} style={{display:'inline',verticalAlign:'middle'}} /> Date de visite</h3>
             <div style={{ fontWeight:600, fontSize:14, marginBottom:4, color:'#444' }}>{planModal.prenom} {planModal.nom}</div>
             <div style={{ fontSize:13, color:'#888', marginBottom:20 }}>{planModal.roue_recompenses?.emoji} {planModal.roue_recompenses?.nom}</div>
             <div style={{ marginBottom:14 }}>
@@ -4725,8 +4725,8 @@ function MenuPage({ showToast }) {
 
         const rows = [
           { item: entreeJour,  setter: setEntreeJour,  label: 'Entrée',  icon: '🥗', ph: "de l'entrée" },
-          { item: platJour,    setter: setPlatJour,    label: 'Plat',    icon: '🍽', ph: 'du plat' },
-          { item: dessertJour, setter: setDessertJour, label: 'Dessert', icon: '🍮', ph: 'du dessert' },
+          { item: platJour,    setter: setPlatJour,    label: 'Plat',    icon: '🍽', iconEl: <UtensilsCrossed size={11} style={{display:'inline',verticalAlign:'middle'}} />, ph: 'du plat' },
+          { item: dessertJour, setter: setDessertJour, label: 'Dessert', icon: '🍮', iconEl: <UtensilsCrossed size={11} style={{display:'inline',verticalAlign:'middle'}} />, ph: 'du dessert' },
         ];
 
         const inpStyle = { height:34, border:'1px solid #eee', borderRadius:8, padding:'0 10px', fontSize:13, outline:'none', background:'#fafafa', width:'100%', transition:'border-color 0.15s' };
@@ -4740,7 +4740,7 @@ function MenuPage({ showToast }) {
             <div style={{ background:'#fff', borderRadius:16, border:`2px solid ${anyActif ? '#E8C547' : '#eee'}`, overflow:'hidden', transition:'border-color 0.2s' }}>
               {/* Header global */}
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'11px 16px', borderBottom:'1px solid #f5f5f5', background: anyActif ? '#fffdf0' : '#fff' }}>
-                <span style={{ fontSize:12, fontWeight:800, color:'#111', textTransform:'uppercase', letterSpacing:1 }}>🍽 Menu du jour</span>
+                <span style={{ fontSize:12, fontWeight:800, color:'#111', textTransform:'uppercase', letterSpacing:1, display:'flex', alignItems:'center', gap:4 }}><UtensilsCrossed size={12} /> Menu du jour</span>
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                   <span style={{ fontSize:10, color:'#bbb' }}>Tout</span>
                   <MenuToggle value={anyActif} onChange={toggleAll} />
@@ -4755,7 +4755,7 @@ function MenuPage({ showToast }) {
                     <div key={label} style={{ borderRadius:10, border:`1px solid ${active ? '#f0e88a' : '#f0f0f0'}`, padding:'10px 12px', background: active ? '#fffef5' : '#fafafa', transition:'all 0.15s' }}>
                       {/* Ligne nom + prix + toggle */}
                       <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:7 }}>
-                        <span style={{ fontSize:11, fontWeight:700, color: active ? '#888' : '#ccc', width:48, flexShrink:0 }}>{icon} {label}</span>
+                        <span style={{ fontSize:11, fontWeight:700, color: active ? '#888' : '#ccc', width:48, flexShrink:0 }}>{typeof icon === 'string' && (icon === '🍽' || icon === '🍮') ? <UtensilsCrossed size={11} style={{display:'inline',verticalAlign:'middle',marginRight:2}} /> : icon} {label}</span>
                         <input
                           value={item?.nom || ''}
                           onChange={e => setter(p => p ? ({...p, nom: e.target.value}) : p)}
@@ -4812,7 +4812,7 @@ function MenuPage({ showToast }) {
             {/* Encart 2 — Suggestion du chef (compact) */}
             <div style={{ background:'#fff', borderRadius:12, border:`1.5px solid ${suggestionJour?.actif ? '#E8C547' : '#eee'}`, overflow:'hidden', transition:'border-color 0.2s' }}>
               <div style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 14px' }}>
-                <span style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:1, whiteSpace:'nowrap' }}>👨‍🍳 Suggestion du chef</span>
+                <span style={{ fontSize:11, fontWeight:700, color:'#888', textTransform:'uppercase', letterSpacing:1, whiteSpace:'nowrap', display:'flex', alignItems:'center', gap:4 }}><UtensilsCrossed size={11} /> Suggestion du chef</span>
                 <input
                   value={suggestionJour?.nom || ''}
                   onChange={e => setSuggestionJour(p => p ? ({...p, nom: e.target.value}) : p)}
@@ -4854,7 +4854,7 @@ function MenuPage({ showToast }) {
 
       {/* Recherche */}
       <div style={{ position:'relative', marginBottom:20 }}>
-        <span style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', color:'#bbb', fontSize:14, pointerEvents:'none' }}>🔍</span>
+        <span style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', color:'#bbb', pointerEvents:'none' }}><Search size={14} /></span>
         <input value={menuSearch} onChange={e => { setMenuSearch(e.target.value); if (e.target.value.trim()) setOpenCats(new Set(catsFiltered.map(c => c.id))); }} placeholder="Rechercher un produit..." style={{ width:'100%', height:44, border:'1.5px solid #eee', borderRadius:12, padding:'0 36px 0 38px', fontSize:14, outline:'none', boxSizing:'border-box', background:'#f9f9f9' }} />
         {menuSearch && <button onClick={() => { setMenuSearch(''); setOpenCats(new Set()); }} style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', fontSize:16, cursor:'pointer', color:'#aaa' }}>✕</button>}
       </div>
@@ -5113,7 +5113,7 @@ function MenuPage({ showToast }) {
                     const url = await uploadFlyer(file);
                     if (url) setSoireeSheet(p=>({...p, image_url: url}));
                   }} />
-                  {uploadingFlyer ? '⏳ Upload...' : '🖼 Choisir une image'}
+                  {uploadingFlyer ? 'Upload...' : <><ImageIcon size={14} style={{display:'inline',verticalAlign:'middle',marginRight:4}} />Choisir une image</>}
                 </label>
               )}
             </div>
@@ -5351,7 +5351,7 @@ function CRMApp({ user, onLogout }) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            title: '📅 Nouvelle réservation !',
+            title: 'Nouvelle réservation !',
             body: `${nom} · ${date} · ${payload.new.heure || ''} · ${payload.new.nb_personnes} pers.`
           })
         });
@@ -5614,9 +5614,9 @@ function CRMApp({ user, onLogout }) {
           width:64, height:64, borderRadius:'50%',
           background:'#fffbea', border:'3px solid #E8C547',
           display:'flex', alignItems:'center', justifyContent:'center',
-          margin:'0 auto 20px', fontSize:28
+          margin:'0 auto 20px'
         }}>
-          🔔
+          <Bell size={28} />
         </div>
         <h2 style={{fontSize:20, fontWeight:900, color:'#111', margin:'0 0 10px'}}>
           Activer les notifications
@@ -5633,7 +5633,7 @@ function CRMApp({ user, onLogout }) {
           background:'#E8C547', color:'#111',
           fontSize:15, fontWeight:800, cursor:'pointer', marginBottom:10
         }}>
-          🔔 Activer les notifications
+          <Bell size={16} style={{display:'inline',verticalAlign:'middle',marginRight:6}} /> Activer les notifications
         </button>
         <button onClick={()=>{
           localStorage.setItem('ted_notif_asked', 'true');
@@ -5956,7 +5956,7 @@ function CRMApp({ user, onLogout }) {
                   <div style={{position:'relative'}}>
                     <button onClick={()=>setShowServiceDropdown(v=>!v)} style={{width:'100%', height:36, border:'1.5px solid #eee', borderRadius:9, background:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 12px', fontSize:13, color:'#111', fontWeight:500}}>
                       <span style={{overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', flex:1, textAlign:'left'}}>
-                        {filtreServices?.size>0 ? [...filtreServices].map(s=>s==='midi'?'☀️ Midi':'🌙 Soir').join(', ') : 'Tous les services'}
+                        {filtreServices?.size>0 ? [...filtreServices].map(s=>s==='midi'?'Midi':'Soir').join(', ') : 'Tous les services'}
                       </span>
                       <ChevronDown size={14} strokeWidth={2} color="#999" style={{flexShrink:0, marginLeft:6}}/>
                     </button>
@@ -5974,7 +5974,7 @@ function CRMApp({ user, onLogout }) {
                             </div>
                             <span style={{fontSize:13, fontWeight:500, color:'#111'}}>Tous les services</span>
                           </div>
-                          {[{id:'midi',label:'☀️ Midi'},{id:'soir',label:'🌙 Soir'}].map(s=>{
+                          {[{id:'midi',label:<><Sun size={13} style={{display:'inline',verticalAlign:'middle',marginRight:4}}/> Midi</>},{id:'soir',label:<><Moon size={13} style={{display:'inline',verticalAlign:'middle',marginRight:4}}/> Soir</>}].map(s=>{
                             const actif = filtreServices?.has(s.id);
                             return (
                               <div key={s.id} onClick={()=>toggleFiltreService(s.id)}
@@ -6206,7 +6206,7 @@ function CRMApp({ user, onLogout }) {
                     </div>
                     <div style={{flex:1,background:'#f9f9f9',borderRadius:12,padding:'14px 16px'}}>
                       <p style={{fontSize:11,fontWeight:700,color:'#999',textTransform:'uppercase',letterSpacing:1,margin:'0 0 6px'}}>Type</p>
-                      <p style={{fontSize:16,fontWeight:800,color:'#111',margin:'0 0 2px'}}>{commType==='email'?'✉️ Email':'💬 SMS'}</p>
+                      <p style={{fontSize:16,fontWeight:800,color:'#111',margin:'0 0 2px'}}>{commType==='email'?<><Mail size={16} style={{display:'inline',verticalAlign:'middle',marginRight:4}} />Email</>:<><MessageSquare size={16} style={{display:'inline',verticalAlign:'middle',marginRight:4}} />SMS</>}</p>
                       <p style={{fontSize:12,color:'#666',margin:0}}>{commType==='sms'?`~${(selectedComm.length*0.04).toFixed(2)}€ estimés`:'Envoi gratuit'}</p>
                     </div>
                     <div style={{flex:2,background:'#f9f9f9',borderRadius:12,padding:'14px 16px'}}>
@@ -6215,7 +6215,7 @@ function CRMApp({ user, onLogout }) {
                         {filtreGenresComm.size>0 && [...filtreGenresComm].map(g=><span key={g} style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'3px 10px',fontSize:12,fontWeight:700}}>{g}s</span>)}
                         {filtreAbsentsMois>0 && <span style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'3px 10px',fontSize:12,fontWeight:700}}>Absents {filtreAbsentsMois}m</span>}
                         {filtreJours?.size>0 && [...filtreJours].map(j=><span key={j} style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'3px 10px',fontSize:12,fontWeight:700}}>{j}</span>)}
-                        {filtreServices?.size>0 && [...filtreServices].map(s=><span key={s} style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'3px 10px',fontSize:12,fontWeight:700}}>{s==='midi'?'☀️ Midi':'🌙 Soir'}</span>)}
+                        {filtreServices?.size>0 && [...filtreServices].map(s=><span key={s} style={{background:'#111',color:'#E8C547',borderRadius:20,padding:'3px 10px',fontSize:12,fontWeight:700,display:'inline-flex',alignItems:'center',gap:4}}>{s==='midi'?<><Sun size={12}/> Midi</>:<><Moon size={12}/> Soir</>}</span>)}
                         {filtreGenresComm.size===0 && !filtreAbsentsMois && !filtreJours?.size && !filtreServices?.size && <span style={{fontSize:13,color:'#999'}}>Aucun — tous les clients</span>}
                       </div>
                     </div>
@@ -6304,7 +6304,7 @@ function CRMApp({ user, onLogout }) {
       {notifResa && (() => { const isMob = window.innerWidth < 768; return (
         <div style={{ position:'fixed', top:16, right:isMob?'auto':20, left:isMob?'50%':'auto', transform:isMob?'translateX(-50%)':'none', background:'rgba(17,17,17,0.92)', backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)', color:'#fff', borderRadius:16, padding:'14px 16px', zIndex:9999, boxShadow:'0 8px 32px rgba(0,0,0,0.25)', display:'flex', alignItems:'center', gap:12, maxWidth:isMob?'90vw':340, minWidth:280, animation:'slideDownFade 0.3s cubic-bezier(0.34,1.56,0.64,1)', cursor:'pointer', border:'1px solid rgba(255,255,255,0.08)' }}
           onClick={() => { setActiveView('reservations'); setNotifResa(null); }}>
-          <div style={{ width:42, height:42, borderRadius:10, background:'#E8C547', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>📅</div>
+          <div style={{ width:42, height:42, borderRadius:10, background:'#E8C547', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}><CalendarDays size={20} /></div>
           <div style={{ flex:1, minWidth:0 }}>
             <p style={{ margin:'0 0 2px', fontWeight:800, fontSize:13, color:'#fff' }}>Nouvelle réservation !</p>
             <p style={{ margin:'0 0 1px', fontSize:13, color:'#E8C547', fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{notifResa.nom}</p>
@@ -6341,9 +6341,9 @@ function CRMApp({ user, onLogout }) {
             </div>
             <div style={{ display:'flex', alignItems:'center', gap:6 }}>
               {'Notification' in window && Notification.permission !== 'granted' && (
-                <button onClick={demanderPermissionNotif} style={{ background:'#E8C547', color:'#111', border:'none', borderRadius:8, width:36, height:36, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, cursor:'pointer' }}>🔔</button>
+                <button onClick={demanderPermissionNotif} style={{ background:'#E8C547', color:'#111', border:'none', borderRadius:8, width:36, height:36, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}><Bell size={18} /></button>
               )}
-              <button onClick={()=>setShowConfirmDeconnexion(true)} style={{ background:'rgba(255,255,255,0.1)', border:'none', borderRadius:8, width:36, height:36, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#fff', fontSize:16 }}>🔓</button>
+              <button onClick={()=>setShowConfirmDeconnexion(true)} style={{ background:'rgba(255,255,255,0.1)', border:'none', borderRadius:8, width:36, height:36, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#fff' }}><LockKeyhole size={16} /></button>
             </div>
           </div>
           {/* Onglets + Recherche — uniquement sur l'onglet Clients */}
@@ -6351,7 +6351,7 @@ function CRMApp({ user, onLogout }) {
             <>
               <div style={{ padding:'8px 12px 6px', background:'#f5f5f5' }}>
                 <div style={{ position:'relative', marginBottom:8 }}>
-                  <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#bbb', fontSize:14 }}>🔍</span>
+                  <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#bbb' }}><Search size={14} /></span>
                   <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1)}} placeholder="Rechercher..." style={{ width:'100%', height:44, border:'1.5px solid #eee', borderRadius:12, padding:'0 36px 0 38px', fontSize:14, outline:'none', boxSizing:'border-box', background:'#fff' }} />
                   {search && <button onClick={()=>{setSearch('');setPage(1)}} style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', fontSize:16, cursor:'pointer', color:'#aaa' }}>✕</button>}
                 </div>
@@ -6400,7 +6400,7 @@ function CRMApp({ user, onLogout }) {
         <div style={{ paddingTop:146, paddingBottom:'calc(90px + env(safe-area-inset-bottom, 16px))', background:'#f5f5f5', minHeight:'100vh' }}>
           {pageClients.length === 0 && (
             <div style={{ textAlign:'center', padding:'4rem 2rem' }}>
-              <div style={{ fontSize:48, marginBottom:12 }}>🔍</div>
+              <div style={{ marginBottom:12 }}><Search size={48} color="#ddd" style={{display:'block',margin:'0 auto'}} /></div>
               <p style={{ color:'#bbb', fontSize:15 }}>Aucun client trouvé</p>
             </div>
           )}
@@ -6509,15 +6509,15 @@ function CRMApp({ user, onLogout }) {
               <select value={filtreServiceClients} onChange={e=>setFiltreServiceClients(e.target.value)}
                 style={{height:36, padding:'0 10px', borderRadius:10, border:'1.5px solid #eee', background:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', color: filtreServiceClients!=='Tous'?'#111':'#666', flexShrink:0, outline:'none'}}>
                 <option value="Tous">Service</option>
-                <option value="midi">☀️ Midi</option>
-                <option value="soir">🌙 Soir</option>
+                <option value="midi">Midi</option>
+                <option value="soir">Soir</option>
               </select>
               <select value={filtreSourceClients} onChange={e=>setFiltreSourceClients(e.target.value)}
                 style={{height:36, padding:'0 10px', borderRadius:10, border:'1.5px solid #eee', background:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', color: filtreSourceClients!=='Tous'?'#111':'#666', flexShrink:0, outline:'none'}}>
                 <option value="Tous">Source</option>
-                <option value="Grand Jeux du TED">🎰 Roue du jeu</option>
-                <option value="Réservation">📅 Réservation</option>
-                <option value="Manuel">✏️ Manuel</option>
+                <option value="Grand Jeux du TED">Roue du jeu</option>
+                <option value="Réservation">Réservation</option>
+                <option value="Manuel">Manuel</option>
               </select>
               <button onClick={()=>setModalAdd(true)} style={{height:36, padding:'0 16px', borderRadius:10, border:'none', background:'#E8C547', color:'#111', fontSize:13, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', gap:8, flexShrink:0, boxShadow:'0 2px 8px rgba(232,197,71,0.3)'}}>
                 <Plus size={16} strokeWidth={2}/> Nouveau client
@@ -6705,8 +6705,8 @@ function CRMApp({ user, onLogout }) {
           <>
             <div onPointerDown={()=>setMobileAction(null)} style={{ position:'fixed', inset:0, zIndex:300 }} />
             <div style={{ position:'fixed', top, left, width:menuW, background:'#fff', borderRadius:12, boxShadow:'0 6px 24px rgba(0,0,0,0.18)', zIndex:301, overflow:'hidden', border:'1px solid #f0f0f0' }}>
-              <button onPointerDown={()=>{ setModalEdit(mobileAction); setMobileAction(null); }} style={{ width:'100%', padding:'13px 16px', background:'none', border:'none', borderBottom:'1px solid #f5f5f5', fontSize:14, fontWeight:600, color:'#1d4ed8', cursor:'pointer', textAlign:'left', display:'flex', alignItems:'center', gap:10 }}>✏️ Modifier</button>
-              <button onPointerDown={()=>{ setModalDelete(mobileAction); setMobileAction(null); }} style={{ width:'100%', padding:'13px 16px', background:'none', border:'none', fontSize:14, fontWeight:600, color:'#dc2626', cursor:'pointer', textAlign:'left', display:'flex', alignItems:'center', gap:10 }}>🗑 Supprimer</button>
+              <button onPointerDown={()=>{ setModalEdit(mobileAction); setMobileAction(null); }} style={{ width:'100%', padding:'13px 16px', background:'none', border:'none', borderBottom:'1px solid #f5f5f5', fontSize:14, fontWeight:600, color:'#1d4ed8', cursor:'pointer', textAlign:'left', display:'flex', alignItems:'center', gap:10 }}><Pencil size={14} style={{display:'inline',verticalAlign:'middle'}} /> Modifier</button>
+              <button onPointerDown={()=>{ setModalDelete(mobileAction); setMobileAction(null); }} style={{ width:'100%', padding:'13px 16px', background:'none', border:'none', fontSize:14, fontWeight:600, color:'#dc2626', cursor:'pointer', textAlign:'left', display:'flex', alignItems:'center', gap:10 }}><Trash2 size={14} style={{display:'inline',verticalAlign:'middle'}} /> Supprimer</button>
             </div>
           </>
         );
@@ -6726,30 +6726,30 @@ function CRMApp({ user, onLogout }) {
                 <span style={badge(c.genre)}>{c.genre}</span>
                 {c.genre === 'Entreprise' && c.nom && <span style={{ fontSize:13, color:'#888' }}>{c.nom} {c.prenom}</span>}
               </div>
-              {c.tel && <div style={{ fontSize:14, color:'#333' }}>📞 <a href={`tel:${c.tel}`} style={{ color:'#111', textDecoration:'none', fontWeight:600 }}>{c.tel}</a></div>}
-              {c.mail && <div style={{ fontSize:13, color:'#3b82f6' }}>✉️ <a href={`mailto:${c.mail}`} style={{ color:'#3b82f6', textDecoration:'none' }}>{c.mail}</a></div>}
+              {c.tel && <div style={{ fontSize:14, color:'#333', display:'flex', alignItems:'center', gap:6 }}><Phone size={14} style={{display:'inline',verticalAlign:'middle'}} /> <a href={`tel:${c.tel}`} style={{ color:'#111', textDecoration:'none', fontWeight:600 }}>{c.tel}</a></div>}
+              {c.mail && <div style={{ fontSize:13, color:'#3b82f6', display:'flex', alignItems:'center', gap:6 }}><Mail size={14} style={{display:'inline',verticalAlign:'middle'}} /> <a href={`mailto:${c.mail}`} style={{ color:'#3b82f6', textDecoration:'none' }}>{c.mail}</a></div>}
               {c.tel && (
                 <div style={{ display:'flex', gap:8, marginTop:4, marginBottom:4 }}>
-                  <a href={`sms:${c.tel}`} style={{ flex:1, height:44, background:'#fff', border:'1.5px solid #ddd', borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', color:'#111', display:'flex', alignItems:'center', justifyContent:'center', textDecoration:'none' }}>💬 SMS</a>
-                  <a href={`tel:${c.tel}`} style={{ flex:1, height:44, background:'#111', border:'none', borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', textDecoration:'none' }}>📞 Appeler</a>
+                  <a href={`sms:${c.tel}`} style={{ flex:1, height:44, background:'#fff', border:'1.5px solid #ddd', borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', color:'#111', display:'flex', alignItems:'center', justifyContent:'center', textDecoration:'none', gap:6 }}><MessageSquare size={14} /> SMS</a>
+                  <a href={`tel:${c.tel}`} style={{ flex:1, height:44, background:'#111', border:'none', borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', textDecoration:'none', gap:6 }}><Phone size={14} /> Appeler</a>
                 </div>
               )}
-              {c.created_at && <div style={{ fontSize:12, color:'#999' }}>📋 Client depuis le {formatDate(c.created_at)}</div>}
+              {c.created_at && <div style={{ fontSize:12, color:'#999', display:'flex', alignItems:'center', gap:4 }}><ClipboardList size={12} style={{display:'inline',verticalAlign:'middle'}} /> Client depuis le {formatDate(c.created_at)}</div>}
               {(c.service_favori || c.jour_favori || (c.source && c.source !== 'manuel')) && (
                 <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:2 }}>
                   {c.service_favori && (
                     <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:12, fontWeight:700, padding:'4px 10px', borderRadius:20, background: c.service_favori==='midi' ? '#fffbea' : '#1e1b4b', color: c.service_favori==='midi' ? '#92400e' : '#c7d2fe', border: c.service_favori==='midi' ? '1.5px solid #fde68a' : '1.5px solid #4338ca' }}>
-                      {c.service_favori === 'midi' ? '🕐 Midi' : '🌙 Soir'}
+                      {c.service_favori === 'midi' ? <><Clock size={12} style={{display:'inline',verticalAlign:'middle',marginRight:3}} />Midi</> : <><Moon size={12} style={{display:'inline',verticalAlign:'middle',marginRight:3}} />Soir</>}
                     </span>
                   )}
                   {c.jour_favori && (
                     <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:12, fontWeight:700, padding:'4px 10px', borderRadius:20, background:'#f0fdf4', color:'#166534', border:'1.5px solid #bbf7d0' }}>
-                      📅 {c.jour_favori}
+                      <CalendarDays size={12} style={{display:'inline',verticalAlign:'middle',marginRight:3}} />{c.jour_favori}
                     </span>
                   )}
                   {c.source === 'Grand Jeux du TED' && (
                     <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:12, fontWeight:700, padding:'4px 10px', borderRadius:20, background:'#E8C547', color:'#111', border:'1.5px solid #d4a800' }}>
-                      🎰 Grand Jeu du TED
+                      <Dices size={12} style={{display:'inline',verticalAlign:'middle',marginRight:3}} />Grand Jeu du TED
                     </span>
                   )}
                 </div>
@@ -6777,14 +6777,14 @@ function CRMApp({ user, onLogout }) {
                 return (
                   <div style={{ background:'#f9f9f9', borderRadius:10, padding:'12px 14px' }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
-                      <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0 }}>🏆 Jours favoris</p>
+                      <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0, display:'flex', alignItems:'center', gap:4 }}><Trophy size={11} /> Jours favoris</p>
                       <span style={{ fontSize:10, color:'#bbb' }}>↻ {periodeLabel}</span>
                     </div>
                     {topJoursClient.length === 0
                       ? <p style={{ fontSize:12, color:'#bbb', margin:0 }}>Pas de données sur cette période</p>
                       : topJoursClient.map(([label, count], i) => (
                         <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
-                          <span style={{ fontSize:13, color:'#444' }}>{i===0?'🥇':i===1?'🥈':'🥉'} {label}</span>
+                          <span style={{ fontSize:13, color:'#444', display:'flex', alignItems:'center', gap:4 }}><Award size={13} color={i===0?'#FFD700':i===1?'#C0C0C0':'#CD7F32'} /> {label}</span>
                           <span style={{ fontSize:13, fontWeight:700, color:'#111' }}>{count} résa</span>
                         </div>
                       ))
@@ -6798,8 +6798,8 @@ function CRMApp({ user, onLogout }) {
           <div style={{ display:'flex', flexDirection:'column', gap:8, width:'100%' }}>
             {!ficheClientReadOnly && (
               <div style={{ display:'flex', gap:8 }}>
-                <button onClick={()=>{ fermerFiche(); setModalDelete(c); }} style={{ flex:1, height:44, border:'1.5px solid #dc2626', borderRadius:10, background:'#fef2f2', color:'#dc2626', fontSize:14, fontWeight:700, cursor:'pointer' }}>🗑️ Supprimer le client</button>
-                <button onClick={()=>{ setModalEdit(c); }} style={{ flex:2, height:44, border:'none', borderRadius:10, background:'#E8C547', color:'#111', fontSize:14, fontWeight:700, cursor:'pointer' }}>✏️ Modifier le client</button>
+                <button onClick={()=>{ fermerFiche(); setModalDelete(c); }} style={{ flex:1, height:44, border:'1.5px solid #dc2626', borderRadius:10, background:'#fef2f2', color:'#dc2626', fontSize:14, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}><Trash2 size={14} /> Supprimer le client</button>
+                <button onClick={()=>{ setModalEdit(c); }} style={{ flex:2, height:44, border:'none', borderRadius:10, background:'#E8C547', color:'#111', fontSize:14, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}><Pencil size={14} /> Modifier le client</button>
               </div>
             )}
             <button onClick={fermerFiche} style={{ width:'100%', height:44, background:'#fff', border:'1.5px solid #ddd', borderRadius:10, fontSize:14, fontWeight:600, cursor:'pointer', color:'#666' }}>Fermer</button>
@@ -6963,7 +6963,7 @@ function CRMApp({ user, onLogout }) {
                           <div style={{ flex:1 }}>
                             <div style={{ fontWeight:700, fontSize:14, color:'#111' }}>{jour}</div>
                             <div style={{ fontSize:12, color:'#999', display:'flex', alignItems:'center', gap:4 }}>
-                              {service==='Midi' ? '☀️' : '🌙'} {service} · {count} résa
+                              {service==='Midi' ? <Sun size={12} style={{display:'inline',verticalAlign:'middle',marginRight:2}} /> : <Moon size={12} style={{display:'inline',verticalAlign:'middle',marginRight:2}} />} {service} · {count} résa
                             </div>
                           </div>
                         </div>
@@ -7190,7 +7190,7 @@ function CRMApp({ user, onLogout }) {
           <div onMouseDown={e=>{e.preventDefault();e.stopPropagation();}} onClick={()=>setShowTopClients(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:2999,pointerEvents:'all'}}/>
           <div onClick={e=>e.stopPropagation()} style={{position:'fixed',top:'50%',left:'50%',transform:'translate(-50%,-50%)',background:'#fff',borderRadius:20,width:'min(520px, calc(100vw - 48px))',maxHeight:'80vh',display:'flex',flexDirection:'column',boxShadow:'0 32px 80px rgba(0,0,0,0.25)',zIndex:3000,overflow:'hidden'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'24px 28px 20px',flexShrink:0,borderBottom:'1px solid #f0f0f0'}}>
-              <h2 style={{margin:0,fontSize:20,fontWeight:800,color:'#111'}}>🏆 Classement clients</h2>
+              <h2 style={{margin:0,fontSize:20,fontWeight:800,color:'#111',display:'flex',alignItems:'center',gap:8}}><Trophy size={20} /> Classement clients</h2>
               <button onClick={()=>setShowTopClients(false)} style={{width:36,height:36,borderRadius:'50%',border:'none',background:'#f0f0f0',cursor:'pointer',fontSize:18,color:'#666',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
             </div>
             <div style={{flex:1,overflowY:'auto',padding:'16px 28px'}}>
@@ -7200,7 +7200,7 @@ function CRMApp({ user, onLogout }) {
                 .sort((a,b)=>b.nb-a.nb)
                 .slice(0,50)
                 .map((c,i)=>{
-                  const medals=['🥇','🥈','🥉'];
+                  const medals=[<Award size={18} color="#FFD700" key="or"/>,<Award size={18} color="#C0C0C0" key="arg"/>,<Award size={18} color="#CD7F32" key="bro"/>];
                   const avatarBg=c.genre==='Homme'?'#dbeafe':c.genre==='Femme'?'#fce7f3':'#dcfce7';
                   const avatarColor=c.genre==='Homme'?'#1d4ed8':c.genre==='Femme'?'#be185d':'#15803d';
                   const initiales=c.genre==='Entreprise'?(c.entreprise||'?').slice(0,2).toUpperCase():`${(c.prenom||'?')[0]}${(c.nom||'')[0]||''}`.toUpperCase();
