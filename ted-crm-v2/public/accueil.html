@@ -637,16 +637,15 @@
   }
 
   function navigatePopup(direction) {
-    const card   = document.getElementById('popup-card');
-    const outX   = direction === 'left' ? '-115%' : '115%';
-    const inX    = direction === 'left' ?  '115%' : '-115%';
+    const outX   = direction === 'left' ? '-102%' : '102%';
+    const inX    = direction === 'left' ?  '102%' : '-102%';
     const newIdx = direction === 'left' ? currentPopupIdx + 1 : currentPopupIdx - 1;
     if (newIdx < 0 || newIdx >= soireesData.length) {
-      card.style.transition = 'transform 320ms cubic-bezier(0.34,1.4,0.64,1)';
+      card.style.transition = 'transform 200ms cubic-bezier(0.34,1.4,0.64,1)';
       card.style.transform  = '';
       return;
     }
-    card.style.transition = 'transform 260ms cubic-bezier(0.4,0,1,1)';
+    card.style.transition = 'transform 140ms cubic-bezier(0.4,0,1,1)';
     card.style.transform  = `translateX(${outX})`;
     setTimeout(() => {
       currentPopupIdx = newIdx;
@@ -654,10 +653,10 @@
       card.style.transition = 'none';
       card.style.transform  = `translateX(${inX})`;
       requestAnimationFrame(() => requestAnimationFrame(() => {
-        card.style.transition = 'transform 320ms cubic-bezier(0.25,0.46,0.45,0.94)';
+        card.style.transition = 'transform 160ms cubic-bezier(0.25,0.46,0.45,0.94)';
         card.style.transform  = '';
       }));
-    }, 260);
+    }, 140);
   }
 
   // ── Swipe touch ────────────────────────────────────────────────────────────
@@ -696,7 +695,7 @@
     } else if (dx > 55 && currentPopupIdx > 0) {
       navigatePopup('right');
     } else {
-      card.style.transition = 'transform 320ms cubic-bezier(0.34,1.4,0.64,1)';
+      card.style.transition = 'transform 180ms cubic-bezier(0.34,1.4,0.64,1)';
       card.style.transform  = '';
     }
   }, { passive: true });
