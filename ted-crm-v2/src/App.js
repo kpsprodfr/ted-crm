@@ -3965,7 +3965,7 @@ function RouePage({ showToast }) {
         <div>
           <button onClick={() => setAccordion(a => a==='recompenses' ? '' : 'recompenses')}
             style={{ width:'100%', padding:'18px 24px', background:'none', border:'none', display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', fontSize:15, fontWeight:700, color:'#111' }}>
-            <span>⚙️ Récompenses &amp; paramètres</span>
+            <span style={{display:'flex',alignItems:'center',gap:8}}><Settings size={16} strokeWidth={2} color="#888" /> Récompenses &amp; paramètres</span>
             <ChevronDown size={18} style={{ transform: accordion==='recompenses' ? 'rotate(180deg)' : 'none', transition:'transform .2s' }} />
           </button>
           {accordion === 'recompenses' && (
@@ -4008,7 +4008,7 @@ function RouePage({ showToast }) {
         <div style={{ borderTop:'1px solid #f0f0f0' }}>
           <button onClick={() => setAccordion(a => a==='email1' ? '' : 'email1')}
             style={{ width:'100%', padding:'18px 24px', background:'none', border:'none', display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', fontSize:15, fontWeight:700, color:'#111' }}>
-            <span>📧 Email de confirmation du gain</span>
+            <span style={{display:'flex',alignItems:'center',gap:8}}><Mail size={16} strokeWidth={2} color="#888" /> Email de confirmation du gain</span>
             <ChevronDown size={18} style={{ transform: accordion==='email1' ? 'rotate(180deg)' : 'none', transition:'transform .2s' }} />
           </button>
           {accordion === 'email1' && (() => {
