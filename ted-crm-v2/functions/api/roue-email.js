@@ -99,7 +99,7 @@ L'équipe du TED 🦁`;
 <div style="max-width:560px;margin:0 auto;background:#ffffff;">
 
   <div style="background:linear-gradient(180deg,#fff8c0 0%,#FFE033 50%,#FFC200 100%);padding:32px 24px;text-align:center;">
-    <img src="https://ted-crm.pages.dev/logo-Le-TED.png" width="80" height="80" style="margin-bottom:14px;object-fit:contain;" />
+    <img src="https://ted-crm.pages.dev/logo-Le-TED.png" width="80" height="80" style="margin-bottom:14px;object-fit:contain;filter:brightness(0);" />
     <div style="font-family:'Caveat',cursive;color:#111;font-size:34px;font-weight:700;line-height:1.1;">Grand Jeux du <span style="font-family:Arial,sans-serif;font-weight:900;font-size:30px;letter-spacing:1px;">TED</span></div>
     <div style="color:#5a4500;font-size:11px;letter-spacing:2px;margin-top:8px;text-transform:uppercase;">Restaurant &amp; Club</div>
   </div>

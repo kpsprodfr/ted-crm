@@ -4077,7 +4077,7 @@ function RouePage({ showToast }) {
             // ── aperçu HTML ────────────────────────────────────────────
             const previewHtml = `<div style="font-family:Arial,sans-serif;font-size:13px;background:#ffffff;">
   <div style="background:linear-gradient(180deg,#fff8c0 0%,#FFE033 50%,#FFC200 100%);padding:24px 18px;text-align:center;">
-    <img src="/logo-Le-TED.png" width="80" height="80" style="margin-bottom:14px;object-fit:contain;" />
+    <img src="/logo-Le-TED.png" width="80" height="80" style="margin-bottom:14px;object-fit:contain;filter:brightness(0);" />
     <div style="color:#111;font-size:22px;font-weight:700;line-height:1.1;">Grand Jeux du <span style="font-weight:900;font-size:20px;letter-spacing:1px;">TED</span></div>
     <div style="color:#5a4500;font-size:10px;letter-spacing:2px;margin-top:6px;text-transform:uppercase;">Restaurant &amp; Club</div>
   </div>
