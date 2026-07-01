@@ -59,34 +59,50 @@ L'équipe du TED 🦁`;
   objet = replace(objet);
   const htmlCorps = replace(corps).replace(/\n/g, '<br>');
 
+  const recompenseEmoji = replace('{emoji}');
+  const recompenseNom = replace('{recompense}');
+
   const htmlContent = `<!DOCTYPE html>
 <html lang="fr">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:32px 0;">
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:32px 16px;">
     <tr><td align="center">
-      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
-
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#111111;border-radius:12px 12px 0 0;overflow:hidden;">
         <!-- HEADER -->
-        <tr><td style="background:#111;padding:28px 40px;text-align:center;">
-          <div style="font-size:13px;font-weight:700;letter-spacing:2px;color:#E8C547;text-transform:uppercase;margin-bottom:4px;">Grand Jeux du</div>
-          <div style="font-size:32px;font-weight:900;color:#fff;letter-spacing:-1px;">TED</div>
+        <tr><td style="background:#111111;padding:28px 24px;text-align:center;border-bottom:4px solid #E8C547;">
+          <img src="https://ted-crm.pages.dev/logo-Le-TED.png" alt="Le TED" style="height:60px;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;" />
+          <div style="font-size:22px;font-weight:900;color:#E8C547;letter-spacing:2px;text-transform:uppercase;">Grand Jeux du TED</div>
+          <div style="font-size:12px;color:#888;letter-spacing:2px;margin-top:4px;text-transform:uppercase;">Restaurant &amp; Club · Lyon</div>
         </td></tr>
-
+      </table>
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;">
         <!-- CORPS -->
-        <tr><td style="padding:36px 40px;color:#333;font-size:15px;line-height:1.8;">
+        <tr><td style="padding:32px 24px;color:#111111;font-size:15px;line-height:1.8;font-family:Arial,sans-serif;">
           ${htmlCorps}
+          <!-- Encadré récompense -->
+          <div style="background:#FFF8DC;border-left:4px solid #E8C547;border-radius:0 8px 8px 0;padding:20px 24px;margin:24px 0;">
+            <div style="font-size:12px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Votre récompense</div>
+            <div style="font-size:28px;margin-bottom:6px;">${recompenseEmoji}</div>
+            <div style="font-size:18px;font-weight:800;color:#111111;">${recompenseNom}</div>
+          </div>
+          <div style="text-align:center;margin-top:28px;">
+            <a href="https://ted-crm.pages.dev/reserver.html" style="display:inline-block;background:#E8C547;color:#111111;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:800;font-size:15px;font-family:Arial,sans-serif;">📅 Réserver ma table</a>
+          </div>
         </td></tr>
-
+      </table>
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#111111;border-radius:0 0 12px 12px;overflow:hidden;">
         <!-- FOOTER -->
-        <tr><td style="background:#111;padding:24px 40px;text-align:center;">
-          <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#E8C547;">Le TED — Restaurant &amp; Club</p>
-          <p style="margin:0 0 4px;font-size:12px;color:#aaa;">5 Rue Professeur Rochaix, 69008 Lyon</p>
+        <tr><td style="padding:24px;text-align:center;">
+          <p style="margin:0 0 6px;font-size:14px;font-weight:700;color:#E8C547;">Le TED — Restaurant &amp; Club</p>
+          <p style="margin:0 0 4px;font-size:12px;color:#aaa;">5 Rue Professeur Rochaix, 69003 Lyon</p>
           <p style="margin:0 0 12px;font-size:12px;color:#aaa;">📞 04 72 02 20 20</p>
-          <p style="margin:0;font-size:11px;color:#666;">Vous recevez cet email car vous avez participé au Grand Jeux du TED.<br>
-          <a href="mailto:contact@le-ted.fr?subject=Désinscription" style="color:#888;text-decoration:underline;">Se désinscrire</a></p>
+          <p style="margin:0 0 8px;font-size:12px;">
+            <a href="https://ted-crm.pages.dev/reserver.html" style="color:#E8C547;text-decoration:none;font-weight:700;">Réserver en ligne</a>
+          </p>
+          <p style="margin:0;font-size:11px;color:#555;">Vous recevez cet email car vous avez participé au Grand Jeux du TED.<br>
+          <a href="mailto:contact@le-ted.fr?subject=Désinscription" style="color:#666;text-decoration:underline;">Se désinscrire</a></p>
         </td></tr>
-
       </table>
     </td></tr>
   </table>
@@ -97,7 +113,7 @@ L'équipe du TED 🦁`;
     method: 'POST',
     headers: { 'api-key': BREVO_KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      sender: { name: 'Le TED', email: 'contact@le-ted.fr' },
+      sender: { name: 'Le TED', email: 'com.astegal@gmail.com' },
       to: [{ email: to_email, name: `${to_prenom || ''} ${to_nom || ''}`.trim() }],
       subject: objet,
       htmlContent,

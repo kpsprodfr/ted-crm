@@ -1217,10 +1217,11 @@
       if (!gainResult.stock_illimite && gainResult.id) await tryDecrementStock(gainResult.id);
 
       // ── INSERT roue_gains ─────────────────────────────────────────────────────
+      let gainId = null;
       try {
         const gainsRes = await fetch(`${SUPA_URL}/rest/v1/roue_gains`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, Prefer: 'return=minimal' },
+          headers: { 'Content-Type': 'application/json', apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, Prefer: 'return=representation' },
           body: JSON.stringify({
             recompense_id: gainResult.id,
             prenom, nom, genre: genreClient,
@@ -1232,24 +1233,31 @@
             recupere: false
           })
         });
-        if (!gainsRes.ok) console.error('roue_gains insert error', gainsRes.status, await gainsRes.text());
-        else console.log('roue_gains insert OK, client_id=', clientId);
+        if (!gainsRes.ok) {
+          console.error('roue_gains insert error', gainsRes.status, await gainsRes.text());
+        } else {
+          const gainsData = await gainsRes.json();
+          gainId = gainsData && gainsData.length > 0 ? gainsData[0].id : null;
+          console.log('roue_gains insert OK, gain_id=', gainId, '| client_id=', clientId);
+        }
       } catch(e) { console.error('roue_gains block exception', e); }
 
-      // ── Notification ──────────────────────────────────────────────────────────
+      // ── Email configurable (roue-email) ───────────────────────────────────────
       try {
-        await fetch('/api/roue-notify', {
+        await fetch('/api/roue-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            tel, email, prenom, nom,
-            recompense_nom:      gainResult.nom,
-            recompense_emoji:    gainResult.emoji || '',
-            conditions:          gainResult.conditions || '',
-            date_debut_validite: gainResult.date_debut_validite || null
+            type: 'email1',
+            to_email: email,
+            to_prenom: prenom,
+            to_nom: nom,
+            recompense: gainResult.nom || '',
+            emoji: gainResult.emoji || '',
+            gain_id: gainId || null
           })
         });
-      } catch(e) {}
+      } catch(e) { console.error('roue-email exception', e); }
 
       localStorage.setItem('ted_roue_soumis', 'true');
       showDone();

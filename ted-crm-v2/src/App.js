@@ -106,8 +106,10 @@ async function sendBrevoEmail(toEmail, toName, subject, htmlContent) {
       body: JSON.stringify({ to: toEmail, toName, subject, html: htmlContent })
     });
     const data = await res.json();
+    console.log('[sendBrevoEmail] to:', toEmail, '| status:', res.status, '| response:', data);
     return { success: data.success };
   } catch(e) {
+    console.error('[sendBrevoEmail] exception:', e);
     return { success: false };
   }
 }
