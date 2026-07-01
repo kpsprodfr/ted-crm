@@ -4090,12 +4090,12 @@ function RouePage({ showToast }) {
       </div>
       <div style="font-size:32px;margin-bottom:8px;">🥳</div>
       <div style="color:#888;font-size:11px;font-style:italic;">${dispoLabel}</div>
-      ${previewMessage ? `<div style="color:#999;font-size:11px;font-style:italic;margin-top:8px;line-height:1.5;">${previewMessage}</div>` : ''}
+      ${previewMessage ? `<div style="color:#888;font-size:12px;font-style:italic;margin-top:8px;line-height:1.5;">${previewMessage}</div>` : ''}
     </div>
     <div style="border:1.5px solid #E8C547;border-radius:10px;padding:16px;margin-bottom:18px;">
       <div style="color:#111;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;">Conditions de retrait</div>
       <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;"><span style="font-size:16px;">📋</span><div><div style="font-size:12px;font-weight:700;color:#111;margin-bottom:2px;">Présentation de ce mail</div><div style="font-size:12px;color:#666;">À montrer à notre équipe à votre arrivée</div></div></div>
-      <div style="display:flex;gap:10px;${previewMessage ? '' : 'margin-bottom:12px;'}align-items:flex-start;"><span style="font-size:16px;">📅</span><div><div style="font-size:12px;font-weight:700;color:#111;margin-bottom:2px;">Date de retrait de votre cadeau</div><div style="font-size:12px;color:#B8960C;font-weight:700;">${dateAffichee}</div>${previewMessage ? `<div style="font-size:11px;color:#999;font-style:italic;margin-top:5px;line-height:1.5;">${previewMessage}</div>` : ''}</div></div>
+      <div style="display:flex;gap:10px;${previewMessage ? '' : 'margin-bottom:12px;'}align-items:flex-start;"><span style="font-size:16px;">📅</span><div><div style="font-size:12px;font-weight:700;color:#111;margin-bottom:2px;">Date de retrait de votre cadeau</div><div style="font-size:12px;color:#B8960C;font-weight:700;">${dateAffichee}</div>${previewMessage ? `<div style="font-size:13px;color:#B8960C;font-weight:700;margin-top:5px;line-height:1.5;">${previewMessage}</div>` : ''}</div></div>
       <div style="display:flex;gap:10px;margin-top:12px;align-items:flex-start;"><span style="font-size:16px;">👥</span><div><div style="font-size:12px;font-weight:700;color:#111;margin-bottom:2px;">Réservation requise</div><div style="font-size:12px;color:#666;">5 personnes minimum</div></div></div>
     </div>
     <div style="text-align:center;margin-bottom:18px;"><a href="#" style="display:inline-block;background:#E8C547;color:#111;font-weight:700;font-size:13px;padding:12px 28px;border-radius:8px;text-decoration:none;">Réserver ma table</a></div>

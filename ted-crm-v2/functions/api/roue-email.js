@@ -116,7 +116,7 @@ L'équipe du TED 🦁`;
       </div>
       <div style="font-size:42px;margin-bottom:12px;">🥳</div>
       <div style="color:#888;font-size:12px;font-style:italic;">${dispoLabel}</div>
-      ${messagePerso ? `<div style="color:#999;font-size:12px;font-style:italic;margin-top:8px;line-height:1.5;">${messagePerso.replace(/\n/g,'<br>')}</div>` : ''}
+      ${messagePerso ? `<div style="color:#888;font-size:12px;font-style:italic;margin-top:8px;line-height:1.5;">${messagePerso.replace(/\n/g,'<br>')}</div>` : ''}
     </div>
 
     <div style="border:1.5px solid #E8C547;border-radius:12px;padding:22px 24px;margin-bottom:28px;">
@@ -135,7 +135,7 @@ L'équipe du TED 🦁`;
         <div>
           <div style="font-size:13px;font-weight:700;color:#111;margin-bottom:2px;">Date de retrait de votre cadeau</div>
           <div style="font-size:13px;color:#B8960C;font-weight:700;">${dateAffichee}</div>
-          ${messagePerso ? `<div style="font-size:12px;color:#999;font-style:italic;margin-top:5px;line-height:1.5;">${messagePerso.replace(/\n/g,'<br>')}</div>` : ''}
+          ${messagePerso ? `<div style="font-size:13px;color:#B8960C;font-weight:700;margin-top:5px;line-height:1.5;">${messagePerso.replace(/\n/g,'<br>')}</div>` : ''}
         </div>
       </div>
 
