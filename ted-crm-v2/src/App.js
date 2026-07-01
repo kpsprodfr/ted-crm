@@ -4331,6 +4331,7 @@ function RouePage({ showToast }) {
 // ─── Menu ────────────────────────────────────────────────────────────────────
 
 function MenuPage({ showToast }) {
+  const isMobile = useIsMobile();
   const [carte, setCarte] = useState('restaurant');
   const [cartes, setCartes] = useState([{id:'restaurant',l:'Restaurant'},{id:'brasero',l:'Brasero'}]);
   const [categories, setCategories] = useState([]);
@@ -4597,38 +4598,47 @@ function MenuPage({ showToast }) {
 
   return (
     <div style={{ minHeight:'100vh', background:'#f5f5f5' }}>
-      <div style={{ maxWidth:900, margin:'0 auto', padding:'0 32px' }}>
+      <div style={{ maxWidth:900, margin:'0 auto', padding: isMobile ? '0 16px' : '0 32px' }}>
 
       {/* Header */}
-      <div style={{ padding:'24px 0 16px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+      <div style={{ padding: isMobile ? '16px 0 12px' : '24px 0 16px', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10 }}>
         <div>
-          <h1 style={{ margin:0, fontSize:28, fontWeight:900, color:'#111' }}>Menu</h1>
+          <h1 style={{ margin:0, fontSize: isMobile ? 22 : 28, fontWeight:900, color:'#111' }}>Menu</h1>
           <p style={{ margin:'3px 0 0', fontSize:13, color:'#aaa' }}>Gérez la carte en temps réel</p>
         </div>
-        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          <button onClick={() => setShowCartesSheet(true)} style={{ height:34, padding:'0 12px', borderRadius:8, border:'1.5px solid #eee', background:'#fff', fontSize:12, fontWeight:600, cursor:'pointer', color:'#666', display:'flex', alignItems:'center', gap:6 }}>
-            <LayoutGrid size={14} strokeWidth={2} color="#666"/> Gérer vos cartes
-          </button>
-          <button onClick={() => setShowGererCats(true)} style={{ height:34, padding:'0 12px', borderRadius:8, border:'1.5px solid #eee', background:'#fff', fontSize:12, fontWeight:600, cursor:'pointer', color:'#666', display:'flex', alignItems:'center', gap:6 }}>
-            <Settings size={14} strokeWidth={2} color="#666"/> Gérer les catégories
-          </button>
-          <button onClick={() => setShowOriginesSheet(true)} style={{ height:34, padding:'0 12px', borderRadius:8, border:'1.5px solid #eee', background:'#fff', fontSize:12, fontWeight:600, cursor:'pointer', color:'#666', display:'flex', alignItems:'center', gap:6 }}>
-            <MapPin size={14} strokeWidth={2} color="#666"/> Origine des viandes
-          </button>
-          <button onClick={() => catsFiltered.length > 0 ? setCatPickerOpen(true) : setEditProduit({ carte, disponible: true, mise_en_avant: false, badges: [], allergenes: [] })} style={{ height:36, padding:'0 16px', borderRadius:10, border:'none', background:'#E8C547', color:'#111', fontSize:13, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', gap:8, boxShadow:'0 2px 8px rgba(232,197,71,0.3)' }}>
-            <Plus size={16} strokeWidth={2}/> Ajouter un produit
+        <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+          {!isMobile && (
+            <>
+              <button onClick={() => setShowCartesSheet(true)} style={{ height:34, padding:'0 12px', borderRadius:8, border:'1.5px solid #eee', background:'#fff', fontSize:12, fontWeight:600, cursor:'pointer', color:'#666', display:'flex', alignItems:'center', gap:6 }}>
+                <LayoutGrid size={14} strokeWidth={2} color="#666"/> Gérer vos cartes
+              </button>
+              <button onClick={() => setShowGererCats(true)} style={{ height:34, padding:'0 12px', borderRadius:8, border:'1.5px solid #eee', background:'#fff', fontSize:12, fontWeight:600, cursor:'pointer', color:'#666', display:'flex', alignItems:'center', gap:6 }}>
+                <Settings size={14} strokeWidth={2} color="#666"/> Gérer les catégories
+              </button>
+              <button onClick={() => setShowOriginesSheet(true)} style={{ height:34, padding:'0 12px', borderRadius:8, border:'1.5px solid #eee', background:'#fff', fontSize:12, fontWeight:600, cursor:'pointer', color:'#666', display:'flex', alignItems:'center', gap:6 }}>
+                <MapPin size={14} strokeWidth={2} color="#666"/> Origine des viandes
+              </button>
+            </>
+          )}
+          {isMobile && (
+            <button onClick={() => setShowGererCats(true)} style={{ height:34, padding:'0 10px', borderRadius:8, border:'1.5px solid #eee', background:'#fff', fontSize:12, fontWeight:600, cursor:'pointer', color:'#666', display:'flex', alignItems:'center', gap:5 }}>
+              <Settings size={14} strokeWidth={2} color="#666"/>
+            </button>
+          )}
+          <button onClick={() => catsFiltered.length > 0 ? setCatPickerOpen(true) : setEditProduit({ carte, disponible: true, mise_en_avant: false, badges: [], allergenes: [] })} style={{ height:36, padding: isMobile ? '0 12px' : '0 16px', borderRadius:10, border:'none', background:'#E8C547', color:'#111', fontSize:13, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', gap:8, boxShadow:'0 2px 8px rgba(232,197,71,0.3)' }}>
+            <Plus size={16} strokeWidth={2}/> {isMobile ? 'Ajouter' : 'Ajouter un produit'}
           </button>
         </div>
       </div>
 
       {/* Onglets + lien carte client */}
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
-        <div style={{ display:'flex', gap:6 }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20, gap:8 }}>
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
           {cartes.map(c => (
             <button key={c.id} onClick={() => setCarte(c.id)} style={{ height:36, padding:'0 16px', borderRadius:10, fontWeight:700, fontSize:13, cursor:'pointer', border:'none', background: carte===c.id ? '#E8C547' : '#fff', color: carte===c.id ? '#111' : '#666', boxShadow: carte===c.id ? '0 2px 8px rgba(232,197,71,0.25)' : '0 1px 4px rgba(0,0,0,0.06)', transition:'all 0.15s' }}>{c.l}</button>
           ))}
         </div>
-        <a href="/accueil.html" target="_blank" rel="noopener noreferrer" style={{ height:34, padding:'0 12px', borderRadius:8, border:'1.5px solid #eee', background:'#fff', fontSize:12, fontWeight:600, color:'#666', display:'flex', alignItems:'center', gap:6, textDecoration:'none', boxShadow:'0 1px 4px rgba(0,0,0,0.06)' }}>
+        <a href="/accueil.html" target="_blank" rel="noopener noreferrer" style={{ height:34, padding:'0 12px', borderRadius:8, border:'1.5px solid #eee', background:'#fff', fontSize:12, fontWeight:600, color:'#666', display:'flex', alignItems:'center', gap:6, textDecoration:'none', boxShadow:'0 1px 4px rgba(0,0,0,0.06)', flexShrink:0 }}>
           <ExternalLink size={12} strokeWidth={2} /> Carte client
         </a>
       </div>
@@ -6327,6 +6337,12 @@ function CRMApp({ user, onLogout }) {
         </div>
       )}
 
+      {isMobile && mobileTab === 'menu' && (
+        <div style={{ paddingTop:56, paddingBottom:'calc(80px + env(safe-area-inset-bottom, 16px))', background:'#f5f5f5', minHeight:'100vh', overflowX:'hidden' }}>
+          <MenuPage showToast={showToast} />
+        </div>
+      )}
+
       {/* ═══ MOBILE CARDS ═══ */}
       {isMobile && mobileTab === 'clients' && (
         <div style={{ paddingTop:146, paddingBottom:'calc(90px + env(safe-area-inset-bottom, 16px))', background:'#f5f5f5', minHeight:'100vh' }}>
@@ -6591,6 +6607,11 @@ function CRMApp({ user, onLogout }) {
                 )}
               </div>
               <span style={{ fontSize:12, fontWeight: mobileTab==='reservations' ? 700 : 500 }}>Réservations</span>
+            </button>
+            {/* Menu */}
+            <button onClick={()=>setMobileTab('menu')} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:5, border:'none', background:'none', cursor:'pointer', color: mobileTab==='menu' ? '#111' : '#aaa', paddingBottom:4 }}>
+              <UtensilsCrossed size={28} strokeWidth={1.8} />
+              <span style={{ fontSize:12, fontWeight: mobileTab==='menu' ? 700 : 500 }}>Menu</span>
             </button>
           </div>
           {/* Bouton flottant + */}
