@@ -123,14 +123,14 @@
     #popup-card {
       background: linear-gradient(160deg, #1c1c1c 0%, #111 100%);
       border: 1px solid #2a2a2a; border-radius: 20px;
-      width: 100%; max-width: 210px; overflow: hidden;
+      width: min(360px, 88vw); overflow: hidden;
       transform: scale(0.92); opacity: 0;
       transition: transform 300ms cubic-bezier(0.34, 1.4, 0.64, 1), opacity 300ms ease;
       position: relative; will-change: transform;
       display: flex; flex-direction: column;
     }
     @media (max-width: 480px) {
-      #popup-card { max-width: 80vw; border-radius: 16px; }
+      #popup-card { width: 88vw; border-radius: 16px; }
     }
     #popup-dots {
       display: flex; justify-content: center; gap: 6px;
@@ -163,32 +163,27 @@
     }
     #popup-close:hover { background: rgba(255,255,255,0.15); color: #fff; }
 
-    #popup-body { padding: 16px 16px 14px; }
+    #popup-body { padding: 20px 20px 16px; flex-shrink: 0; }
     #popup-jour {
-      font-size: 20px; font-weight: 800; color: #E8C547;
+      font-size: clamp(18px, 5vw, 24px); font-weight: 800; color: #E8C547;
       letter-spacing: 1px; text-transform: uppercase; line-height: 1;
     }
-    #popup-nom     { font-size: 13px; font-weight: 600; color: #fff; margin-top: 4px; }
-    #popup-dj      { font-size: 11px; color: #c9a93a; margin-top: 3px; font-style: italic; }
-    #popup-desc    { font-size: 11px; color: #999; margin-top: 7px; line-height: 1.5; }
-    #popup-horaire { font-size: 10px; color: #555; margin-top: 8px; letter-spacing: 0.3px; }
+    #popup-nom     { font-size: clamp(13px, 3.5vw, 16px); font-weight: 600; color: #fff; margin-top: 6px; }
+    #popup-dj      { font-size: clamp(11px, 3vw, 13px); color: #c9a93a; margin-top: 4px; font-style: italic; }
+    #popup-desc    { font-size: clamp(11px, 3vw, 13px); color: #999; margin-top: 8px; line-height: 1.5;
+                     display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    #popup-horaire { font-size: clamp(10px, 2.8vw, 12px); color: #555; margin-top: 8px; letter-spacing: 0.3px; }
 
     #popup-flyer {
       width: 100%; display: none; flex-shrink: 0;
       border-radius: 20px 20px 0 0; overflow: hidden;
-      height: 160px;
+      height: clamp(140px, 40vw, 200px);
     }
-    @media (max-width: 480px) { #popup-flyer { height: 140px; } }
     #popup-flyer img {
       width: 100%; height: 100%; display: block;
       object-fit: cover; object-position: bottom center;
     }
-    #popup-body { flex-shrink: 0; }
-    #popup-card.has-flyer #popup-body { padding-top: 12px; }
-    #popup-desc {
-      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
+    #popup-card.has-flyer #popup-body { padding-top: 14px; }
 
     #popup-reserver {
       display: block; width: 100%; margin-top: 14px;
@@ -485,7 +480,7 @@
     </div>
     <!-- Carte adjacente pour le swipe carousel -->
     <div id="popup-card2" style="display:none;position:absolute;pointer-events:none;background:linear-gradient(160deg,#1c1c1c 0%,#111 100%);border:1px solid #2a2a2a;border-radius:20px;overflow:hidden;will-change:transform;">
-      <div id="popup2-flyer" style="display:none;width:100%;height:160px;overflow:hidden;border-radius:20px 20px 0 0;flex-shrink:0;"><img id="popup2-flyer-img" src="" alt="" style="width:100%;height:100%;display:block;object-fit:cover;object-position:bottom center;" /></div>
+      <div id="popup2-flyer" style="display:none;width:100%;height:clamp(140px,40vw,200px);overflow:hidden;border-radius:20px 20px 0 0;flex-shrink:0;"><img id="popup2-flyer-img" src="" alt="" style="width:100%;height:100%;display:block;object-fit:cover;object-position:bottom center;" /></div>
       <div style="padding:16px 16px 14px;">
         <div id="popup2-jour" style="font-size:20px;font-weight:800;color:#E8C547;letter-spacing:1px;text-transform:uppercase;line-height:1;"></div>
         <div id="popup2-nom" style="font-size:13px;font-weight:600;color:#fff;margin-top:4px;"></div>
