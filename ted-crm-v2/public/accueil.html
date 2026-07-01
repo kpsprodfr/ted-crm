@@ -1097,14 +1097,18 @@
         currentAngle = targetAngle;
         spinning = false;
         winSegmentIdx = targetSlot;
+        winGlowAlpha = 1;
+        drawWheel(currentAngle); // allume immédiatement
 
         // Pulse animation: 3 flashes then show result
-        const pulseDuration = 600;
+        const pulseDuration = 500;
+        // décale le départ d'un quart de période pour commencer plein et décliner
+        const phaseOffset = Math.PI / 2;
         const pulseStart = performance.now();
         const pulses = 3;
         function animateGlow(now) {
           const pt = Math.min((now - pulseStart) / pulseDuration, 1);
-          winGlowAlpha = Math.abs(Math.sin(pt * Math.PI * pulses));
+          winGlowAlpha = Math.abs(Math.sin(phaseOffset + pt * Math.PI * pulses));
           drawWheel(currentAngle);
           if (pt < 1) { requestAnimationFrame(animateGlow); return; }
           winGlowAlpha = 0;
