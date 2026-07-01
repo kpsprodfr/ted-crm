@@ -4104,7 +4104,7 @@ function RouePage({ showToast }) {
         <div style="background:#111;border-top:1px dashed rgba(240,168,48,0.2);height:1px;"></div>
         <div style="background:#111111;padding:28px 20px 22px;text-align:center;">
           <div style="font-size:9px;letter-spacing:6px;color:rgba(240,168,48,0.4);margin-bottom:14px;">✦ &nbsp; ✦ &nbsp; ✦</div>
-          <div style="font-size:48px;line-height:1;margin-bottom:14px;">🥳</div>
+          <div style="margin-bottom:14px;display:flex;justify-content:center;"><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#F0A830" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg></div>
           <div style="font-size:8px;font-weight:600;letter-spacing:4px;color:rgba(240,168,48,0.5);text-transform:uppercase;margin-bottom:8px;">Votre récompense</div>
           <div style="font-size:20px;font-weight:700;color:#ffffff;margin-bottom:18px;line-height:1.2;">La récompense gagnée apparaîtra ici</div>
           <div style="display:inline-block;background:rgba(240,168,48,0.08);border:1px solid rgba(240,168,48,0.2);border-radius:40px;padding:7px 16px;margin-bottom:16px;">
@@ -4130,15 +4130,15 @@ function RouePage({ showToast }) {
     <div style="background:#FDFAF5;padding:28px 24px 24px;">
       <div style="font-size:16px;font-weight:700;letter-spacing:0.5px;color:#999;text-transform:uppercase;margin-bottom:18px;">Conditions de retrait</div>
       <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #f0ece4;align-items:flex-start;">
-        <div style="width:34px;height:34px;background:#111;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;">📋</div>
+        <div style="width:34px;height:34px;background:#111;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F0A830" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></div>
         <div><div style="font-size:13px;font-weight:700;color:#111;margin-bottom:2px;">Présentation obligatoire</div><div style="font-size:11px;color:#777;line-height:1.6;">Présentez <strong style="color:#111;">cet email</strong> à votre arrivée.</div></div>
       </div>
       <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #f0ece4;align-items:flex-start;">
-        <div style="width:34px;height:34px;background:#111;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;">📅</div>
+        <div style="width:34px;height:34px;background:#111;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F0A830" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
         <div><div style="font-size:13px;font-weight:700;color:#111;margin-bottom:2px;">Date de retrait</div><div style="font-size:11px;color:#777;line-height:1.6;">${dateAffichee}</div></div>
       </div>
       <div style="display:flex;gap:12px;padding:12px 0;align-items:flex-start;">
-        <div style="width:34px;height:34px;background:#111;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;">👥</div>
+        <div style="width:34px;height:34px;background:#111;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F0A830" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
         <div><div style="font-size:13px;font-weight:700;color:#111;margin-bottom:2px;">5 personnes minimum</div><div style="font-size:11px;color:#777;line-height:1.6;">Valable en groupe d'<strong style="color:#111;">au moins 5 personnes</strong>.</div></div>
       </div>
       <div style="margin-top:24px;text-align:center;">
