@@ -1088,35 +1088,46 @@
       const startAngle = currentAngle;
       function easeOutQuint(t) { return 1 - Math.pow(1 - t, 6); }
 
-      function animate(now) {
-        const t     = Math.min((now - startTime) / duration, 1);
-        const eased = easeOutQuint(t);
-        const angle = startAngle + (targetAngle - startAngle) * eased;
-        drawWheel(angle);
-        if (t < 1) { requestAnimationFrame(animate); return; }
-        currentAngle = targetAngle;
+      function finishSpin() {
         spinning = false;
         winSegmentIdx = targetSlot;
         winGlowAlpha = 1;
-        drawWheel(currentAngle);
+        try { drawWheel(currentAngle); } catch(e) {}
 
-        // 3 pulses rapides (cos commence à 1 = allumé immédiatement)
         const pulseDuration = 500;
         const pulseStart = performance.now();
         const pulses = 3;
-        function animateGlow(now) {
-          const pt = Math.min((now - pulseStart) / pulseDuration, 1);
-          winGlowAlpha = Math.abs(Math.cos(pt * Math.PI * pulses));
-          drawWheel(currentAngle);
-          if (pt < 1) { requestAnimationFrame(animateGlow); return; }
+        function glowFrame(ts) {
+          try {
+            const pt = Math.min((ts - pulseStart) / pulseDuration, 1);
+            winGlowAlpha = Math.abs(Math.cos(pt * Math.PI * pulses));
+            drawWheel(currentAngle);
+            if (pt < 1) { requestAnimationFrame(glowFrame); return; }
+          } catch(e) {}
           winGlowAlpha = 0;
           winSegmentIdx = null;
-          drawWheel(currentAngle);
+          try { drawWheel(currentAngle); } catch(e) {}
           const isWin = !(gainResult.nom || '').toLowerCase().includes('perdu');
-          if (isWin) spawnConfetti();
+          if (isWin) try { spawnConfetti(); } catch(e) {}
           showResult(isWin);
         }
-        requestAnimationFrame(animateGlow);
+        requestAnimationFrame(glowFrame);
+      }
+
+      function animate(now) {
+        try {
+          const t     = Math.min((now - startTime) / duration, 1);
+          const eased = easeOutQuint(t);
+          const angle = startAngle + (targetAngle - startAngle) * eased;
+          drawWheel(angle);
+          if (t < 1) { requestAnimationFrame(animate); return; }
+          currentAngle = targetAngle;
+          finishSpin();
+        } catch(e) {
+          spinning = false;
+          const btn2 = document.getElementById('roue-jouer-btn');
+          if (btn2) { btn2.disabled = false; btn2.textContent = '🎰 Tenter ma chance'; }
+        }
       }
       requestAnimationFrame(animate);
     }
