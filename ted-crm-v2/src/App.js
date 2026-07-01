@@ -4075,9 +4075,9 @@ function RouePage({ showToast }) {
             };
 
             // ── aperçu HTML ────────────────────────────────────────────
-            const previewHtml = `<div style="font-family:Arial,sans-serif;font-size:13px;">
+            const previewHtml = `<div style="font-family:Arial,sans-serif;font-size:13px;background:#ffffff;">
   <div style="background:linear-gradient(180deg,#fff8c0 0%,#FFE033 50%,#FFC200 100%);padding:24px 18px;text-align:center;">
-    <img src="https://www.leted.fr/wp-content/uploads/2024/01/Logo-Le-TED.png" width="70" height="70" style="border-radius:50%;margin-bottom:14px;object-fit:cover;" />
+    <img src="https://www.leted.fr/wp-content/uploads/2024/01/Logo-Le-TED.png" width="80" height="80" style="border-radius:50%;margin-bottom:14px;object-fit:cover;" />
     <div style="color:#111;font-size:22px;font-weight:700;line-height:1.1;">Grand Jeux du <span style="font-weight:900;font-size:20px;letter-spacing:1px;">TED</span></div>
     <div style="color:#5a4500;font-size:10px;letter-spacing:2px;margin-top:6px;text-transform:uppercase;">Restaurant &amp; Club</div>
   </div>
@@ -4102,10 +4102,11 @@ function RouePage({ showToast }) {
     <p style="color:#666;font-size:12px;line-height:1.8;margin:0;border-top:0.5px solid #eee;padding-top:14px;">On vous attend avec impatience.<br>À très bientôt,<br><strong style="color:#111;">L'équipe du TED</strong></p>
   </div>
   <div style="background:#111;padding:16px;text-align:center;">
-    <img src="https://www.leted.fr/wp-content/uploads/2024/01/Logo-Le-TED.png" width="40" height="40" style="border-radius:50%;margin-bottom:8px;object-fit:cover;opacity:0.9;" />
+    <img src="https://www.leted.fr/wp-content/uploads/2024/01/Logo-Le-TED.png" width="44" height="44" style="border-radius:50%;margin-bottom:10px;object-fit:cover;opacity:0.85;" />
     <div style="color:#E8C547;font-size:12px;font-weight:700;margin-bottom:3px;">Le TED — Restaurant &amp; Club</div>
-    <div style="color:#888;font-size:11px;margin-bottom:3px;">5 Rue Professeur Rochaix, 69003 Lyon</div>
-    <div style="color:#888;font-size:11px;margin-bottom:10px;">04 72 02 20 20</div>
+    <div style="color:#888;font-size:11px;margin-bottom:3px;">28 Avenue des Frères Montgolfier, 69680 Chassieu</div>
+    <div style="color:#888;font-size:11px;margin-bottom:3px;">04 78 90 67 80</div>
+    <div style="margin-bottom:10px;"><a href="https://www.leted.fr" style="color:#888;font-size:11px;">www.leted.fr</a></div>
     <div style="color:#555;font-size:10px;">Vous recevez cet email car vous avez participé au Grand Jeux du TED.</div>
   </div>
 </div>`;
