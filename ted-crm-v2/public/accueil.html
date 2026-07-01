@@ -123,15 +123,29 @@
     #popup-card {
       background: linear-gradient(160deg, #1c1c1c 0%, #111 100%);
       border: 1px solid #2a2a2a; border-radius: 20px;
-      width: min(360px, 88vw); overflow: hidden;
+      width: min(420px, 92vw); overflow: hidden;
       transform: scale(0.92); opacity: 0;
       transition: transform 300ms cubic-bezier(0.34, 1.4, 0.64, 1), opacity 300ms ease;
       position: relative; will-change: transform;
       display: flex; flex-direction: column;
     }
     @media (max-width: 480px) {
-      #popup-card { width: 88vw; border-radius: 16px; }
+      #popup-card { width: 92vw; border-radius: 16px; }
     }
+    .popup-arrow {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(232,197,71,0.12); border: 1px solid rgba(232,197,71,0.35);
+      color: #E8C547; font-size: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 150ms ease, opacity 200ms ease;
+      opacity: 0; pointer-events: none; z-index: 10;
+      user-select: none;
+    }
+    #popup-arrow-left  { left: -50px; }
+    #popup-arrow-right { right: -50px; }
+    #popup-overlay.open .popup-arrow { opacity: 1; pointer-events: all; }
+    .popup-arrow:active { background: rgba(232,197,71,0.28); }
     #popup-dots {
       display: flex; justify-content: center; gap: 6px;
       padding: 10px 0 14px;
@@ -464,6 +478,8 @@
 
   <!-- Popup soirée -->
   <div id="popup-overlay" role="dialog" aria-modal="true" aria-labelledby="popup-nom">
+    <button class="popup-arrow" id="popup-arrow-left" aria-label="Soirée précédente">&#8592;</button>
+    <button class="popup-arrow" id="popup-arrow-right" aria-label="Soirée suivante">&#8594;</button>
     <div id="popup-card">
       <div id="popup-progress-track"><div id="popup-progress-bar"></div></div>
       <button id="popup-close" aria-label="Fermer">✕</button>
@@ -638,6 +654,9 @@
     fillCard(s);
     overlay.classList.add('open');
     document.body.style.overflow = 'hidden';
+    const showArrows = soireesData.length > 1;
+    document.getElementById('popup-arrow-left').style.display  = showArrows ? '' : 'none';
+    document.getElementById('popup-arrow-right').style.display = showArrows ? '' : 'none';
     // Peek hint : légère poussée à gauche si une soirée suivante existe
     if (soireesData.length > 1 && currentPopupIdx < soireesData.length - 1) {
       clearTimeout(peekTimer);
@@ -795,6 +814,17 @@
 
   document.getElementById('popup-close').addEventListener('click', closePopup);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closePopup(); });
+
+  document.getElementById('popup-arrow-left').addEventListener('click', () => {
+    if (soireesData.length < 2) return;
+    fillCard2(soireesData[adjIdx('right')]);
+    commitNavigate('right', 0);
+  });
+  document.getElementById('popup-arrow-right').addEventListener('click', () => {
+    if (soireesData.length < 2) return;
+    fillCard2(soireesData[adjIdx('left')]);
+    commitNavigate('left', 0);
+  });
 
   // ── Cache sessionStorage soirées (TTL 5 min) ───────────────────────────────
   const SOIREES_KEY   = 'ted_soirees_v2';
