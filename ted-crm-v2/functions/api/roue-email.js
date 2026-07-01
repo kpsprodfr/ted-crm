@@ -1,25 +1,27 @@
+import { fetchT, sendBrevoEmail, queueEmail, getSupa, supaHeaders } from '../_utils.js';
+
 export async function onRequestPost(context) {
   const { env, request } = context;
-  const body = await request.json();
-  const { type, to_email, to_prenom, to_nom, recompense, emoji, date_venue, heure_venue, gain_id } = body;
+  let body;
+  try { body = await request.json(); } catch { return new Response(JSON.stringify({ error: 'JSON invalide' }), { status: 400 }); }
+  const { type, to_email, to_prenom, to_nom, recompense, emoji, date_venue, heure_venue, gain_id } = body || {};
 
   if (!to_email) return new Response(JSON.stringify({ error: 'to_email requis' }), { status: 400 });
 
-  const BREVO_KEY = env.BREVO_API_KEY;
-  if (!BREVO_KEY) {
-    console.error('[roue-email] BREVO_API_KEY manquante dans les variables Cloudflare');
-    return new Response(JSON.stringify({ error: 'BREVO_API_KEY non définie' }), { status: 500 });
-  }
-  const SUPA_URL = env.SUPABASE_URL || 'https://mwpfaytccypvdrgapptk.supabase.co';
-  const SUPA_KEY = env.SUPABASE_KEY || env.SUPABASE_ANON_KEY || 'sb_publishable_4-uVtQtXd0jLGkNAFsx4yw_ni17DzN_';
+  const { url: SUPA_URL, key: SUPA_KEY } = getSupa(env);
 
   const objetCle = type === 'email1' ? 'roue_email1_objet' : 'roue_email2_objet';
 
-  const paramsRes = await fetch(
-    `${SUPA_URL}/rest/v1/roue_config?cle=in.(${objetCle},roue_email_date,roue_email_date_fin,roue_email_date_mode,roue_email_message)&select=cle,valeur`,
-    { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
-  );
-  const paramsData = paramsRes.ok ? await paramsRes.json() : [];
+  let paramsData = [];
+  try {
+    const paramsRes = await fetchT(
+      `${SUPA_URL}/rest/v1/roue_config?cle=in.(${objetCle},roue_email_date,roue_email_date_fin,roue_email_date_mode,roue_email_message)&select=cle,valeur`,
+      { headers: supaHeaders(SUPA_KEY) }
+    );
+    paramsData = paramsRes.ok ? await paramsRes.json() : [];
+  } catch (e) {
+    console.error('[roue-email] roue_config inaccessible, valeurs par défaut utilisées:', e.message);
+  }
   const p = {};
   (paramsData || []).forEach(r => { p[r.cle] = r.valeur; });
 
@@ -269,29 +271,34 @@ export async function onRequestPost(context) {
 </body>
 </html>`;
 
-  const brevoRes = await fetch('https://api.brevo.com/v3/smtp/email', {
-    method: 'POST',
-    headers: { 'api-key': BREVO_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      sender: { name: 'Le TED', email: 'com.astegal@gmail.com' },
-      to: [{ email: to_email, name: `${to_prenom || ''} ${to_nom || ''}`.trim() }],
-      subject: objet,
-      htmlContent,
-    }),
-  });
+  const toName = `${to_prenom || ''} ${to_nom || ''}`.trim();
+  const result = await sendBrevoEmail(env, { to_email, to_name: toName, subject: objet, html: htmlContent });
 
-  if (!brevoRes.ok) {
-    const err = await brevoRes.text();
-    return new Response(JSON.stringify({ error: 'Brevo error', detail: err }), { status: 500 });
+  if (!result.ok) {
+    // Échec Brevo → l'email rendu part en file d'attente (repris par le cron).
+    console.error('[roue-email] échec Brevo:', result.status, result.detail);
+    const queued = await queueEmail(env, {
+      to_email,
+      to_name: toName,
+      subject: objet,
+      html: htmlContent,
+      error_message: `Brevo ${result.status}: ${result.detail} (gain ${gain_id || '?'})`,
+    });
+    if (queued) return new Response(JSON.stringify({ ok: true, queued: true }), { status: 200 });
+    return new Response(JSON.stringify({ error: 'Brevo error', detail: result.detail }), { status: 502 });
   }
 
   if (gain_id) {
-    const updateField = type === 'email1' ? { email1_envoye: true } : { email2_envoye: true };
-    await fetch(`${SUPA_URL}/rest/v1/roue_gains?id=eq.${gain_id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, Prefer: 'return=minimal' },
-      body: JSON.stringify(updateField),
-    });
+    try {
+      const updateField = type === 'email1' ? { email1_envoye: true } : { email2_envoye: true };
+      await fetchT(`${SUPA_URL}/rest/v1/roue_gains?id=eq.${gain_id}`, {
+        method: 'PATCH',
+        headers: supaHeaders(SUPA_KEY, { Prefer: 'return=minimal' }),
+        body: JSON.stringify(updateField),
+      });
+    } catch (e) {
+      console.error('[roue-email] flag email envoyé non posé:', e.message);
+    }
   }
 
   return new Response(JSON.stringify({ ok: true }), { status: 200 });

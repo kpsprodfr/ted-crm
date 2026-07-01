@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus, UserPlus, Trophy, ArrowUpDown, LayoutGrid, Settings, MapPin, Dices, Bell, X, Award, Gift, Image as ImageIcon, BadgeCheck } from 'lucide-react';
 import { supabase } from "./supabase";
+import { safeQuery, resilientChannel, logError } from "./lib/db";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const GENRES = ["Homme", "Femme", "Entreprise", "Non renseigné"];
@@ -2144,8 +2145,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
   }, [calJourSelectionne]);
 
   useEffect(() => {
-    const ch = supabase
-      .channel('resa-page-realtime')
+    return resilientChannel(supabase, 'resa-page-realtime', (chan) => chan
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reservations' }, async (payload) => {
         const nouvelleResa = payload.new;
         const { data: clientData } = await supabase.from('clients').select('*').eq('id', nouvelleResa.client_id).single();
@@ -2164,16 +2164,15 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           return updated;
         });
       })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
+    );
   }, []);
 
   async function loadResa() {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await safeQuery(() => supabase
       .from('reservations')
       .select('*, clients(id, nom, prenom, tel, mail, genre, entreprise)')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false }), { fallback: [], context: 'loadResa' });
     if (error) showToast('Erreur chargement réservations', 'error');
     else {
       setResaList(data || []);
@@ -4425,14 +4424,13 @@ function MenuPage({ showToast }) {
   useEffect(() => { loadSoirees(); loadCartes(); }, []);
 
   useEffect(() => {
-    const ch = supabase.channel('menu-rt')
+    return resilientChannel(supabase, 'menu-rt', (chan) => chan
       .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_produits' }, () => loadMenu())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_categories' }, () => loadMenu())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_plat_jour' }, () => loadMenu())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_cartes' }, () => loadCartes())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_soirees' }, () => loadSoirees())
-      .subscribe();
-    return () => supabase.removeChannel(ch);
+    );
   }, []);
 
   useEffect(() => {
@@ -4508,9 +4506,9 @@ function MenuPage({ showToast }) {
 
   async function loadMenu() {
     const [cR, pR, jR] = await Promise.all([
-      supabase.from('menu_categories').select('*').order('ordre'),
-      supabase.from('menu_produits').select('*').order('ordre'),
-      supabase.from('menu_plat_jour').select('*')
+      safeQuery(() => supabase.from('menu_categories').select('*').order('ordre'), { fallback: [], context: 'loadMenu:categories' }),
+      safeQuery(() => supabase.from('menu_produits').select('*').order('ordre'), { fallback: [], context: 'loadMenu:produits' }),
+      safeQuery(() => supabase.from('menu_plat_jour').select('*'), { fallback: [], context: 'loadMenu:platJour' })
     ]);
     setCategories(cR.data || []);
     setProduits(pR.data || []);
@@ -5329,14 +5327,10 @@ function CRMApp({ user, onLogout }) {
   useEffect(() => { if (user) initOneSignal(); }, [user]);
 
   useEffect(() => {
-    const channel = supabase
-      .channel('nouvelles-reservations')
+    return resilientChannel(supabase, 'nouvelles-reservations', (chan) => chan
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reservations', filter: 'statut=eq.attente' }, async (payload) => {
         if (notifEnCoursRef.current) return;
         notifEnCoursRef.current = true;
-        console.log('PAYLOAD REÇU:', payload);
-        console.log('Permission notifications:', Notification.permission);
-        console.log('Service Worker disponible:', 'serviceWorker' in navigator);
         const { data: client } = await supabase.from('clients').select('nom, prenom, tel').eq('id', payload.new.client_id).single();
         loadResaCount();
         const nom = client ? `${client.prenom} ${client.nom}` : 'Nouveau client';
@@ -5354,13 +5348,10 @@ function CRMApp({ user, onLogout }) {
             title: 'Nouvelle réservation !',
             body: `${nom} · ${date} · ${payload.new.heure || ''} · ${payload.new.nb_personnes} pers.`
           })
-        });
+        }).catch((e) => logError(e.message, 'send-push-onesignal'));
         notifEnCoursRef.current = false;
       })
-      .subscribe((status) => {
-        console.log('Statut Realtime:', status);
-      });
-    return () => { supabase.removeChannel(channel); };
+    );
   }, []);
 
   async function updateBadge(count) {
@@ -5381,7 +5372,7 @@ function CRMApp({ user, onLogout }) {
 
   async function loadClients(silent = false) {
     if (!silent) setLoading(true);
-    const { data, error } = await supabase.from("clients").select("*").is("deleted_at", null).order("created_at", { ascending: false });
+    const { data, error } = await safeQuery(() => supabase.from("clients").select("*").is("deleted_at", null).order("created_at", { ascending: false }), { fallback: [], context: 'loadClients' });
     if (error) { showToast("Erreur de chargement", "error"); }
     else { setClients(data || []); }
     if (!silent) setLoading(false);
@@ -5389,7 +5380,7 @@ function CRMApp({ user, onLogout }) {
   }
 
   async function chargerToutesStatsClients() {
-    const { data } = await supabase.from('reservations').select('client_id, statut, date, service');
+    const { data } = await safeQuery(() => supabase.from('reservations').select('client_id, statut, date, service'), { fallback: [], context: 'statsClients' });
     setResasData(data || []);
     const stats = {};
     const joursSemaine = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];

@@ -380,6 +380,11 @@
 <script>
   // ── Configuration Supabase ──────────────────────────────────────────────────
   // Ces valeurs sont publiques (clé anon avec RLS) — safe à exposer
+  // Timeout global 10 s sur tous les fetch de la page (résilience réseau)
+  if (window.AbortSignal && AbortSignal.timeout) {
+    const _fetch = window.fetch.bind(window);
+    window.fetch = (url, opts = {}) => _fetch(url, { ...opts, signal: opts.signal || AbortSignal.timeout(10000) });
+  }
   const SUPA_URL = 'https://mwpfaytccypvdrgapptk.supabase.co';
   const SUPA_KEY = 'sb_publishable_4-uVtQtXd0jLGkNAFsx4yw_ni17DzN_';
 

@@ -1,28 +1,35 @@
-export async function onRequestPost(context) {
-  const { to, toName, subject, html } = await context.request.json();
-  const apiKey = context.env.BREVO_API_KEY;
+import { sendBrevoEmail, queueEmail } from './_utils.js';
 
-  if (!apiKey) {
-    console.error('Brevo response status: BREVO_API_KEY manquante dans les variables Cloudflare');
-    return Response.json({ success: false, error: 'BREVO_API_KEY non définie' }, { status: 500 });
+export async function onRequestPost(context) {
+  const { env, request } = context;
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json({ success: false, error: 'JSON invalide' }, { status: 400 });
+  }
+  const { to, toName, subject, html } = body || {};
+  if (!to || !subject || !html) {
+    return Response.json({ success: false, error: 'to, subject et html requis' }, { status: 400 });
   }
 
-  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'api-key': apiKey
-    },
-    body: JSON.stringify({
-      sender: { name: 'Le TED', email: 'com.astegal@gmail.com' },
-      to: [{ email: to, name: toName }],
-      subject,
-      htmlContent: html
-    })
-  });
+  const result = await sendBrevoEmail(env, { to_email: to, to_name: toName, subject, html });
+  if (result.ok) {
+    return Response.json({ success: true });
+  }
 
-  const data = await res.json();
-  console.log('Brevo response status:', res.status);
-  console.log('Brevo response data:', JSON.stringify(data));
-  return Response.json({ success: res.ok, data });
+  // Échec Brevo (clé manquante, quota, panne, timeout) → l'email part en file
+  // d'attente et sera repris par /api/process-email-queue. Rien n'est perdu.
+  console.error('[send-email] échec Brevo:', result.status, result.detail);
+  const queued = await queueEmail(env, {
+    to_email: to,
+    to_name: toName,
+    subject,
+    html,
+    error_message: `Brevo ${result.status}: ${result.detail}`,
+  });
+  if (queued) {
+    return Response.json({ success: true, queued: true, info: 'Envoi différé (file d’attente)' });
+  }
+  return Response.json({ success: false, error: `Brevo ${result.status}: ${result.detail}` }, { status: 502 });
 }

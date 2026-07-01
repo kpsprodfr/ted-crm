@@ -1,0 +1,15 @@
+# TED CRM — Cloudflare Pages
+#
+# ⚠️ IMPORTANT : Cloudflare Pages n'exécute PAS les crons déclarés ici
+# (les [triggers] ne s'appliquent qu'aux Workers). Les crons réels sont
+# assurés par pg_cron côté Supabase (extension pg_cron + pg_net) qui
+# appelle les endpoints :
+#   - toutes les heures  → /api/process-email-queue (reprise des emails échoués)
+#   - tous les jours 02h → /api/backup (sauvegarde des tables)
+# Cette section est conservée pour une future migration Pages → Workers.
+
+name = "ted-crm"
+compatibility_date = "2026-01-01"
+
+[triggers]
+crons = ["0 * * * *", "0 2 * * *"]

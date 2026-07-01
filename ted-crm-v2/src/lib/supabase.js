@@ -1,10 +1,3 @@
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Variables Supabase manquantes. Vérifiez votre fichier .env');
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Doublon historique : on ré-exporte le client unique pour éviter deux
+// connexions Supabase divergentes. Utiliser src/supabase.js partout.
+export { supabase } from '../supabase';
