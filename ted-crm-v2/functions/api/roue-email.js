@@ -99,7 +99,7 @@ L'équipe du TED 🦁`;
 <div style="max-width:560px;margin:0 auto;background:#ffffff;">
 
   <div style="background:linear-gradient(180deg,#fff8c0 0%,#FFE033 50%,#FFC200 100%);padding:32px 24px;text-align:center;">
-    <img src="https://www.leted.fr/wp-content/uploads/2022/05/logo-Le-TED.png" width="80" height="80" style="border-radius:50%;margin-bottom:14px;object-fit:cover;" />
+    <img src="https://ted-crm.pages.dev/logo-Le-TED.png" width="80" height="80" style="margin-bottom:14px;object-fit:contain;" />
     <div style="font-family:'Caveat',cursive;color:#111;font-size:34px;font-weight:700;line-height:1.1;">Grand Jeux du <span style="font-family:Arial,sans-serif;font-weight:900;font-size:30px;letter-spacing:1px;">TED</span></div>
     <div style="color:#5a4500;font-size:11px;letter-spacing:2px;margin-top:8px;text-transform:uppercase;">Restaurant &amp; Club</div>
   </div>
@@ -160,7 +160,7 @@ L'équipe du TED 🦁`;
   </div>
 
   <div style="background:#111;padding:22px 24px;text-align:center;">
-    <img src="https://www.leted.fr/wp-content/uploads/2022/05/logo-Le-TED.png" width="44" height="44" style="border-radius:50%;margin-bottom:10px;object-fit:cover;opacity:0.85;" />
+    <div style="width:50px;height:50px;background:#fff;border-radius:50%;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;"><img src="https://ted-crm.pages.dev/logo-Le-TED.png" width="36" height="36" style="object-fit:contain;" /></div>
     <div style="color:#E8C547;font-size:13px;font-weight:700;margin-bottom:4px;">Le TED — Restaurant &amp; Club</div>
     <div style="color:#888;font-size:12px;margin-bottom:4px;">28 Avenue des Frères Montgolfier, 69680 Chassieu</div>
     <div style="color:#888;font-size:12px;margin-bottom:4px;">04 78 90 67 80</div>
