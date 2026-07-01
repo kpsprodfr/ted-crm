@@ -13,7 +13,9 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build"
+    "build": "react-scripts build",
+    "security-audit": "npm audit --audit-level=high",
+    "update-deps": "npm update"
   },
   "browserslist": {
     "production": [

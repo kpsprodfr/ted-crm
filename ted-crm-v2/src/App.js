@@ -5170,6 +5170,22 @@ function SystemePage({ showToast }) {
   const [restoring, setRestoring] = useState(false);
   const [health, setHealth] = useState(null);
   const [errLogs, setErrLogs] = useState([]);
+  const [testReport, setTestReport] = useState(null);
+  const [testing, setTesting] = useState(false);
+
+  async function runTests() {
+    if (testing) return;
+    setTesting(true);
+    setTestReport(null);
+    try {
+      const res = await fetch('/api/run-tests', { headers: await authHeaders() });
+      setTestReport(await res.json());
+    } catch (e) {
+      logError(e.message, 'systeme:runTests');
+      setTestReport({ ok: false, tests: [], error: 'Suite de tests injoignable' });
+    }
+    setTesting(false);
+  }
 
   useEffect(() => {
     fetch('/api/health').then(r => r.json()).then(setHealth).catch(() => setHealth({ status: 'down', components: {} }));
@@ -5321,6 +5337,37 @@ function SystemePage({ showToast }) {
             </tbody>
           </table>
         )}
+      </div>
+
+      {/* ── Suite de tests ── */}
+      <div style={{ background:'#fff', borderRadius:16, padding:'24px 26px', boxShadow:'0 1px 4px rgba(0,0,0,0.06)', marginBottom:24 }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: testReport ? 16 : 0 }}>
+          <h2 style={{ fontSize:16, fontWeight:800, color:'#111', margin:0, display:'flex', alignItems:'center', gap:8 }}>
+            <CircleCheck size={18} /> Tests du système
+            {testReport && !testReport.error && (
+              <span style={{ fontSize:12, fontWeight:800, padding:'4px 12px', borderRadius:20, background: testReport.ok ? '#dcfce7' : '#fee2e2', color: testReport.ok ? '#15803d' : '#b91c1c' }}>
+                {testReport.passed}/{testReport.total} OK
+              </span>
+            )}
+          </h2>
+          <button onClick={runTests} disabled={testing} style={{ height:40, padding:'0 18px', border:'1.5px solid #ddd', borderRadius:10, background:'#fff', color: testing ? '#aaa' : '#333', fontSize:13, fontWeight:800, cursor: testing ? 'wait' : 'pointer', display:'flex', alignItems:'center', gap:8 }}>
+            <RefreshCw size={15} style={testing ? { animation:'spin 1s linear infinite' } : undefined} /> {testing ? 'Tests en cours…' : 'Lancer les tests'}
+          </button>
+        </div>
+        {testReport && (testReport.error ? (
+          <div style={{ color:'#b91c1c', fontSize:13 }}>{testReport.error}</div>
+        ) : (
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            {(testReport.tests || []).map((tst, i) => (
+              <div key={i} style={{ display:'flex', alignItems:'center', gap:10, fontSize:13, padding:'8px 12px', borderRadius:8, background: tst.ok ? '#f7fdf9' : '#fef5f5', border:`1px solid ${tst.ok ? '#dcfce7' : '#fee2e2'}` }}>
+                {tst.ok ? <CheckCircle size={15} color="#15803d" /> : <AlertCircle size={15} color="#b91c1c" />}
+                <span style={{ fontWeight:700, color:'#333' }}>{tst.name}</span>
+                <span style={{ color:'#888', fontSize:12 }}>{tst.detail}</span>
+                {tst.ms != null && <span style={{ marginLeft:'auto', color:'#bbb', fontSize:11 }}>{tst.ms} ms</span>}
+              </div>
+            ))}
+          </div>
+        ))}
       </div>
 
       {/* ── Dernières erreurs ── */}
