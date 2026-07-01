@@ -324,6 +324,19 @@
         <button id="roue-skip-btn" style="width:100%;padding:13px;border-radius:14px;border:1.5px solid rgba(0,0,0,0.15);background:transparent;color:rgba(0,0,0,0.45);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;margin-top:10px;">Non merci, continuer sans</button>
       </div>
     </div>
+
+    <!-- Lose overlay (inside roue-overlay, z:400) -->
+    <div id="roue-lose-overlay" style="display:none;position:fixed;inset:0;align-items:center;justify-content:center;z-index:400;padding:32px;">
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);"></div>
+      <div style="position:relative;width:100%;max-width:320px;background:#fff;border-radius:24px;padding:36px 28px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,0.45);animation:winReveal .5s cubic-bezier(.34,1.56,.64,1);">
+        <div style="font-size:64px;margin-bottom:14px;">😔</div>
+        <div style="font-size:22px;font-weight:900;color:#111;margin-bottom:6px;">Pas de chance cette fois...</div>
+        <div style="font-size:15px;color:#888;margin-bottom:24px;">Tentez à nouveau !</div>
+        <button id="roue-retry-btn" style="width:100%;padding:16px;border-radius:14px;border:none;background:#111;color:#fff;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.2);margin-bottom:10px;">🔄 Réessayer</button>
+        <div id="roue-retry-msg" style="font-size:13px;color:#aaa;"></div>
+        <div id="roue-no-tries-msg" style="display:none;font-size:14px;color:#555;line-height:1.6;margin-top:8px;">Vous avez utilisé tous vos essais.<br>À bientôt au TED ! 👋</div>
+      </div>
+    </div>
   </div><!-- /roue-overlay -->
 
   <!-- Form overlay (plein écran, z:500) -->
@@ -687,6 +700,7 @@
     let gainResult   = null;
     let spinning     = false;
     let currentAngle = 0;
+    let maxTries     = 3;
     let triesLeft    = 3;
     let gender       = 'M.';
     let idleTimer    = null;
@@ -708,11 +722,16 @@
 
     // ── Chargement Supabase ────────────────────────────────────────────────────
     try {
-      const [resParam, resRec] = await Promise.all([
+      const [resParam, resEssais, resRec] = await Promise.all([
         fetch(`${SUPA_URL}/rest/v1/roue_config?cle=eq.roue_active&select=valeur`, { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }),
+        fetch(`${SUPA_URL}/rest/v1/roue_config?cle=eq.roue_essais_max&select=valeur`, { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }),
         fetch(`${SUPA_URL}/rest/v1/roue_recompenses?actif=eq.true&order=ordre`, { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }),
       ]);
       const paramData = resParam.ok ? await resParam.json() : [];
+      const essaisData = resEssais.ok ? await resEssais.json() : [];
+      maxTries = parseInt(essaisData[0]?.valeur) || 3;
+      const essaisUtilises = parseInt(localStorage.getItem('ted_roue_essais_utilises') || '0');
+      triesLeft = Math.max(0, maxTries - essaisUtilises);
       const rouueActive = (paramData[0]?.valeur === 'true');
       console.log('2. roue_active =', rouueActive, '| paramData =', paramData);
       if (!rouueActive) { console.log('2b. roue inactive → abort'); return; }
@@ -952,12 +971,21 @@
     }
 
     function updateTries() {
-      const used = 3 - triesLeft;
+      const used = maxTries - triesLeft;
       const el = document.getElementById('roue-tries-count');
-      if (el) el.innerHTML = `${used}<span style="color:rgba(0,0,0,0.35);font-weight:500;">/3</span>`;
+      if (el) el.innerHTML = `${used}<span style="color:rgba(0,0,0,0.35);font-weight:500;">/${maxTries}</span>`;
       document.querySelectorAll('.roue-try-dot').forEach((d, i) => {
         d.style.background = i < used ? '#1a1200' : 'rgba(0,0,0,0.15)';
       });
+      const btn = document.getElementById('roue-jouer-btn');
+      if (btn) {
+        btn.disabled = triesLeft <= 0;
+        if (triesLeft <= 0) {
+          btn.style.opacity = '0.4';
+          btn.style.cursor = 'not-allowed';
+          btn.textContent = 'Plus d\'essais disponibles';
+        }
+      }
     }
 
     // ── Spin — arcs égaux sur roueSections (10 segments) ──────────────────────
@@ -985,6 +1013,8 @@
       const targetAngle  = currentAngle + extraSpins + targetOffset;
 
       triesLeft--;
+      const essaisUtilisesNow = maxTries - triesLeft;
+      localStorage.setItem('ted_roue_essais_utilises', String(essaisUtilisesNow));
       spinning = true;
       const btn = document.getElementById('roue-jouer-btn');
       if (btn) { btn.disabled = true; btn.textContent = 'En cours…'; }
@@ -1017,11 +1047,26 @@
         document.getElementById('roue-win-label').textContent = gainResult.nom || '—';
         if (winOv) { winOv.style.display = 'flex'; }
       } else {
-        const btn = document.getElementById('roue-jouer-btn');
-        if (btn) {
-          btn.disabled = triesLeft <= 0;
-          btn.textContent = triesLeft > 0 ? '😔 Retenter sa chance' : 'Plus d\'essais disponibles';
+        const loseOv = document.getElementById('roue-lose-overlay');
+        const retryBtn = document.getElementById('roue-retry-btn');
+        const retryMsg = document.getElementById('roue-retry-msg');
+        const noTriesMsg = document.getElementById('roue-no-tries-msg');
+        if (triesLeft > 0) {
+          retryBtn.style.display = 'block';
+          noTriesMsg.style.display = 'none';
+          retryMsg.textContent = `${triesLeft} essai${triesLeft > 1 ? 's' : ''} restant${triesLeft > 1 ? 's' : ''}`;
+          retryBtn.onclick = () => {
+            loseOv.style.display = 'none';
+            const jouerBtn = document.getElementById('roue-jouer-btn');
+            if (jouerBtn) { jouerBtn.disabled = false; jouerBtn.style.opacity = '1'; jouerBtn.style.cursor = 'pointer'; jouerBtn.textContent = '🎰 Tenter ma chance'; }
+          };
+        } else {
+          retryBtn.style.display = 'none';
+          retryMsg.textContent = '';
+          noTriesMsg.style.display = 'block';
         }
+        if (loseOv) { loseOv.style.display = 'flex'; }
+        updateTries();
       }
     }
 
