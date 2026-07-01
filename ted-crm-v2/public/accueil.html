@@ -328,11 +328,22 @@
       <div style="position:absolute;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);"></div>
       <div style="position:relative;width:100%;max-width:320px;background:linear-gradient(160deg,#fff8c0,#FFE033 40%,#FFC200);border-radius:24px;padding:36px 28px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,0.45),0 0 0 1px rgba(255,255,255,0.3);animation:winReveal .5s cubic-bezier(.34,1.56,.64,1);">
         <div id="roue-win-emoji" style="font-size:56px;margin-bottom:14px;">🎁</div>
-        <div style="font-size:26px;font-weight:900;color:#1a1200;margin-bottom:4px;">🎉 Félicitations !</div>
+        <div style="font-size:26px;font-weight:900;color:#1a1200;margin-bottom:4px;">🎉 Gagné !</div>
         <div style="font-size:15px;font-weight:500;color:rgba(0,0,0,0.5);margin-bottom:12px;">Vous avez gagné</div>
         <div id="roue-win-label" style="font-size:20px;font-weight:800;color:#1a1200;letter-spacing:-.3px;margin-bottom:24px;padding:22px 24px;background:rgba(0,0,0,0.1);border-radius:20px;border:2px solid rgba(0,0,0,0.12);width:100%;">—</div>
         <button id="roue-recuperer-btn" style="width:100%;padding:16px;border-radius:14px;border:none;background:#1a1200;color:#fff;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.3);">Récupérer ma récompense</button>
         <button id="roue-skip-btn" style="width:100%;padding:13px;border:none;background:transparent;color:rgba(0,0,0,0.45);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;margin-top:10px;">Non merci, continuer sans</button>
+      </div>
+    </div>
+
+    <!-- Déjà participé overlay (z:600) -->
+    <div id="roue-dejà-overlay" style="display:none;position:fixed;inset:0;align-items:center;justify-content:center;z-index:600;padding:32px;">
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);"></div>
+      <div style="position:relative;width:100%;max-width:320px;background:#111;border-radius:24px;padding:36px 28px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,0.6);animation:winReveal .5s cubic-bezier(.34,1.56,.64,1);">
+        <div style="font-size:48px;margin-bottom:16px;">🎰</div>
+        <div style="font-size:20px;font-weight:900;color:#E8C547;margin-bottom:12px;">Vous avez déjà participé</div>
+        <div style="font-size:14px;color:#aaa;line-height:1.6;margin-bottom:28px;">Vous avez déjà participé au Grand Jeux du TED.<br>Votre récompense vous a déjà été attribuée.</div>
+        <button onclick="document.getElementById('roue-dejà-overlay').style.display='none';closeRoue();" style="width:100%;padding:16px;border-radius:14px;border:none;background:#E8C547;color:#1a1200;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;">Retour à la carte</button>
       </div>
     </div>
 
@@ -1288,8 +1299,10 @@
         if (checkRes.ok) {
           const existing = await checkRes.json();
           if (existing && existing.length > 0) {
-            document.getElementById('roue-rejeu-msg').style.display = 'block';
             if (btn) { btn.disabled = false; btn.textContent = 'Valider mes informations'; }
+            document.getElementById('roue-form-overlay').style.display = 'none';
+            const deja = document.getElementById('roue-dejà-overlay');
+            if (deja) deja.style.display = 'flex';
             return;
           }
         }
