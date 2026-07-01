@@ -6,6 +6,10 @@ export async function onRequestPost(context) {
   if (!to_email) return new Response(JSON.stringify({ error: 'to_email requis' }), { status: 400 });
 
   const BREVO_KEY = env.BREVO_API_KEY;
+  if (!BREVO_KEY) {
+    console.error('[roue-email] BREVO_API_KEY manquante dans les variables Cloudflare');
+    return new Response(JSON.stringify({ error: 'BREVO_API_KEY non définie' }), { status: 500 });
+  }
   const SUPA_URL = env.SUPABASE_URL || 'https://mwpfaytccypvdrgapptk.supabase.co';
   const SUPA_KEY = env.SUPABASE_KEY || env.SUPABASE_ANON_KEY || 'sb_publishable_4-uVtQtXd0jLGkNAFsx4yw_ni17DzN_';
 
