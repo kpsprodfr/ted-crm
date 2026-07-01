@@ -343,7 +343,7 @@
         <div style="font-size:64px;margin-bottom:14px;">😔</div>
         <div style="font-size:24px;font-weight:900;color:#fff;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">PERDU</div>
         <div id="roue-lose-subtitle" style="font-size:15px;color:#aaa;margin-bottom:28px;">Essaye encore !</div>
-        <button id="roue-retry-btn" style="width:100%;padding:16px;border-radius:14px;border:none;background:#E8C547;color:#111;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(232,197,71,0.3);">🔄 Réessayer (1/3)</button>
+        <button id="roue-retry-btn" style="width:100%;padding:16px;border-radius:14px;border:none;background:#E8C547;color:#111;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(232,197,71,0.3);display:flex;align-items:center;justify-content:center;gap:8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg> Réessayer (1/3)</button>
         <button id="roue-back-btn" style="display:none;width:100%;padding:16px;border-radius:14px;border:2px solid rgba(255,255,255,0.2);background:transparent;color:#fff;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;">Retour à la carte</button>
       </div>
     </div>
@@ -1135,7 +1135,7 @@
           retryBtn.style.display = 'block';
           backBtn.style.display = 'none';
           subtitle.textContent = 'Essaye encore !';
-          retryBtn.textContent = `🔄 Réessayer (${essaiEnCours}/${maxTries})`;
+          retryBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg> Réessayer (${essaiEnCours}/${maxTries})`;
           retryBtn.onclick = () => {
             loseOv.style.display = 'none';
             const jouerBtn = document.getElementById('roue-jouer-btn');
