@@ -671,10 +671,18 @@
   }
 
   async function fetchSoirees(silent) {
-    const r = await fetch(
+    const headers = { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` };
+    let r = await fetch(
       `${SUPA_URL}/rest/v1/menu_soirees?select=id,nom,nom_en,nom_es,nom_it,description,description_en,description_es,description_it,jour,horaire,dj,image_url&visible=eq.true&order=ordre.asc`,
-      { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
+      { headers }
     );
+    // Fallback si image_url n'existe pas encore en base
+    if (!r.ok) {
+      r = await fetch(
+        `${SUPA_URL}/rest/v1/menu_soirees?select=id,nom,nom_en,nom_es,nom_it,description,description_en,description_es,description_it,jour,horaire,dj&visible=eq.true&order=ordre.asc`,
+        { headers }
+      );
+    }
     if (!r.ok) return;
     const soirees = await r.json();
     soiresToCache(soirees);
