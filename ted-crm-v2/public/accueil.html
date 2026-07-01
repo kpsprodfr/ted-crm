@@ -1143,6 +1143,12 @@
       if (btn) btn.textContent = 'Enregistrement…';
 
       // ── Lookup, INSERT ou UPDATE dans clients (mail = colonne email dans clients) ──
+      const heure = new Date().getHours();
+      const service_favori = heure < 17 ? 'midi' : 'soir';
+      const joursNoms = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+      const jour_favori = joursNoms[new Date().getDay()];
+      const derniere_visite = new Date().toISOString();
+
       let clientId = null;
       try {
         const clientRes = await fetch(
@@ -1154,12 +1160,12 @@
         } else {
           const existingClients = await clientRes.json();
           if (existingClients && existingClients.length > 0) {
-            // Client trouvé → UPDATE prenom, nom, genre
+            // Client trouvé → UPDATE
             clientId = existingClients[0].id;
             const upd = await fetch(`${SUPA_URL}/rest/v1/clients?id=eq.${clientId}`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json', apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, Prefer: 'return=minimal' },
-              body: JSON.stringify({ prenom, nom, genre: gender, updated_at: new Date().toISOString() })
+              body: JSON.stringify({ prenom, nom, genre: gender, service_favori, jour_favori, derniere_visite, updated_at: derniere_visite })
             });
             if (!upd.ok) console.error('clients update error', upd.status, await upd.text());
           } else {
@@ -1167,7 +1173,7 @@
             const insertRes = await fetch(`${SUPA_URL}/rest/v1/clients`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, Prefer: 'return=representation' },
-              body: JSON.stringify({ prenom, nom, tel, tel_normalise: tel, mail: email, genre: gender, source: 'Grand Jeux du TED', created_at: new Date().toISOString() })
+              body: JSON.stringify({ prenom, nom, tel, tel_normalise: tel, mail: email, genre: gender, source: 'Grand Jeux du TED', service_favori, jour_favori, derniere_visite, created_at: derniere_visite })
             });
             if (!insertRes.ok) {
               console.error('clients insert error', insertRes.status, await insertRes.text());

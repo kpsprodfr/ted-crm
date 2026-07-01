@@ -4800,6 +4800,8 @@ function CRMApp({ user, onLogout }) {
   const [modalAdd, setModalAdd] = useState(false);
   const [addClientForm, setAddClientForm] = useState({});
   const [filtreGenreClients, setFiltreGenreClients] = useState('Tous');
+  const [filtreServiceClients, setFiltreServiceClients] = useState('Tous');
+  const [filtreSourceClients, setFiltreSourceClients] = useState('Tous');
   const [rechercheClients, setRechercheClients] = useState('');
   const [showConfirmQuitterClient, setShowConfirmQuitterClient] = useState(false);
   const [modalDetailClient, setModalDetailClient] = useState(null);
@@ -6078,6 +6080,8 @@ function CRMApp({ user, onLogout }) {
 
         const clientsFiltres = clients
           .filter(c => filtreGenreClients==='Tous' || c.genre===filtreGenreClients)
+          .filter(c => filtreServiceClients==='Tous' || c.service_favori===filtreServiceClients)
+          .filter(c => filtreSourceClients==='Tous' || (filtreSourceClients==='Grand Jeux du TED' ? c.source==='Grand Jeux du TED' : filtreSourceClients==='Réservation' ? c.source==='reservation' : c.source==='manuel' || !c.source))
           .filter(c => !rechercheClients ||
             `${c.prenom||''} ${c.nom||''} ${c.tel||''} ${c.mail||''} ${c.entreprise||''} ${c.commentaire||''}`
               .toLowerCase().includes(rechercheClients.toLowerCase()))
@@ -6137,6 +6141,19 @@ function CRMApp({ user, onLogout }) {
                   <button key={f.id} onClick={()=>setFiltreGenreClients(f.id)} style={{height:36, padding:'0 14px', borderRadius:10, cursor:'pointer', fontSize:13, fontWeight:700, border:'none', background: filtreGenreClients===f.id?'#111':'#fff', color: filtreGenreClients===f.id?'#fff':'#666', boxShadow: filtreGenreClients===f.id?'none':'0 1px 4px rgba(0,0,0,0.06)'}}>{f.label}</button>
                 ))}
               </div>
+              <select value={filtreServiceClients} onChange={e=>setFiltreServiceClients(e.target.value)}
+                style={{height:36, padding:'0 10px', borderRadius:10, border:'1.5px solid #eee', background:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', color: filtreServiceClients!=='Tous'?'#111':'#666', flexShrink:0, outline:'none'}}>
+                <option value="Tous">Service</option>
+                <option value="midi">☀️ Midi</option>
+                <option value="soir">🌙 Soir</option>
+              </select>
+              <select value={filtreSourceClients} onChange={e=>setFiltreSourceClients(e.target.value)}
+                style={{height:36, padding:'0 10px', borderRadius:10, border:'1.5px solid #eee', background:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', color: filtreSourceClients!=='Tous'?'#111':'#666', flexShrink:0, outline:'none'}}>
+                <option value="Tous">Source</option>
+                <option value="Grand Jeux du TED">🎰 Roue du jeu</option>
+                <option value="Réservation">📅 Réservation</option>
+                <option value="Manuel">✏️ Manuel</option>
+              </select>
               <button onClick={()=>setModalAdd(true)} style={{height:36, padding:'0 16px', borderRadius:10, border:'none', background:'#E8C547', color:'#111', fontSize:13, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', gap:8, flexShrink:0, boxShadow:'0 2px 8px rgba(232,197,71,0.3)'}}>
                 <Plus size={16} strokeWidth={2}/> Nouveau client
               </button>
@@ -6348,6 +6365,9 @@ function CRMApp({ user, onLogout }) {
                 </div>
               )}
               {c.created_at && <div style={{ fontSize:12, color:'#999' }}>📋 Client depuis le {formatDate(c.created_at)}</div>}
+              {c.service_favori && <div style={{ fontSize:13, color:'#555' }}>🕐 Service favori : {c.service_favori === 'midi' ? 'Midi' : 'Soir'}</div>}
+              {c.jour_favori && <div style={{ fontSize:13, color:'#555' }}>📅 Jour favori : {c.jour_favori}</div>}
+              {c.source && c.source !== 'manuel' && <div style={{ fontSize:13, color:'#555' }}>🎰 Source : {c.source}</div>}
               {c.commentaire && <div style={{ fontSize:13, color:'#555', background:'#f9f9f9', borderRadius:8, padding:'10px 12px', fontStyle:'italic' }}>"{c.commentaire}"</div>}
               <div style={{ background:'#f9f9f9', borderRadius:10, padding:'12px 16px', display:'flex', gap:16 }}>
                 <div style={{ textAlign:'center', flex:1 }}><div style={{ fontSize:22, fontWeight:800, color:'#111' }}>{s.total}</div><div style={{ fontSize:11, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Résa total</div></div>
