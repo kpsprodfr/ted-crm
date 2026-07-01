@@ -758,6 +758,8 @@
     let gainResult   = null;
     let spinning     = false;
     let currentAngle = 0;
+    let winSegmentIdx = null;
+    let winGlowAlpha  = 0;
     let maxTries     = 3;
     let triesLeft    = 3;
     let gender       = 'M.';
@@ -949,6 +951,30 @@
         ctx.restore();
       }
 
+      // ── Win segment glow ──────────────────────────────────────────────────────
+      if (winSegmentIdx !== null && winGlowAlpha > 0) {
+        const ws = winSegmentIdx;
+        const startA = rotation + ws * arc - Math.PI/2;
+        const endA   = startA + arc;
+        const midA   = startA + arc / 2;
+        const isGoldSeg = (ws % 2 === 0);
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, innerR, startA, endA);
+        ctx.closePath();
+        const glowColor = isGoldSeg ? `rgba(255,255,150,${winGlowAlpha * 0.7})` : `rgba(255,220,0,${winGlowAlpha * 0.55})`;
+        ctx.fillStyle = glowColor;
+        ctx.shadowColor = isGoldSeg ? '#FFD700' : '#FFE066';
+        ctx.shadowBlur = 40 * winGlowAlpha;
+        ctx.fill();
+        // bright border
+        ctx.strokeStyle = `rgba(255,240,80,${winGlowAlpha})`;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.restore();
+      }
+
       const vignette = ctx.createRadialGradient(cx, cy, innerR * 0.7, cx, cy, innerR);
       vignette.addColorStop(0, 'rgba(0,0,0,0)');
       vignette.addColorStop(1, 'rgba(0,0,0,0.2)');
@@ -1091,9 +1117,25 @@
         if (t < 1) { requestAnimationFrame(animate); return; }
         currentAngle = targetAngle;
         spinning = false;
-        const isWin = !(gainResult.nom || '').toLowerCase().includes('perdu');
-        if (isWin) spawnConfetti();
-        showResult(isWin);
+        winSegmentIdx = targetSlot;
+
+        // Pulse animation: 3 flashes then show result
+        const pulseDuration = 1400;
+        const pulseStart = performance.now();
+        const pulses = 3;
+        function animateGlow(now) {
+          const pt = Math.min((now - pulseStart) / pulseDuration, 1);
+          winGlowAlpha = Math.abs(Math.sin(pt * Math.PI * pulses));
+          drawWheel(currentAngle);
+          if (pt < 1) { requestAnimationFrame(animateGlow); return; }
+          winGlowAlpha = 0;
+          winSegmentIdx = null;
+          drawWheel(currentAngle);
+          const isWin = !(gainResult.nom || '').toLowerCase().includes('perdu');
+          if (isWin) spawnConfetti();
+          showResult(isWin);
+        }
+        requestAnimationFrame(animateGlow);
       }
       requestAnimationFrame(animate);
     }
