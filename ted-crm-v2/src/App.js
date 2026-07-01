@@ -3692,20 +3692,28 @@ function RouePage({ showToast }) {
   const [email1Corps, setEmail1Corps] = useState(DEFAULT_EMAIL1_CORPS);
   const [savingParam, setSavingParam] = useState(false);
 
-  useEffect(() => { loadAll(); }, []);
+  useEffect(() => {
+    loadAll();
+    const interval = setInterval(loadAll, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   async function loadAll() {
     setLoading(true);
     try {
-      const [{ data: recData }, { data: gainsData }, { data: paramsData }] = await Promise.all([
+      const [recRes, gainsRes, paramsRes] = await Promise.all([
         supabase.from('roue_recompenses').select('*').order('ordre'),
         supabase.from('roue_gains').select('*, roue_recompenses(nom,emoji)').order('date_gain', { ascending: false }).limit(500),
         supabase.from('roue_config').select('cle,valeur'),
       ]);
-      setRecompenses(recData || []);
-      setGains(gainsData || []);
+      if (recRes.error) console.error('[Jeux] roue_recompenses error:', recRes.error);
+      if (gainsRes.error) console.error('[Jeux] roue_gains error:', gainsRes.error);
+      if (paramsRes.error) console.error('[Jeux] roue_config error:', paramsRes.error);
+      console.log('[Jeux] roue_gains count:', (gainsRes.data||[]).length, '| sample:', gainsRes.data?.[0]);
+      setRecompenses(recRes.data || []);
+      setGains(gainsRes.data || []);
       const p = {};
-      (paramsData || []).forEach(r => { p[r.cle] = r.valeur; });
+      (paramsRes.data || []).forEach(r => { p[r.cle] = r.valeur; });
       if (p['roue_active'] !== undefined) setRoueActive(p['roue_active'] === 'true');
       if (p['roue_essais_max']) setEssaisMax(parseInt(p['roue_essais_max']));
       if (p['roue_countdown']) setCountdownSec(parseInt(p['roue_countdown']));
@@ -3853,6 +3861,9 @@ function RouePage({ showToast }) {
         <Dices size={28} strokeWidth={1.8} color="#111"/>
         <h1 style={{ margin:0, fontSize:28, fontWeight:900, color:'#111' }}>Grand Jeux du TED</h1>
         <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:10 }}>
+          <button onClick={()=>loadAll()} style={{ display:'flex', alignItems:'center', gap:6, fontSize:13, fontWeight:600, color:'#555', border:'1px solid #ddd', borderRadius:8, padding:'5px 12px', background:'#fff', cursor:'pointer', marginRight:4 }}>
+            🔄 Actualiser
+          </button>
           <a href="/accueil.html?preview=roue" target="_blank" rel="noopener noreferrer" style={{ display:'flex', alignItems:'center', gap:6, fontSize:13, fontWeight:600, color:'#555', textDecoration:'none', border:'1px solid #ddd', borderRadius:8, padding:'5px 12px', background:'#fff', marginRight:8 }}>
             <ExternalLink size={13} strokeWidth={2} /> Voir le jeu
           </a>
