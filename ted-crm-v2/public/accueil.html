@@ -1097,28 +1097,26 @@
         currentAngle = targetAngle;
         spinning = false;
         winSegmentIdx = targetSlot;
-
-        // Flash instantané : 3 clignotements rapides puis résultat
-        let glowStep = 0;
-        const glowSteps = 6; // 3 on + 3 off = 3 clignotements
-        function stepGlow() {
-          glowStep++;
-          winGlowAlpha = (glowStep % 2 === 1) ? 1 : 0;
-          drawWheel(currentAngle);
-          if (glowStep < glowSteps) {
-            setTimeout(stepGlow, 80);
-          } else {
-            winGlowAlpha = 0;
-            winSegmentIdx = null;
-            drawWheel(currentAngle);
-            const isWin = !(gainResult.nom || '').toLowerCase().includes('perdu');
-            if (isWin) spawnConfetti();
-            showResult(isWin);
-          }
-        }
         winGlowAlpha = 1;
         drawWheel(currentAngle);
-        setTimeout(stepGlow, 80);
+
+        // 3 pulses rapides (cos commence à 1 = allumé immédiatement)
+        const pulseDuration = 500;
+        const pulseStart = performance.now();
+        const pulses = 3;
+        function animateGlow(now) {
+          const pt = Math.min((now - pulseStart) / pulseDuration, 1);
+          winGlowAlpha = Math.abs(Math.cos(pt * Math.PI * pulses));
+          drawWheel(currentAngle);
+          if (pt < 1) { requestAnimationFrame(animateGlow); return; }
+          winGlowAlpha = 0;
+          winSegmentIdx = null;
+          drawWheel(currentAngle);
+          const isWin = !(gainResult.nom || '').toLowerCase().includes('perdu');
+          if (isWin) spawnConfetti();
+          showResult(isWin);
+        }
+        requestAnimationFrame(animateGlow);
       }
       requestAnimationFrame(animate);
     }
