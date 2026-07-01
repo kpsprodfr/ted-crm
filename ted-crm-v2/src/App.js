@@ -3592,7 +3592,7 @@ function OriginesSheet({ onClose, showToast }) {
 
 // ── Roue cadeaux — back-office ───────────────────────────────────────────────
 
-const DEFAULT_EMAIL1_OBJET = '🎉 {prenom}, vous avez gagné {emoji} {recompense} au Grand Jeux du TED !';
+const DEFAULT_EMAIL1_OBJET = 'Votre récompense au Grand Jeux du TED';
 const DEFAULT_EMAIL1_CORPS = `Bonjour {prenom},
 
 Félicitations ! Vous remportez : {emoji} {recompense}
@@ -3709,6 +3709,10 @@ function RouePage({ showToast }) {
   const [email1Objet, setEmail1Objet] = useState(DEFAULT_EMAIL1_OBJET);
   const [email1Corps, setEmail1Corps] = useState(DEFAULT_EMAIL1_CORPS);
   const [savingParam, setSavingParam] = useState(false);
+  const [showEmail1TestModal, setShowEmail1TestModal] = useState(false);
+  const [email1TestMail, setEmail1TestMail] = useState('');
+  const [showEmail1EmojiPicker, setShowEmail1EmojiPicker] = useState(false);
+  const email1CorpsRef = useRef(null);
 
   useEffect(() => {
     loadAll();
@@ -3789,13 +3793,31 @@ function RouePage({ showToast }) {
   }
 
   async function sendEmail1Test() {
-    const mail = window.prompt('Email de test :');
-    if (!mail) return;
+    if (!email1TestMail) return;
     try {
-      await fetch('/api/roue-email', { method:'POST', headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify({ type:'email1', to_email:mail, to_prenom:'Test', to_nom:'TED', recompense:'Magnum de rosé', emoji:'🍾' }) });
-      showToast('Email de test envoyé ✓');
-    } catch { showToast('Erreur envoi email'); }
+      const res = await fetch('/api/roue-email', { method:'POST', headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ type:'email1', to_email:email1TestMail, to_prenom:'Test', to_nom:'TED', recompense:'Magnum de rosé', emoji:'🍾' }) });
+      if (res.ok) { showToast('Email de test envoyé ✓'); setShowEmail1TestModal(false); setEmail1TestMail(''); }
+      else showToast('❌ Erreur envoi email');
+    } catch { showToast('❌ Erreur envoi email'); }
+  }
+
+  async function handleSaveEmail1() {
+    console.log('save clicked', email1Objet, email1Corps);
+    setSavingParam(true);
+    try {
+      await Promise.all([
+        saveParam('roue_email1_delai', email1Delai),
+        saveParam('roue_email1_objet', email1Objet),
+        saveParam('roue_email1_corps', email1Corps),
+      ]);
+      showToast('✅ Email enregistré');
+    } catch(e) {
+      console.error('handleSaveEmail1 error', e);
+      showToast('❌ Erreur sauvegarde email');
+    } finally {
+      setSavingParam(false);
+    }
   }
 
   async function toggleRecupere(g) {
@@ -3982,17 +4004,18 @@ function RouePage({ showToast }) {
                 </div>
                 <div>
                   <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Corps du mail</label>
-                  <div style={{ display:'flex', flexWrap:'wrap', gap:6, margin:'8px 0 6px' }}>
+                  <textarea ref={email1CorpsRef} id="email1-corps-ta" value={email1Corps} onChange={e=>setEmail1Corps(e.target.value)} rows={8} style={{ ...iS, marginTop:6, resize:'vertical', lineHeight:1.6 }} />
+                  {/* Variables cliquables sous la textarea */}
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:8, position:'relative' }}>
                     {[
                       { label:'{prenom}', val:'{prenom}' },
                       { label:'{nom}', val:'{nom}' },
                       { label:'{recompense}', val:'{recompense}' },
-                      { label:'{emoji}', val:'{emoji}' },
                       { label:'{date}', val:'{date}' },
                       { label:'{lien_reservation}', val:'https://ted-crm.pages.dev/reserver.html' },
                     ].map(v => (
                       <span key={v.label} onClick={() => {
-                        const ta = document.getElementById('email1-corps-ta');
+                        const ta = email1CorpsRef.current || document.getElementById('email1-corps-ta');
                         if (!ta) return;
                         const start = ta.selectionStart, end = ta.selectionEnd;
                         const next = email1Corps.slice(0, start) + v.val + email1Corps.slice(end);
@@ -4000,15 +4023,52 @@ function RouePage({ showToast }) {
                         setTimeout(() => { ta.focus(); ta.setSelectionRange(start + v.val.length, start + v.val.length); }, 0);
                       }} style={{ background:'#f0f0f0', borderRadius:8, padding:'4px 10px', fontSize:12, cursor:'pointer', fontFamily:'monospace', userSelect:'none' }}>{v.label}</span>
                     ))}
+                    {/* Bouton emoji picker */}
+                    <span onClick={() => setShowEmail1EmojiPicker(v => !v)} style={{ background:'#f0f0f0', borderRadius:8, padding:'4px 10px', fontSize:12, cursor:'pointer', userSelect:'none' }}>😀 Emoji</span>
+                    {showEmail1EmojiPicker && (
+                      <>
+                        <div onClick={() => setShowEmail1EmojiPicker(false)} style={{ position:'fixed', inset:0, zIndex:998 }} />
+                        <div style={{ position:'absolute', top:'100%', left:0, marginTop:4, background:'#fff', border:'1.5px solid #eee', borderRadius:12, padding:12, zIndex:999, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', display:'flex', flexWrap:'wrap', gap:4, width:280 }}>
+                          {['😀','😂','🥰','😍','🤩','😎','🥳','🎉','🎊','🏆','🥇','⭐','✨','💫','🌟','🍾','🥂','🍷','🥩','🍽️','🦁','🎰','🎁','💎','👑','🙏','❤️','🔥','💪','👏'].map(em => (
+                            <span key={em} onClick={() => {
+                              const ta = email1CorpsRef.current || document.getElementById('email1-corps-ta');
+                              if (!ta) return;
+                              const start = ta.selectionStart, end = ta.selectionEnd;
+                              const next = email1Corps.slice(0, start) + em + email1Corps.slice(end);
+                              setEmail1Corps(next);
+                              setShowEmail1EmojiPicker(false);
+                              setTimeout(() => { ta.focus(); ta.setSelectionRange(start + em.length, start + em.length); }, 0);
+                            }} style={{ fontSize:20, cursor:'pointer', padding:4, borderRadius:6, lineHeight:1 }}
+                              onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'}
+                              onMouseLeave={e=>e.currentTarget.style.background='transparent'}
+                            >{em}</span>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
-                  <textarea id="email1-corps-ta" value={email1Corps} onChange={e=>setEmail1Corps(e.target.value)} rows={8} style={{ ...iS, marginTop:0, resize:'vertical', lineHeight:1.6 }} />
                 </div>
-                <div style={{ display:'flex', gap:10 }}>
-                  <button onClick={async () => { setSavingParam(true); await Promise.all([saveParam('roue_email1_delai', email1Delai), saveParam('roue_email1_objet', email1Objet), saveParam('roue_email1_corps', email1Corps)]); setSavingParam(false); showToast('✅ Email enregistré'); }} disabled={savingParam} style={{ padding:'12px 24px', borderRadius:12, border:'none', background:'#E8C547', color:'#111', fontSize:14, fontWeight:700, cursor:savingParam?'not-allowed':'pointer', display:'flex', alignItems:'center', gap:6 }}><Save size={13} strokeWidth={2}/> Enregistrer</button>
-                  <button onClick={sendEmail1Test} style={{ ...btnG, display:'flex', alignItems:'center', gap:6 }}><Send size={13} strokeWidth={2}/> Envoyer un test</button>
+                <div style={{ display:'flex', justifyContent:'space-between', gap:10 }}>
+                  <button onClick={() => setShowEmail1TestModal(true)} style={{ ...btnG, display:'flex', alignItems:'center', gap:6, border:'1.5px solid #E8C547' }}><Send size={13} strokeWidth={2}/> Envoyer un test</button>
+                  <button onClick={handleSaveEmail1} disabled={savingParam} style={{ padding:'12px 24px', borderRadius:12, border:'none', background:'#E8C547', color:'#111', fontSize:14, fontWeight:700, cursor:savingParam?'not-allowed':'pointer', display:'flex', alignItems:'center', gap:6, opacity:savingParam?0.7:1 }}><Save size={13} strokeWidth={2}/> Enregistrer</button>
                 </div>
               </div>
             </div>
+          )}
+          {/* Modal test email */}
+          {showEmail1TestModal && (
+            <>
+              <div onClick={() => setShowEmail1TestModal(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:8000 }} />
+              <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:16, padding:28, width:'min(400px,calc(100vw - 48px))', zIndex:8001, boxShadow:'0 32px 80px rgba(0,0,0,0.25)' }}>
+                <h3 style={{ margin:'0 0 18px', fontSize:17, fontWeight:800, color:'#111' }}>Envoyer un email de test</h3>
+                <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Adresse email de test</label>
+                <input type="email" value={email1TestMail} onChange={e=>setEmail1TestMail(e.target.value)} placeholder="prenom@exemple.com" style={{ ...iS, marginTop:6, marginBottom:20 }} onKeyDown={e=>e.key==='Enter'&&sendEmail1Test()} autoFocus />
+                <div style={{ display:'flex', gap:10 }}>
+                  <button onClick={() => { setShowEmail1TestModal(false); setEmail1TestMail(''); }} style={{ flex:1, height:48, border:'1.5px solid #eee', borderRadius:12, background:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', color:'#666' }}>Annuler</button>
+                  <button onClick={sendEmail1Test} style={{ flex:1, height:48, border:'none', borderRadius:12, background:'#111', fontSize:14, fontWeight:700, cursor:'pointer', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}><Send size={14} strokeWidth={2}/> Envoyer</button>
+                </div>
+              </div>
+            </>
           )}
         </div>
 
