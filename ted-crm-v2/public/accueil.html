@@ -724,7 +724,7 @@
     const isPreview = new URLSearchParams(window.location.search).get('preview') === 'roue';
 
     if (!recompenses.length) { console.log('2f. 0 récompenses disponibles → abort'); return; }
-    if (!isPreview && localStorage.getItem('ted_roue_joue')) { console.log('2g. déjà joué (localStorage) → abort'); return; }
+    if (!isPreview && localStorage.getItem('ted_roue_soumis')) { console.log('2g. formulaire déjà soumis (localStorage) → abort'); return; }
 
     // ── 10 sections alternées GAGNÉ/PERDU ──────────────────────────────────────
     const gainItems = recompenses.length > 0 ? recompenses : [{ nom: 'Cadeau', emoji: '🎁' }];
@@ -1199,7 +1199,7 @@
         });
       } catch(e) {}
 
-      localStorage.setItem('ted_roue_joue', '1');
+      localStorage.setItem('ted_roue_soumis', 'true');
       showDone();
     }
 
