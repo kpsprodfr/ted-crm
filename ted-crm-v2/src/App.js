@@ -3709,7 +3709,7 @@ function RouePage({ showToast }) {
 
   useEffect(() => {
     loadAll();
-    const interval = setInterval(loadAll, 60000);
+    const interval = setInterval(loadAll, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -3874,11 +3874,8 @@ function RouePage({ showToast }) {
     <div style={{ padding:'24px 32px 80px', boxSizing:'border-box' }}>
       <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:24 }}>
         <Dices size={28} strokeWidth={1.8} color="#111"/>
-        <h1 style={{ margin:0, fontSize:28, fontWeight:900, color:'#111' }}>Grand Jeux du TED</h1>
+        <h1 style={{ margin:0, fontSize:28, fontWeight:900, color:'#111' }}>Jeux</h1>
         <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:10 }}>
-          <button onClick={()=>loadAll()} style={{ display:'flex', alignItems:'center', gap:6, fontSize:13, fontWeight:600, color:'#555', border:'1px solid #ddd', borderRadius:8, padding:'5px 12px', background:'#fff', cursor:'pointer', marginRight:4 }}>
-            🔄 Actualiser
-          </button>
           <a href="/accueil.html?preview=roue" target="_blank" rel="noopener noreferrer" style={{ display:'flex', alignItems:'center', gap:6, fontSize:13, fontWeight:600, color:'#555', textDecoration:'none', border:'1px solid #ddd', borderRadius:8, padding:'5px 12px', background:'#fff', marginRight:8 }}>
             <ExternalLink size={13} strokeWidth={2} /> Voir le jeu
           </a>
@@ -3922,7 +3919,7 @@ function RouePage({ showToast }) {
                   <input type="number" min={1} max={10} value={essaisMax} onChange={e=>setEssaisMax(+e.target.value)} onBlur={e=>saveParam('roue_essais_max', String(e.target.value)).catch(()=>{})} style={{ ...iS, width:60 }} />
                 </div>
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  <span style={{ fontSize:13, color:'#666', fontWeight:600 }}>Temps d'attente avant fermeture (s) :</span>
+                  <span style={{ fontSize:13, color:'#666', fontWeight:600 }}>Temps d'attente avant fermeture de la pop-up (s) :</span>
                   <input type="number" min={0} max={60} value={countdownSec} onChange={e=>setCountdownSec(+e.target.value)} onBlur={e=>saveParam('roue_countdown', String(e.target.value)).catch(()=>{})} style={{ ...iS, width:60 }} />
                 </div>
               </div>
@@ -3958,15 +3955,12 @@ function RouePage({ showToast }) {
         <div style={{ borderTop:'1px solid #f0f0f0' }}>
           <button onClick={() => setAccordion(a => a==='email1' ? '' : 'email1')}
             style={{ width:'100%', padding:'18px 24px', background:'none', border:'none', display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', fontSize:15, fontWeight:700, color:'#111' }}>
-            <span>📧 Email 1 — Confirmation automatique</span>
+            <span>📧 Email de confirmation du gain</span>
             <ChevronDown size={18} style={{ transform: accordion==='email1' ? 'rotate(180deg)' : 'none', transition:'transform .2s' }} />
           </button>
           {accordion === 'email1' && (
             <div style={{ padding:'0 24px 24px', borderTop:'1px solid #f0f0f0' }}>
               <div style={{ paddingTop:16, display:'flex', flexDirection:'column', gap:14 }}>
-                <div style={{ background:'#fffbe6', border:'1.5px solid #E8C547', borderRadius:10, padding:'10px 14px', fontSize:12, color:'#666' }}>
-                  Variables disponibles : <strong>{'{prenom}'}</strong> <strong>{'{nom}'}</strong> <strong>{'{recompense}'}</strong> <strong>{'{emoji}'}</strong>
-                </div>
                 <div>
                   <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Délai après le jeu (minutes)</label>
                   <input type="number" min={0} value={email1Delai} onChange={e=>setEmail1Delai(e.target.value)} style={{ ...iS, marginTop:6 }} />
@@ -3977,10 +3971,29 @@ function RouePage({ showToast }) {
                 </div>
                 <div>
                   <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Corps du mail</label>
-                  <textarea value={email1Corps} onChange={e=>setEmail1Corps(e.target.value)} rows={8} style={{ ...iS, marginTop:6, resize:'vertical', lineHeight:1.6 }} />
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:6, margin:'8px 0 6px' }}>
+                    {[
+                      { label:'{prenom}', val:'{prenom}' },
+                      { label:'{nom}', val:'{nom}' },
+                      { label:'{recompense}', val:'{recompense}' },
+                      { label:'{emoji}', val:'{emoji}' },
+                      { label:'{date}', val:'{date}' },
+                      { label:'{lien_reservation}', val:'https://ted-crm.pages.dev/reserver.html' },
+                    ].map(v => (
+                      <span key={v.label} onClick={() => {
+                        const ta = document.getElementById('email1-corps-ta');
+                        if (!ta) return;
+                        const start = ta.selectionStart, end = ta.selectionEnd;
+                        const next = email1Corps.slice(0, start) + v.val + email1Corps.slice(end);
+                        setEmail1Corps(next);
+                        setTimeout(() => { ta.focus(); ta.setSelectionRange(start + v.val.length, start + v.val.length); }, 0);
+                      }} style={{ background:'#f0f0f0', borderRadius:8, padding:'4px 10px', fontSize:12, cursor:'pointer', fontFamily:'monospace', userSelect:'none' }}>{v.label}</span>
+                    ))}
+                  </div>
+                  <textarea id="email1-corps-ta" value={email1Corps} onChange={e=>setEmail1Corps(e.target.value)} rows={8} style={{ ...iS, marginTop:0, resize:'vertical', lineHeight:1.6 }} />
                 </div>
                 <div style={{ display:'flex', gap:10 }}>
-                  <button onClick={saveEmail1} disabled={savingParam} style={{ ...btnN, display:'flex', alignItems:'center', gap:6 }}><Save size={13} strokeWidth={2}/> Sauvegarder</button>
+                  <button onClick={async () => { setSavingParam(true); await Promise.all([saveParam('roue_email1_delai', email1Delai), saveParam('roue_email1_objet', email1Objet), saveParam('roue_email1_corps', email1Corps)]); setSavingParam(false); showToast('✅ Email enregistré'); }} disabled={savingParam} style={{ padding:'12px 24px', borderRadius:12, border:'none', background:'#E8C547', color:'#111', fontSize:14, fontWeight:700, cursor:savingParam?'not-allowed':'pointer', display:'flex', alignItems:'center', gap:6 }}><Save size={13} strokeWidth={2}/> Enregistrer</button>
                   <button onClick={sendEmail1Test} style={{ ...btnG, display:'flex', alignItems:'center', gap:6 }}><Send size={13} strokeWidth={2}/> Envoyer un test</button>
                 </div>
               </div>
