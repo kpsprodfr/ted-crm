@@ -5142,6 +5142,167 @@ function MenuPage({ showToast }) {
   );
 }
 
+// ─── Page Système (backups, restauration) ────────────────────────────────────
+
+const TABLES_BACKUP = ['clients','reservations','roue_gains','roue_recompenses','roue_config','parametres','menu_produits','menu_categories','menu_cartes','menu_soirees','menu_plat_jour','menu_origines'];
+
+function SystemePage({ showToast }) {
+  const [backups, setBackups] = useState([]);
+  const [loadingBk, setLoadingBk] = useState(true);
+  const [running, setRunning] = useState(false);
+  const [kvError, setKvError] = useState(null);
+  const [restoreTarget, setRestoreTarget] = useState(null);
+  const [restoreTable, setRestoreTable] = useState('clients');
+  const [confirmText, setConfirmText] = useState('');
+  const [restoring, setRestoring] = useState(false);
+
+  async function authHeaders() {
+    const { data: { session } } = await supabase.auth.getSession();
+    return { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` };
+  }
+
+  async function loadBackups() {
+    setLoadingBk(true);
+    try {
+      const res = await fetch('/api/backups', { headers: await authHeaders() });
+      const data = await res.json();
+      setBackups(data.backups || []);
+      setKvError(data.error || null);
+    } catch (e) {
+      logError(e.message, 'systeme:loadBackups');
+      setKvError('Liste des backups inaccessible');
+    }
+    setLoadingBk(false);
+  }
+  useEffect(() => { loadBackups(); }, []);
+
+  async function backupNow() {
+    setRunning(true);
+    try {
+      const res = await fetch('/api/backup-daily', { method: 'POST', headers: await authHeaders() });
+      const data = await res.json();
+      if (data.ok) { showToast('✅ Backup effectué et vérifié'); loadBackups(); }
+      else showToast(data.error || 'Échec du backup', 'error');
+    } catch (e) {
+      logError(e.message, 'systeme:backupNow');
+      showToast('Échec du backup', 'error');
+    }
+    setRunning(false);
+  }
+
+  async function doRestore() {
+    if (confirmText !== 'RESTAURER' || restoring) return;
+    setRestoring(true);
+    try {
+      const res = await fetch('/api/backup-restore', {
+        method: 'POST',
+        headers: await authHeaders(),
+        body: JSON.stringify({ date: restoreTarget.date, table: restoreTable, confirm: 'RESTAURER' }),
+      });
+      const data = await res.json();
+      if (data.ok) showToast(`✅ ${data.restored}/${data.total} lignes restaurées dans ${data.table}`);
+      else showToast(data.error || 'Échec de la restauration', 'error');
+    } catch (e) {
+      logError(e.message, 'systeme:restore');
+      showToast('Échec de la restauration', 'error');
+    }
+    setRestoring(false);
+    setRestoreTarget(null);
+    setConfirmText('');
+  }
+
+  const fmtKo = (n) => n ? `${(n / 1024).toFixed(1)} Ko` : '—';
+  const totalLignes = (counts) => counts ? Object.values(counts).filter(v => v >= 0).reduce((a, b) => a + b, 0) : null;
+
+  return (
+    <div style={{ padding:'32px 40px', maxWidth:980, boxSizing:'border-box' }}>
+      <h1 style={{ fontSize:24, fontWeight:900, color:'#111', margin:'0 0 4px', display:'flex', alignItems:'center', gap:10 }}>
+        <Settings size={26} strokeWidth={1.8} /> Système
+      </h1>
+      <p style={{ color:'#888', fontSize:14, margin:'0 0 28px' }}>Sauvegardes automatiques (tous les jours à 2h), restauration et état du CRM.</p>
+
+      <div style={{ background:'#fff', borderRadius:16, padding:'24px 26px', boxShadow:'0 1px 4px rgba(0,0,0,0.06)', marginBottom:24 }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:18 }}>
+          <h2 style={{ fontSize:16, fontWeight:800, color:'#111', margin:0, display:'flex', alignItems:'center', gap:8 }}>
+            <History size={18} /> Backups ({backups.length}/30)
+          </h2>
+          <button onClick={backupNow} disabled={running} style={{ height:40, padding:'0 18px', border:'none', borderRadius:10, background: running ? '#f0f0f0' : '#111', color: running ? '#aaa' : '#fff', fontSize:13, fontWeight:800, cursor: running ? 'wait' : 'pointer', display:'flex', alignItems:'center', gap:8 }}>
+            <Save size={15} /> {running ? 'Backup en cours…' : 'Backup maintenant'}
+          </button>
+        </div>
+
+        {kvError && (
+          <div style={{ background:'#fff7ed', border:'1.5px solid #fdba74', borderRadius:10, padding:'12px 16px', fontSize:13, color:'#9a3412', marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
+            <AlertCircle size={16} /> {kvError}
+          </div>
+        )}
+
+        {loadingBk ? (
+          <div style={{ color:'#999', fontSize:14, padding:'16px 0' }}>Chargement…</div>
+        ) : backups.length === 0 ? (
+          <div style={{ color:'#999', fontSize:14, padding:'16px 0' }}>Aucun backup pour l'instant. Le premier partira automatiquement cette nuit à 2h, ou cliquez sur « Backup maintenant ».</div>
+        ) : (
+          <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+            <thead>
+              <tr>
+                {['Date','Lignes','Taille','Checksum','Statut',''].map(h => (
+                  <th key={h} style={{ textAlign:'left', padding:'8px 10px', color:'#999', fontWeight:700, fontSize:11, letterSpacing:0.5, textTransform:'uppercase', borderBottom:'1.5px solid #f0f0f0' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {backups.map(b => (
+                <tr key={b.key}>
+                  <td style={{ padding:'10px', fontWeight:700, color:'#111', borderBottom:'1px solid #f7f7f7' }}>{b.date}</td>
+                  <td style={{ padding:'10px', color:'#555', borderBottom:'1px solid #f7f7f7' }}>{totalLignes(b.counts) ?? '—'}</td>
+                  <td style={{ padding:'10px', color:'#555', borderBottom:'1px solid #f7f7f7' }}>{fmtKo(b.size)}</td>
+                  <td style={{ padding:'10px', color:'#aaa', fontFamily:'monospace', fontSize:11, borderBottom:'1px solid #f7f7f7' }}>{b.checksum ? b.checksum.slice(0,12) + '…' : '—'}</td>
+                  <td style={{ padding:'10px', borderBottom:'1px solid #f7f7f7' }}>
+                    {b.errors ? (
+                      <span style={{ display:'inline-flex', alignItems:'center', gap:5, color:'#c2410c', fontWeight:700 }}><AlertCircle size={13} /> {b.errors} erreur(s)</span>
+                    ) : (
+                      <span style={{ display:'inline-flex', alignItems:'center', gap:5, color:'#15803d', fontWeight:700 }}><CheckCircle size={13} /> Complet</span>
+                    )}
+                  </td>
+                  <td style={{ padding:'10px', textAlign:'right', borderBottom:'1px solid #f7f7f7' }}>
+                    <button onClick={() => { setRestoreTarget(b); setConfirmText(''); }} style={{ height:32, padding:'0 12px', border:'1.5px solid #ddd', borderRadius:8, background:'#fff', fontSize:12, fontWeight:700, cursor:'pointer', color:'#333', display:'inline-flex', alignItems:'center', gap:6 }}>
+                      <RotateCcw size={13} /> Restaurer
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {restoreTarget && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:9000, display:'flex', alignItems:'center', justifyContent:'center' }} onMouseDown={() => { if (!restoring) { setRestoreTarget(null); setConfirmText(''); } }}>
+          <div style={{ background:'#fff', borderRadius:16, padding:'28px 26px', maxWidth:420, width:'92%', boxShadow:'0 20px 60px rgba(0,0,0,0.25)' }} onMouseDown={e => e.stopPropagation()}>
+            <h3 style={{ margin:'0 0 6px', fontSize:17, fontWeight:800, display:'flex', alignItems:'center', gap:8 }}><RotateCcw size={18} /> Restaurer le backup du {restoreTarget.date}</h3>
+            <p style={{ color:'#888', fontSize:13, lineHeight:1.6, margin:'0 0 16px' }}>
+              Les lignes du backup seront réécrites dans la table choisie (fusion par identifiant).
+              Les données créées depuis ne seront pas supprimées.
+            </p>
+            <label style={{ fontSize:12, fontWeight:700, color:'#666', display:'block', marginBottom:6 }}>Table à restaurer</label>
+            <select value={restoreTable} onChange={e => setRestoreTable(e.target.value)} style={{ width:'100%', height:42, border:'1.5px solid #ddd', borderRadius:10, padding:'0 10px', fontSize:14, background:'#fff', marginBottom:16, boxSizing:'border-box' }}>
+              {TABLES_BACKUP.map(t => <option key={t} value={t}>{t}{restoreTarget.counts && restoreTarget.counts[t] >= 0 ? ` (${restoreTarget.counts[t]} lignes)` : ''}</option>)}
+            </select>
+            <label style={{ fontSize:12, fontWeight:700, color:'#666', display:'block', marginBottom:6 }}>Tapez RESTAURER pour confirmer</label>
+            <input value={confirmText} onChange={e => setConfirmText(e.target.value)} placeholder="RESTAURER" style={{ width:'100%', height:42, border:'1.5px solid #ddd', borderRadius:10, padding:'0 12px', fontSize:14, boxSizing:'border-box', marginBottom:18, outline:'none' }} />
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={() => { setRestoreTarget(null); setConfirmText(''); }} disabled={restoring} style={{ flex:1, height:44, border:'1.5px solid #ddd', borderRadius:10, background:'#fff', fontSize:14, cursor:'pointer', color:'#666' }}>Annuler</button>
+              <button onClick={doRestore} disabled={confirmText !== 'RESTAURER' || restoring} style={{ flex:1, height:44, border:'none', borderRadius:10, background: confirmText === 'RESTAURER' && !restoring ? '#dc2626' : '#f0f0f0', fontSize:14, fontWeight:800, cursor: confirmText === 'RESTAURER' && !restoring ? 'pointer' : 'not-allowed', color: confirmText === 'RESTAURER' && !restoring ? '#fff' : '#bbb' }}>
+                {restoring ? 'Restauration…' : 'Restaurer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main CRM App ─────────────────────────────────────────────────────────────
 
 function CRMApp({ user, onLogout }) {
@@ -5544,6 +5705,7 @@ function CRMApp({ user, onLogout }) {
         { id:'communications', label:'Communications', icon:<Megaphone size={24} strokeWidth={1.8} /> },
         { id:'roue', label:'Jeux', icon:<Dices size={24} strokeWidth={1.8} /> },
         { id:'menu', label:'Menu', icon:<UtensilsCrossed size={24} strokeWidth={1.8} /> },
+        { id:'systeme', label:'Système', icon:<Settings size={24} strokeWidth={1.8} /> },
       ].map(item => {
         const nbAttenteSidebar = item.id === 'reservations' ? resaAttenteCount : 0;
         return (
@@ -5668,6 +5830,17 @@ function CRMApp({ user, onLogout }) {
       <div style={{ marginLeft:120, minHeight:'100vh', background:'#f5f5f5', overflowY:'auto', boxSizing:'border-box' }}>
         <RouePage showToast={showToast} />
       </div>
+    </>
+  );
+
+  if (!isMobile && activeView === 'systeme') return (
+    <>
+      {sidebarDesktop}
+      <div style={{ marginLeft:120, minHeight:'100vh', background:'#f5f5f5', overflowY:'auto', boxSizing:'border-box' }}>
+        <SystemePage showToast={showToast} />
+      </div>
+      {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
+      {notifPrePromptModal}
     </>
   );
 

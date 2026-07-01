@@ -1,6 +1,13 @@
 // Utilitaires partagés des Cloudflare Pages Functions.
 // (préfixe "_" = non routé par Pages, importable par les functions)
 
+// Tables couvertes par le backup quotidien et la restauration
+export const BACKUP_TABLES = [
+  'clients', 'reservations', 'roue_gains', 'roue_recompenses', 'roue_config',
+  'parametres', 'menu_produits', 'menu_categories', 'menu_cartes',
+  'menu_soirees', 'menu_plat_jour', 'menu_origines',
+];
+
 // ── fetch avec timeout 10 s ──────────────────────────────────────────────────
 export async function fetchT(url, options = {}, timeoutMs = 10000) {
   const ctrl = new AbortController();
@@ -49,6 +56,29 @@ export async function queueEmail(env, { to_email, to_name, subject, html, error_
     console.error('[queueEmail] échec mise en file:', e.message);
     return false;
   }
+}
+
+// ── Vérification d'un utilisateur CRM connecté (JWT Supabase Auth) ──────────
+// Les actions sensibles (backup manuel, restauration) exigent un JWT valide
+// d'un utilisateur du CRM : Authorization: Bearer <access_token>.
+export async function verifyUser(env, request) {
+  const auth = request.headers.get('Authorization') || '';
+  if (!auth.startsWith('Bearer ')) return null;
+  const url = env.SUPABASE_URL || 'https://mwpfaytccypvdrgapptk.supabase.co';
+  const anonKey = env.SUPABASE_ANON_KEY || env.SUPABASE_KEY || 'sb_publishable_4-uVtQtXd0jLGkNAFsx4yw_ni17DzN_';
+  try {
+    const res = await fetchT(`${url}/auth/v1/user`, { headers: { apikey: anonKey, Authorization: auth } });
+    if (!res.ok) return null;
+    const user = await res.json();
+    return user && user.id ? user : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function sha256Hex(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 // ── Envoi Brevo mutualisé ────────────────────────────────────────────────────
