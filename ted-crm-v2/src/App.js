@@ -3888,21 +3888,14 @@ function RouePage({ showToast }) {
           {accordion === 'recompenses' && (
             <div style={{ padding:'0 24px 24px', borderTop:'1px solid #f0f0f0' }}>
               <div style={{ display:'flex', gap:20, alignItems:'center', flexWrap:'wrap', paddingTop:16, marginBottom:20 }}>
-                <label style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer' }}>
-                  <div onClick={() => toggleRoueActive(!rouеActive)} style={{ width:44, height:24, borderRadius:12, background: rouеActive ? '#E8C547' : '#ddd', position:'relative', cursor:'pointer', transition:'background .2s' }}>
-                    <div style={{ position:'absolute', top:2, left: rouеActive ? 22 : 2, width:20, height:20, borderRadius:'50%', background:'#fff', boxShadow:'0 1px 4px rgba(0,0,0,0.2)', transition:'left .2s' }} />
-                  </div>
-                  <span style={{ fontWeight:700, fontSize:14, color: rouеActive ? '#111' : '#888' }}>{rouеActive ? '🟢 Roue active' : '⚫ Roue inactive'}</span>
-                </label>
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                   <span style={{ fontSize:13, color:'#666', fontWeight:600 }}>Essais max :</span>
-                  <input type="number" min={1} max={10} value={essaisMax} onChange={e=>setEssaisMax(+e.target.value)} style={{ ...iS, width:60 }} />
+                  <input type="number" min={1} max={10} value={essaisMax} onChange={e=>setEssaisMax(+e.target.value)} onBlur={e=>saveParam('roue_essais_max', String(e.target.value)).catch(()=>{})} style={{ ...iS, width:60 }} />
                 </div>
                 <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                   <span style={{ fontSize:13, color:'#666', fontWeight:600 }}>Temps d'attente avant fermeture (s) :</span>
-                  <input type="number" min={0} max={60} value={countdownSec} onChange={e=>setCountdownSec(+e.target.value)} style={{ ...iS, width:60 }} />
+                  <input type="number" min={0} max={60} value={countdownSec} onChange={e=>setCountdownSec(+e.target.value)} onBlur={e=>saveParam('roue_countdown', String(e.target.value)).catch(()=>{})} style={{ ...iS, width:60 }} />
                 </div>
-                <button onClick={saveConfigBase} disabled={savingParam} style={{ ...btnG, display:'flex', alignItems:'center', gap:6 }}><Save size={13} strokeWidth={2}/> Sauvegarder</button>
               </div>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
                 <span style={{ fontWeight:700, fontSize:14 }}>Récompenses</span>
