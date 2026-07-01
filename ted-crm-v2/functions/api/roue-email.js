@@ -66,16 +66,24 @@ L'équipe du TED 🦁`;
   const recompenseEmoji = replace('{emoji}');
   const recompenseNom = replace('{recompense}');
 
+  const preheader = replace('Félicitations {prenom}, votre récompense vous attend au TED !');
+
   const htmlContent = `<!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="x-apple-disable-message-reformatting">
+</head>
 <body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;">
+  <!-- Preheader (invisible, aperçu Gmail) -->
+  <div style="display:none;max-height:0;overflow:hidden;font-size:1px;color:#f5f5f5;">${preheader}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:32px 16px;">
     <tr><td align="center">
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#111111;border-radius:12px 12px 0 0;overflow:hidden;">
         <!-- HEADER -->
         <tr><td style="background:#111111;padding:28px 24px;text-align:center;border-bottom:4px solid #E8C547;">
-          <img src="https://ted-crm.pages.dev/logo-Le-TED.png" alt="Le TED" style="height:60px;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;" />
+          <img src="https://www.leted.fr/wp-content/uploads/2024/01/Logo-Le-TED.png" alt="Le TED" style="height:60px;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;" />
           <div style="font-size:22px;font-weight:900;color:#E8C547;letter-spacing:2px;text-transform:uppercase;">Grand Jeux du TED</div>
           <div style="font-size:12px;color:#888;letter-spacing:2px;margin-top:4px;text-transform:uppercase;">Restaurant &amp; Club · Lyon</div>
         </td></tr>
