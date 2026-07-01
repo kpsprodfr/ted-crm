@@ -350,7 +350,7 @@
   </div><!-- /roue-overlay -->
 
   <!-- Form overlay (plein écran, z:500) -->
-  <div id="roue-form-overlay" style="display:none;position:fixed;inset:0;background:linear-gradient(180deg,#fff8c0 0%,#FFE033 30%,#FFC200 70%,#FF9500 100%);z-index:500;overflow-y:auto;padding:0 0 40px;animation:fadeUp .35s cubic-bezier(.25,.46,.45,.94);">
+  <div id="roue-form-overlay" style="display:none;position:fixed;inset:0;background:linear-gradient(180deg,#fff8c0 0%,#FFE033 30%,#FFC200 70%,#FF9500 100%);z-index:500;flex-direction:column;animation:fadeUp .35s cubic-bezier(.25,.46,.45,.94);">
 
     <!-- État succès -->
     <div id="roue-form-done" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;text-align:center;">
@@ -386,7 +386,8 @@
     </div>
 
     <!-- Formulaire -->
-    <div id="roue-form-fields">
+    <div id="roue-form-fields" style="display:flex;flex-direction:column;flex:1;min-height:0;">
+      <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;">
       <div style="padding:56px 24px 20px;text-align:center;">
         <img src="/logo192.png" alt="Le TED" style="width:52px;height:52px;object-fit:contain;filter:brightness(0);margin-bottom:12px;">
         <h2 style="font-size:22px;font-weight:900;color:#1a1200;margin-bottom:6px;">Récupérez votre récompense</h2>
@@ -427,8 +428,12 @@
           <span style="font-size:11px;color:rgba(0,0,0,0.55);line-height:1.5;">J'accepte que mes données soient utilisées par l'établissement pour m'envoyer ma récompense. Ces données ne seront pas transmises à des tiers. <strong>*</strong></span>
         </label>
         <div id="roue-rejeu-msg" style="display:none;background:#FFC200;border-radius:12px;padding:16px;font-size:13px;font-weight:600;color:#1a1200;line-height:1.5;">⚠️ Vous avez déjà participé au Grand Jeux du TED. Votre récompense vous a été attribuée.</div>
-        <div style="font-size:11px;color:rgba(0,0,0,0.4);text-align:center;">⚠️ Une seule participation par personne</div>
-        <button id="roue-confirmer-btn" style="width:100%;padding:17px;border-radius:14px;border:none;background:#1a1200;color:#fff;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;margin-top:6px;box-shadow:0 4px 20px rgba(0,0,0,0.25);">Valider mes informations</button>
+        <div style="font-size:11px;color:rgba(0,0,0,0.4);text-align:center;padding-bottom:8px;">⚠️ Une seule participation par personne</div>
+      </div>
+      </div>
+      <!-- Bouton fixe en bas -->
+      <div style="padding:12px 20px;padding-bottom:calc(12px + env(safe-area-inset-bottom));background:rgba(255,210,0,0.85);backdrop-filter:blur(8px);border-top:1px solid rgba(0,0,0,0.08);flex-shrink:0;">
+        <button id="roue-confirmer-btn" style="width:100%;padding:17px;border-radius:14px;border:none;background:#1a1200;color:#fff;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.25);">Valider mes informations</button>
       </div>
     </div>
   </div><!-- /roue-form-overlay -->
@@ -1472,7 +1477,7 @@
       document.getElementById('roue-recuperer-btn').onclick = () => {
         console.log('claim button clicked');
         document.getElementById('roue-win-overlay').style.display = 'none';
-        document.getElementById('roue-form-overlay').style.display = 'block';
+        document.getElementById('roue-form-overlay').style.display = 'flex';
       };
       document.getElementById('roue-skip-btn').onclick = () => {
         document.getElementById('roue-win-overlay').style.display = 'none';
