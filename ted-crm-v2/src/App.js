@@ -3714,6 +3714,10 @@ function RouePage({ showToast }) {
   const [email1Objet, setEmail1Objet] = useState(DEFAULT_EMAIL1_OBJET);
   const [email1Corps, setEmail1Corps] = useState(DEFAULT_EMAIL1_CORPS);
   const [email1Date, setEmail1Date] = useState('');
+  const [email1DateFin, setEmail1DateFin] = useState('');
+  const [email1DateMode, setEmail1DateMode] = useState('precise'); // 'precise' | 'periode'
+  const [email1CalOpen, setEmail1CalOpen] = useState(null); // null | 'debut' | 'fin'
+  const [email1CalMonth, setEmail1CalMonth] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
   const [savingParam, setSavingParam] = useState(false);
   const [showEmail1TestModal, setShowEmail1TestModal] = useState(false);
   const [email1TestMail, setEmail1TestMail] = useState('');
@@ -3748,6 +3752,8 @@ function RouePage({ showToast }) {
       if (p['roue_email1_objet']) setEmail1Objet(p['roue_email1_objet']);
       if (p['roue_email1_corps']) setEmail1Corps(p['roue_email1_corps']);
       if (p['roue_email_date']) setEmail1Date(p['roue_email_date']);
+      if (p['roue_email_date_fin']) setEmail1DateFin(p['roue_email_date_fin']);
+      if (p['roue_email_date_mode']) setEmail1DateMode(p['roue_email_date_mode']);
     } finally {
       setLoading(false);
     }
@@ -3818,6 +3824,8 @@ function RouePage({ showToast }) {
         saveParam('roue_email1_objet', email1Objet),
         saveParam('roue_email1_corps', email1Corps),
         saveParam('roue_email_date', email1Date),
+        saveParam('roue_email_date_fin', email1DateFin),
+        saveParam('roue_email_date_mode', email1DateMode),
       ]);
       showToast('✅ Modifications enregistrées');
     } catch(e) {
@@ -4008,9 +4016,69 @@ function RouePage({ showToast }) {
             <ChevronDown size={18} style={{ transform: accordion==='email1' ? 'rotate(180deg)' : 'none', transition:'transform .2s' }} />
           </button>
           {accordion === 'email1' && (() => {
-            const dateAffichee = email1Date
-              ? new Date(email1Date + 'T00:00:00').toLocaleDateString('fr-FR')
-              : 'À définir par le restaurant';
+            // ── helpers date ──────────────────────────────────────────────
+            const fmtDate = iso => iso
+              ? new Date(iso + 'T00:00:00').toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' })
+              : null;
+            const dateDebut = fmtDate(email1Date);
+            const dateFin   = fmtDate(email1DateFin);
+            const dateAffichee = email1DateMode === 'precise'
+              ? (dateDebut || 'À définir par le restaurant')
+              : (dateDebut && dateFin ? `Du ${dateDebut} au ${dateFin}` : dateDebut || dateFin || 'À définir par le restaurant');
+            const dispoLabel = email1DateMode === 'precise'
+              ? (dateDebut ? `Disponible à partir du ${dateDebut}` : 'Disponible à partir du — À définir')
+              : (dateDebut && dateFin ? `Disponible du ${dateDebut} au ${dateFin}` : 'Disponible — dates à définir');
+
+            // ── substitution corps pour aperçu ─────────────────────────
+            const previewCorps = (email1Corps || '')
+              .replace(/{prenom}/g, 'Karl')
+              .replace(/{nom}/g, 'Sounier')
+              .replace(/{recompense}/g, 'Bouteille de Champagne')
+              .replace(/{emoji}/g, '🍾')
+              .replace(/{date}/g, dateAffichee)
+              .replace(/\n/g, '<br>');
+
+            // ── mini calendrier ────────────────────────────────────────
+            const CalPicker = ({ which }) => {
+              const { y, m } = email1CalMonth;
+              const firstDow = new Date(y, m, 1).getDay();
+              const offset = firstDow === 0 ? 6 : firstDow - 1;
+              const daysInMonth = new Date(y, m + 1, 0).getDate();
+              const moisFR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+              const joursFR = ['Lu','Ma','Me','Je','Ve','Sa','Di'];
+              const currentVal = which === 'debut' ? email1Date : email1DateFin;
+              const cells = [];
+              for (let i = 0; i < offset; i++) cells.push(null);
+              for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+              return (
+                <div style={{ position:'absolute', top:'calc(100% + 6px)', left:0, zIndex:1100, background:'#fff', border:'1.5px solid #eee', borderRadius:12, boxShadow:'0 8px 32px rgba(0,0,0,0.13)', padding:14, width:260 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
+                    <button onClick={()=>setEmail1CalMonth(({y,m})=>m===0?{y:y-1,m:11}:{y,m:m-1})} style={{ background:'none',border:'none',cursor:'pointer',fontSize:16,padding:'2px 8px',borderRadius:6,color:'#555' }}>‹</button>
+                    <span style={{ fontWeight:700, fontSize:13, color:'#111' }}>{moisFR[m]} {y}</span>
+                    <button onClick={()=>setEmail1CalMonth(({y,m})=>m===11?{y:y+1,m:0}:{y,m:m+1})} style={{ background:'none',border:'none',cursor:'pointer',fontSize:16,padding:'2px 8px',borderRadius:6,color:'#555' }}>›</button>
+                  </div>
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2, marginBottom:4 }}>
+                    {joursFR.map(j=><div key={j} style={{ textAlign:'center', fontSize:10, fontWeight:700, color:'#aaa', padding:'2px 0' }}>{j}</div>)}
+                  </div>
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2 }}>
+                    {cells.map((d,i) => {
+                      if (!d) return <div key={i} />;
+                      const iso = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                      const selected = currentVal === iso;
+                      return (
+                        <div key={i} onClick={()=>{ if(which==='debut') setEmail1Date(iso); else setEmail1DateFin(iso); setEmail1CalOpen(null); }}
+                          style={{ textAlign:'center', padding:'5px 0', borderRadius:7, cursor:'pointer', fontSize:12, fontWeight: selected?700:400, background: selected?'#E8C547':'transparent', color: selected?'#111':'#333' }}
+                          onMouseEnter={e=>{ if(!selected) e.currentTarget.style.background='#fdf6d8'; }}
+                          onMouseLeave={e=>{ if(!selected) e.currentTarget.style.background='transparent'; }}
+                        >{d}</div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            };
+
+            // ── aperçu HTML ────────────────────────────────────────────
             const previewHtml = `<div style="font-family:Arial,sans-serif;font-size:13px;">
   <div style="background:linear-gradient(180deg,#fff8c0 0%,#FFE033 50%,#FFC200 100%);padding:24px 18px;text-align:center;">
     <div style="width:44px;height:44px;background:#111;border-radius:50%;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;color:#E8C547;">TED</div>
@@ -4018,14 +4086,15 @@ function RouePage({ showToast }) {
     <div style="color:#5a4500;font-size:10px;letter-spacing:2px;margin-top:6px;text-transform:uppercase;">Restaurant &amp; Club</div>
   </div>
   <div style="background:#fff;padding:20px 18px;">
-    <p style="color:#333;font-size:13px;margin:0 0 18px;line-height:1.6;">Bonjour <strong style="color:#111;">Karl Sounier</strong>,</p>
+    <p style="color:#333;font-size:13px;margin:0 0 14px;line-height:1.6;">Bonjour <strong style="color:#111;">Karl Sounier</strong>,</p>
+    <p style="color:#444;font-size:13px;line-height:1.7;margin:0 0 18px;">${previewCorps}</p>
     <div style="background:rgba(232,197,71,0.12);border:1.5px solid rgba(232,197,71,0.4);border-radius:12px;padding:20px 16px;text-align:center;margin-bottom:16px;">
       <div style="color:#111;font-size:20px;font-weight:700;margin-bottom:12px;">Votre récompense</div>
       <div style="background:#fff;border:1.5px solid rgba(232,197,71,0.5);border-radius:8px;padding:12px 16px;margin-bottom:12px;">
         <div style="color:#B8960C;font-size:15px;font-weight:700;">🍾 Bouteille de Champagne</div>
       </div>
       <div style="font-size:32px;margin-bottom:8px;">🥳</div>
-      <div style="color:#888;font-size:11px;font-style:italic;">Disponible à partir du ${dateAffichee}</div>
+      <div style="color:#888;font-size:11px;font-style:italic;">${dispoLabel}</div>
     </div>
     <div style="border:1.5px solid #E8C547;border-radius:10px;padding:16px;margin-bottom:18px;">
       <div style="color:#111;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;">Conditions de retrait</div>
@@ -4043,10 +4112,13 @@ function RouePage({ showToast }) {
     <div style="color:#555;font-size:10px;">Vous recevez cet email car vous avez participé au Grand Jeux du TED.</div>
   </div>
 </div>`;
+
             return (
             <div style={{ padding:'0 24px 24px', borderTop:'1px solid #f0f0f0' }}>
+              {email1CalOpen && <div onClick={()=>setEmail1CalOpen(null)} style={{ position:'fixed', inset:0, zIndex:1099 }} />}
               <div style={{ paddingTop:16, display:'flex', gap:24, flexWrap:'wrap' }}>
-                {/* Colonne gauche : éditeur */}
+
+                {/* ── Colonne gauche : éditeur ── */}
                 <div style={{ flex:'1 1 320px', display:'flex', flexDirection:'column', gap:14 }}>
                   <div>
                     <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Délai après le jeu (minutes)</label>
@@ -4056,10 +4128,56 @@ function RouePage({ showToast }) {
                     <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Objet</label>
                     <input type="text" value={email1Objet} onChange={e=>setEmail1Objet(e.target.value)} style={{ ...iS, marginTop:6 }} />
                   </div>
+
+                  {/* Date picker avec mode toggle */}
                   <div>
                     <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Date de retrait du cadeau</label>
-                    <input type="date" value={email1Date} onChange={e=>setEmail1Date(e.target.value)} style={{ ...iS, marginTop:6 }} />
+                    {/* Toggle pills */}
+                    <div style={{ display:'flex', gap:6, marginTop:8, marginBottom:10 }}>
+                      {[['precise','Date précise'],['periode','Période']].map(([mode,label])=>(
+                        <button key={mode} onClick={()=>setEmail1DateMode(mode)}
+                          style={{ padding:'5px 14px', borderRadius:20, border:'1.5px solid', fontSize:12, fontWeight:600, cursor:'pointer',
+                            borderColor: email1DateMode===mode ? '#E8C547' : '#e0e0e0',
+                            background: email1DateMode===mode ? '#E8C547' : '#fff',
+                            color: email1DateMode===mode ? '#111' : '#888' }}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {email1DateMode === 'precise' ? (
+                      <div style={{ position:'relative' }}>
+                        <div onClick={()=>setEmail1CalOpen(c=>c==='debut'?null:'debut')}
+                          style={{ ...iS, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', userSelect:'none' }}>
+                          <span style={{ color: email1Date ? '#111' : '#aaa' }}>{dateDebut || 'Choisir une date…'}</span>
+                          <span style={{ fontSize:14 }}>📅</span>
+                        </div>
+                        {email1CalOpen === 'debut' && <CalPicker which="debut" />}
+                      </div>
+                    ) : (
+                      <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+                        <div style={{ flex:'1 1 120px', position:'relative' }}>
+                          <div style={{ fontSize:11, color:'#888', fontWeight:600, marginBottom:4 }}>DU</div>
+                          <div onClick={()=>setEmail1CalOpen(c=>c==='debut'?null:'debut')}
+                            style={{ ...iS, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', userSelect:'none' }}>
+                            <span style={{ color: email1Date ? '#111' : '#aaa', fontSize:13 }}>{dateDebut || 'Début…'}</span>
+                            <span style={{ fontSize:13 }}>📅</span>
+                          </div>
+                          {email1CalOpen === 'debut' && <CalPicker which="debut" />}
+                        </div>
+                        <div style={{ flex:'1 1 120px', position:'relative' }}>
+                          <div style={{ fontSize:11, color:'#888', fontWeight:600, marginBottom:4 }}>AU</div>
+                          <div onClick={()=>setEmail1CalOpen(c=>c==='fin'?null:'fin')}
+                            style={{ ...iS, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', userSelect:'none' }}>
+                            <span style={{ color: email1DateFin ? '#111' : '#aaa', fontSize:13 }}>{dateFin || 'Fin…'}</span>
+                            <span style={{ fontSize:13 }}>📅</span>
+                          </div>
+                          {email1CalOpen === 'fin' && <CalPicker which="fin" />}
+                        </div>
+                      </div>
+                    )}
                   </div>
+
                   <div>
                     <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Corps du mail</label>
                     <textarea ref={email1CorpsRef} id="email1-corps-ta" value={email1Corps} onChange={e=>setEmail1Corps(e.target.value)} rows={8} style={{ ...iS, marginTop:6, resize:'vertical', lineHeight:1.6 }} />
@@ -4110,9 +4228,10 @@ function RouePage({ showToast }) {
                   </div>
                 </div>
 
-                {/* Colonne droite : aperçu live */}
+                {/* ── Colonne droite : aperçu live ── */}
                 <div style={{ flex:'1 1 320px' }}>
-                  <p style={{ fontSize:11, fontWeight:600, color:'#999', textTransform:'uppercase', letterSpacing:'.05em', margin:'0 0 8px' }}>Aperçu du mail</p>
+                  <p style={{ fontSize:11, fontWeight:600, color:'#999', textTransform:'uppercase', letterSpacing:'.05em', margin:'0 0 4px' }}>Aperçu du mail</p>
+                  <p style={{ fontSize:11, color:'#bbb', margin:'0 0 8px' }}>Objet : <span style={{ color:'#666' }}>{email1Objet || '—'}</span></p>
                   <div
                     style={{ border:'1px solid #eee', borderRadius:12, background:'#fff', maxHeight:600, overflowY:'auto' }}
                     dangerouslySetInnerHTML={{ __html: previewHtml }}
