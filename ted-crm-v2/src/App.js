@@ -3975,10 +3975,6 @@ function RouePage({ showToast }) {
                   <span style={{ fontSize:13, color:'#666', fontWeight:600 }}>Essais max :</span>
                   <input type="number" min={1} max={10} value={essaisMax} onChange={e=>setEssaisMax(+e.target.value)} onBlur={e=>saveParam('roue_essais_max', String(e.target.value)).catch(()=>{})} style={{ ...iS, width:60 }} />
                 </div>
-                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  <span style={{ fontSize:13, color:'#666', fontWeight:600 }}>Temps d'attente avant fermeture de la pop-up (s) :</span>
-                  <input type="number" min={0} max={60} value={countdownSec} onChange={e=>setCountdownSec(+e.target.value)} onBlur={e=>saveParam('roue_countdown', String(e.target.value)).catch(()=>{})} style={{ ...iS, width:60 }} />
-                </div>
               </div>
               <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
                 <span style={{ fontWeight:700, fontSize:14 }}>Récompenses</span>
