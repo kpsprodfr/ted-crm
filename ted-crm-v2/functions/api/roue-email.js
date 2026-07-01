@@ -14,119 +14,224 @@ export async function onRequestPost(context) {
   const SUPA_KEY = env.SUPABASE_KEY || env.SUPABASE_ANON_KEY || 'sb_publishable_4-uVtQtXd0jLGkNAFsx4yw_ni17DzN_';
 
   const objetCle = type === 'email1' ? 'roue_email1_objet' : 'roue_email2_objet';
-  const corpsCle = type === 'email1' ? 'roue_email1_corps' : 'roue_email2_corps';
 
   const paramsRes = await fetch(
-    `${SUPA_URL}/rest/v1/roue_config?cle=in.(${objetCle},${corpsCle},roue_email_date,roue_email_date_fin,roue_email_date_mode,roue_email_message)&select=cle,valeur`,
+    `${SUPA_URL}/rest/v1/roue_config?cle=in.(${objetCle},roue_email_date,roue_email_date_fin,roue_email_date_mode,roue_email_message)&select=cle,valeur`,
     { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
   );
   const paramsData = paramsRes.ok ? await paramsRes.json() : [];
   const p = {};
   (paramsData || []).forEach(r => { p[r.cle] = r.valeur; });
 
-  const defaultObjet1 = '🎉 {prenom}, vous avez gagné {emoji} {recompense} au Grand Jeux du TED !';
-  const defaultObjet2 = '🥂 Votre {recompense} vous attend au TED !';
-  const defaultCorps1 = `Bonjour {prenom},
-
-Félicitations ! Vous remportez : {emoji} {recompense}
-
-Votre récompense vous attend au TED le {date}.
-
-Pour en profiter, il vous suffit de venir accompagné(e) d'au moins 4 personnes, soit une table de 5 personnes minimum, autour d'un repas au TED.
-
-À votre arrivée, présentez simplement cet e-mail à notre équipe : votre récompense vous sera offerte. 🥂
-
-Une belle occasion de réunir vos proches et de célébrer cette victoire comme il se doit !
-
-📞 Réservation par téléphone : 04 72 02 20 20
-🔗 Réservation en ligne : https://ted-crm.pages.dev/reserver.html
-
-Nous avons hâte de vous accueillir.
-À très bientôt,
-L'équipe du TED 🦁`;
-
-  let objet = p[objetCle] || (type === 'email1' ? defaultObjet1 : defaultObjet2);
-  let corps = p[corpsCle] || (type === 'email1' ? defaultCorps1 : '');
+  const defaultObjet = '🎉 {prenom}, vous avez gagné {emoji} {recompense} au Grand Jeux du TED !';
+  let objet = p[objetCle] || defaultObjet;
   const messagePerso = p['roue_email_message'] || '';
 
-  // Date depuis les paramètres CRM ou depuis le body de la requête
-  const dateMode = p['roue_email_date_mode'] || 'precise';
+  // Date
+  const dateMode     = p['roue_email_date_mode'] || 'precise';
   const dateDebutIso = p['roue_email_date'] || date_venue || null;
-  const dateFinIso = p['roue_email_date_fin'] || null;
-  const fmtDateFR = iso => iso ? new Date(iso + 'T00:00:00').toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' }) : null;
+  const dateFinIso   = p['roue_email_date_fin'] || null;
+  const fmtDateFR    = iso => iso ? new Date(iso + 'T00:00:00').toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' }) : null;
   const dateDebutFmt = fmtDateFR(dateDebutIso);
-  const dateFinFmt = fmtDateFR(dateFinIso);
+  const dateFinFmt   = fmtDateFR(dateFinIso);
   const dateAffichee = dateMode === 'periode' && dateDebutFmt && dateFinFmt
-    ? `Du ${dateDebutFmt} au ${dateFinFmt}`
-    : (dateDebutFmt || 'À définir par le restaurant');
-  const dispoLabel = dateMode === 'periode' && dateDebutFmt && dateFinFmt
-    ? `Disponible du ${dateDebutFmt} au ${dateFinFmt}`
-    : (dateDebutFmt ? `Disponible à partir du ${dateDebutFmt}` : 'Disponible à partir du — À définir');
-
-  const dateVenue = date_venue ? new Date(date_venue + 'T00:00:00') : null;
-  const joursFR = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-
-  const dateFormatee = dateAffichee;
+    ? `${dateDebutFmt} au ${dateFinFmt}`
+    : (dateDebutFmt || 'À définir');
+  const dateLabel = heure_venue
+    ? `${dateAffichee} · ${String(heure_venue).slice(0, 5)}`
+    : dateAffichee;
 
   const replace = str => str
     .replace(/{prenom}/g, to_prenom || '')
-    .replace(/{nom}/g, to_nom || '')
+    .replace(/{nom}/g,    to_nom    || '')
     .replace(/{recompense}/g, recompense || '')
-    .replace(/{emoji}/g, emoji || '')
-    .replace(/{date}/g, dateFormatee)
-    .replace(/{jour}/g, dateVenue ? joursFR[dateVenue.getDay()] : '')
-    .replace(/{heure}/g, heure_venue ? String(heure_venue).slice(0, 5) : '');
+    .replace(/{emoji}/g,  emoji || '')
+    .replace(/{date}/g,   dateAffichee);
 
   objet = replace(objet);
-  const htmlCorps = replace(corps).replace(/\n/g, '<br>');
 
-  const recompenseEmoji = replace('{emoji}');
-  const recompenseNom = replace('{recompense}');
+  const preheader = `Félicitations ${to_prenom || ''}, votre récompense vous attend au TED !`;
+  const serialCode = 'TED-' + Math.random().toString(36).slice(2, 7).toUpperCase();
+  const logoUrl    = 'https://ted-crm.pages.dev/logo-Le-TED.png';
+  const hasMessage = messagePerso.trim().length > 0;
 
-  const preheader = replace('Félicitations {prenom}, votre récompense vous attend au TED !');
+  const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Alex+Brush&display=swap" rel="stylesheet">
+<style>
+  @keyframes shimmer {
+    0%   { background-position: -400% center; }
+    100% { background-position:  400% center; }
+  }
+  @keyframes pulse-ring {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50%       { opacity: 0.8; transform: scale(1.04); }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes confetti-drop {
+    0%   { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(60px)  rotate(180deg); opacity: 0; }
+  }
+  body { margin: 0; background: #1a1a1a; font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif; }
+  * { box-sizing: border-box; }
+</style>
+</head>
+<body>
+<div style="display:none;max-height:0;overflow:hidden;font-size:1px;color:#1a1a1a;">${preheader}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
 
-  const htmlContent = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#f8f8f8;padding:20px">
-  <div style="display:none;max-height:0;overflow:hidden;font-size:1px;color:#f5f5f5;">${preheader}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
+<div style="min-height: 100vh; background: #181818; padding: 40px 16px; display: flex; flex-direction: column; align-items: center;">
 
-  <div style="background:#111111;padding:28px 24px;text-align:center;border-radius:12px 12px 0 0;border-bottom:4px solid #E8C547">
-    <img src="https://ted-crm.pages.dev/favicon.png" alt="Le TED" style="height:60px;margin-bottom:12px" />
-    <h1 style="color:#E8C547;margin:0;font-size:28px;letter-spacing:2px;font-weight:800">LE TED</h1>
-    <p style="color:#888;margin:4px 0 0;font-size:13px;letter-spacing:1px">RESTAURANT &amp; CLUB — CHASSIEU</p>
+  <div style="width: 100%; max-width: 600px; animation: fadeUp 0.6s ease both;">
+
+    <!-- HEADER -->
+    <div style="background: #111111; border-radius: 10px 10px 0 0; padding: 44px 40px 36px; text-align: center; position: relative; overflow: hidden;">
+      <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 320px; height: 200px; background: radial-gradient(ellipse at 50% 0%, rgba(240,168,48,0.22) 0%, transparent 70%); pointer-events: none;"></div>
+      <img src="${logoUrl}" alt="Le TED" width="72" height="72" style="object-fit: contain; display: block; margin: 0 auto 18px; position: relative;" />
+      <div style="font-weight: 800; font-size: 26px; letter-spacing: 10px; text-transform: uppercase; background: linear-gradient(90deg, #c47e10 0%, #F0A830 30%, #ffd278 50%, #F0A830 70%, #c47e10 100%); background-size: 300% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; animation: shimmer 6s linear infinite; margin-bottom: 6px;">Le Ted</div>
+      <div style="font-size: 10px; letter-spacing: 4px; color: rgba(255,255,255,0.25); text-transform: uppercase; margin-top: 6px;">Restaurant &amp; Club · Chassieu</div>
+    </div>
+
+    <!-- Gold bar -->
+    <div style="height: 3px; background: linear-gradient(90deg, #c47e10, #F0A830, #ffd278, #F0A830, #c47e10); background-size: 300% auto; animation: shimmer 4s linear infinite;"></div>
+
+    <!-- WINNER HERO -->
+    <div style="background: #111111; padding: 48px 40px 44px; text-align: center; border-top: none;">
+
+      <div style="position: relative; display: flex; justify-content: center; margin-bottom: 12px;">
+        <div style="position: absolute; top: -8px; left: 60px; width: 6px; height: 6px; background: #F0A830; transform: rotate(20deg); animation: confetti-drop 2.4s ease-in infinite;"></div>
+        <div style="position: absolute; top: -4px; left: 90px; width: 4px; height: 4px; background: #fff; border-radius: 50%; animation: confetti-drop 2.1s ease-in 0.3s infinite;"></div>
+        <div style="position: absolute; top: -12px; right: 60px; width: 5px; height: 5px; background: #F0A830; transform: rotate(-15deg); animation: confetti-drop 2.6s ease-in 0.6s infinite;"></div>
+        <div style="position: absolute; top: -6px; right: 88px; width: 3px; height: 8px; background: rgba(240,168,48,0.5); transform: rotate(30deg); animation: confetti-drop 2.3s ease-in 1s infinite;"></div>
+        <div style="font-weight: 800; font-size: 11px; letter-spacing: 5px; color: #F0A830; text-transform: uppercase; opacity: 0.9;">✦ Vous avez gagné ✦</div>
+      </div>
+
+      <h1 style="font-size: 38px; font-weight: 700; color: #ffffff; margin: 16px 0 8px; line-height: 1.15;">${to_prenom || ''} ${to_nom || ''}</h1>
+      <p style="font-size: 13px; color: rgba(255,255,255,0.45); margin: 0 0 44px; letter-spacing: 0.5px;">vous repart avec une récompense exclusive</p>
+
+      <!-- BON GAGNANT -->
+      <div style="position: relative; margin-bottom: 44px;">
+        <div style="position: absolute; inset: -8px; border-radius: 20px; background: radial-gradient(ellipse at 50% 50%, rgba(240,168,48,0.15) 0%, transparent 70%); animation: pulse-ring 3s ease-in-out infinite; pointer-events: none;"></div>
+
+        <div style="border-radius: 14px; overflow: hidden; border: 1px solid rgba(240,168,48,0.35); position: relative;">
+          <div style="height: 4px; background: linear-gradient(90deg, #c47e10, #F0A830, #ffd278, #F0A830, #c47e10); background-size: 300% auto; animation: shimmer 4s linear infinite;"></div>
+
+          <div style="background: #1a1300; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <img src="${logoUrl}" alt="TED" width="22" height="22" style="object-fit: contain; opacity: 0.85;" />
+              <span style="font-size: 9px; font-weight: 700; letter-spacing: 3.5px; color: #F0A830; text-transform: uppercase;">Bon Gagnant</span>
+            </div>
+            <span style="font-family: 'Courier New', monospace; font-size: 10px; color: rgba(240,168,48,0.3); letter-spacing: 1px;">${serialCode}</span>
+          </div>
+
+          <div style="background: #111; border-top: 1px dashed rgba(240,168,48,0.2); border-bottom: 1px dashed rgba(240,168,48,0.2); height: 1px; margin: 0;"></div>
+
+          <div style="background: linear-gradient(160deg, #161000 0%, #111111 100%); padding: 40px 28px 32px; text-align: center;">
+            <div style="font-size: 9px; letter-spacing: 7px; color: rgba(240,168,48,0.4); margin-bottom: 20px;">✦ &nbsp; ✦ &nbsp; ✦</div>
+            <div style="font-size: 64px; line-height: 1; margin-bottom: 20px; filter: drop-shadow(0 4px 20px rgba(240,168,48,0.35));">${emoji || '🎁'}</div>
+            <div style="font-size: 9px; font-weight: 600; letter-spacing: 4px; color: rgba(240,168,48,0.5); text-transform: uppercase; margin-bottom: 12px;">Votre récompense</div>
+            <div style="font-size: 26px; font-weight: 700; color: #ffffff; line-height: 1.2; margin-bottom: 28px; letter-spacing: -0.3px;">${recompense || ''}</div>
+
+            <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(240,168,48,0.08); border: 1px solid rgba(240,168,48,0.2); border-radius: 40px; padding: 8px 20px; margin-bottom: 20px;">
+              <div style="width: 5px; height: 5px; background: #F0A830; border-radius: 50%;"></div>
+              <span style="font-size: 14px; color: rgba(255,255,255,0.5);">Valable</span>
+              <span style="font-size: 14px; font-weight: 600; color: #F0A830;">${dateLabel}</span>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: center; gap: 5px; margin-bottom: 0;">
+              <div style="height: 1px; flex: 1; background: linear-gradient(to right, transparent, rgba(240,168,48,0.2));"></div>
+              <div style="font-size: 8px; letter-spacing: 5px; color: rgba(240,168,48,0.25);">· · · · ·</div>
+              <div style="height: 1px; flex: 1; background: linear-gradient(to left, transparent, rgba(240,168,48,0.2));"></div>
+            </div>
+          </div>
+
+          <div style="position: relative; display: flex; align-items: center; background: #111;">
+            <div style="width: 16px; height: 16px; background: #111111; border-radius: 50%; flex-shrink: 0; margin-left: -8px; border: 1px solid rgba(240,168,48,0.25);"></div>
+            <div style="flex: 1; border-top: 1.5px dashed rgba(240,168,48,0.25);"></div>
+            <div style="width: 16px; height: 16px; background: #111111; border-radius: 50%; flex-shrink: 0; margin-right: -8px; border: 1px solid rgba(240,168,48,0.25);"></div>
+          </div>
+
+          <div style="background: #0e0e0e; padding: 14px 28px; text-align: center;">
+            <a href="#conditions" style="font-size: 12px; color: rgba(255,255,255,0.4); text-decoration: underline; letter-spacing: 0.5px;">Lire les conditions de retrait en dessous ↓</a>
+          </div>
+
+          <div style="height: 3px; background: linear-gradient(90deg, #c47e10, #F0A830, #ffd278, #F0A830, #c47e10); background-size: 300% auto; animation: shimmer 4s linear infinite; opacity: 0.6;"></div>
+        </div>
+      </div>
+
+      ${hasMessage ? `
+      <div style="margin-bottom: 44px; padding: 20px 24px; border-left: 2px solid rgba(240,168,48,0.4); text-align: left; background: rgba(255,255,255,0.03); border-radius: 0 6px 6px 0;">
+        <p style="font-style: italic; font-size: 17px; color: rgba(255,255,255,0.6); margin: 0 0 8px; line-height: 1.7;">&laquo;&nbsp;${messagePerso.replace(/\n/g, '<br>')}&nbsp;&raquo;</p>
+        <p style="font-size: 10px; letter-spacing: 2.5px; color: rgba(240,168,48,0.5); text-transform: uppercase; margin: 0;">L'équipe du TED</p>
+      </div>` : ''}
+    </div>
+
+    <!-- CONDITIONS -->
+    <div id="conditions" style="background: #FDFAF5; padding: 44px 40px 40px;">
+      <p style="font-size: 22px; font-weight: 700; letter-spacing: 0.5px; color: #777; text-transform: uppercase; margin: 0 0 24px;">Conditions de retrait</p>
+
+      <div style="display: flex; flex-direction: column; gap: 0;">
+        <div style="display: flex; align-items: flex-start; gap: 16px; padding: 16px 0; border-bottom: 1px solid #f0ece4;">
+          <div style="width: 38px; height: 38px; background: #111; border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 17px;">📋</div>
+          <div style="padding-top: 4px;">
+            <div style="font-size: 15px; font-weight: 700; color: #111; margin-bottom: 3px;">Présentation obligatoire</div>
+            <div style="font-size: 13px; color: #777; line-height: 1.6;">Présentez <strong style="color: #111; font-weight: 700;">cet email</strong> à votre arrivée au restaurant.</div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 16px; padding: 16px 0; border-bottom: 1px solid #f0ece4;">
+          <div style="width: 38px; height: 38px; background: #111; border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 17px;">📅</div>
+          <div style="padding-top: 4px;">
+            <div style="font-size: 15px; font-weight: 700; color: #111; margin-bottom: 3px;">Date de retrait</div>
+            <div style="font-size: 13px; color: #777; line-height: 1.6;">${dateLabel}</div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: flex-start; gap: 16px; padding: 16px 0;">
+          <div style="width: 38px; height: 38px; background: #111; border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 17px;">👥</div>
+          <div style="padding-top: 4px;">
+            <div style="font-size: 15px; font-weight: 700; color: #111; margin-bottom: 3px;">5 personnes minimum</div>
+            <div style="font-size: 13px; color: #777; line-height: 1.6;">Valable autour d'un repas partagé en groupe d'<strong style="color: #111; font-weight: 700;">au moins 5 personnes</strong>.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 40px; text-align: center;">
+        <a href="https://letedchassieu.fr/reservation" style="display: inline-block; background: #F0A830; color: #111111; font-size: 12px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; text-decoration: none; padding: 18px 52px; border-radius: 4px;">Réserver ma table</a>
+        <p style="font-size: 12px; color: #bbb; margin: 14px 0 0;">ou appelez-nous · <a href="tel:0478906780" style="color: #F0A830; text-decoration: none; font-weight: 600;">04 78 90 67 80</a></p>
+      </div>
+
+      <div style="margin-top: 52px; padding-top: 36px; border-top: 1px solid #ece8e0; text-align: center;">
+        <p style="font-style: italic; font-size: 18px; color: #555; line-height: 1.85; margin: 0 0 4px;">On vous attend avec impatience.</p>
+        <p style="font-size: 16px; color: #777; margin: 0 0 18px;">À très bientôt,</p>
+        <div style="font-family: 'Alex Brush', cursive; font-size: 36px; color: #F0A830;">L'équipe du TED</div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div style="background: #0d0d0d; border-radius: 0 0 10px 10px; padding: 36px 40px; text-align: center;">
+      <img src="${logoUrl}" alt="Le TED" width="44" height="44" style="object-fit: contain; opacity: 0.7; display: block; margin: 0 auto 12px;" />
+      <div style="font-weight: 800; font-size: 13px; letter-spacing: 7px; color: #F0A830; margin-bottom: 16px; text-transform: uppercase;">Le Ted</div>
+      <p style="font-size: 11px; color: rgba(255,255,255,0.25); line-height: 2; margin: 0 0 10px;">
+        28 Avenue des Frères Montgolfier, 69680 Chassieu<br/>
+        <a href="tel:0478906780" style="color: rgba(240,168,48,0.5); text-decoration: none;">04 78 90 67 80</a>
+        &nbsp;·&nbsp;
+        <a href="https://letedchassieu.fr/reservation" style="color: rgba(240,168,48,0.5); text-decoration: none;">leted.fr</a>
+      </p>
+      <p style="font-size: 10px; color: rgba(255,255,255,0.12); margin: 0; line-height: 1.7;">
+        © 2026 Le TED — Restaurant &amp; Club — Chassieu, Lyon
+      </p>
+    </div>
+
   </div>
-
-  <div style="background:#fff;padding:28px 24px;border-radius:0 0 12px 12px;box-shadow:0 4px 20px rgba(0,0,0,0.08)">
-    <h2 style="color:#111;margin:0 0 8px;font-size:22px">Bonjour ${replace('{prenom}')} 🎉</h2>
-    <p style="color:#444;font-size:16px;margin:0 0 24px">Vous avez remporté une récompense au <strong>Grand Jeux du TED</strong> !</p>
-
-    <div style="background:#f9f9f9;border-left:4px solid #E8C547;padding:20px;border-radius:0 8px 8px 0;margin-bottom:24px">
-      <p style="margin:0 0 10px;font-size:15px">🎁 <strong>Votre récompense :</strong> ${replace('{emoji} {recompense}')}</p>
-      <p style="margin:0 0 10px;font-size:15px">📅 <strong>Disponibilité :</strong> ${dateAffichee}</p>
-      <p style="margin:0;font-size:15px">📋 <strong>Conditions :</strong> Présenter ce mail à votre arrivée</p>
-      ${messagePerso ? `<p style="margin:10px 0 0;font-size:14px;color:#B8960C;font-weight:600;line-height:1.5;">ℹ️ ${messagePerso.replace(/\n/g,'<br>')}</p>` : ''}
-    </div>
-
-    <div style="background:#f9f9f9;border:1.5px solid #ddd;border-radius:8px;padding:16px;margin-bottom:24px">
-      <p style="margin:0 0 10px;font-size:14px;font-weight:800;color:#111">👥 Condition de retrait</p>
-      <p style="margin:0;font-size:13px;color:#555;line-height:1.6">Votre récompense est valable pour une table de <strong>5 personnes minimum</strong>, autour d'un repas au TED. Elle vous sera remise à votre arrivée sur présentation de cet email.</p>
-    </div>
-
-    <div style="text-align:center;margin-bottom:24px">
-      <a href="https://ted-crm.pages.dev/reserver.html" target="_blank" style="display:inline-block;background:#E8C547;color:#111;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:800;font-size:15px">📅 Réserver ma table</a>
-    </div>
-
-    <div style="background:#fff8e1;border:1.5px solid #E8C547;border-radius:8px;padding:16px;margin-bottom:24px">
-      <p style="margin:0;font-size:14px;color:#555;line-height:1.6">📞 <strong>Réservation par téléphone :</strong> 04 72 02 20 20<br>Ou en ligne via le bouton ci-dessus.</p>
-    </div>
-
-    <div style="border-top:1px solid #eee;padding-top:20px;text-align:center">
-      <p style="color:#111;font-weight:700;font-size:15px;margin:0 0 6px">Le TED — Restaurant &amp; Club</p>
-      <p style="color:#888;font-size:13px;margin:0 0 4px">📍 28 Av. des Frères Montgolfier, 69680 Chassieu</p>
-      <p style="color:#888;font-size:13px;margin:0 0 4px">📞 04 78 90 67 80</p>
-      <p style="margin:8px 0 0;text-align:center"><a href="https://leted.fr" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;color:#111;font-size:15px;font-weight:700"><img src="https://ted-crm.pages.dev/favicon.png" alt="TED" style="height:24px;width:24px;vertical-align:middle" />leted.fr</a></p>
-    </div>
-    <p style="text-align:center;color:#bbb;font-size:12px;margin-top:20px">Nous avons hâte de vous accueillir ! 🎉</p>
-  </div>
-</div>`;
+</div>
+</body>
+</html>`;
 
   const brevoRes = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
