@@ -334,7 +334,7 @@
       <div style="font-size:64px;margin-bottom:20px;">🎁</div>
       <h2 style="font-size:26px;font-weight:900;color:#1a1200;margin-bottom:10px;">C'est tout bon !</h2>
       <p style="font-size:15px;color:rgba(0,0,0,0.6);max-width:280px;line-height:1.6;margin-bottom:32px;">Votre récompense vous a été envoyée.<br>À bientôt au TED !</p>
-      <button id="roue-vers-carte-btn" style="padding:16px 36px;border-radius:14px;border:none;background:#1a1200;color:#fff;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.25);">Consulter la carte →</button>
+      <button id="roue-vers-carte-btn" style="padding:16px 36px;border-radius:14px;border:none;background:#1a1200;color:#fff;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.25);">Retour à la carte</button>
     </div>
 
     <!-- Formulaire -->
@@ -352,27 +352,33 @@
             <button id="roue-gender-m" onclick="rouSelectM()" style="flex:1;padding:14px;border-radius:12px;border:2px solid #1a1200;background:#1a1200;color:#FFD700;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">M.</button>
             <button id="roue-gender-mme" onclick="rouSelectMme()" style="flex:1;padding:14px;border-radius:12px;border:2px solid rgba(0,0,0,0.15);background:rgba(255,255,255,0.6);color:#1a1200;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">Mme</button>
           </div>
+          <div id="roue-genre-error" style="display:none;font-size:11px;color:#e53935;margin-top:5px;padding-left:2px;">Veuillez sélectionner votre genre</div>
         </div>
         <div>
-          <div style="font-size:12px;font-weight:600;color:rgba(0,0,0,0.5);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Nom</div>
-          <input id="roue-nom" type="text" placeholder="Votre nom" autocomplete="family-name" style="width:100%;padding:15px 16px;border-radius:12px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(255,255,255,0.7);font-size:15px;font-family:inherit;color:#1a1200;outline:none;">
+          <div style="font-size:12px;font-weight:600;color:rgba(0,0,0,0.5);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Nom <span style="color:#e53935;">*</span></div>
+          <input id="roue-nom" type="text" placeholder="Votre nom" autocomplete="family-name" required style="width:100%;padding:15px 16px;border-radius:12px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(255,255,255,0.7);font-size:15px;font-family:inherit;color:#1a1200;outline:none;">
+          <div id="roue-nom-error" style="display:none;font-size:11px;color:#e53935;margin-top:5px;padding-left:2px;">Ce champ est obligatoire</div>
         </div>
         <div>
-          <div style="font-size:12px;font-weight:600;color:rgba(0,0,0,0.5);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Prénom</div>
-          <input id="roue-prenom" type="text" placeholder="Votre prénom" autocomplete="given-name" style="width:100%;padding:15px 16px;border-radius:12px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(255,255,255,0.7);font-size:15px;font-family:inherit;color:#1a1200;outline:none;">
+          <div style="font-size:12px;font-weight:600;color:rgba(0,0,0,0.5);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Prénom <span style="color:#e53935;">*</span></div>
+          <input id="roue-prenom" type="text" placeholder="Votre prénom" autocomplete="given-name" required style="width:100%;padding:15px 16px;border-radius:12px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(255,255,255,0.7);font-size:15px;font-family:inherit;color:#1a1200;outline:none;">
+          <div id="roue-prenom-error" style="display:none;font-size:11px;color:#e53935;margin-top:5px;padding-left:2px;">Ce champ est obligatoire</div>
         </div>
         <div>
-          <div style="font-size:12px;font-weight:600;color:rgba(0,0,0,0.5);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Numéro de téléphone</div>
-          <input id="roue-tel" type="tel" placeholder="06 00 00 00 00" autocomplete="tel" style="width:100%;padding:15px 16px;border-radius:12px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(255,255,255,0.7);font-size:15px;font-family:inherit;color:#1a1200;outline:none;">
+          <div style="font-size:12px;font-weight:600;color:rgba(0,0,0,0.5);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Numéro de téléphone <span style="color:#e53935;">*</span></div>
+          <input id="roue-tel" type="tel" placeholder="06 00 00 00 00" autocomplete="tel" required style="width:100%;padding:15px 16px;border-radius:12px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(255,255,255,0.7);font-size:15px;font-family:inherit;color:#1a1200;outline:none;">
+          <div id="roue-tel-error" style="display:none;font-size:11px;color:#e53935;margin-top:5px;padding-left:2px;">Ce champ est obligatoire</div>
         </div>
         <div>
-          <div style="font-size:12px;font-weight:600;color:rgba(0,0,0,0.5);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Email</div>
-          <input id="roue-email" type="email" placeholder="votre@email.com" autocomplete="email" style="width:100%;padding:15px 16px;border-radius:12px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(255,255,255,0.7);font-size:15px;font-family:inherit;color:#1a1200;outline:none;">
+          <div style="font-size:12px;font-weight:600;color:rgba(0,0,0,0.5);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em;">Email <span style="color:#e53935;">*</span></div>
+          <input id="roue-email" type="email" placeholder="votre@email.com" autocomplete="email" required style="width:100%;padding:15px 16px;border-radius:12px;border:1.5px solid rgba(0,0,0,0.12);background:rgba(255,255,255,0.7);font-size:15px;font-family:inherit;color:#1a1200;outline:none;">
+          <div id="roue-email-error" style="display:none;font-size:11px;color:#e53935;margin-top:5px;padding-left:2px;">Ce champ est obligatoire</div>
         </div>
         <label style="display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:rgba(255,255,255,0.5);border-radius:12px;cursor:pointer;border:1.5px solid rgba(0,0,0,0.1);">
           <input id="roue-consent" type="checkbox" checked style="width:18px;height:18px;margin-top:2px;accent-color:#1a1200;flex-shrink:0;">
           <span style="font-size:11px;color:rgba(0,0,0,0.55);line-height:1.5;">J'accepte que mes données soient utilisées par l'établissement pour m'envoyer ma récompense. Ces données ne seront pas transmises à des tiers. <strong>*</strong></span>
         </label>
+        <div id="roue-rejeu-msg" style="display:none;background:#FFC200;border-radius:12px;padding:16px;font-size:13px;font-weight:600;color:#1a1200;line-height:1.5;">⚠️ Vous avez déjà participé au Grand Jeux du TED. Votre récompense vous a été attribuée.</div>
         <div style="font-size:11px;color:rgba(0,0,0,0.4);text-align:center;">⚠️ Une seule participation par personne</div>
         <button id="roue-confirmer-btn" style="width:100%;padding:17px;border-radius:14px;border:none;background:#1a1200;color:#fff;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;margin-top:6px;box-shadow:0 4px 20px rgba(0,0,0,0.25);">Valider mes informations</button>
       </div>
@@ -1052,53 +1058,133 @@
       } catch(e) { return false; }
     }
 
+    // ── Helpers validation ──────────────────────────────────────────────────────
+    function setFieldError(inputId, errorId, msg) {
+      const input = document.getElementById(inputId);
+      const errEl = document.getElementById(errorId);
+      if (input) input.style.border = '1.5px solid #e53935';
+      if (errEl) { errEl.textContent = msg || 'Ce champ est obligatoire'; errEl.style.display = 'block'; }
+    }
+    function clearFieldErrors() {
+      ['roue-nom','roue-prenom','roue-tel','roue-email'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.border = '1.5px solid rgba(0,0,0,0.12)';
+      });
+      ['roue-genre-error','roue-nom-error','roue-prenom-error','roue-tel-error','roue-email-error'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+      const rejeu = document.getElementById('roue-rejeu-msg');
+      if (rejeu) rejeu.style.display = 'none';
+    }
+    function normaliseTel(raw) {
+      let v = (raw || '').trim().replace(/\s/g, '');
+      if (v.startsWith('+33')) v = '0' + v.slice(3);
+      else if (/^336|^337/.test(v)) v = '0' + v.slice(2);
+      return v;
+    }
+
     // ── Confirmer formulaire ───────────────────────────────────────────────────
     async function confirmer() {
-      const prenom = (document.getElementById('roue-prenom').value || '').trim();
-      const nom    = (document.getElementById('roue-nom').value    || '').trim();
-      const tel    = (document.getElementById('roue-tel').value    || '').trim().replace(/\s/g, '');
-      const email  = (document.getElementById('roue-email').value  || '').trim().toLowerCase();
+      clearFieldErrors();
+
+      const prenom  = (document.getElementById('roue-prenom').value || '').trim();
+      const nom     = (document.getElementById('roue-nom').value    || '').trim();
+      const tel     = normaliseTel(document.getElementById('roue-tel').value);
+      const email   = (document.getElementById('roue-email').value  || '').trim().toLowerCase();
       const consent = document.getElementById('roue-consent').checked;
 
-      if (!tel && !email) { alert('Merci de renseigner votre téléphone ou votre email.'); return; }
+      // Validation
+      let hasError = false;
+      if (!gender) {
+        document.getElementById('roue-genre-error').style.display = 'block';
+        hasError = true;
+      }
+      if (!nom) { setFieldError('roue-nom', 'roue-nom-error'); hasError = true; }
+      if (!prenom) { setFieldError('roue-prenom', 'roue-prenom-error'); hasError = true; }
+      if (!tel) {
+        setFieldError('roue-tel', 'roue-tel-error', 'Ce champ est obligatoire');
+        hasError = true;
+      } else if (!/^0[0-9]{9}$/.test(tel)) {
+        setFieldError('roue-tel', 'roue-tel-error', 'Numéro invalide (ex: 06 12 34 56 78)');
+        hasError = true;
+      }
+      if (!email) {
+        setFieldError('roue-email', 'roue-email-error', 'Ce champ est obligatoire');
+        hasError = true;
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        setFieldError('roue-email', 'roue-email-error', 'Email invalide');
+        hasError = true;
+      }
+      if (hasError) return;
 
       const btn = document.getElementById('roue-confirmer-btn');
-      if (btn) { btn.disabled = true; btn.textContent = 'Envoi en cours…'; }
+      if (btn) { btn.disabled = true; btn.textContent = 'Vérification…'; }
 
-      // Anti-rejeu Supabase
+      // ── Anti-rejeu dans roue_gains ────────────────────────────────────────────
       try {
-        const params = [];
-        if (tel)   params.push(`tel.eq.${encodeURIComponent(tel)}`);
-        if (email) params.push(`email.eq.${encodeURIComponent(email)}`);
-        const check = await fetch(
-          `${SUPA_URL}/rest/v1/roue_gains?or=(${params.join(',')})&select=id&limit=1`,
+        const checkRes = await fetch(
+          `${SUPA_URL}/rest/v1/roue_gains?or=(tel.eq.${encodeURIComponent(tel)},email.eq.${encodeURIComponent(email)})&select=id&limit=1`,
           { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
         );
-        if (check.ok) {
-          const existing = await check.json();
-          if (existing && existing.length > 0) { showDeja(); return; }
+        if (checkRes.ok) {
+          const existing = await checkRes.json();
+          if (existing && existing.length > 0) {
+            document.getElementById('roue-rejeu-msg').style.display = 'block';
+            if (btn) { btn.disabled = false; btn.textContent = 'Valider mes informations'; }
+            return;
+          }
         }
       } catch(e) {}
 
-      // Décrémente stock
+      if (btn) btn.textContent = 'Enregistrement…';
+
+      // ── Lookup ou INSERT dans clients ─────────────────────────────────────────
+      let clientId = null;
+      try {
+        const clientRes = await fetch(
+          `${SUPA_URL}/rest/v1/clients?or=(tel.eq.${encodeURIComponent(tel)},email.eq.${encodeURIComponent(email)})&select=id&limit=1`,
+          { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
+        );
+        if (clientRes.ok) {
+          const clients = await clientRes.json();
+          if (clients && clients.length > 0) {
+            clientId = clients[0].id;
+          } else {
+            const insertRes = await fetch(`${SUPA_URL}/rest/v1/clients`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, Prefer: 'return=representation' },
+              body: JSON.stringify({ prenom, nom, tel, email, genre: gender, source: 'roue_jeux', created_at: new Date().toISOString() })
+            });
+            if (insertRes.ok) {
+              const newClients = await insertRes.json();
+              if (newClients && newClients.length > 0) clientId = newClients[0].id;
+            }
+          }
+        }
+      } catch(e) {}
+
+      // ── Décrémente stock ──────────────────────────────────────────────────────
       if (!gainResult.stock_illimite && gainResult.id) await tryDecrementStock(gainResult.id);
 
-      // Insert gain
+      // ── INSERT roue_gains ─────────────────────────────────────────────────────
       try {
         await fetch(`${SUPA_URL}/rest/v1/roue_gains`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}`, Prefer: 'return=minimal' },
           body: JSON.stringify({
             recompense_id: gainResult.id,
-            prenom: prenom || null, nom: nom || null, genre: gender,
-            tel: tel || null, email: email || null,
+            prenom, nom, genre: gender,
+            tel, email,
+            client_id: clientId || null,
             consent_marketing: consent,
-            date_gain: new Date().toISOString()
+            date_gain: new Date().toISOString(),
+            email1_envoye: false
           })
         });
       } catch(e) {}
 
-      // Notification SMS + email
+      // ── Notification ──────────────────────────────────────────────────────────
       try {
         await fetch('/api/roue-notify', {
           method: 'POST',
@@ -1115,17 +1201,6 @@
 
       localStorage.setItem('ted_roue_joue', '1');
       showDone();
-    }
-
-    function showDeja() {
-      const doneDiv   = document.getElementById('roue-form-done');
-      const fieldsDiv = document.getElementById('roue-form-fields');
-      if (doneDiv && fieldsDiv) {
-        fieldsDiv.style.display = 'none';
-        doneDiv.querySelector('h2').textContent = 'Déjà participé !';
-        doneDiv.querySelector('p').textContent  = 'Vous avez déjà participé à la roue des cadeaux.';
-        doneDiv.style.display = 'flex';
-      }
     }
 
     function showDone() {
