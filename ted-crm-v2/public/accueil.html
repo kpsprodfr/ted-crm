@@ -158,6 +158,15 @@
     #popup-desc    { font-size: 13px; color: #999; margin-top: 11px; line-height: 1.55; }
     #popup-horaire { font-size: 12px; color: #555; margin-top: 14px; letter-spacing: 0.3px; }
 
+    #popup-flyer {
+      width: 100%; display: none;
+      border-radius: 20px 20px 0 0; overflow: hidden;
+    }
+    #popup-flyer img {
+      width: 100%; max-height: 220px; object-fit: cover; display: block;
+    }
+    #popup-card.has-flyer #popup-body { padding-top: 18px; }
+
     #popup-reserver {
       display: block; width: 100%; margin-top: 20px;
       padding: 14px; border-radius: 12px; border: none;
@@ -427,6 +436,7 @@
     <div id="popup-card">
       <div id="popup-progress-track"><div id="popup-progress-bar"></div></div>
       <button id="popup-close" aria-label="Fermer">✕</button>
+      <div id="popup-flyer"><img id="popup-flyer-img" src="" alt="" /></div>
       <div id="popup-body">
         <div id="popup-jour"></div>
         <div id="popup-nom"></div>
@@ -550,6 +560,20 @@
     descEl.style.display = descText ? '' : 'none';
     document.getElementById('popup-horaire').textContent = s.horaire ? `À partir de ${s.horaire}` : '';
 
+    // Flyer
+    const flyerEl = document.getElementById('popup-flyer');
+    const flyerImg = document.getElementById('popup-flyer-img');
+    const card = document.getElementById('popup-card');
+    if (s.image_url) {
+      flyerImg.src = s.image_url;
+      flyerEl.style.display = 'block';
+      card.classList.add('has-flyer');
+    } else {
+      flyerEl.style.display = 'none';
+      flyerImg.src = '';
+      card.classList.remove('has-flyer');
+    }
+
     // Reset barre
     progressBar.style.transition = 'none';
     progressBar.style.width = '0%';
@@ -648,7 +672,7 @@
 
   async function fetchSoirees(silent) {
     const r = await fetch(
-      `${SUPA_URL}/rest/v1/menu_soirees?select=id,nom,nom_en,nom_es,nom_it,description,description_en,description_es,description_it,jour,horaire,dj&visible=eq.true&order=ordre.asc`,
+      `${SUPA_URL}/rest/v1/menu_soirees?select=id,nom,nom_en,nom_es,nom_it,description,description_en,description_es,description_it,jour,horaire,dj,image_url&visible=eq.true&order=ordre.asc`,
       { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
     );
     if (!r.ok) return;

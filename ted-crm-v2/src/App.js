@@ -4364,6 +4364,7 @@ function MenuPage({ showToast }) {
   const [soireeSheet, setSoireeSheet] = useState(null); // {} pour new, {...s} pour edit
   const [confirmDeleteSoiree, setConfirmDeleteSoiree] = useState(null);
   const [showOriginesSheet, setShowOriginesSheet] = useState(false);
+  const [uploadingFlyer, setUploadingFlyer] = useState(false);
   const dragSoiree = useRef(null);
   const dragOverSoiree = useRef(null);
 
@@ -4396,6 +4397,22 @@ function MenuPage({ showToast }) {
   async function loadSoirees() {
     const { data } = await supabase.from('menu_soirees').select('*').order('ordre');
     setSoirees(data || []);
+  }
+
+  async function uploadFlyer(file) {
+    if (!file) return null;
+    if (file.size > 5 * 1024 * 1024) { showToast('❌ Image trop lourde (max 5 Mo)'); return null; }
+    setUploadingFlyer(true);
+    try {
+      const ext = file.name.split('.').pop().toLowerCase();
+      const path = `flyer-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from('soirees-flyers').upload(path, file, { upsert: true, contentType: file.type });
+      if (error) { showToast('❌ Erreur upload image'); return null; }
+      const { data: urlData } = supabase.storage.from('soirees-flyers').getPublicUrl(path);
+      return urlData?.publicUrl || null;
+    } finally {
+      setUploadingFlyer(false);
+    }
   }
 
   async function saveSoiree(data) {
@@ -5017,6 +5034,28 @@ function MenuPage({ showToast }) {
               <div><label style={lbl}>Horaire</label><input value={soireeSheet.horaire||''} onChange={e=>setSoireeSheet(p=>({...p,horaire:e.target.value}))} style={inp(false)} placeholder="Ex : 22h00" /></div>
             </div>
             <div><label style={lbl}>Description</label><textarea value={soireeSheet.description||''} onChange={e=>setSoireeSheet(p=>({...p,description:e.target.value}))} style={{...inp(false),height:70,resize:'vertical',padding:'10px 12px'}} placeholder="Description optionnelle" /></div>
+
+            {/* Flyer upload */}
+            <div>
+              <label style={lbl}>Flyer de la soirée <span style={{fontWeight:400,textTransform:'none',color:'#aaa'}}>(optionnel)</span></label>
+              {soireeSheet.image_url ? (
+                <div style={{ display:'flex', alignItems:'center', gap:12, marginTop:8 }}>
+                  <img src={soireeSheet.image_url} alt="flyer" style={{ width:80, height:80, borderRadius:10, objectFit:'cover', border:'1.5px solid #eee' }} />
+                  <button onClick={() => setSoireeSheet(p=>({...p, image_url:''}))} style={{ ...btnSecondary, fontSize:12, height:32, padding:'0 12px', color:'#e57373', borderColor:'#fca5a5' }}>Supprimer</button>
+                </div>
+              ) : (
+                <label style={{ display:'inline-flex', alignItems:'center', gap:8, marginTop:8, height:36, padding:'0 14px', borderRadius:8, border:'1.5px solid #eee', background:'#fff', fontSize:13, fontWeight:600, color:'#666', cursor: uploadingFlyer ? 'wait' : 'pointer' }}>
+                  <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display:'none' }} onChange={async e => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const url = await uploadFlyer(file);
+                    if (url) setSoireeSheet(p=>({...p, image_url: url}));
+                  }} />
+                  {uploadingFlyer ? '⏳ Upload...' : '🖼 Choisir une image'}
+                </label>
+              )}
+            </div>
+
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'2px 0' }}>
               <span style={{ fontSize:14, fontWeight:500, color:'#333' }}>Visible sur la page d'accueil</span>
               <MenuToggle value={!!soireeSheet.visible} onChange={() => setSoireeSheet(p=>({...p,visible:!p.visible}))} />
