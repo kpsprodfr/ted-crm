@@ -65,23 +65,26 @@ export async function onRequestPost(context) {
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Alex+Brush&display=swap');
   body, table, td { margin:0; padding:0; border:0; }
-  body { background:#181818; font-family:-apple-system,'Helvetica Neue',Arial,sans-serif; }
+  body { background-color:#181818 !important; font-family:-apple-system,'Helvetica Neue',Arial,sans-serif; }
   img { border:0; display:block; }
   .alex { font-family:'Alex Brush',Georgia,serif; }
+  /* Force dark bg sur Gmail */
+  div[style*="background"] { background-color:#181818 !important; }
+  u + #body { background-color:#181818 !important; }
 </style>
 </head>
-<body style="margin:0;padding:0;background:#181818;">
+<body id="body" style="margin:0;padding:0;background-color:#181818;" bgcolor="#181818">
 
 <!-- Preheader -->
 <div style="display:none;max-height:0;overflow:hidden;font-size:1px;color:#181818;">${preheader}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
 
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#181818;">
-<tr><td align="center" style="padding:32px 16px;">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#181818" style="background-color:#181818;">
+<tr><td align="center" bgcolor="#181818" style="padding:32px 16px;background-color:#181818;">
 
   <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
 
     <!-- ══ HEADER ══ -->
-    <tr><td style="background:#111111;border-radius:10px 10px 0 0;padding:44px 40px 32px;text-align:center;">
+    <tr><td bgcolor="#111111" style="background-color:#111111;border-radius:10px 10px 0 0;padding:44px 40px 32px;text-align:center;">
       <img src="${logoUrl}" width="72" height="72" alt="Le TED" style="display:block;margin:0 auto 16px;border-radius:50%;">
       <p style="margin:0;font-size:22px;font-weight:800;letter-spacing:10px;text-transform:uppercase;color:#F0A830;">LE TED</p>
       <p style="margin:6px 0 0;font-size:10px;letter-spacing:4px;color:rgba(255,255,255,0.25);text-transform:uppercase;">Restaurant &amp; Club · Chassieu</p>
@@ -91,7 +94,7 @@ export async function onRequestPost(context) {
     <tr><td style="height:3px;background:linear-gradient(90deg,#c47e10,#F0A830,#ffd278,#F0A830,#c47e10);font-size:0;line-height:0;">&nbsp;</td></tr>
 
     <!-- ══ WINNER HERO ══ -->
-    <tr><td style="background:#111111;padding:48px 40px 40px;text-align:center;">
+    <tr><td bgcolor="#111111" style="background-color:#111111;padding:48px 40px 40px;text-align:center;">
       <p style="margin:0 0 4px;font-size:10px;font-weight:800;letter-spacing:5px;color:#F0A830;text-transform:uppercase;">&#10022; Vous avez gagné &#10022;</p>
       <h1 style="margin:14px 0 8px;font-size:36px;font-weight:700;color:#ffffff;line-height:1.15;">${to_prenom || ''} ${to_nom || ''}</h1>
       <p style="margin:0 0 40px;font-size:13px;color:rgba(255,255,255,0.45);letter-spacing:0.5px;">vous repart avec une récompense exclusive</p>
@@ -103,7 +106,7 @@ export async function onRequestPost(context) {
         <tr><td style="height:4px;background:linear-gradient(90deg,#c47e10,#F0A830,#ffd278,#F0A830,#c47e10);font-size:0;line-height:0;">&nbsp;</td></tr>
 
         <!-- Header strip -->
-        <tr><td style="background:#1a1300;padding:12px 24px;">
+        <tr><td bgcolor="#1a1300" style="background-color:#1a1300;padding:12px 24px;">
           <table width="100%" cellpadding="0" cellspacing="0" border="0">
             <tr>
               <td style="vertical-align:middle;">
@@ -119,7 +122,7 @@ export async function onRequestPost(context) {
         <tr><td style="height:1px;border-top:1px dashed rgba(240,168,48,0.2);background:#111111;font-size:0;line-height:0;">&nbsp;</td></tr>
 
         <!-- Body -->
-        <tr><td style="background:#111111;padding:36px 28px 28px;text-align:center;">
+        <tr><td bgcolor="#111111" style="background-color:#111111;padding:36px 28px 28px;text-align:center;">
           <p style="margin:0 0 16px;font-size:9px;letter-spacing:7px;color:rgba(240,168,48,0.4);">&#10022; &nbsp; &#10022; &nbsp; &#10022;</p>
           <p style="margin:0 0 16px;font-size:56px;line-height:1;">${emoji || '🎁'}</p>
           <p style="margin:0 0 10px;font-size:9px;font-weight:600;letter-spacing:4px;color:rgba(240,168,48,0.5);text-transform:uppercase;">Votre récompense</p>
@@ -149,7 +152,7 @@ export async function onRequestPost(context) {
         </td></tr>
 
         <!-- Stub footer -->
-        <tr><td style="background:#0e0e0e;padding:12px 24px;text-align:center;">
+        <tr><td bgcolor="#0e0e0e" style="background-color:#0e0e0e;padding:12px 24px;text-align:center;">
           <span style="font-size:11px;color:rgba(255,255,255,0.4);text-decoration:underline;">Conditions de retrait ci-dessous &#8595;</span>
         </td></tr>
 
@@ -244,7 +247,7 @@ export async function onRequestPost(context) {
     </td></tr>
 
     <!-- ══ FOOTER ══ -->
-    <tr><td style="background:#0d0d0d;border-radius:0 0 10px 10px;padding:32px 40px;text-align:center;">
+    <tr><td bgcolor="#0d0d0d" style="background-color:#0d0d0d;border-radius:0 0 10px 10px;padding:32px 40px;text-align:center;">
       <img src="${logoUrl}" width="44" height="44" alt="Le TED" style="display:block;margin:0 auto 12px;border-radius:50%;opacity:0.7;">
       <p style="margin:0 0 14px;font-size:12px;font-weight:800;letter-spacing:7px;color:#F0A830;text-transform:uppercase;">Le Ted</p>
       <p style="margin:0 0 10px;font-size:11px;color:rgba(255,255,255,0.25);line-height:2;">
