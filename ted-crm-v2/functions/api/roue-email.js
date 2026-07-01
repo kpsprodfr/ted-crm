@@ -17,7 +17,7 @@ export async function onRequestPost(context) {
   const corpsCle = type === 'email1' ? 'roue_email1_corps' : 'roue_email2_corps';
 
   const paramsRes = await fetch(
-    `${SUPA_URL}/rest/v1/roue_config?cle=in.(${objetCle},${corpsCle})&select=cle,valeur`,
+    `${SUPA_URL}/rest/v1/roue_config?cle=in.(${objetCle},${corpsCle},roue_email_date,roue_email_date_fin,roue_email_date_mode,roue_email_message)&select=cle,valeur`,
     { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
   );
   const paramsData = paramsRes.ok ? await paramsRes.json() : [];
@@ -47,11 +47,26 @@ L'équipe du TED 🦁`;
 
   let objet = p[objetCle] || (type === 'email1' ? defaultObjet1 : defaultObjet2);
   let corps = p[corpsCle] || (type === 'email1' ? defaultCorps1 : '');
+  const messagePerso = p['roue_email_message'] || '';
+
+  // Date depuis les paramètres CRM ou depuis le body de la requête
+  const dateMode = p['roue_email_date_mode'] || 'precise';
+  const dateDebutIso = p['roue_email_date'] || date_venue || null;
+  const dateFinIso = p['roue_email_date_fin'] || null;
+  const fmtDateFR = iso => iso ? new Date(iso + 'T00:00:00').toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' }) : null;
+  const dateDebutFmt = fmtDateFR(dateDebutIso);
+  const dateFinFmt = fmtDateFR(dateFinIso);
+  const dateAffichee = dateMode === 'periode' && dateDebutFmt && dateFinFmt
+    ? `Du ${dateDebutFmt} au ${dateFinFmt}`
+    : (dateDebutFmt || 'À définir par le restaurant');
+  const dispoLabel = dateMode === 'periode' && dateDebutFmt && dateFinFmt
+    ? `Disponible du ${dateDebutFmt} au ${dateFinFmt}`
+    : (dateDebutFmt ? `Disponible à partir du ${dateDebutFmt}` : 'Disponible à partir du — À définir');
 
   const dateVenue = date_venue ? new Date(date_venue + 'T00:00:00') : null;
   const joursFR = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 
-  const dateFormatee = dateVenue ? dateVenue.toLocaleDateString('fr-FR') : 'À définir par le restaurant';
+  const dateFormatee = dateAffichee;
 
   const replace = str => str
     .replace(/{prenom}/g, to_prenom || '')
@@ -84,7 +99,7 @@ L'équipe du TED 🦁`;
 <div style="max-width:560px;margin:0 auto;">
 
   <div style="background:linear-gradient(180deg,#fff8c0 0%,#FFE033 50%,#FFC200 100%);padding:32px 24px;text-align:center;">
-    <div style="width:60px;height:60px;background:#111;border-radius:50%;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;color:#E8C547;">TED</div>
+    <img src="https://www.leted.fr/wp-content/uploads/2024/01/Logo-Le-TED.png" width="70" height="70" style="border-radius:50%;margin-bottom:14px;object-fit:cover;" />
     <div style="font-family:'Caveat',cursive;color:#111;font-size:34px;font-weight:700;line-height:1.1;">Grand Jeux du <span style="font-family:Arial,sans-serif;font-weight:900;font-size:30px;letter-spacing:1px;">TED</span></div>
     <div style="color:#5a4500;font-size:11px;letter-spacing:2px;margin-top:8px;text-transform:uppercase;">Restaurant &amp; Club</div>
   </div>
@@ -100,7 +115,7 @@ L'équipe du TED 🦁`;
         <div style="color:#B8960C;font-size:18px;font-weight:700;">${replace('{emoji} {recompense}')}</div>
       </div>
       <div style="font-size:42px;margin-bottom:12px;">🥳</div>
-      <div style="color:#888;font-size:12px;font-style:italic;">Disponible à partir du ${dateFormatee}</div>
+      <div style="color:#888;font-size:12px;font-style:italic;">${dispoLabel}</div>
     </div>
 
     <div style="border:1.5px solid #E8C547;border-radius:12px;padding:22px 24px;margin-bottom:28px;">
@@ -118,7 +133,7 @@ L'équipe du TED 🦁`;
         <span style="font-size:20px;flex-shrink:0;">📅</span>
         <div>
           <div style="font-size:13px;font-weight:700;color:#111;margin-bottom:2px;">Date de retrait de votre cadeau</div>
-          <div style="font-size:13px;color:#B8960C;font-weight:700;">${dateFormatee}</div>
+          <div style="font-size:13px;color:#B8960C;font-weight:700;">${dateAffichee}</div>
         </div>
       </div>
 
@@ -130,6 +145,8 @@ L'équipe du TED 🦁`;
         </div>
       </div>
     </div>
+
+    ${messagePerso ? `<p style="color:#888;font-size:13px;font-style:italic;line-height:1.8;margin:0 0 28px;">${messagePerso.replace(/\n/g,'<br>')}</p>` : ''}
 
     <div style="text-align:center;margin-bottom:28px;">
       <a href="https://ted-crm.pages.dev/reserver.html" style="display:inline-block;background:#E8C547;color:#111;font-weight:700;font-size:14px;padding:14px 36px;border-radius:8px;text-decoration:none;">Réserver ma table</a>
@@ -143,6 +160,7 @@ L'équipe du TED 🦁`;
   </div>
 
   <div style="background:#111;padding:22px 24px;text-align:center;">
+    <img src="https://www.leted.fr/wp-content/uploads/2024/01/Logo-Le-TED.png" width="40" height="40" style="border-radius:50%;margin-bottom:8px;object-fit:cover;opacity:0.9;" />
     <div style="color:#E8C547;font-size:13px;font-weight:700;margin-bottom:4px;">Le TED — Restaurant &amp; Club</div>
     <div style="color:#888;font-size:12px;margin-bottom:4px;">5 Rue Professeur Rochaix, 69003 Lyon</div>
     <div style="color:#888;font-size:12px;margin-bottom:14px;">04 72 02 20 20</div>

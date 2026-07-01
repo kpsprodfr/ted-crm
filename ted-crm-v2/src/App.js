@@ -3718,10 +3718,10 @@ function RouePage({ showToast }) {
   const [email1DateMode, setEmail1DateMode] = useState('precise'); // 'precise' | 'periode'
   const [email1CalOpen, setEmail1CalOpen] = useState(null); // null | 'debut' | 'fin'
   const [email1CalMonth, setEmail1CalMonth] = useState(() => { const d = new Date(); return { y: d.getFullYear(), m: d.getMonth() }; });
+  const [email1Message, setEmail1Message] = useState('');
   const [savingParam, setSavingParam] = useState(false);
   const [showEmail1TestModal, setShowEmail1TestModal] = useState(false);
   const [email1TestMail, setEmail1TestMail] = useState('');
-  const [showEmail1EmojiPicker, setShowEmail1EmojiPicker] = useState(false);
   const email1CorpsRef = useRef(null);
 
   useEffect(() => {
@@ -3754,6 +3754,7 @@ function RouePage({ showToast }) {
       if (p['roue_email_date']) setEmail1Date(p['roue_email_date']);
       if (p['roue_email_date_fin']) setEmail1DateFin(p['roue_email_date_fin']);
       if (p['roue_email_date_mode']) setEmail1DateMode(p['roue_email_date_mode']);
+      if (p['roue_email_message']) setEmail1Message(p['roue_email_message']);
     } finally {
       setLoading(false);
     }
@@ -3816,16 +3817,15 @@ function RouePage({ showToast }) {
   }
 
   async function handleSaveEmail1() {
-    console.log('save clicked', email1Objet, email1Corps);
     setSavingParam(true);
     try {
       await Promise.all([
         saveParam('roue_email1_delai', email1Delai),
         saveParam('roue_email1_objet', email1Objet),
-        saveParam('roue_email1_corps', email1Corps),
         saveParam('roue_email_date', email1Date),
         saveParam('roue_email_date_fin', email1DateFin),
         saveParam('roue_email_date_mode', email1DateMode),
+        saveParam('roue_email_message', email1Message),
       ]);
       showToast('✅ Modifications enregistrées');
     } catch(e) {
@@ -4029,14 +4029,10 @@ function RouePage({ showToast }) {
               ? (dateDebut ? `Disponible à partir du ${dateDebut}` : 'Disponible à partir du — À définir')
               : (dateDebut && dateFin ? `Disponible du ${dateDebut} au ${dateFin}` : 'Disponible — dates à définir');
 
-            // ── substitution corps pour aperçu ─────────────────────────
-            const previewCorps = (email1Corps || '')
-              .replace(/{prenom}/g, 'Karl')
-              .replace(/{nom}/g, 'Sounier')
-              .replace(/{recompense}/g, 'Bouteille de Champagne')
-              .replace(/{emoji}/g, '🍾')
-              .replace(/{date}/g, dateAffichee)
-              .replace(/\n/g, '<br>');
+            // ── message perso pour aperçu ──────────────────────────────
+            const previewMessage = email1Message
+              ? email1Message.replace(/\n/g, '<br>')
+              : '';
 
             // ── mini calendrier ────────────────────────────────────────
             const CalPicker = ({ which }) => {
@@ -4081,13 +4077,12 @@ function RouePage({ showToast }) {
             // ── aperçu HTML ────────────────────────────────────────────
             const previewHtml = `<div style="font-family:Arial,sans-serif;font-size:13px;">
   <div style="background:linear-gradient(180deg,#fff8c0 0%,#FFE033 50%,#FFC200 100%);padding:24px 18px;text-align:center;">
-    <div style="width:44px;height:44px;background:#111;border-radius:50%;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;color:#E8C547;">TED</div>
+    <img src="https://www.leted.fr/wp-content/uploads/2024/01/Logo-Le-TED.png" width="70" height="70" style="border-radius:50%;margin-bottom:14px;object-fit:cover;" />
     <div style="color:#111;font-size:22px;font-weight:700;line-height:1.1;">Grand Jeux du <span style="font-weight:900;font-size:20px;letter-spacing:1px;">TED</span></div>
     <div style="color:#5a4500;font-size:10px;letter-spacing:2px;margin-top:6px;text-transform:uppercase;">Restaurant &amp; Club</div>
   </div>
   <div style="background:#fff;padding:20px 18px;">
-    <p style="color:#333;font-size:13px;margin:0 0 14px;line-height:1.6;">Bonjour <strong style="color:#111;">Karl Sounier</strong>,</p>
-    <p style="color:#444;font-size:13px;line-height:1.7;margin:0 0 18px;">${previewCorps}</p>
+    <p style="color:#333;font-size:13px;margin:0 0 18px;line-height:1.6;">Bonjour <strong style="color:#111;">Karl Sounier</strong>,</p>
     <div style="background:rgba(232,197,71,0.12);border:1.5px solid rgba(232,197,71,0.4);border-radius:12px;padding:20px 16px;text-align:center;margin-bottom:16px;">
       <div style="color:#111;font-size:20px;font-weight:700;margin-bottom:12px;">Votre récompense</div>
       <div style="background:#fff;border:1.5px solid rgba(232,197,71,0.5);border-radius:8px;padding:12px 16px;margin-bottom:12px;">
@@ -4102,10 +4097,12 @@ function RouePage({ showToast }) {
       <div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;"><span style="font-size:16px;">📅</span><div><div style="font-size:12px;font-weight:700;color:#111;margin-bottom:2px;">Date de retrait de votre cadeau</div><div style="font-size:12px;color:#B8960C;font-weight:700;">${dateAffichee}</div></div></div>
       <div style="display:flex;gap:10px;align-items:flex-start;"><span style="font-size:16px;">👥</span><div><div style="font-size:12px;font-weight:700;color:#111;margin-bottom:2px;">Réservation requise</div><div style="font-size:12px;color:#666;">5 personnes minimum</div></div></div>
     </div>
+    ${previewMessage ? `<p style="color:#888;font-size:12px;font-style:italic;line-height:1.7;margin:0 0 18px;">${previewMessage}</p>` : ''}
     <div style="text-align:center;margin-bottom:18px;"><a href="#" style="display:inline-block;background:#E8C547;color:#111;font-weight:700;font-size:13px;padding:12px 28px;border-radius:8px;text-decoration:none;">Réserver ma table</a></div>
     <p style="color:#666;font-size:12px;line-height:1.8;margin:0;border-top:0.5px solid #eee;padding-top:14px;">On vous attend avec impatience.<br>À très bientôt,<br><strong style="color:#111;">L'équipe du TED</strong></p>
   </div>
   <div style="background:#111;padding:16px;text-align:center;">
+    <img src="https://www.leted.fr/wp-content/uploads/2024/01/Logo-Le-TED.png" width="40" height="40" style="border-radius:50%;margin-bottom:8px;object-fit:cover;opacity:0.9;" />
     <div style="color:#E8C547;font-size:12px;font-weight:700;margin-bottom:3px;">Le TED — Restaurant &amp; Club</div>
     <div style="color:#888;font-size:11px;margin-bottom:3px;">5 Rue Professeur Rochaix, 69003 Lyon</div>
     <div style="color:#888;font-size:11px;margin-bottom:10px;">04 72 02 20 20</div>
@@ -4179,48 +4176,8 @@ function RouePage({ showToast }) {
                   </div>
 
                   <div>
-                    <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Corps du mail</label>
-                    <textarea ref={email1CorpsRef} id="email1-corps-ta" value={email1Corps} onChange={e=>setEmail1Corps(e.target.value)} rows={8} style={{ ...iS, marginTop:6, resize:'vertical', lineHeight:1.6 }} />
-                    <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:8, position:'relative' }}>
-                      {[
-                        { label:'{prenom}', val:'{prenom}' },
-                        { label:'{nom}', val:'{nom}' },
-                        { label:'{recompense}', val:'{recompense}' },
-                        { label:'{date}', val:'{date}' },
-                        { label:'{lien_reservation}', val:'https://ted-crm.pages.dev/reserver.html' },
-                      ].map(v => (
-                        <span key={v.label} onClick={() => {
-                          const ta = email1CorpsRef.current || document.getElementById('email1-corps-ta');
-                          if (!ta) return;
-                          const start = ta.selectionStart, end = ta.selectionEnd;
-                          const next = email1Corps.slice(0, start) + v.val + email1Corps.slice(end);
-                          setEmail1Corps(next);
-                          setTimeout(() => { ta.focus(); ta.setSelectionRange(start + v.val.length, start + v.val.length); }, 0);
-                        }} style={{ background:'#f0f0f0', borderRadius:8, padding:'4px 10px', fontSize:12, cursor:'pointer', fontFamily:'monospace', userSelect:'none' }}>{v.label}</span>
-                      ))}
-                      <span onClick={() => setShowEmail1EmojiPicker(v => !v)} style={{ background:'#f0f0f0', borderRadius:8, padding:'4px 10px', fontSize:12, cursor:'pointer', userSelect:'none' }}>😀 Emoji</span>
-                      {showEmail1EmojiPicker && (
-                        <>
-                          <div onClick={() => setShowEmail1EmojiPicker(false)} style={{ position:'fixed', inset:0, zIndex:998 }} />
-                          <div style={{ position:'absolute', top:'100%', left:0, marginTop:4, background:'#fff', border:'1.5px solid #eee', borderRadius:12, padding:12, zIndex:999, boxShadow:'0 8px 24px rgba(0,0,0,0.12)', display:'flex', flexWrap:'wrap', gap:4, width:280 }}>
-                            {['😀','😂','🥰','😍','🤩','😎','🥳','🎉','🎊','🏆','🥇','⭐','✨','💫','🌟','🍾','🥂','🍷','🥩','🍽️','🦁','🎰','🎁','💎','👑','🙏','❤️','🔥','💪','👏'].map(em => (
-                              <span key={em} onClick={() => {
-                                const ta = email1CorpsRef.current || document.getElementById('email1-corps-ta');
-                                if (!ta) return;
-                                const start = ta.selectionStart, end = ta.selectionEnd;
-                                const next = email1Corps.slice(0, start) + em + email1Corps.slice(end);
-                                setEmail1Corps(next);
-                                setShowEmail1EmojiPicker(false);
-                                setTimeout(() => { ta.focus(); ta.setSelectionRange(start + em.length, start + em.length); }, 0);
-                              }} style={{ fontSize:20, cursor:'pointer', padding:4, borderRadius:6, lineHeight:1 }}
-                                onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'}
-                                onMouseLeave={e=>e.currentTarget.style.background='transparent'}
-                              >{em}</span>
-                            ))}
-                          </div>
-                        </>
-                      )}
-                    </div>
+                    <label style={{ fontSize:12, fontWeight:600, color:'#666', textTransform:'uppercase' }}>Message personnalisé <span style={{ fontWeight:400, textTransform:'none', color:'#aaa' }}>(optionnel)</span></label>
+                    <textarea value={email1Message} onChange={e=>setEmail1Message(e.target.value)} rows={3} placeholder="Ex: Nous vous contacterons pour confirmer votre créneau..." style={{ ...iS, marginTop:6, resize:'none', lineHeight:1.6 }} />
                   </div>
                   <div style={{ display:'flex', justifyContent:'space-between', gap:10 }}>
                     <button onClick={() => setShowEmail1TestModal(true)} style={{ ...btnG, display:'flex', alignItems:'center', gap:6, border:'1.5px solid #E8C547' }}><Send size={13} strokeWidth={2}/> Envoyer un test</button>
