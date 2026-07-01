@@ -228,7 +228,7 @@ export async function onRequestPost(context) {
       <!-- CTA -->
       <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top:36px;">
         <tr><td align="center">
-          <a href="https://letedchassieu.fr/reservation" style="display:inline-block;background:#F0A830;color:#111111;font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;text-decoration:none;padding:18px 48px;border-radius:4px;">Réserver ma table</a>
+          <a href="https://ted-crm.pages.dev/reserver.html" style="display:inline-block;background:#F0A830;color:#111111;font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;text-decoration:none;padding:18px 48px;border-radius:4px;">Réserver ma table</a>
         </td></tr>
         <tr><td align="center" style="padding-top:14px;">
           <p style="margin:0;font-size:12px;color:#aaaaaa;">ou appelez-nous &nbsp;·&nbsp; <a href="tel:0478906780" style="color:#F0A830;text-decoration:none;font-weight:600;">04 78 90 67 80</a></p>
