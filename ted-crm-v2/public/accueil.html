@@ -263,7 +263,7 @@
             <circle id="roue-ring" cx="17" cy="17" r="16" fill="none" stroke="rgba(0,0,0,0.5)" stroke-width="2.5" stroke-dasharray="100.5" stroke-dashoffset="0" style="animation:closeCountdown 5s linear forwards;"></circle>
           </svg>
         </div>
-        <button id="roue-close" disabled style="position:absolute;inset:0;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.3);border:1px solid rgba(255,255,255,0.7);font-size:13px;display:flex;align-items:center;justify-content:center;color:rgba(0,0,0,0.2);font-family:inherit;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.9),0 2px 8px rgba(0,0,0,0.1);cursor:not-allowed;transition:color .3s;">✕</button>
+        <button id="roue-close" disabled style="position:absolute;inset:0;width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.3);border:1px solid rgba(255,255,255,0.7);font-size:13px;display:flex;align-items:center;justify-content:center;color:rgba(0,0,0,0.35);font-family:inherit;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.9),0 2px 8px rgba(0,0,0,0.1);cursor:not-allowed;transition:color .3s;font-weight:700;"><span id="roue-close-label">5</span></button>
       </div>
 
       <!-- Title + logo 3D -->
@@ -1422,14 +1422,20 @@
 
       // Countdown fermeture
       const closeBtn = document.getElementById('roue-close');
+      const closeLabel = document.getElementById('roue-close-label');
       let seconds = 5;
       const cInterval = setInterval(() => {
         seconds--;
-        if (seconds <= 0) {
+        if (seconds > 0) {
+          if (closeLabel) closeLabel.textContent = seconds;
+        } else {
           clearInterval(cInterval);
+          if (closeLabel) closeLabel.textContent = '✕';
           closeBtn.disabled = false;
           closeBtn.style.color  = 'rgba(0,0,0,0.6)';
           closeBtn.style.cursor = 'pointer';
+          closeBtn.style.fontSize = '14px';
+          closeBtn.style.fontWeight = 'normal';
           const svgWrap = document.getElementById('roue-countdown-svg');
           if (svgWrap) svgWrap.style.display = 'none';
         }
