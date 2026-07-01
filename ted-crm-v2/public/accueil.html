@@ -720,148 +720,206 @@
     if (!recompenses.length) { console.log('2f. 0 récompenses disponibles → abort'); return; }
     if (!isPreview && localStorage.getItem('ted_roue_joue')) { console.log('2g. déjà joué (localStorage) → abort'); return; }
 
-    // ── Canvas ─────────────────────────────────────────────────────────────────
-    const canvas = document.getElementById('roue-canvas');
-    const ctx    = canvas.getContext('2d');
-
-    function totalProba() {
-      return recompenses.reduce((s, r) => s + parseFloat(r.probabilite || 1), 0);
+    // ── 10 sections alternées GAGNÉ/PERDU ──────────────────────────────────────
+    const gainItems = recompenses.length > 0 ? recompenses : [{ nom: 'Cadeau', emoji: '🎁' }];
+    const roueSections = [];
+    for (let i = 0; i < 10; i++) {
+      if (i % 2 === 0) {
+        roueSections.push(gainItems[(i / 2) % gainItems.length]);
+      } else {
+        roueSections.push({ nom: 'Perdu', emoji: '🫤' });
+      }
     }
+    console.log('2h. roueSections =', roueSections.map(s => s.nom));
 
     function drawWheel(rotation) {
+      const canvas = document.getElementById('roue-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
       const dpr = window.devicePixelRatio || 1;
       const displaySize = 280;
       if (canvas.width !== displaySize * dpr) {
-        canvas.width  = displaySize * dpr;
+        canvas.width = displaySize * dpr;
         canvas.height = displaySize * dpr;
-        canvas.style.width  = displaySize + 'px';
+        canvas.style.width = displaySize + 'px';
         canvas.style.height = displaySize + 'px';
       }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const S = displaySize, cx = S / 2, cy = S / 2;
-      const outerR = S / 2;  // 140
-      const rimW   = 14;
-      const innerR = outerR - rimW;  // 126
-      const total  = totalProba();
+      const S = displaySize, cx = S/2, cy = S/2;
+      const outerR = S/2 - 1;
+      const rimW = 16;
+      const innerR = outerR - rimW;
+      const n = roueSections.length;
+      const arc = (2 * Math.PI) / n;
 
       ctx.clearRect(0, 0, S, S);
 
-      // Outer glow
       ctx.save();
-      ctx.shadowColor = '#C9A84C'; ctx.shadowBlur = 28;
-      ctx.beginPath(); ctx.arc(cx, cy, outerR, 0, 2 * Math.PI);
-      ctx.strokeStyle = 'rgba(201,168,76,0.7)'; ctx.lineWidth = 3; ctx.stroke();
+      ctx.shadowColor = '#FFD700';
+      ctx.shadowBlur = 30;
+      ctx.beginPath();
+      ctx.arc(cx, cy, outerR, 0, 2*Math.PI);
+      ctx.strokeStyle = 'rgba(255,215,0,0.6)';
+      ctx.lineWidth = 4;
+      ctx.stroke();
       ctx.restore();
 
-      // Drop shadow
       ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 24; ctx.shadowOffsetY = 8;
-      ctx.beginPath(); ctx.arc(cx, cy, outerR, 0, 2 * Math.PI);
-      ctx.fillStyle = '#1a1200'; ctx.fill();
+      ctx.shadowColor = 'rgba(0,0,0,0.55)';
+      ctx.shadowBlur = 24;
+      ctx.shadowOffsetY = 8;
+      ctx.beginPath();
+      ctx.arc(cx, cy, outerR, 0, 2*Math.PI);
+      ctx.fillStyle = '#000';
+      ctx.fill();
       ctx.restore();
 
-      // Outer rim — #1a1200 épais avec biseau doré
-      ctx.beginPath(); ctx.arc(cx, cy, outerR, 0, 2 * Math.PI);
-      ctx.fillStyle = '#1a1200'; ctx.fill();
+      const rimShadow = ctx.createLinearGradient(cx - outerR, cy - outerR, cx + outerR, cy + outerR);
+      rimShadow.addColorStop(0, '#555560');
+      rimShadow.addColorStop(0.35, '#222228');
+      rimShadow.addColorStop(0.65, '#111116');
+      rimShadow.addColorStop(1, '#33333a');
+      ctx.beginPath();
+      ctx.arc(cx, cy, outerR, 0, 2*Math.PI);
+      ctx.fillStyle = rimShadow;
+      ctx.fill();
 
-      // Rim bevel highlight (bord supérieur doré)
-      const rimHL = ctx.createLinearGradient(cx - outerR, cy - outerR, cx + outerR * 0.4, cy + outerR * 0.4);
-      rimHL.addColorStop(0, 'rgba(201,168,76,0.35)');
-      rimHL.addColorStop(0.5, 'rgba(201,168,76,0.08)');
-      rimHL.addColorStop(1, 'rgba(0,0,0,0.15)');
-      ctx.beginPath(); ctx.arc(cx, cy, outerR, 0, 2 * Math.PI);
-      ctx.fillStyle = rimHL; ctx.fill();
+      const rimHL = ctx.createLinearGradient(cx - outerR, cy - outerR, cx + outerR * 0.3, cy + outerR * 0.3);
+      rimHL.addColorStop(0, 'rgba(255,255,255,0.18)');
+      rimHL.addColorStop(0.4, 'rgba(255,255,255,0.04)');
+      rimHL.addColorStop(1, 'rgba(0,0,0,0.1)');
+      ctx.beginPath();
+      ctx.arc(cx, cy, outerR, 0, 2*Math.PI);
+      ctx.fillStyle = rimHL;
+      ctx.fill();
 
-      // Inner rim lip — trait doré
-      ctx.beginPath(); ctx.arc(cx, cy, innerR + 1, 0, 2 * Math.PI);
-      ctx.strokeStyle = '#C9A84C'; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(cx, cy, outerR - rimW + 2, 0, 2*Math.PI);
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(cx, cy, outerR - rimW + 2, 0, 2*Math.PI);
+      ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
 
-      // Segments
-      let start = rotation - Math.PI / 2;
-      recompenses.forEach((r, i) => {
-        const slice    = (parseFloat(r.probabilite || 1) / total) * 2 * Math.PI;
-        const end      = start + slice;
-        const midAngle = start + slice / 2;
-        const ci       = i % 2;
+      for (let i = 0; i < n; i++) {
+        const startAngle = rotation + i * arc - Math.PI/2;
+        const endAngle = startAngle + arc;
+        const midAngle = startAngle + arc / 2;
+        const seg = roueSections[i];
+        const ci = i % 2;
+        const isWin = !(seg.nom || '').toLowerCase().includes('perdu');
 
-        const gx1 = cx + (innerR * 0.15) * Math.cos(midAngle);
-        const gy1 = cy + (innerR * 0.15) * Math.sin(midAngle);
+        const gx1 = cx + (innerR * 0.2) * Math.cos(midAngle);
+        const gy1 = cy + (innerR * 0.2) * Math.sin(midAngle);
         const gx2 = cx + innerR * Math.cos(midAngle);
         const gy2 = cy + innerR * Math.sin(midAngle);
         const segGrad = ctx.createLinearGradient(gx1, gy1, gx2, gy2);
         if (ci === 0) {
-          // Doré brillant
-          segGrad.addColorStop(0, '#FFE08C');
-          segGrad.addColorStop(0.4, '#C9A84C');
-          segGrad.addColorStop(1, '#8A6820');
+          segGrad.addColorStop(0, '#FFFACC');
+          segGrad.addColorStop(0.45, '#FFD700');
+          segGrad.addColorStop(1, '#B87800');
         } else {
-          // Noir profond
-          segGrad.addColorStop(0, '#2a1a00');
-          segGrad.addColorStop(0.5, '#1a1200');
-          segGrad.addColorStop(1, '#0d0900');
+          segGrad.addColorStop(0, '#2c2c36');
+          segGrad.addColorStop(0.45, '#111116');
+          segGrad.addColorStop(1, '#000');
         }
-        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, innerR, start, end); ctx.closePath();
-        ctx.fillStyle = segGrad; ctx.fill();
 
-        // Dividers — biseau doré
-        ctx.strokeStyle = '#C9A84C'; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, innerR, startAngle, endAngle);
+        ctx.closePath();
+        ctx.fillStyle = segGrad;
+        ctx.fill();
 
-        // Gloss overlay
+        ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
         const glossGrad = ctx.createRadialGradient(cx, cy - innerR * 0.1, 0, cx, cy, innerR);
-        glossGrad.addColorStop(0, 'rgba(255,255,255,0.18)'); glossGrad.addColorStop(0.4, 'rgba(255,255,255,0.04)');
-        glossGrad.addColorStop(1, 'rgba(0,0,0,0.12)');
-        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, innerR, start, end); ctx.closePath();
-        ctx.fillStyle = glossGrad; ctx.fill();
+        glossGrad.addColorStop(0, 'rgba(255,255,255,0.22)');
+        glossGrad.addColorStop(0.4, 'rgba(255,255,255,0.06)');
+        glossGrad.addColorStop(1, 'rgba(0,0,0,0.15)');
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, innerR, startAngle, endAngle);
+        ctx.closePath();
+        ctx.fillStyle = glossGrad;
+        ctx.fill();
 
-        // Text — blanc bold
         ctx.save();
-        ctx.translate(cx, cy); ctx.rotate(midAngle); ctx.textAlign = 'right';
-        ctx.font = 'bold 11px -apple-system, Inter, sans-serif';
-        ctx.fillStyle = '#ffffff';
-        ctx.shadowColor = ci === 0 ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.8)';
+        ctx.translate(cx, cy);
+        ctx.rotate(midAngle);
+        ctx.textAlign = 'right';
+        ctx.font = '800 11px -apple-system, Inter, sans-serif';
+        ctx.fillStyle = ci === 0 ? '#3a2000' : 'rgba(255,255,255,0.9)';
+        ctx.shadowColor = ci === 0 ? 'rgba(255,240,100,0.5)' : 'rgba(0,0,0,0.7)';
         ctx.shadowBlur = 4;
-        const isWin = !(r.nom || '').toLowerCase().includes('perdu');
         ctx.fillText(isWin ? 'GAGNÉ' : 'PERDU', innerR - 10, 4);
-        ctx.shadowBlur = 0; ctx.restore();
+        ctx.shadowBlur = 0;
+        ctx.restore();
+      }
 
-        start = end;
-      });
-
-      // Edge vignette
       const vignette = ctx.createRadialGradient(cx, cy, innerR * 0.7, cx, cy, innerR);
-      vignette.addColorStop(0, 'rgba(0,0,0,0)'); vignette.addColorStop(1, 'rgba(0,0,0,0.2)');
-      ctx.beginPath(); ctx.arc(cx, cy, innerR, 0, 2 * Math.PI);
-      ctx.fillStyle = vignette; ctx.fill();
+      vignette.addColorStop(0, 'rgba(0,0,0,0)');
+      vignette.addColorStop(1, 'rgba(0,0,0,0.2)');
+      ctx.beginPath();
+      ctx.arc(cx, cy, innerR, 0, 2*Math.PI);
+      ctx.fillStyle = vignette;
+      ctx.fill();
 
-      // Bulbs chasing wave
       const bulbCount = 20;
       const now = Date.now();
       for (let i = 0; i < bulbCount; i++) {
-        const a  = (i / bulbCount) * 2 * Math.PI - Math.PI / 2;
+        const a = (i / bulbCount) * 2 * Math.PI - Math.PI/2;
         const bx = cx + (outerR - 8) * Math.cos(a);
         const by = cy + (outerR - 8) * Math.sin(a);
         const phase = (now / 600 - i / bulbCount * bulbCount) % bulbCount;
-        const bright = 0.3 + 0.7 * Math.pow(Math.max(0, Math.cos((phase / bulbCount) * 2 * Math.PI)), 2);
-        ctx.beginPath(); ctx.arc(bx, by, 4.5, 0, 2 * Math.PI);
-        ctx.fillStyle = `rgba(255,240,100,${bright.toFixed(2)})`;
-        ctx.shadowColor = '#FFD700'; ctx.shadowBlur = bright > 0.6 ? 16 : 4;
-        ctx.fill(); ctx.shadowBlur = 0;
+        const brightness = 0.3 + 0.7 * Math.pow(Math.max(0, Math.cos((phase / bulbCount) * 2 * Math.PI)), 2);
+        ctx.beginPath();
+        ctx.arc(bx, by, 4.5, 0, 2*Math.PI);
+        ctx.fillStyle = `rgba(255,240,100,${brightness.toFixed(2)})`;
+        ctx.shadowColor = '#FFD700';
+        ctx.shadowBlur = brightness > 0.6 ? 16 : 4;
+        ctx.fill();
+        ctx.shadowBlur = 0;
       }
 
-      // Center hub chrome
       ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 3;
-      ctx.beginPath(); ctx.arc(cx, cy, 18, 0, 2 * Math.PI); ctx.fillStyle = '#111'; ctx.fill();
+      ctx.shadowColor = 'rgba(0,0,0,0.6)';
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetY = 3;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 18, 0, 2*Math.PI);
+      ctx.fillStyle = '#111';
+      ctx.fill();
       ctx.restore();
+
       const hub = ctx.createRadialGradient(cx - 5, cy - 6, 1, cx, cy, 18);
-      hub.addColorStop(0, '#ffffff'); hub.addColorStop(0.25, '#e0e0e8');
-      hub.addColorStop(0.6, '#888898'); hub.addColorStop(1, '#333340');
-      ctx.beginPath(); ctx.arc(cx, cy, 18, 0, 2 * Math.PI); ctx.fillStyle = hub; ctx.fill();
-      ctx.beginPath(); ctx.arc(cx, cy, 18, 0, 2 * Math.PI);
-      ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1.5; ctx.stroke();
+      hub.addColorStop(0, '#ffffff');
+      hub.addColorStop(0.25, '#e0e0e8');
+      hub.addColorStop(0.6, '#888898');
+      hub.addColorStop(1, '#333340');
+      ctx.beginPath();
+      ctx.arc(cx, cy, 18, 0, 2*Math.PI);
+      ctx.fillStyle = hub;
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, 18, 0, 2*Math.PI);
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
       const dot = ctx.createRadialGradient(cx - 2, cy - 2, 0, cx, cy, 6);
-      dot.addColorStop(0, '#fff'); dot.addColorStop(1, '#aaa');
-      ctx.beginPath(); ctx.arc(cx, cy, 6, 0, 2 * Math.PI); ctx.fillStyle = dot; ctx.fill();
+      dot.addColorStop(0, '#fff');
+      dot.addColorStop(1, '#aaa');
+      ctx.beginPath();
+      ctx.arc(cx, cy, 6, 0, 2*Math.PI);
+      ctx.fillStyle = dot;
+      ctx.fill();
     }
 
     function idleLoop() {
@@ -869,7 +927,10 @@
       idleTimer = setTimeout(() => requestAnimationFrame(idleLoop), 160);
     }
 
-    // ── Tirage pondéré ─────────────────────────────────────────────────────────
+    // ── Tirage pondéré sur les vraies récompenses ──────────────────────────────
+    function totalProba() {
+      return recompenses.reduce((s, r) => s + parseFloat(r.probabilite || 1), 0);
+    }
     function weightedDraw() {
       const total = totalProba();
       let rand = Math.random() * total;
@@ -889,24 +950,30 @@
       });
     }
 
-    // ── Spin ───────────────────────────────────────────────────────────────────
+    // ── Spin — arcs égaux sur roueSections (10 segments) ──────────────────────
     function spin() {
       if (spinning || triesLeft <= 0) return;
 
-      const winnerIdx = weightedDraw();
-      const total     = totalProba();
-      let cumul = 0;
-      for (let k = 0; k < winnerIdx; k++) {
-        cumul += (parseFloat(recompenses[k].probabilite || 1) / total) * 2 * Math.PI;
-      }
-      const slice       = (parseFloat(recompenses[winnerIdx].probabilite || 1) / total) * 2 * Math.PI;
-      const midFromZero = cumul + slice / 2;
+      // Tirage pondéré sur les vraies récompenses
+      const winnerRecoIdx = weightedDraw();
+      const isWin = !(recompenses[winnerRecoIdx].nom || '').toLowerCase().includes('perdu');
+
+      // Choisir un slot visuel dans roueSections
+      const gainSlots  = [0, 2, 4, 6, 8]; // indices pairs = GAGNÉ
+      const perduSlots = [1, 3, 5, 7, 9]; // indices impairs = PERDU
+      const slots = isWin ? gainSlots : perduSlots;
+      const targetSlot = slots[Math.floor(Math.random() * slots.length)];
+
+      gainResult = recompenses[winnerRecoIdx];
+
+      const n = roueSections.length; // 10
+      const arc = (2 * Math.PI) / n;
+      const midFromZero = targetSlot * arc + arc / 2;
       const extraSpins  = (7 + Math.floor(Math.random() * 3)) * 2 * Math.PI;
       const norm        = currentAngle % (2 * Math.PI);
       const targetOffset = (2 * Math.PI - midFromZero - norm + 2 * Math.PI) % (2 * Math.PI);
       const targetAngle  = currentAngle + extraSpins + targetOffset;
 
-      gainResult = recompenses[winnerIdx];
       triesLeft--;
       spinning = true;
       const btn = document.getElementById('roue-jouer-btn');
