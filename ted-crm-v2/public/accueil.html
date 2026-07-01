@@ -123,10 +123,13 @@
     #popup-card {
       background: linear-gradient(160deg, #1c1c1c 0%, #111 100%);
       border: 1px solid #2a2a2a; border-radius: 20px;
-      width: 100%; max-width: 360px; overflow: hidden;
+      width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto; overflow-x: hidden;
       transform: scale(0.92); opacity: 0;
       transition: transform 300ms cubic-bezier(0.34, 1.4, 0.64, 1), opacity 300ms ease;
       position: relative;
+    }
+    @media (max-width: 480px) {
+      #popup-card { max-width: 96vw; max-height: 92vh; border-radius: 16px; }
     }
     #popup-overlay.open #popup-card { transform: scale(1); opacity: 1; }
 
@@ -163,7 +166,7 @@
       border-radius: 20px 20px 0 0; overflow: hidden;
     }
     #popup-flyer img {
-      width: 100%; max-height: 220px; object-fit: cover; display: block;
+      width: 100%; height: auto; display: block;
     }
     #popup-card.has-flyer #popup-body { padding-top: 18px; }
 
