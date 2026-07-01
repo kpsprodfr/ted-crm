@@ -863,7 +863,7 @@
         ctx.fillStyle = ci === 0 ? '#3a2000' : 'rgba(255,255,255,0.9)';
         ctx.shadowColor = ci === 0 ? 'rgba(255,240,100,0.5)' : 'rgba(0,0,0,0.7)';
         ctx.shadowBlur = 4;
-        ctx.fillText(isWin ? 'GAGNÉ' : 'PERDU', innerR - 10, 4);
+        ctx.fillText(ci === 0 ? 'GAGNÉ' : 'PERDU', innerR - 10, 4);
         ctx.shadowBlur = 0;
         ctx.restore();
       }
