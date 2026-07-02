@@ -107,7 +107,14 @@ Démarré le 2026-07-01. Une ligne par phase : fait / testé / résultat.
 
 **Fait** : `/api/backup-daily` (12 tables → KV `backup:YYYY-MM-DD`, rétention 30 j, checksum SHA-256, email récap à com.astegal@gmail.com, idempotent — GET cron sans secret, POST forcé JWT) · `/api/backups` (liste, JWT) · `/api/backup-restore` (upsert par lots de 200, non destructif, confirmation « RESTAURER », JWT) · page **Système** dans la sidebar CRM (liste des backups, bouton « Backup maintenant », restauration avec double confirmation) · namespace KV `ted-crm-backups` créé via l'API Cloudflare · cron pg_cron 02:00 UTC posé.
 **Testé** : build ✅ ; endpoints déployés et répondent ✅.
-**⏳ En attente d'une action manuelle** : le binding KV `BACKUPS` doit être ajouté dans le dashboard Cloudflare Pages (30 s — voir MAINTENANCE.md §2 ; l'ajout par wrangler.toml écraserait la config du dashboard, risque refusé). Dès le binding posé : le premier backup réel + une restauration de test valideront la phase.
+**Binding KV `BACKUPS` posé le 2026-07-02** (dashboard Cloudflare Pages). Validation finale en prod :
+- `GET /api/backup-daily` → idempotent confirmé (`skipped:true`, backup du jour déjà présent grâce au cron 02:00 UTC de la nuit).
+- `/api/backups` (JWT CRM) → **2 backups réels dans KV** : 2026-07-01 et 2026-07-02, 12 tables chacun (ex. clients:34, reservations:115, menu_produits:228), ~213 Ko, checksum SHA-256, 0 erreur.
+- **Cycle backup→restauration testé de bout en bout** : `POST /api/backup-restore` sans `confirm` → 400 rejeté ✅ ; restauration réelle de `menu_origines` (12 lignes, table non critique) depuis le backup du jour → `{ok:true, restored:12/12}`, tracée `restored_by`. Vérification post-restauration en base : mêmes 12 lignes, mêmes ID, données intactes — l'upsert par lots fonctionne sans casse.
+- `/api/health` → **statut global `ok`**, les 4 composants verts (env_vars, supabase 369ms, brevo 161ms, backups `last_backup:2026-07-02`).
+- **Pastille CRM confirmée verte.**
+
+**Phase 2 entièrement validée.**
 
 ## PHASE 3 — Surveillance autonome
 
@@ -144,10 +151,10 @@ Démarré le 2026-07-01. Une ligne par phase : fait / testé / résultat.
 
 **Désormais automatique** : backups quotidiens 02:00 (30 j, checksum, email récap) · reprise horaire des emails échoués (aucun email de gain ne peut plus être perdu) · surveillance 15 min + alerte email dédupliquée · retries réseau + reconnexion realtime dans le CRM · rate limiting · déploiement continu.
 
-**Reste à faire manuellement (une fois)** :
-1. **Binding KV** : Cloudflare Pages → ted-crm → Settings → Bindings → Add → KV namespace → nom `BACKUPS`, namespace `ted-crm-backups` → puis relancer un déploiement. Active : backups, rate limiting, dédup d'alertes → pastille verte.
-2. (Optionnel) `BACKUP_SECRET` dans les variables Cloudflare (`openssl rand -hex 24`) pour appeler `/api/run-tests` hors CRM.
-3. (Recommandé) Supabase → Authentication → activer la protection « leaked passwords ».
+**Reste à faire manuellement (optionnel)** :
+1. ~~Binding KV `BACKUPS`~~ — posé le 2026-07-02, backups + rate limiting + dédup d'alertes actifs, pastille verte confirmée.
+2. `BACKUP_SECRET` dans les variables Cloudflare (`openssl rand -hex 24`) pour appeler `/api/run-tests` hors CRM.
+3. Supabase → Authentication → activer la protection « leaked passwords ».
 
 **À surveiller (mensuel, 5 min)** : quota Brevo (~300 emails/jour gratuit, crédits SMS), page Système (tests verts, erreurs, file emails), espace Supabase. Checklist détaillée dans MAINTENANCE.md §5.
 
