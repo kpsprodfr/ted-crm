@@ -9,8 +9,8 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
 
     body {
-      background: #111;
-      color: #fff;
+      background: #fff;
+      color: #111;
       min-height: 100dvh;
       display: flex;
       flex-direction: column;
@@ -44,61 +44,61 @@
       #logo-img { clip-path: none !important; opacity: 1 !important; transition: none !important; }
     }
     #hero-title { font-size: 36px; font-weight: 900; color: #E8C547; letter-spacing: 3px; margin-top: 20px; }
-    #hero-sub   { font-size: 12px; color: #666; letter-spacing: 2px; margin-top: 6px; text-transform: uppercase; }
+    #hero-sub   { font-size: 12px; color: #888; letter-spacing: 2px; margin-top: 6px; text-transform: uppercase; }
     #hero-line  { width: 40px; height: 2px; background: #E8C547; border-radius: 2px; margin-top: 18px; }
 
     /* ── Soirées ────────────────────────────────────────────────────────────── */
     #soirees-section { width: 100%; max-width: 420px; padding: 0 24px; margin-top: 36px; }
     #soirees-label {
-      font-size: 11px; font-weight: 700; color: #E8C547;
+      font-size: 11px; font-weight: 700; color: #b8860b;
       letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 16px;
     }
     .soiree-item {
       display: flex; align-items: center;
-      padding: 14px 8px; border-bottom: 1px solid #222;
+      padding: 14px 8px; border-bottom: 1px solid #f0f0f0;
       cursor: pointer; border-radius: 8px; margin: 0 -8px;
       transition: background 150ms ease;
     }
     .soiree-item:last-child { border-bottom: none; }
-    .soiree-item:active { background: rgba(255,255,255,0.05); }
+    .soiree-item:active { background: rgba(0,0,0,0.05); }
     .soiree-info { flex: 1; min-width: 0; }
-    .soiree-nom  { font-size: 15px; font-weight: 600; color: #fff; }
-    .soiree-when { font-size: 12px; color: #555; margin-top: 3px; }
-    .soiree-chevron { font-size: 16px; color: #444; flex-shrink: 0; margin-left: 12px; }
+    .soiree-nom  { font-size: 15px; font-weight: 600; color: #111; }
+    .soiree-when { font-size: 12px; color: #999; margin-top: 3px; }
+    .soiree-chevron { font-size: 16px; color: #ccc; flex-shrink: 0; margin-left: 12px; }
 
     /* ── Sélecteur de langue (flottant haut droite) ──────────────────────── */
     #lang-selector {
       position: fixed; top: 14px; right: 16px; z-index: 300;
     }
     #lang-btn {
-      background: rgba(255,255,255,0.07); border: 1px solid #333;
-      color: #aaa; font-size: 11px; font-weight: 700; letter-spacing: 1px;
+      background: #f5f5f5; border: 1px solid #e0e0e0;
+      color: #666; font-size: 11px; font-weight: 700; letter-spacing: 1px;
       padding: 10px 16px; border-radius: 6px; cursor: pointer;
       min-height: 44px; min-width: 44px; font-size: 13px;
       transition: background 150ms ease; font-family: inherit;
     }
-    #lang-btn:hover { background: rgba(255,255,255,0.13); color: #fff; }
+    #lang-btn:hover { background: #eee; color: #111; }
     #lang-menu {
       position: absolute; top: calc(100% + 6px); right: 0;
-      background: #1c1c1c; border: 1px solid #333; border-radius: 8px;
+      background: #fff; border: 1px solid #eee; border-radius: 8px;
       overflow: hidden; min-width: 56px; display: none; z-index: 400;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
     }
     #lang-menu.open { display: block; }
     .lang-opt {
       display: block; width: 100%; padding: 8px 14px;
-      color: #bbb; font-size: 12px; font-weight: 700; letter-spacing: 0.5px;
+      color: #666; font-size: 12px; font-weight: 700; letter-spacing: 0.5px;
       background: none; border: none; cursor: pointer; text-align: left;
       transition: background 100ms ease; font-family: inherit;
     }
-    .lang-opt:hover { background: #2a2a2a; color: #fff; }
-    .lang-opt.active { color: #E8C547; }
+    .lang-opt:hover { background: #f5f5f5; color: #111; }
+    .lang-opt.active { color: #b8860b; }
 
     /* ── Boutons ────────────────────────────────────────────────────────────── */
     #cta-bar {
       position: fixed; bottom: 0; left: 0; right: 0;
       padding: 16px 20px calc(16px + env(safe-area-inset-bottom, 0px));
-      background: linear-gradient(to bottom, transparent 0%, #111 28%);
+      background: linear-gradient(to bottom, transparent 0%, #fff 28%);
       display: flex; flex-direction: column; gap: 10px;
     }
     .btn-cta {
@@ -109,7 +109,7 @@
     }
     .btn-cta:active { opacity: 0.75; }
     .btn-primary { background: #E8C547; color: #111; }
-    .btn-outline  { background: transparent; color: #E8C547; }
+    .btn-outline  { background: transparent; color: #111; }
 
     /* ── Popup soirée ───────────────────────────────────────────────────────── */
     #popup-overlay {
@@ -333,7 +333,7 @@
             <img src="/logo192.png" style="position:absolute;inset:0;width:100px;height:100px;object-fit:contain;filter:brightness(0);transform:translateZ(0px);" alt="Le TED">
           </div>
         </div>
-        <h1 style="font-size:26px;color:#1a1200;margin:0;animation:subtleFloat 4s 3.5s ease infinite,contentReveal 3.5s cubic-bezier(.25,.46,.45,.94) forwards;"><span style="font-family:'Caveat',cursive;font-weight:700;font-size:32px;">Grand Jeux du </span><span style="font-family:-apple-system,'Inter',sans-serif;font-weight:800;letter-spacing:-.3px;">TED</span></h1>
+        <h1 style="font-size:26px;color:#1a1200;margin:0;animation:subtleFloat 4s 3.5s ease infinite,contentReveal 3.5s cubic-bezier(.25,.46,.45,.94) forwards;"><span style="font-family:'Caveat',cursive;font-weight:700;font-size:32px;">Grand Jeu du </span><span style="font-family:-apple-system,'Inter',sans-serif;font-weight:800;letter-spacing:-.3px;">TED</span></h1>
         <p style="font-size:13px;color:rgba(0,0,0,0.5);margin-top:4px;font-weight:400;animation:contentReveal 3.5s cubic-bezier(.25,.46,.45,.94) forwards;">Tentez votre chance</p>
       </div>
 
