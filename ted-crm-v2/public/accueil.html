@@ -1002,7 +1002,6 @@
 
   // ── Roue cadeaux ─────────────────────────────────────────────────────────────
   (async function initRoue() {
-    console.log('1. initRoue appelé');
     // ── État ──────────────────────────────────────────────────────────────────
     let recompenses  = [];
     let gainResult   = null;
@@ -1076,8 +1075,8 @@
 
     const isPreview = new URLSearchParams(window.location.search).get('preview') === 'roue';
 
-    if (!recompenses.length) { console.log('2f. 0 récompenses disponibles → abort'); return; }
-    if (!isPreview && localStorage.getItem('ted_roue_soumis')) { console.log('2g. formulaire déjà soumis (localStorage) → abort'); return; }
+    if (!recompenses.length) return;
+    if (!isPreview && localStorage.getItem('ted_roue_soumis')) return;
 
     // ── Canvas (scope externe pour openRouePopup) ──────────────────────────────
     const canvas = document.getElementById('roue-canvas');
@@ -1092,7 +1091,6 @@
         roueSections.push({ nom: 'Perdu', emoji: '🫤' });
       }
     }
-    console.log('2h. roueSections =', roueSections.map(s => s.nom));
 
     function drawWheel(rotation) {
       const canvas = document.getElementById('roue-canvas');
@@ -1679,8 +1677,7 @@
             })
           });
           if (!resaRes.ok) console.error('reservations insert error', resaRes.status, await resaRes.text());
-          else console.log('reservations insert OK');
-        } catch(e) { console.error('reservations block exception', e); }
+                  } catch(e) { console.error('reservations block exception', e); }
       }
 
       // ── Décrémente stock ──────────────────────────────────────────────────────
@@ -1708,7 +1705,6 @@
         } else {
           const gainsData = await gainsRes.json();
           gainId = gainsData && gainsData.length > 0 ? gainsData[0].id : null;
-          console.log('roue_gains insert OK, gain_id=', gainId, '| client_id=', clientId);
         }
       } catch(e) { console.error('roue_gains block exception', e); }
 
@@ -1723,15 +1719,12 @@
           emoji: gainResult.emoji || '',
           gain_id: gainId || null
         };
-        console.log('1. Envoi mail jeu à', email);
-        console.log('2. Body envoyé', roueEmailBody);
         const roueEmailRes = await fetch('/api/roue-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(roueEmailBody)
         });
         const roueEmailData = await roueEmailRes.json().catch(() => ({}));
-        console.log('3. Réponse', { status: roueEmailRes.status, data: roueEmailData });
       } catch(e) { console.error('roue-email exception', e); }
 
       localStorage.setItem('ted_roue_soumis', 'true');
@@ -1752,7 +1745,6 @@
     }
 
     function openRouePopup() {
-      console.log('3. openRouePopup appelé');
       const ov = document.getElementById('roue-overlay');
       if (!ov) return;
       requestAnimationFrame(() => requestAnimationFrame(() => ov.classList.add('open')));
@@ -1796,7 +1788,6 @@
       canvas.onclick = () => { if (!spinning && triesLeft > 0) spin(); };
 
       document.getElementById('roue-recuperer-btn').onclick = () => {
-        console.log('claim button clicked');
         document.getElementById('roue-win-overlay').style.display = 'none';
         document.getElementById('roue-form-overlay').style.display = 'flex';
       };
