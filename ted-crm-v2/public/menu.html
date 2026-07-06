@@ -342,7 +342,6 @@
       <div id="lang-menu">
         <button class="lang-opt" onclick="setLang('fr')">FR</button>
         <button class="lang-opt" onclick="setLang('en')">EN</button>
-        <button class="lang-opt" onclick="setLang('de')">DE</button>
         <button class="lang-opt" onclick="setLang('es')">ES</button>
         <button class="lang-opt" onclick="setLang('it')">IT</button>
       </div>
@@ -439,11 +438,11 @@
   const UI = {
     fr: { restaurant:'Restaurant', brasero:'Brasero', plat_jour:'Plat du jour', dessert_jour:'Dessert du jour', suggestion_chef:'Suggestion du chef', brasero_banner:'🔥 Carte Brasero disponible le mercredi soir uniquement' },
     en: { restaurant:'Restaurant', brasero:'Brasero', plat_jour:'Daily special', dessert_jour:'Dessert of the day', suggestion_chef:"Chef's special", brasero_banner:'🔥 Brasero menu available Wednesday evenings only' },
-    de: { restaurant:'Restaurant', brasero:'Brasero', plat_jour:'Tagesgericht', dessert_jour:'Dessert des Tages', suggestion_chef:'Empfehlung des Küchenchefs', brasero_banner:'🔥 Brasero-Karte nur mittwochs abends verfügbar' },
     es: { restaurant:'Restaurante', brasero:'Brasero', plat_jour:'Plato del día', dessert_jour:'Postre del día', suggestion_chef:'Sugerencia del chef', brasero_banner:'🔥 Carta Brasero disponible solo los miércoles por la noche' },
     it: { restaurant:'Ristorante', brasero:'Brasero', plat_jour:'Piatto del giorno', dessert_jour:'Dolce del giorno', suggestion_chef:'Suggerimento dello chef', brasero_banner:'🔥 Menu Brasero disponibile solo il mercoledì sera' }
   };
   let lang = localStorage.getItem('ted_langue') || 'fr';
+  if (!['fr', 'en', 'es', 'it'].includes(lang)) lang = 'fr'; // 'de' supprimée
 
   function tUI(k) { return (UI[lang] || UI.fr)[k] || UI.fr[k] || k; }
   function tItem(item, field) {
