@@ -635,10 +635,12 @@
   }
 
   applyLangUI();
+  // 1. Le logo se dessine d'abord entièrement (clip-path 1,2 s)…
   setTimeout(() => { document.getElementById('logo-img').classList.add('visible'); }, 100);
-  setTimeout(() => { document.getElementById('hero-texte').classList.add('visible'); }, 600);
-  setTimeout(() => { document.getElementById('soirees-label').classList.add('visible'); }, 900);
-  setTimeout(() => { document.getElementById('cta-bar').classList.add('visible'); }, 2000);
+  // 2. …puis la page se révèle en cascade du haut vers le bas
+  setTimeout(() => { document.getElementById('hero-texte').classList.add('visible'); }, 1350);
+  setTimeout(() => { document.getElementById('soirees-label').classList.add('visible'); }, 1650);
+  setTimeout(() => { document.getElementById('cta-bar').classList.add('visible'); }, 2600);
 
   // ── Popup ───────────────────────────────────────────────────────────────────
   const overlay     = document.getElementById('popup-overlay');
@@ -912,7 +914,7 @@
       el.addEventListener('click', () => openPopup(s));
       el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') openPopup(s); });
       list.appendChild(el);
-      if (animate) showAt(el, 1100 + i * 150);
+      if (animate) showAt(el, 1850 + i * 150);
     });
   }
 
