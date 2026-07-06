@@ -957,6 +957,11 @@
 
   // ── bfcache : retour navigateur — toujours re-rendre les soirées ────────────
   window.addEventListener('pageshow', e => {
+    // Annule la transition de sortie : au retour arrière, le navigateur restaure
+    // la page dans l'état où elle est partie (opacity 0 → page blanche)
+    document.body.style.transition = 'none';
+    document.body.style.opacity = '';
+    document.body.style.transform = '';
     if (e.persisted) {
       const hit = soireesFromCache();
       if (hit) renderSoirees(hit.data, false);
