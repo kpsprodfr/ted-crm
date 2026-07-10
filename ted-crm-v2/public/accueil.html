@@ -2,11 +2,13 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a0c">
   <title>Le TED — Chassieu</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Caveat:wght@700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+    html { background: #0a0a0c; }
 
     body {
       background: linear-gradient(180deg, #1a1a1a 0%, #2d2d2d 100%);
@@ -798,19 +800,6 @@
     return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
-  // ── Padding dynamique selon hauteur réelle des boutons fixes ────────────────
-  function adjustBodyPadding() {
-    const bar = document.getElementById('cta-bar');
-    if (!bar) return;
-    const h = bar.getBoundingClientRect().height;
-    document.body.style.paddingBottom = (h + 24) + 'px';
-  }
-  // Après rendu initial
-  window.addEventListener('load', adjustBodyPadding);
-  // Au resize (rotation d'écran, clavier virtuel…)
-  window.addEventListener('resize', adjustBodyPadding);
-  // Appel immédiat après que le DOM soit prêt
-  adjustBodyPadding();
 
   // ── Roue cadeaux ─────────────────────────────────────────────────────────────
   (async function initRoue() {
