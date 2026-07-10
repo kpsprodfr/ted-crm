@@ -1577,7 +1577,7 @@
             reopenBtn = document.createElement('button');
             reopenBtn.id = 'roue-reopen-btn';
             reopenBtn.textContent = '🎰 Jouer';
-            reopenBtn.style.cssText = 'position:fixed;top:calc(14px + env(safe-area-inset-top, 0px));right:16px;z-index:150;padding:9px 14px;border-radius:999px;border:none;background:#E8C547;color:#1a1200;font-family:inherit;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 3px 14px rgba(232,197,71,0.45);white-space:nowrap;transition:opacity .2s;';
+            reopenBtn.style.cssText = 'position:fixed;top:calc(14px + env(safe-area-inset-top, 0px));right:16px;z-index:150;padding:9px 14px;border-radius:999px;border:1px solid rgba(232,197,71,0.6);background:rgba(10,10,12,0.85);color:#E8C547;font-family:inherit;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 3px 14px rgba(0,0,0,0.5);white-space:nowrap;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:opacity .2s;';
             reopenBtn.onclick = () => { reopenBtn.remove(); openRouePopup(); };
             document.body.appendChild(reopenBtn);
           }
