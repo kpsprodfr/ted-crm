@@ -75,8 +75,16 @@
     }
 
     /* ── Soirées ────────────────────────────────────────────────────────────── */
-    #soirees-section { position: relative; z-index: 1; width: 100%; max-width: 480px; padding: 0 20px; margin-top: 22px; }
-    #soirees-head { display: flex; align-items: baseline; justify-content: space-between; margin: 0 4px 14px; }
+    #soirees-section {
+      position: relative; z-index: 1;
+      width: calc(100% - 40px); max-width: 440px;
+      margin-top: 22px; padding: 14px;
+      background: rgba(12,12,15,0.55);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 18px;
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    }
+    #soirees-head { display: flex; align-items: baseline; justify-content: space-between; margin: 2px 4px 12px; }
     #soirees-label {
       margin: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.28em;
       color: #E8C547; text-transform: uppercase; text-shadow: 0 1px 6px rgba(0,0,0,0.6);
