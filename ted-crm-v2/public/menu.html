@@ -4,381 +4,330 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>La Carte — Le TED Chassieu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
-    body { background: #fff; color: #111; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: #16130f; }
+    body {
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      color: #f5efe4; min-height: 100dvh;
+      background: linear-gradient(180deg, #16130f 0%, #221c15 100%);
+    }
+    a { color: #D9B845; } a:hover { color: #E8C547; }
 
-    /* ── Animations keyframes ─────────────────────────────────────────────── */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(8px); }
-      to   { opacity: 1; transform: translateY(0); }
+    @keyframes ted-fade { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes ted-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.55; transform: scale(0.94); } }
+    @keyframes ted-nav-in { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+    @keyframes ted-flamme {
+      0%   { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 3px rgba(217,140,69,0.5)); }
+      20%  { transform: scale(1.08, 0.94) rotate(-3deg); filter: drop-shadow(0 0 7px rgba(230,150,60,0.8)); }
+      40%  { transform: scale(0.95, 1.07) rotate(2.5deg); filter: drop-shadow(0 0 4px rgba(217,140,69,0.55)); }
+      60%  { transform: scale(1.05, 0.96) rotate(-2deg); filter: drop-shadow(0 0 8px rgba(240,160,70,0.85)); }
+      80%  { transform: scale(0.97, 1.04) rotate(3deg); filter: drop-shadow(0 0 5px rgba(217,140,69,0.6)); }
+      100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 3px rgba(217,140,69,0.5)); }
     }
-    @keyframes underlineIn {
-      from { transform: scaleX(0); }
-      to   { transform: scaleX(1); }
+    .ted-flamme { animation: ted-flamme 1.6s ease-in-out infinite; transform-origin: 50% 85%; }
+    @keyframes ted-braise {
+      0%   { transform: translateX(-4%) scale(1);    opacity: 0.3; }
+      35%  { transform: translateX(2%) scale(1.08);  opacity: 0.5; }
+      65%  { transform: translateX(-2%) scale(0.97); opacity: 0.35; }
+      100% { transform: translateX(-4%) scale(1);    opacity: 0.3; }
     }
-    @keyframes platJourIn {
-      from { opacity: 0; transform: translateY(12px); }
-      to   { opacity: 1; transform: translateY(0); }
+    @keyframes ted-braise2 {
+      0%   { transform: translateX(3%) scale(1.05);  opacity: 0.4; }
+      50%  { transform: translateX(-3%) scale(0.95); opacity: 0.22; }
+      100% { transform: translateX(3%) scale(1.05);  opacity: 0.4; }
     }
-    @keyframes borderPulse {
-      0%   { opacity: 0.4; }
-      50%  { opacity: 1; }
-      100% { opacity: 0.7; }
-    }
-    @keyframes sectionFadeUp {
-      from { opacity: 0; transform: translateY(6px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
+    .ted-braise-a { animation: ted-braise 6.5s ease-in-out infinite; }
+    .ted-braise-b { animation: ted-braise2 4.8s ease-in-out infinite; }
+    @media (prefers-reduced-motion: reduce) { .ted-flamme, .ted-braise-a, .ted-braise-b { animation: none; } }
 
-    /* Respect prefers-reduced-motion */
+    .ted-reveal { opacity: 0; transform: translateY(10px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .ted-reveal.ted-vu { opacity: 1; transform: translateY(0); }
+    .ted-trace { transform: scaleX(0); transform-origin: center; transition: transform 0.6s ease 0.1s; }
+    .ted-trace.ted-vu { transform: scaleX(1); }
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        transition-duration: 0.01ms !important;
-      }
+      .ted-reveal, .ted-trace { opacity: 1 !important; transform: none !important; transition: none !important; }
     }
 
-    /* ── Header ──────────────────────────────────────────────────────────── */
-    #header {
-      position: sticky; top: 0; z-index: 100;
-      background: #111; padding: 20px 20px 0;
-      transition: padding 220ms ease;
+    /* ── Fond photo flouté + voile ── */
+    #fond-photo {
+      position: fixed; inset: -50px; z-index: 0;
+      background-image: url('assets/banner-tapas.jpg');
+      background-size: cover; background-position: center;
+      filter: blur(22px) brightness(0.5) saturate(1.1);
+      transform: scale(1.14);
+      animation: ted-fade 0.8s ease-out;
     }
-    #header.compact { padding-top: 6px; padding-bottom: 0; }
-
-    #header-title {
-      color: #E8C547; font-size: 22px; font-weight: 900; letter-spacing: 1px;
-      animation: fadeUp 400ms ease-out both;
-      transition: font-size 220ms ease;
+    #fond-voile {
+      position: fixed; inset: 0; z-index: 0;
+      background: linear-gradient(180deg, rgba(20,16,11,0.82) 0%, rgba(20,16,11,0.86) 55%, rgba(16,13,9,0.92) 100%);
     }
-    #header.compact #header-logo { height: 13px; width: 13px; }
-    #header.compact #header-title { font-size: 13px; letter-spacing: 0.5px; }
 
-    #header-sub {
-      color: #888; font-size: 11px; letter-spacing: 0.5px; margin-top: 2px; margin-bottom: 0;
-      animation: fadeUp 400ms ease-out 80ms both;
-      transition: opacity 220ms ease, max-height 220ms ease;
-      overflow: hidden; max-height: 20px;
+    #wrap {
+      position: relative; z-index: 1;
+      max-width: 560px; margin: 0 auto;
+      padding: 0 26px calc(32px + env(safe-area-inset-bottom));
     }
-    #header.compact #header-sub { opacity: 0; max-height: 0; margin: 0; }
 
-    /* Trait jaune sous le titre */
-    #header-underline {
-      height: 2px; background: #E8C547; width: 36px; border-radius: 2px;
-      margin: 6px 0 10px;
-      transform-origin: left;
-      animation: underlineIn 600ms ease-out 200ms both;
-      transition: width 220ms ease, margin 220ms ease;
-    }
-    #header.compact #header-underline { width: 12px; margin: 1px 0 3px; }
+    /* ── Header ── */
+    #topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 0 0; }
+    #topbar-logo { display: flex; align-items: center; gap: 11px; text-decoration: none; -webkit-tap-highlight-color: transparent; }
+    #topbar-logo img { width: 38px; height: auto; }
+    #topbar-nom { font-size: 14px; font-weight: 700; letter-spacing: 0.24em; color: #D9B845; display: block; }
+    #topbar-sub { font-size: 8.5px; letter-spacing: 0.3em; color: rgba(245,239,228,0.5); display: block; margin-top: 2px; }
 
-    /* Onglets carte */
-    #carte-tabs { display: flex; gap: 0; border-bottom: 2px solid #222; }
-    .carte-tab {
-      padding: 9px 20px; font-size: 13px; font-weight: 700; cursor: pointer;
-      color: #666; border: none; background: none; border-bottom: 3px solid transparent;
-      margin-bottom: -2px; transition: color 150ms ease, border-color 150ms ease, padding 220ms ease;
-    }
-    .carte-tab.active { color: #E8C547; border-bottom-color: #E8C547; }
-    #header.compact .carte-tab { padding-top: 5px; padding-bottom: 5px; }
-
-    /* ── Sélecteur de langue ──────────────────────────────────────────────── */
-    #lang-selector { position: relative; flex-shrink: 0; }
+    #lang-selector { position: relative; }
     #lang-btn {
-      background: rgba(255,255,255,0.07); border: 1px solid #333;
-      color: #aaa; font-size: 13px; font-weight: 700; letter-spacing: 1px;
-      padding: 10px 16px; border-radius: 6px; cursor: pointer;
-      min-height: 44px; min-width: 44px;
-      transition: background 150ms ease; font-family: inherit;
+      display: flex; align-items: center; gap: 6px; min-height: 38px; padding: 8px 12px;
+      background: none; border: 1px solid rgba(217,184,69,0.35); border-radius: 999px;
+      color: #f5efe4; font-size: 12px; font-weight: 600; letter-spacing: 0.1em;
+      cursor: pointer; font-family: inherit; -webkit-tap-highlight-color: transparent;
     }
-    #lang-btn:hover { background: rgba(255,255,255,0.13); color: #fff; }
+    #lang-btn .chev { font-size: 8px; color: rgba(245,239,228,0.5); }
     #lang-menu {
-      position: absolute; top: calc(100% + 6px); right: 0;
-      background: #1c1c1c; border: 1px solid #333; border-radius: 8px;
-      overflow: hidden; min-width: 56px; display: none; z-index: 400;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+      position: absolute; top: calc(100% + 8px); right: 0; z-index: 40;
+      display: none; flex-direction: column; min-width: 136px; padding: 6px;
+      background: rgba(26,22,16,0.97); border: 1px solid rgba(217,184,69,0.3); border-radius: 14px;
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.6); animation: ted-fade 0.18s ease-out;
     }
-    #lang-menu.open { display: block; }
+    #lang-menu.open { display: flex; }
     .lang-opt {
-      display: block; width: 100%; padding: 8px 14px;
-      color: #bbb; font-size: 12px; font-weight: 700; letter-spacing: 0.5px;
-      background: none; border: none; cursor: pointer; text-align: left;
-      transition: background 100ms ease; font-family: inherit;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      min-height: 42px; padding: 9px 12px; border: none; border-radius: 9px;
+      background: transparent; color: rgba(245,239,228,0.85);
+      font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; text-align: left;
+      -webkit-tap-highlight-color: transparent;
     }
-    .lang-opt:hover { background: #2a2a2a; color: #fff; }
-    .lang-opt.active { color: #E8C547; }
+    .lang-opt .code { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; opacity: 0.6; }
+    .lang-opt.active { background: #D9B845; color: #1c1710; }
 
-    /* ── Pills catégories ─────────────────────────────────────────────────── */
-    #cats-bar {
-      background: #fff; border-top: 1px solid #222;
-      padding: 8px 16px; display: flex; gap: 10px;
-      overflow-x: auto; scrollbar-width: none;
-      margin: 0 -20px; /* déborde sur les bords du header */
+    /* ── Titre ── */
+    #titre-bloc { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 44px 0 0; text-align: center; }
+    #titre-page {
+      font-size: clamp(36px, 11vw, 52px); font-weight: 700;
+      letter-spacing: 0.14em; text-indent: 0.14em; line-height: 1;
+      color: #f5efe4; text-transform: uppercase;
     }
-    #cats-bar::-webkit-scrollbar { display: none; }
+    .titre-filet { display: flex; align-items: center; gap: 10px; }
+    .titre-filet .ligne { width: 36px; height: 1px; background: rgba(217,184,69,0.6); }
+    .titre-filet .losange { width: 5px; height: 5px; border: 1px solid rgba(217,184,69,0.8); transform: rotate(45deg); }
+
+    #btn-retour {
+      display: none; align-items: center; gap: 10px; margin: 26px auto 0; padding: 0;
+      background: none; border: none; color: #D9B845; font-size: 14px; font-weight: 600;
+      cursor: pointer; font-family: inherit; -webkit-tap-highlight-color: transparent;
+    }
+    #btn-retour.visible { display: flex; }
+
+    /* ── Loader ── */
+    #loading { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; min-height: 36vh; }
+    #loading img { width: 64px; height: auto; animation: ted-pulse 1.4s ease-in-out infinite; }
+    #loading span { font-size: 12.5px; letter-spacing: 0.18em; color: rgba(245,239,228,0.55); }
+    #error { display: none; text-align: center; padding: 40px 20px; color: rgba(245,239,228,0.7); font-size: 14px; }
+
+    /* ── Menu du jour (seul bloc encadré) ── */
+    .mjour-cadre {
+      margin-top: 44px; padding: 26px 22px 24px;
+      border: 1px solid rgba(217,184,69,0.45); border-radius: 4px;
+      background: rgba(255,248,230,0.03);
+    }
+    .mjour-entete { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+    .mjour-badge {
+      padding: 9px 18px; background: #E8C547; border-radius: 999px;
+      font-size: 12px; font-weight: 800; letter-spacing: 0.24em; text-indent: 0.24em; color: #1c1710;
+    }
+    .mjour-formule { font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-size: 15px; color: rgba(245,239,228,0.6); }
+    .mjour-items { display: flex; flex-direction: column; gap: 20px; margin-top: 24px; }
+    .mjour-item { display: flex; flex-direction: column; align-items: center; gap: 3px; text-align: center; }
+    .mjour-label { font-size: 10px; font-weight: 600; letter-spacing: 0.26em; text-indent: 0.26em; color: rgba(245,239,228,0.45); }
+    .mjour-nom { font-size: 16.5px; font-weight: 600; color: #f5efe4; line-height: 1.4; }
+    .mjour-desc { font-size: 13px; line-height: 1.5; color: rgba(245,239,228,0.6); text-wrap: pretty; max-width: 40ch; }
+    .mjour-prix { font-size: 14.5px; font-weight: 600; color: #D9B845; margin-top: 2px; }
+
+    /* ── Suggestion du chef ── */
+    .mchef-bloc { display: flex; flex-direction: column; align-items: center; gap: 2px; margin-top: 46px; text-align: center; }
+    .mchef-titre { font-size: 13px; font-weight: 700; letter-spacing: 0.3em; text-indent: 0.3em; color: #D9B845; text-transform: uppercase; }
+    .mchef-item { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 0 0; }
+
+    /* ── Bouton Carte Brasero ── */
+    #brasero-btn {
+      position: relative; overflow: hidden;
+      display: flex; align-items: center; justify-content: center; gap: 14px;
+      width: 100%; margin-top: 44px; padding: 24px 20px;
+      background: linear-gradient(90deg, rgba(42,26,15,0.75) 0%, rgba(66,38,18,0.75) 50%, rgba(42,26,15,0.75) 100%);
+      border: 1px solid rgba(217,140,69,0.5); border-radius: 8px;
+      cursor: pointer; font-family: inherit; -webkit-tap-highlight-color: transparent;
+    }
+    #brasero-btn:active { opacity: 0.8; transform: scale(0.99); }
+    #brasero-btn .braise-a {
+      position: absolute; left: 10%; right: 10%; bottom: -55%; height: 110%; pointer-events: none;
+      background: radial-gradient(ellipse at 50% 100%, rgba(255,140,40,0.5) 0%, rgba(230,110,30,0.25) 40%, rgba(230,110,30,0) 70%);
+    }
+    #brasero-btn .braise-b {
+      position: absolute; left: 25%; right: 25%; bottom: -45%; height: 95%; pointer-events: none;
+      background: radial-gradient(ellipse at 50% 100%, rgba(255,190,80,0.45) 0%, rgba(255,150,50,0.18) 45%, rgba(255,150,50,0) 70%);
+    }
+    #brasero-btn .txt { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    #brasero-btn .l1 { font-size: 17px; font-weight: 700; letter-spacing: 0.14em; text-indent: 0.14em; color: #f5efe4; line-height: 1.3; text-transform: uppercase; text-shadow: 0 1px 6px rgba(0,0,0,0.5); }
+    #brasero-btn .l2 { font-size: 12px; font-weight: 500; letter-spacing: 0.08em; color: rgba(245,239,228,0.75); line-height: 1.3; text-shadow: 0 1px 6px rgba(0,0,0,0.5); }
+    #brasero-btn .chevron { position: relative; font-size: 22px; color: #D98C45; flex-shrink: 0; line-height: 1; }
+
+    /* ── Nav catégories fixe + fil de progression ── */
+    #ted-progress {
+      position: fixed; top: 0; left: 0; z-index: 22; height: 2px; width: 0%;
+      background: linear-gradient(90deg, rgba(217,184,69,0.7), #E8C547);
+      pointer-events: none; transition: width 0.1s linear; display: none;
+    }
+    #nav-cats {
+      position: fixed; top: 2px; left: 0; right: 0; z-index: 20;
+      padding: 10px 16px; display: none;
+      background: rgba(22,18,13,0.95); border-bottom: 1px solid rgba(217,184,69,0.2);
+      backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+      animation: ted-nav-in 0.22s ease-out;
+      overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+      mask-image: linear-gradient(90deg, #000 0%, #000 92%, transparent 100%);
+      -webkit-mask-image: linear-gradient(90deg, #000 0%, #000 92%, transparent 100%);
+    }
+    #nav-cats::-webkit-scrollbar { display: none; }
+    #nav-cats.visible { display: block; }
+    #nav-cats .rangee { display: flex; gap: 6px; width: max-content; margin: 0 auto; }
     .cat-pill {
-      flex-shrink: 0; padding: 10px 18px; border-radius: 20px; font-size: 13px;
-      font-weight: 600; cursor: pointer; border: 1.5px solid #eee;
-      background: #fff; color: #555; white-space: nowrap; min-height: 40px;
-      display: inline-flex; align-items: center;
-      transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+      white-space: nowrap; padding: 8px 14px; min-height: 36px;
+      border: none; border-radius: 999px;
+      background: rgba(245,239,228,0.08); color: rgba(245,239,228,0.85);
+      font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit;
+      transition: background 0.2s ease, color 0.2s ease; -webkit-tap-highlight-color: transparent;
     }
-    .cat-pill:hover { background: #f5f5f5; }
-    .cat-pill.active { background: #111; color: #E8C547; border-color: #111; }
+    .cat-pill:active { transform: scale(0.94); }
+    .cat-pill.active { background: #D9B845; color: #1c1710; }
 
-    /* ── Contenu ──────────────────────────────────────────────────────────── */
-    #content { padding: 0 16px 60px; max-width: 680px; margin: 0 auto; }
+    /* ── Sections & plats ── */
+    .section-titre { display: flex; align-items: center; gap: 14px; margin: 48px 0 10px; }
+    .section-titre .filet { flex: 1; height: 1px; background: rgba(217,184,69,0.3); }
+    .section-titre h3 {
+      font-size: clamp(18px, 5.5vw, 24px); font-weight: 700; letter-spacing: 0.12em;
+      color: #f5efe4; text-align: center; text-transform: uppercase; max-width: 78%;
+    }
+    .plat { display: flex; flex-direction: column; gap: 3px; padding: 15px 0 16px; border-bottom: 1px solid rgba(245,239,228,0.08); }
+    .plat-ligne { display: flex; align-items: baseline; gap: 12px; }
+    .plat-nom { font-size: 16px; font-weight: 600; color: #f5efe4; line-height: 1.4; }
+    .plat-points { flex: 1; min-width: 14px; border-bottom: 1px dotted rgba(245,239,228,0.25); transform: translateY(-4px); }
+    .plat-prix { font-size: 15px; font-weight: 600; color: #f5efe4; flex-shrink: 0; white-space: nowrap; }
+    .plat-desc { font-size: 13px; line-height: 1.55; color: rgba(245,239,228,0.58); text-wrap: pretty; max-width: 46ch; }
+    .plat-tag, .plat-accord { font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-size: 14px; color: rgba(217,184,69,0.8); margin-top: 1px; }
+    .plat-accord { color: rgba(217,184,69,0.7); }
+    .section-note { padding: 12px 0 0; font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-size: 14px; color: rgba(245,239,228,0.5); text-align: center; }
 
-    /* ── Sections catégories ──────────────────────────────────────────────── */
-    .section { padding-top: 32px; }
-    .section-title {
-      font-size: 32px; font-weight: 800; color: #111; letter-spacing: -0.5px;
-      padding-bottom: 12px; border-bottom: 1px solid #f0f0f0;
-      margin-bottom: 14px; line-height: 1.1;
-    }
-    /* Apparition au scroll — état initial */
-    .section.reveal-pending {
-      opacity: 0; transform: translateY(6px);
-    }
-    /* Après observer */
-    .section.revealed {
-      animation: sectionFadeUp 250ms ease-out both;
+    /* ── Bandeaux photo d'ambiance ── */
+    .bandeau { position: relative; height: 150px; margin: 52px 0 0; border-radius: 4px; overflow: hidden; }
+    .bandeau .img { position: absolute; inset: 0; background-size: cover; background-position: center; }
+    .bandeau .voile { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, rgba(20,16,11,0.72) 0%, rgba(20,16,11,0.45) 55%, rgba(20,16,11,0.35) 100%); }
+    .bandeau .phrase-wrap { position: relative; display: flex; align-items: center; justify-content: center; height: 100%; padding: 0 30px; text-align: center; }
+    .bandeau .phrase {
+      font-family: 'Cormorant Garamond', Georgia, serif; font-style: italic; font-weight: 600;
+      font-size: 23px; color: #ffffff; line-height: 1.3;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.95), 0 0 24px rgba(0,0,0,0.8);
     }
 
-    /* ── Produit ──────────────────────────────────────────────────────────── */
-    .produit {
-      display: flex; align-items: flex-start; gap: 12px;
-      padding: 13px 0; border-bottom: 1px solid #f7f7f7;
-    }
-    .produit:last-child { border-bottom: none; }
-    .produit-info { flex: 1; min-width: 0; }
-    .produit-nom {
-      font-size: 16px; font-weight: 700; color: #222;
-      margin-bottom: 3px; line-height: 1.3;
-    }
-    .produit-desc {
-      font-size: 13px; color: #888; line-height: 1.5; margin-bottom: 4px;
-      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-    }
-    .produit-accord {
-      font-size: 11px; color: #bbb; font-style: italic; font-weight: 300;
-      margin-top: 4px; letter-spacing: 0.1px;
-    }
-    .produit-badges { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
-    .badge-item { font-size: 11px; font-weight: 600; background: #fff8e1; color: #b8860b; border-radius: 20px; padding: 2px 9px; }
-    .produit-prix { font-size: 14px; font-weight: 700; color: #111; white-space: nowrap; padding-top: 1px; flex-shrink: 0; }
+    /* ── Origines ── */
+    #origines-section { margin-top: 56px; display: none; }
+    #origines-titre { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+    #origines-titre .filet { flex: 1; height: 1px; background: rgba(217,184,69,0.3); }
+    #origines-titre h3 { font-size: 11px; font-weight: 700; letter-spacing: 0.3em; text-indent: 0.3em; color: #D9B845; text-align: center; }
+    #origines-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 26px; }
+    .origine-item { display: flex; flex-direction: column; gap: 1px; padding: 9px 0; border-bottom: 1px solid rgba(245,239,228,0.07); }
+    .origine-item .viande { font-size: 13px; font-weight: 600; color: rgba(245,239,228,0.9); }
+    .origine-item .prov { font-size: 12px; color: rgba(245,239,228,0.5); }
 
-    /* ── Bandeau Brasero ─────────────────────────────────────────────────── */
-    #brasero-banner {
-      display: none;
-      margin: 12px 16px 0; max-width: 648px; margin-left: auto; margin-right: auto;
-      background: #fffbe6; border: 1.5px solid #E8C547; border-radius: 10px;
-      padding: 10px 16px; text-align: center;
-      font-size: 13px; font-weight: 600; color: #5a4500;
-      line-height: 1.4;
-    }
-    #brasero-banner.visible { display: block; }
+    /* ── Footer ── */
+    footer { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 56px 0 8px; text-align: center; }
+    footer img { width: 36px; height: auto; opacity: 0.85; }
+    footer .nom { font-size: 12px; font-weight: 700; letter-spacing: 0.26em; text-indent: 0.26em; color: #D9B845; }
+    footer .adresse { font-size: 12.5px; color: rgba(245,239,228,0.6); line-height: 1.5; }
+    footer a.tel { font-size: 14px; font-weight: 600; color: #f5efe4; text-decoration: none; border-bottom: 1px solid rgba(217,184,69,0.5); padding-bottom: 1px; }
 
-    /* ── Note légale ──────────────────────────────────────────────────────── */
-    .note-legale { font-size: 11px; color: #bbb; margin-top: 16px; margin-bottom: 24px; font-style: italic; line-height: 1.6; }
-
-    /* ── Footer ───────────────────────────────────────────────────────────── */
-    footer { background: #111; color: #888; text-align: center; padding: 28px 20px; font-size: 12px; line-height: 2; }
-    footer strong { color: #fff; }
-
-    /* ── États chargement ─────────────────────────────────────────────────── */
-    #loading { text-align: center; padding: 60px 20px; color: #888; font-size: 14px; }
-    #error   { text-align: center; padding: 60px 20px; color: #dc2626; font-size: 14px; }
-
-    /* ── Bouton retour en haut ────────────────────────────────────────────── */
+    /* ── Retour en haut ── */
     #back-top {
-      position: fixed; bottom: 24px; right: 20px; z-index: 200;
-      width: 38px; height: 38px; border-radius: 50%;
-      background: rgba(17,17,17,0.6); color: #fff;
-      border: none; cursor: pointer; font-size: 17px;
-      display: flex; align-items: center; justify-content: center;
-      opacity: 0; transform: translateY(8px); pointer-events: none;
-      transition: opacity 220ms ease, transform 220ms ease;
+      position: fixed; right: 16px; bottom: calc(20px + env(safe-area-inset-bottom)); z-index: 30;
+      width: 48px; height: 48px; border: 1px solid rgba(217,184,69,0.5); border-radius: 999px;
+      background: rgba(26,22,16,0.92); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      color: #D9B845; font-size: 20px; font-weight: 600; cursor: pointer;
+      display: none; animation: ted-fade 0.25s ease-out; -webkit-tap-highlight-color: transparent;
     }
-    #back-top.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
-    #back-top:hover { background: rgba(17,17,17,0.85); }
+    #back-top.visible { display: block; }
+    #back-top:active { transform: scale(0.94); }
 
-    /* ── Menu du jour + Suggestion — design élégant ─────────────────────── */
-    #specials-container {
-      max-width: 720px; margin: 0 auto; padding: 0 16px;
-      display: flex; flex-direction: column; gap: 16px;
-      animation: platJourIn 0.4s ease both;
-    }
-
-    .mjour-card {
-      background: #faf5ec;
-      border: 1.5px solid #dfd0a8;
-      border-radius: 18px;
-      padding: 22px 20px 18px;
-    }
-    .mjour-title-row {
-      display: flex; align-items: center; gap: 10px;
-      margin-bottom: 16px;
-    }
-    .mjour-title-line { flex: 1; height: 1px; background: #C9A84C; opacity: 0.45; }
-    .mjour-title-text {
-      font-size: 32px; font-weight: 800; letter-spacing: -0.5px;
-      color: #C9A84C; white-space: nowrap;
-    }
-    .mjour-item {
-      display: flex; align-items: center; gap: 14px;
-      padding: 14px 0; border-bottom: none;
-    }
-    .mjour-icon {
-      width: 46px; height: 46px; border-radius: 50%;
-      border: 1.5px solid #C9A84C;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; color: #C9A84C;
-    }
-    .mjour-info { flex: 1; min-width: 0; }
-    .mjour-item-label {
-      font-size: 10px; font-weight: 800;
-      letter-spacing: 1.8px; text-transform: uppercase;
-      color: #C9A84C; margin-bottom: 5px;
-    }
-    .mjour-item-nom {
-      font-size: 15px; font-weight: 800; color: #1a1a1a;
-      line-height: 1.3; word-break: break-word;
-    }
-    .mjour-item-desc { font-size: 12px; color: #888; margin-top: 3px; font-style: italic; }
-    .mjour-item-prix {
-      font-size: 14px; font-weight: 700; color: #111; white-space: nowrap; flex-shrink: 0;
-    }
-    .mjour-formule {
-      display: flex; align-items: baseline; justify-content: space-between;
-      padding-top: 14px; margin-top: 6px;
-      border-top: 1.5px solid #C9A84C;
-    }
-    .mjour-formule-label {
-      font-size: 11px; font-weight: 800; letter-spacing: 1.5px;
-      text-transform: uppercase; color: #1a1a1a;
-    }
-    .mjour-formule-prix { font-size: 14px; font-weight: 700; color: #111; white-space: nowrap; }
-
-    /* ── Suggestion du chef — bloc distinct ─────────────────────────────── */
-    .mchef-card {
-      background: #faf5ec;
-      border: 1.5px solid #dfd0a8;
-      border-radius: 18px;
-      padding: 18px 20px 16px;
-    }
-    .mchef-title-row {
-      display: flex; align-items: center; gap: 10px;
-      margin-bottom: 14px;
-    }
-    .mchef-title-line { flex: 1; height: 1px; background: #C9A84C; opacity: 0.35; }
-    .mchef-title-text {
-      font-size: 20px; font-weight: 800; letter-spacing: 0.5px;
-      color: #C9A84C; white-space: nowrap; text-transform: uppercase;
-    }
-    .mchef-item {
-      display: flex; align-items: center; gap: 14px;
-    }
-    .mchef-icon {
-      width: 40px; height: 40px; border-radius: 50%;
-      border: 1.5px solid #C9A84C;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; color: #C9A84C;
-    }
-    .mchef-info { flex: 1; min-width: 0; }
-    .mchef-item-label {
-      font-size: 9px; font-weight: 800;
-      letter-spacing: 2px; text-transform: uppercase;
-      color: #C9A84C; margin-bottom: 4px; opacity: 0.7;
-    }
-    .mchef-item-nom {
-      font-size: 14px; font-weight: 700; color: #1a1a1a;
-      line-height: 1.3; word-break: break-word;
-    }
-    .mchef-item-desc { font-size: 11px; color: #888; margin-top: 3px; font-style: italic; }
-    .mchef-item-prix {
-      font-size: 14px; font-weight: 700; color: #111;
-      margin-top: 6px; text-align: right; white-space: nowrap;
-    }
-
-    /* ── Origine des viandes ─────────────────────────────────────────────── */
-    #origines-section {
-      max-width: 720px; margin: 40px auto 0; padding: 0 20px 32px;
-      display: none;
-    }
-    #origines-section.visible { display: block; }
-    .origines-title {
-      font-size: 10px; font-weight: 800; color: #bbb;
-      letter-spacing: 2.5px; text-transform: uppercase;
-      margin-bottom: 12px; padding-bottom: 8px;
-      border-bottom: 1px solid #f0f0f0;
-    }
-    .origines-grid {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px;
-    }
-    @media (max-width: 420px) { .origines-grid { grid-template-columns: 1fr; } }
-    .origines-row {
-      display: flex; align-items: baseline; justify-content: space-between;
-      gap: 8px; padding: 5px 0; border-bottom: 1px solid #f8f8f8;
-    }
-    .origines-produit { font-size: 12px; color: #888; }
-    .origines-origine { font-size: 11px; color: #bbb; font-style: italic; white-space: nowrap; }
+    .vue { animation: ted-fade 0.5s ease-out; }
   </style>
 </head>
 <body>
 
-<div id="header">
-  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <img src="/logo192.png" alt="Logo TED" id="header-logo" style="height:36px;width:36px;object-fit:contain;transition:height 220ms ease,width 220ms ease;">
-      <div>
-        <div id="header-title">LE TED</div>
-        <div id="header-sub">RESTAURANT &amp; CLUB</div>
-      </div>
-    </div>
+<div id="fond-photo"></div>
+<div id="fond-voile"></div>
+
+<div id="ted-progress"></div>
+<nav id="nav-cats"><div class="rangee" id="nav-pills"></div></nav>
+
+<div id="wrap">
+
+  <header id="topbar">
+    <a id="topbar-logo" href="/accueil.html">
+      <img src="assets/logo-ours-or.png" alt="Le TED">
+      <span>
+        <span id="topbar-nom">LE TED</span>
+        <span id="topbar-sub">RESTAURANT &amp; CLUB</span>
+      </span>
+    </a>
     <div id="lang-selector">
-      <button id="lang-btn" onclick="toggleLangMenu()">FR</button>
+      <button id="lang-btn" onclick="toggleLangMenu()" aria-label="Choisir la langue">FR <span class="chev">▼</span></button>
       <div id="lang-menu">
-        <button class="lang-opt" onclick="setLang('fr')">FR</button>
-        <button class="lang-opt" onclick="setLang('en')">EN</button>
-        <button class="lang-opt" onclick="setLang('es')">ES</button>
-        <button class="lang-opt" onclick="setLang('it')">IT</button>
+        <button class="lang-opt" data-lang="fr" onclick="setLang('fr')">Français <span class="code">FR</span></button>
+        <button class="lang-opt" data-lang="en" onclick="setLang('en')">English <span class="code">EN</span></button>
+        <button class="lang-opt" data-lang="es" onclick="setLang('es')">Español <span class="code">ES</span></button>
+        <button class="lang-opt" data-lang="it" onclick="setLang('it')">Italiano <span class="code">IT</span></button>
       </div>
     </div>
+  </header>
+
+  <div id="titre-bloc">
+    <h1 id="titre-page">LA CARTE</h1>
+    <div class="titre-filet"><span class="ligne"></span><span class="losange"></span><span class="ligne"></span></div>
   </div>
-  <div id="header-underline"></div>
-  <div id="carte-tabs">
-    <!-- Généré dynamiquement depuis menu_cartes -->
+
+  <button id="btn-retour" onclick="basculerCarte()"><span style="font-size:17px;line-height:1;">←</span> <span id="btn-retour-txt"></span></button>
+
+  <div id="loading">
+    <img src="assets/logo-ours-or.png" alt="">
+    <span id="loading-txt">Chargement de la carte…</span>
   </div>
-  <div id="cats-bar"></div>
+  <div id="error"></div>
+
+  <div id="specials-container" style="display:none;"></div>
+  <div id="content" style="display:none;"></div>
+
+  <div id="origines-section">
+    <div id="origines-titre"><div class="filet ted-trace"></div><h3 id="origines-h3">ORIGINE DES VIANDES</h3><div class="filet ted-trace"></div></div>
+    <div id="origines-grid"></div>
+  </div>
+
+  <footer>
+    <img src="assets/logo-ours-or.png" alt="">
+    <span class="nom">LE TED</span>
+    <span class="adresse">28 Av. des Frères Montgolfier, 69680 Chassieu</span>
+    <a class="tel" href="tel:+33478906780">04 78 90 67 80</a>
+  </footer>
+
 </div>
 
-<div id="brasero-banner">🔥 Carte Brasero disponible le mercredi soir uniquement</div>
-
-<div id="loading">Chargement de la carte...</div>
-<div id="error" style="display:none"></div>
-<div id="specials-container" style="display:none; margin: 16px auto 8px; padding: 0 16px; max-width:720px;"></div>
-<div id="content" style="display:none"></div>
-
-<button id="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Retour en haut">↑</button>
-
-<div id="origines-section">
-  <div class="origines-title">Origine des viandes</div>
-  <div class="origines-grid" id="origines-grid"></div>
-</div>
-
-<footer>
-  <img src="/logo192.png" alt="Logo TED" style="height:48px;width:48px;object-fit:contain;opacity:0.85;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;">
-  <strong>LE TED</strong><br>
-  28 Av. des Frères Montgolfier, 69680 Chassieu<br>
-  04 72 02 20 20
-</footer>
+<button id="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Retour en haut">↑</button>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
-  // ── Configuration Supabase ──────────────────────────────────────────────────
-  // Ces valeurs sont publiques (clé anon avec RLS) — safe à exposer
+  // ── Configuration Supabase (clé publique, protégée par RLS) ────────────────
   // Timeout global 10 s sur tous les fetch de la page (résilience réseau)
   if (window.AbortSignal && AbortSignal.timeout) {
     const _fetch = window.fetch.bind(window);
@@ -388,17 +337,104 @@
   const SUPA_KEY = 'sb_publishable_4-uVtQtXd0jLGkNAFsx4yw_ni17DzN_';
 
   // ── État ────────────────────────────────────────────────────────────────────
+  // Deux cartes séparées, jamais fusionnées : 'restaurant' (normale) / 'brasero'
   let carteActive = 'restaurant';
   let allCartes = [{ slug:'restaurant', nom:'Restaurant' }, { slug:'brasero', nom:'Brasero' }];
   let allCategories = [];
   let allProduits = [];
-  let entreeJour = null;
-  let platJour = null;
-  let dessertJour = null;
-  let formuleJour = null;
-  let suggestionJour = null;
+  let entreeJour = null, platJour = null, dessertJour = null, formuleJour = null, suggestionJour = null;
 
-  // ── Cartes dynamiques depuis menu_cartes ────────────────────────────────────
+  function esc(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function formatPrix(p) {
+    if (!p) return '';
+    const s = String(p).trim();
+    if (!s || s.includes('€')) return s;
+    return /^[\d]+([,.][\d]{1,2})?$/.test(s) ? s + ' €' : s;
+  }
+
+  // ── Langue : UI + phrases d'ambiance (le contenu de la carte vient de la base) ─
+  const UI = {
+    fr: {
+      titre:'La Carte', braseroTitre:'Carte Brasero', chargement:'Chargement de la carte…',
+      retourCarte:'Retour à la carte', origineTitre:'ORIGINE DES VIANDES',
+      badgeMenuJour:'MENU DU JOUR', formuleComplete:'FORMULE COMPLÈTE', suggestionChef:'Suggestion du chef',
+      labels:{ entree:'ENTRÉE', plat:'PLAT', dessert:'DESSERT' },
+      braseroBtnTitre:'Carte Brasero', braseroBtnSous:'Le mercredi soir uniquement',
+      phraseBrasero:'Cuit à la braise, servi avec passion',
+      noteLegale:'Prix nets et service compris. Plats faits-maison élaborés sur place à partir de produits bruts.',
+      erreur:'Impossible de charger la carte. Vérifiez votre connexion.',
+      phrases:{ tapas:"Pour ouvrir l'appétit", signatures:'Cuit à la braise, servi avec passion', desserts:'Une douceur pour finir en beauté', vinsverre:'À chaque plat son vin', club:"L'esprit de la fête" },
+    },
+    en: {
+      titre:'The Menu', braseroTitre:'Brasero Menu', chargement:'Loading the menu…',
+      retourCarte:'Back to the menu', origineTitre:'MEAT ORIGIN',
+      badgeMenuJour:'MENU OF THE DAY', formuleComplete:'FULL SET MENU', suggestionChef:"Chef's suggestion",
+      labels:{ entree:'STARTER', plat:'MAIN', dessert:'DESSERT' },
+      braseroBtnTitre:'Brasero Menu', braseroBtnSous:'Wednesday evenings only',
+      phraseBrasero:'Fire-grilled, served with passion',
+      noteLegale:'Net prices, service included. Homemade dishes prepared on site from raw products.',
+      erreur:'Unable to load the menu. Please check your connection.',
+      phrases:{ tapas:'To whet the appetite', signatures:'Fire-grilled, served with passion', desserts:'A sweet note to finish', vinsverre:'A wine for every dish', club:'The party spirit' },
+    },
+    es: {
+      titre:'La Carta', braseroTitre:'Carta Brasero', chargement:'Cargando la carta…',
+      retourCarte:'Volver a la carta', origineTitre:'ORIGEN DE LAS CARNES',
+      badgeMenuJour:'MENÚ DEL DÍA', formuleComplete:'MENÚ COMPLETO', suggestionChef:'Sugerencia del chef',
+      labels:{ entree:'ENTRANTE', plat:'PLATO', dessert:'POSTRE' },
+      braseroBtnTitre:'Carta Brasero', braseroBtnSous:'Solo los miércoles por la noche',
+      phraseBrasero:'A la brasa, con pasión',
+      noteLegale:'Precios netos, servicio incluido. Platos caseros elaborados con productos frescos.',
+      erreur:'No se pudo cargar la carta. Comprueba tu conexión.',
+      phrases:{ tapas:'Para abrir el apetito', signatures:'A la brasa, con pasión', desserts:'Un dulce para terminar', vinsverre:'A cada plato su vino', club:'El espíritu de fiesta' },
+    },
+    it: {
+      titre:'Il Menu', braseroTitre:'Menu Brasero', chargement:'Caricamento del menu…',
+      retourCarte:'Torna al menu', origineTitre:'ORIGINE DELLE CARNI',
+      badgeMenuJour:'MENÙ DEL GIORNO', formuleComplete:'MENÙ COMPLETO', suggestionChef:'Suggerimento dello chef',
+      labels:{ entree:'ANTIPASTO', plat:'PIATTO', dessert:'DOLCE' },
+      braseroBtnTitre:'Menu Brasero', braseroBtnSous:'Solo il mercoledì sera',
+      phraseBrasero:'Alla brace, con passione',
+      noteLegale:'Prezzi netti, servizio incluso. Piatti fatti in casa con prodotti freschi.',
+      erreur:'Impossibile caricare il menu. Controlla la connessione.',
+      phrases:{ tapas:"Per aprire l'appetito", signatures:'Alla brace, con passione', desserts:'Un dolce per finire', vinsverre:'A ogni piatto il suo vino', club:'Lo spirito della festa' },
+    },
+  };
+  let lang = localStorage.getItem('ted_langue') || 'fr';
+  if (!['fr', 'en', 'es', 'it'].includes(lang)) lang = 'fr';
+
+  function tUI(k) { return (UI[lang] || UI.fr)[k] || UI.fr[k] || k; }
+  function tItem(item, field) {
+    if (lang === 'fr') return item[field] || '';
+    return item[field + '_' + lang] || item[field] || '';
+  }
+
+  function applyLangUI() {
+    document.getElementById('lang-btn').innerHTML = lang.toUpperCase() + ' <span class="chev">▼</span>';
+    document.querySelectorAll('.lang-opt').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
+    document.getElementById('loading-txt').textContent = tUI('chargement');
+    document.getElementById('origines-h3').textContent = tUI('origineTitre');
+    document.getElementById('btn-retour-txt').textContent = tUI('retourCarte');
+    document.getElementById('titre-page').textContent = (carteActive === 'brasero' ? tUI('braseroTitre') : tUI('titre')).toUpperCase();
+    if (allCategories.length) renderMenu();
+  }
+
+  function toggleLangMenu() { document.getElementById('lang-menu').classList.toggle('open'); }
+  function setLang(l) {
+    lang = l;
+    localStorage.setItem('ted_langue', l);
+    document.getElementById('lang-menu').classList.remove('open');
+    applyLangUI();
+  }
+  document.addEventListener('click', e => {
+    const sel = document.getElementById('lang-selector');
+    if (sel && !sel.contains(e.target)) document.getElementById('lang-menu').classList.remove('open');
+  });
+
+  // ── Cartes dynamiques (libellés depuis menu_cartes) ─────────────────────────
   async function loadCartes() {
     try {
       const r = await fetch(
@@ -410,73 +446,10 @@
         if (data && data.length > 0) allCartes = data;
       }
     } catch(e) {} // silencieux — fallback hardcodé
-    renderCarteTabs();
   }
-
-  function renderCarteTabs() {
-    const container = document.getElementById('carte-tabs');
-    container.innerHTML = '';
-    allCartes.forEach(c => {
-      const btn = document.createElement('button');
-      btn.className = 'carte-tab' + (c.slug === carteActive ? ' active' : '');
-      btn.id = 'tab-' + c.slug;
-      btn.dataset.carte = c.slug;
-      btn.textContent = c.nom;
-      btn.onclick = () => switchCarte(c.slug);
-      container.appendChild(btn);
-    });
-  }
-
-  function formatPrix(p) {
-    if (!p) return '';
-    const s = String(p).trim();
-    if (!s || s.includes('€')) return s;
-    return /^[\d]+([,.][\d]{1,2})?$/.test(s) ? s + ' €' : s;
-  }
-
-  // ── Langue ──────────────────────────────────────────────────────────────────
-  const UI = {
-    fr: { restaurant:'Restaurant', brasero:'Brasero', plat_jour:'Plat du jour', dessert_jour:'Dessert du jour', suggestion_chef:'Suggestion du chef', brasero_banner:'🔥 Carte Brasero disponible le mercredi soir uniquement' },
-    en: { restaurant:'Restaurant', brasero:'Brasero', plat_jour:'Daily special', dessert_jour:'Dessert of the day', suggestion_chef:"Chef's special", brasero_banner:'🔥 Brasero menu available Wednesday evenings only' },
-    es: { restaurant:'Restaurante', brasero:'Brasero', plat_jour:'Plato del día', dessert_jour:'Postre del día', suggestion_chef:'Sugerencia del chef', brasero_banner:'🔥 Carta Brasero disponible solo los miércoles por la noche' },
-    it: { restaurant:'Ristorante', brasero:'Brasero', plat_jour:'Piatto del giorno', dessert_jour:'Dolce del giorno', suggestion_chef:'Suggerimento dello chef', brasero_banner:'🔥 Menu Brasero disponibile solo il mercoledì sera' }
-  };
-  let lang = localStorage.getItem('ted_langue') || 'fr';
-  if (!['fr', 'en', 'es', 'it'].includes(lang)) lang = 'fr'; // 'de' supprimée
-
-  function tUI(k) { return (UI[lang] || UI.fr)[k] || UI.fr[k] || k; }
-  function tItem(item, field) {
-    if (lang === 'fr') return item[field] || '';
-    return item[field + '_' + lang] || item[field] || '';
-  }
-
-  function applyLangUI() {
-    document.getElementById('lang-btn').textContent = lang.toUpperCase();
-    document.querySelectorAll('.lang-opt').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase() === lang));
-    document.getElementById('brasero-banner').textContent = tUI('brasero_banner');
-    if (allCategories.length) renderMenu();
-  }
-
-  function toggleLangMenu() {
-    const m = document.getElementById('lang-menu');
-    m.classList.toggle('open');
-  }
-
-  function setLang(l) {
-    lang = l;
-    localStorage.setItem('ted_langue', l);
-    document.getElementById('lang-menu').classList.remove('open');
-    applyLangUI();
-  }
-
-  // Ferme le menu si clic ailleurs
-  document.addEventListener('click', e => {
-    const sel = document.getElementById('lang-selector');
-    if (sel && !sel.contains(e.target)) document.getElementById('lang-menu').classList.remove('open');
-  });
 
   // ── Cache localStorage (TTL 5 min, revalidation silencieuse > 60s) ─────────
-  const CACHE_KEY = 'ted_menu_v2';
+  const CACHE_KEY = 'ted_menu_v3';
   const CACHE_TTL  = 5 * 60 * 1000;
   const CACHE_STALE =     60 * 1000;
 
@@ -489,12 +462,11 @@
       return { cats, prods, plats, age: Date.now() - ts };
     } catch(e) { return null; }
   }
-
   function cacheSet(cats, prods, plats) {
     try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), cats, prods, plats })); } catch(e) {}
   }
 
-  // ── Fetch Supabase ──────────────────────────────────────────────────────────
+  // ── Fetch Supabase — AUCUNE limite, AUCUN filtre qui écarte des plats ───────
   async function fetchJSON(table, params = '') {
     const r = await fetch(`${SUPA_URL}/rest/v1/${table}?${params}`, {
       headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` }
@@ -504,60 +476,52 @@
   }
 
   const CAT_COLS   = 'id,nom,nom_en,nom_es,nom_it,carte,ordre,visible';
-  const PROD_COLS  = 'id,nom,nom_en,nom_es,nom_it,description,description_en,description_es,description_it,prix,accord_vin,badges,ordre,disponible,carte,categorie_id';
+  const PROD_COLS  = 'id,nom,nom_en,nom_es,nom_it,description,description_en,description_es,description_it,prix,prix_detail,accord_vin,badges,ordre,disponible,carte,categorie_id';
   const CAT_COLS_FR  = 'id,nom,carte,ordre,visible';
-  const PROD_COLS_FR = 'id,nom,description,prix,accord_vin,badges,ordre,disponible,carte,categorie_id';
+  const PROD_COLS_FR = 'id,nom,description,prix,prix_detail,accord_vin,badges,ordre,disponible,carte,categorie_id';
   const PLAT_COLS  = 'id,nom,description,prix,type,carte,actif';
 
   async function fetchFromNetwork(silent = false) {
     let cats, prods, plats;
     try {
       [cats, prods, plats] = await Promise.all([
-        fetchJSON('menu_categories', `select=${CAT_COLS}&order=ordre`),
-        fetchJSON('menu_produits',   `select=${PROD_COLS}&disponible=eq.true&order=ordre`),
-        fetchJSON('menu_plat_jour',  `select=${PLAT_COLS}`)
+        fetchJSON('menu_categories', `select=${CAT_COLS}&order=ordre&limit=10000`),
+        fetchJSON('menu_produits',   `select=${PROD_COLS}&disponible=eq.true&order=ordre&limit=10000`),
+        fetchJSON('menu_plat_jour',  `select=${PLAT_COLS}&limit=1000`)
       ]);
     } catch(e) {
       // Colonnes de traduction absentes → fallback FR uniquement
       [cats, prods, plats] = await Promise.all([
-        fetchJSON('menu_categories', `select=${CAT_COLS_FR}&order=ordre`),
-        fetchJSON('menu_produits',   `select=${PROD_COLS_FR}&disponible=eq.true&order=ordre`),
-        fetchJSON('menu_plat_jour',  `select=${PLAT_COLS}`)
+        fetchJSON('menu_categories', `select=${CAT_COLS_FR}&order=ordre&limit=10000`),
+        fetchJSON('menu_produits',   `select=${PROD_COLS_FR}&disponible=eq.true&order=ordre&limit=10000`),
+        fetchJSON('menu_plat_jour',  `select=${PLAT_COLS}&limit=1000`)
       ]);
     }
     allCategories = cats;
     allProduits = prods;
     updatePlatJour(plats);
     cacheSet(cats, prods, plats);
-    if (!silent) {
-      document.getElementById('loading').style.display = 'none';
-    }
+    if (!silent) document.getElementById('loading').style.display = 'none';
     renderMenu();
   }
 
   async function loadData() {
     const hit = cacheGet();
     if (hit) {
-      // Affichage immédiat depuis le cache
       allCategories = hit.cats;
       allProduits = hit.prods;
       updatePlatJour(hit.plats);
       document.getElementById('loading').style.display = 'none';
       renderMenu();
-      // Revalidation silencieuse si le cache a > 60s
-      if (hit.age > CACHE_STALE) {
-        fetchFromNetwork(true).catch(() => {});
-      }
+      if (hit.age > CACHE_STALE) fetchFromNetwork(true).catch(() => {});
       return;
     }
-
-    // Pas de cache — fetch bloquant avec indicateur de chargement
     try {
       await fetchFromNetwork(false);
     } catch(e) {
       document.getElementById('loading').style.display = 'none';
       const err = document.getElementById('error');
-      err.textContent = 'Impossible de charger la carte. Vérifiez votre connexion.';
+      err.textContent = tUI('erreur');
       err.style.display = 'block';
     }
   }
@@ -565,13 +529,12 @@
   // ── Polling menu du jour — mise à jour en direct toutes les 30s ────────────
   async function pollPlatJour() {
     try {
-      const plats = await fetchJSON('menu_plat_jour', `select=${PLAT_COLS}`);
+      const plats = await fetchJSON('menu_plat_jour', `select=${PLAT_COLS}&limit=1000`);
       const sig = JSON.stringify(plats);
       if (sig !== pollPlatJour._last) {
         pollPlatJour._last = sig;
         updatePlatJour(plats);
         renderSpecials();
-        // Met à jour le cache localStorage avec les nouvelles données plat
         const hit = cacheGet();
         if (hit) cacheSet(hit.cats, hit.prods, plats);
       }
@@ -580,10 +543,9 @@
   pollPlatJour._last = null;
   setInterval(pollPlatJour, 30000);
 
-  // ── bfcache : retour navigateur — pas de refetch si données déjà en mémoire ─
+  // ── bfcache : retour navigateur ─────────────────────────────────────────────
   window.addEventListener('pageshow', e => {
     if (e.persisted && allCategories.length === 0) {
-      // Edge case : JS state perdu malgré bfcache — recharge depuis localStorage
       const hit = cacheGet();
       if (hit) {
         allCategories = hit.cats; allProduits = hit.prods;
@@ -604,80 +566,53 @@
     suggestionJour = plats.find(p => p.type === 'suggestion' && p.carte === carteActive) || null;
   }
 
+  // ── Menu du jour + Suggestion du chef (pilotés depuis le back-office) ──────
   function renderSpecials() {
     const container = document.getElementById('specials-container');
     if (!container) return;
 
-    const menuRows = [
-      { label: 'Entrée',  icon: '🥗', item: entreeJour },
-      { label: 'Plat',    icon: '🍽', item: platJour },
-      { label: 'Dessert', icon: '🍮', item: dessertJour },
+    const rows = [
+      { key: 'entree',  item: entreeJour },
+      { key: 'plat',    item: platJour },
+      { key: 'dessert', item: dessertJour },
     ];
-    const menuVisible = menuRows.some(r => r.item && r.item.actif && r.item.nom);
+    const menuVisible = rows.some(r => r.item && r.item.actif && r.item.nom);
     const suggestionVisible = suggestionJour && suggestionJour.actif && suggestionJour.nom;
 
-    if (!menuVisible && !suggestionVisible) { container.style.display = 'none'; return; }
-    container.style.display = 'grid';
+    if (!menuVisible && !suggestionVisible) { container.style.display = 'none'; container.innerHTML = ''; return; }
+    container.style.display = 'block';
 
-    // Fourchette (3 dents) + couteau — picto couverts classique
-    const svgPlat    = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="2" x2="8" y2="22"/><path d="M6 2v5a2 2 0 0 0 4 0V2"/><line x1="16" y1="2" x2="16" y2="22"/><path d="M14 2h4v6h-4"/></svg>`;
-    // Gâteau d'anniversaire à 3 bougies
-    const svgDessert = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><path d="M4 16s.5-1 2-1 2.5 2 4 2 1.5-2 3-2 2.5 2 4 2 2-1 2-1"/><path d="M2 21h20"/><path d="M7 8v3"/><path d="M12 8v3"/><path d="M17 8v3"/><path d="M7 5v1"/><path d="M12 5v1"/><path d="M17 5v1"/></svg>`;
-    // Entrée — fourchette seule (petite, entrée légère)
-    const svgEntree  = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M10 2v5a2 2 0 0 0 4 0V2"/></svg>`;
-    const svgChef    = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0c.37.38.69.8.95 1.26A4.001 4.001 0 0 1 18 13.87V21H6z"/><line x1="6" y1="17" x2="18" y2="17"/></svg>`;
-    const iconMap = { 'Entrée': svgEntree, 'Plat': svgPlat, 'Dessert': svgDessert };
-    const labelMap = { 'Entrée': 'ENTRÉE DU JOUR', 'Plat': 'PLAT DU JOUR', 'Dessert': 'DESSERT DU JOUR' };
-
+    const labels = tUI('labels');
     let html = '';
 
-    // Encart Menu du jour
+    // MENU DU JOUR — le seul bloc encadré de la page
     if (menuVisible) {
-      html += `<div class="mjour-card">
-        <div class="mjour-title-row">
-          <div class="mjour-title-line"></div>
-          <span class="mjour-title-text">MENU DU JOUR</span>
-          <div class="mjour-title-line"></div>
-        </div>`;
-      menuRows.forEach(({ label, item }) => {
+      html += `<div class="mjour-cadre">
+        <div class="mjour-entete">
+          <h2 class="mjour-badge">${esc(tUI('badgeMenuJour'))}</h2>
+          ${formuleJour && formuleJour.actif !== false && formuleJour.prix ? `<span class="mjour-formule">${esc(tUI('formuleComplete'))} · ${esc(formatPrix(formuleJour.prix))}</span>` : ''}
+        </div>
+        <div class="mjour-items">`;
+      rows.forEach(({ key, item }) => {
         if (!item || !item.actif || !item.nom) return;
         html += `<div class="mjour-item">
-          <div class="mjour-icon">${iconMap[label] || svgPlat}</div>
-          <div class="mjour-info">
-            <div class="mjour-item-label">${labelMap[label] || label.toUpperCase()}</div>
-            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;">
-              <div class="mjour-item-nom">${esc(item.nom)}</div>
-              ${item.prix ? `<div class="mjour-item-prix">${esc(formatPrix(item.prix))}</div>` : ''}
-            </div>
-            ${item.description ? `<div class="mjour-item-desc">${esc(item.description)}</div>` : ''}
-          </div>
+          <span class="mjour-label">${esc(labels[key] || key.toUpperCase())}</span>
+          <span class="mjour-nom">${esc(item.nom)}</span>
+          ${item.description ? `<span class="mjour-desc">${esc(item.description)}</span>` : ''}
+          ${item.prix ? `<span class="mjour-prix">${esc(formatPrix(item.prix))}</span>` : ''}
         </div>`;
       });
-      if (formuleJour && formuleJour.prix) {
-        html += `<div class="mjour-formule">
-          <span class="mjour-formule-label">FORMULE COMPLÈTE</span>
-          <span class="mjour-formule-prix">${esc(formatPrix(formuleJour.prix))}</span>
-        </div>`;
-      }
-      html += `</div>`;
+      html += `</div></div>`;
     }
 
-    // Encart Suggestion du chef
+    // SUGGESTION DU CHEF — sans cadre
     if (suggestionVisible) {
-      html += `<div class="mchef-card">
-        <div class="mchef-title-row">
-          <div class="mchef-title-line"></div>
-          <span class="mchef-title-text">Suggestion du chef</span>
-          <div class="mchef-title-line"></div>
-        </div>
+      html += `<div class="mchef-bloc">
+        <h2 class="mchef-titre">${esc(tUI('suggestionChef'))}</h2>
         <div class="mchef-item">
-          <div class="mchef-icon">${svgChef}</div>
-          <div class="mchef-info">
-            <div class="mchef-item-label">Suggestion du chef</div>
-            <div class="mchef-item-nom">${esc(suggestionJour.nom)}</div>
-            ${suggestionJour.description ? `<div class="mchef-item-desc">${esc(suggestionJour.description)}</div>` : ''}
-            ${suggestionJour.prix ? `<div class="mchef-item-prix">${esc(formatPrix(suggestionJour.prix))}</div>` : ''}
-          </div>
+          <span class="mjour-nom">${esc(suggestionJour.nom)}</span>
+          ${suggestionJour.description ? `<span class="mjour-desc">${esc(suggestionJour.description)}</span>` : ''}
+          ${suggestionJour.prix ? `<span class="mjour-prix">${esc(formatPrix(suggestionJour.prix))}</span>` : ''}
         </div>
       </div>`;
     }
@@ -685,32 +620,35 @@
     container.innerHTML = html;
   }
 
-  // ── Header compact + bouton retour ─────────────────────────────────────────
-  const header = document.getElementById('header');
-  const backTop = document.getElementById('back-top');
-  window.addEventListener('scroll', () => {
-    header.classList.toggle('compact', window.scrollY > 40);
-    backTop.classList.toggle('visible', window.scrollY > 220);
-  }, { passive: true });
+  // ── Bandeaux photo d'ambiance par catégorie (assets locaux uniquement) ─────
+  function bandeauPour(nomCat) {
+    const n = (nomCat || '').toLowerCase();
+    if (/dessert/.test(n))                return { img: 'assets/banner-desserts.webp',       cle: 'desserts' };
+    if (/vin/.test(n) && /verre/.test(n)) return { img: 'assets/banner-boissons.webp',       cle: 'vinsverre' };
+    if (/club/.test(n))                   return { img: 'assets/fond-festif.jpg',            cle: 'club' };
+    if (/tapas/.test(n))                  return { img: 'assets/banner-planches.jpg',        cle: 'tapas' };
+    if (/signature/.test(n))              return { img: 'assets/banner-plat-signature.jpg',  cle: 'signatures' };
+    return null;
+  }
 
-  // ── Switch carte ─────────────────────────────────────────────────────────────
-  function switchCarte(carte) {
-    carteActive = carte;
-    document.querySelectorAll('.carte-tab').forEach(t => t.classList.toggle('active', t.dataset.carte === carte));
-    document.getElementById('brasero-banner').classList.toggle('visible', carte === 'brasero');
+  // ── Bascule carte normale ↔ Brasero (jamais fusionnées) ────────────────────
+  function basculerCarte(force) {
+    carteActive = force || (carteActive === 'brasero' ? 'restaurant' : 'brasero');
+    document.getElementById('titre-page').textContent = (carteActive === 'brasero' ? tUI('braseroTitre') : tUI('titre')).toUpperCase();
+    document.getElementById('btn-retour').classList.toggle('visible', carteActive === 'brasero');
     const hit = cacheGet();
     if (hit) updatePlatJour(hit.plats);
+    window.scrollTo({ top: 0 });
     renderMenu();
   }
 
-  // ── Render ───────────────────────────────────────────────────────────────────
+  // ── Rendu principal ─────────────────────────────────────────────────────────
   function renderMenu() {
     renderSpecials();
     const content = document.getElementById('content');
-    const catsBar = document.getElementById('cats-bar');
     content.style.display = 'block';
+    content.className = 'vue';
 
-    // Exclure les catégories nommées "Plat du jour" ou "Dessert du jour" — gérées séparément
     const isPlatJourCat = (nom) => /plat du jour|dessert du jour/i.test(nom);
     const cats = allCategories.filter(c =>
       c.visible !== false &&
@@ -721,124 +659,177 @@
     const FOOD_CATS = ['Formules midi','Tapas','Nos planches','Salades','Plats froids','Plats signatures','Suggestions','Fromages','Desserts'];
     const isFoodSection = (nom) => FOOD_CATS.some(f => nom.toLowerCase().includes(f.toLowerCase()) || f.toLowerCase().includes(nom.toLowerCase()));
 
-    // ── Pills (sans "Plat du jour") ──
-    let pillsHtml = '';
-    cats.forEach(cat => {
-      const ps = allProduits.filter(p => p.categorie_id === cat.id && (p.carte === carteActive || p.carte === 'les-deux'));
-      if (ps.length === 0) return;
-      pillsHtml += `<button class="cat-pill" onclick="scrollToId('cat-${cat.id}')" id="pill-${cat.id}">${esc(tItem(cat, 'nom'))}</button>`;
-    });
-    catsBar.innerHTML = pillsHtml;
-
-    // ── Catégories ──
     let html = '';
+
+    // Bandeau + phrase d'ambiance en tête de la carte Brasero
+    if (carteActive === 'brasero') {
+      html += `<div class="bandeau" style="margin-top:34px;">
+        <div class="img" style="background-image:url('assets/banner-brasero.webp');"></div>
+        <div class="voile" style="background:linear-gradient(180deg, rgba(20,16,11,0.45) 0%, rgba(20,16,11,0.2) 45%, rgba(20,16,11,0.65) 100%);"></div>
+        <div class="phrase-wrap"><span class="phrase ted-reveal" style="color:#f2ce9e;font-weight:500;font-size:21px;">${esc(tUI('phraseBrasero'))}</span></div>
+      </div>`;
+    }
+
+    // Pills de navigation (toutes les catégories non vides, ordre Supabase strict)
+    let pillsHtml = '';
     let hasFood = false;
+    let noteInseree = false;
+
     cats.forEach(cat => {
       const ps = allProduits.filter(p => p.categorie_id === cat.id && (p.carte === carteActive || p.carte === 'les-deux'));
       if (ps.length === 0) return;
 
-      html += `<div class="section reveal-pending" id="cat-${cat.id}">`;
-      html += `<div class="section-title">${esc(tItem(cat, 'nom'))}</div>`;
+      pillsHtml += `<button class="cat-pill" id="pill-${cat.id}" onclick="allerCat('${cat.id}')">${esc(tItem(cat, 'nom'))}</button>`;
 
-      ps.forEach(p => {
+      // Note légale après le dernier bloc "nourriture", avant les boissons
+      if (hasFood && !isFoodSection(cat.nom) && !noteInseree) {
+        html += `<p class="section-note">${esc(tUI('noteLegale'))}</p>`;
+        noteInseree = true;
+      }
+      if (isFoodSection(cat.nom)) hasFood = true;
+
+      // Bandeau photo d'ambiance avant certaines catégories (carte normale)
+      const bd = carteActive === 'restaurant' ? bandeauPour(cat.nom) : null;
+      if (bd) {
+        const phrase = (tUI('phrases') || {})[bd.cle] || '';
+        html += `<div class="bandeau">
+          <div class="img" style="background-image:url('${bd.img}');"></div>
+          <div class="voile"></div>
+          <div class="phrase-wrap"><span class="phrase ted-reveal">${esc(phrase)}</span></div>
+        </div>`;
+      }
+
+      html += `<div id="cat-${cat.id}" data-catid="${cat.id}" class="section-bloc">
+        <div class="section-titre">
+          <div class="filet ted-trace"></div>
+          <h3>${esc(tItem(cat, 'nom'))}</h3>
+          <div class="filet ted-trace"></div>
+        </div>`;
+
+      ps.forEach((p, i) => {
         const pNom  = tItem(p, 'nom');
         const pDesc = tItem(p, 'description');
-        const badges = (p.badges || []).map(b => `<span class="badge-item">${esc(b)}</span>`).join('');
-        html += `<div class="produit">
-          <div class="produit-info">
-            <div class="produit-nom">${esc(pNom)}</div>
-            ${pDesc ? `<div class="produit-desc">${esc(pDesc)}</div>` : ''}
-            ${p.accord_vin ? `<div class="produit-accord">— ${esc(p.accord_vin)}</div>` : ''}
-            ${badges ? `<div class="produit-badges">${badges}</div>` : ''}
+        const badges = (p.badges || []).map(b => `<span class="plat-tag">${esc(b)}</span>`).join('');
+        const prix = p.prix_detail || formatPrix(p.prix);
+        html += `<div class="plat ted-reveal" style="transition-delay:${Math.min(i * 45, 320)}ms;">
+          <div class="plat-ligne">
+            <span class="plat-nom">${esc(pNom)}</span>
+            <span class="plat-points"></span>
+            ${prix ? `<span class="plat-prix">${esc(prix)}</span>` : ''}
           </div>
-          ${(p.prix_detail || p.prix) ? `<div class="produit-prix">${esc(p.prix_detail || formatPrix(p.prix))}</div>` : ''}
+          ${pDesc ? `<span class="plat-desc">${esc(pDesc)}</span>` : ''}
+          ${badges}
+          ${p.accord_vin ? `<span class="plat-accord">${esc(p.accord_vin)}</span>` : ''}
         </div>`;
       });
-
-      if (isFoodSection(cat.nom) && !hasFood) {
-        hasFood = true;
-      } else if (hasFood && !isFoodSection(cat.nom)) {
-        html += `<p class="note-legale">Prix nets et service compris. Plats faits-maison élaborés sur place à partir de produits bruts.</p>`;
-        hasFood = false;
-      }
 
       html += `</div>`;
     });
 
-    if (hasFood) {
-      html += `<p class="note-legale">Prix nets et service compris. Plats faits-maison élaborés sur place à partir de produits bruts.</p>`;
+    if (hasFood && !noteInseree) {
+      html += `<p class="section-note">${esc(tUI('noteLegale'))}</p>`;
+    }
+
+    // Accès à la carte Brasero — la seule teinte chaude de la page
+    if (carteActive === 'restaurant') {
+      html += `<button id="brasero-btn" onclick="basculerCarte('brasero')" aria-label="${esc(tUI('braseroBtnTitre'))}">
+        <span class="braise-a"></span>
+        <span class="braise-b"></span>
+        <svg class="ted-flamme" width="28" height="28" viewBox="0 0 24 24" fill="rgba(217,140,69,0.15)" stroke="#D98C45" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>
+        <span class="txt">
+          <span class="l1">${esc(tUI('braseroBtnTitre'))}</span>
+          <span class="l2">${esc(tUI('braseroBtnSous'))}</span>
+        </span>
+        <span class="chevron">›</span>
+      </button>`;
     }
 
     content.innerHTML = html;
-    initObserver(cats);
-    initSectionReveal();
+    document.getElementById('nav-pills').innerHTML = pillsHtml;
+    scanReveals();
   }
 
-  // ── IntersectionObserver — pill active ─────────────────────────────────────
-  function initObserver(cats) {
-    if (window._menuObserver) window._menuObserver.disconnect();
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          const id = entry.target.id;
-          document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
-          const catId = id.startsWith('cat-') ? id.replace('cat-', '') : null;
-          if (catId) {
-            const pill = document.getElementById(`pill-${catId}`);
-            if (pill) {
-              pill.classList.add('active');
-              pill.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-            }
-          }
+  function allerCat(id) {
+    const el = document.getElementById('cat-' + id);
+    if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' });
+  }
+
+  // ── Révélations au scroll (IntersectionObserver, jamais bloquant) ───────────
+  let _io = null;
+  function scanReveals() {
+    if (_io === null && 'IntersectionObserver' in window) {
+      _io = new IntersectionObserver((entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) { e.target.classList.add('ted-vu'); _io.unobserve(e.target); }
         }
-      });
-    }, { rootMargin: '-30% 0px -60% 0px', threshold: 0 });
-    cats.forEach(cat => {
-      const el = document.getElementById(`cat-${cat.id}`);
-      if (el) observer.observe(el);
+      }, { rootMargin: '0px 0px 10% 0px', threshold: 0.01 });
+    }
+    const vh = window.innerHeight || 800;
+    document.querySelectorAll('.ted-reveal:not(.ted-vu), .ted-trace:not(.ted-vu)').forEach((el) => {
+      const r = el.getBoundingClientRect();
+      if (!_io || (r.top < vh + 40 && r.bottom > -40)) el.classList.add('ted-vu');
+      else _io.observe(el);
     });
-    window._menuObserver = observer;
   }
 
-  // ── IntersectionObserver — apparition des sections au scroll ───────────────
-  function initSectionReveal() {
-    if (window._revealObserver) window._revealObserver.disconnect();
-    const revealObs = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.remove('reveal-pending');
-          entry.target.classList.add('revealed');
-          revealObs.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.04 });
-    document.querySelectorAll('.section.reveal-pending').forEach(el => revealObs.observe(el));
-    window._revealObserver = revealObs;
-  }
+  // ── Scroll : nav fixe, scroll-spy, fil de progression, retour en haut ──────
+  window.addEventListener('scroll', () => {
+    const y = window.scrollY;
+    document.getElementById('back-top').classList.toggle('visible', y > 400);
 
-  function scrollToId(id) {
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
+    const nav = document.getElementById('nav-cats');
+    const prog = document.getElementById('ted-progress');
+    const navOn = y > 260 && carteActive === 'restaurant';
+    nav.classList.toggle('visible', navOn);
+    prog.style.display = navOn ? 'block' : 'none';
 
-  function esc(str) {
-    if (!str) return '';
-    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
+    const doc = document.documentElement;
+    const pct = Math.min(1, y / Math.max(1, doc.scrollHeight - window.innerHeight));
+    prog.style.width = (pct * 100).toFixed(1) + '%';
 
-  // Lire les paramètres URL
+    // Scroll-spy : dernière catégorie dont le haut est passé sous la barre
+    let active = null;
+    document.querySelectorAll('.section-bloc').forEach(el => {
+      if (el.getBoundingClientRect().top <= 150) active = el.dataset.catid;
+    });
+    document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
+    if (active) {
+      const pill = document.getElementById('pill-' + active);
+      if (pill) {
+        pill.classList.add('active');
+        const scroller = document.getElementById('nav-cats');
+        scroller.scrollTo({ left: pill.offsetLeft - scroller.clientWidth / 2 + pill.clientWidth / 2, behavior: 'smooth' });
+      }
+    }
+  }, { passive: true });
+
+  // ── Origine des viandes (données existantes inchangées) ────────────────────
+  async function loadOrigines() {
+    try {
+      const r = await fetch(
+        `${SUPA_URL}/rest/v1/menu_origines?select=produit,origine&order=ordre&limit=10000`,
+        { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
+      );
+      if (!r.ok) return;
+      const data = await r.json();
+      if (!data || data.length === 0) return;
+      document.getElementById('origines-grid').innerHTML = data.map(o =>
+        `<div class="origine-item"><span class="viande">${esc(o.produit)}</span><span class="prov">${esc(o.origine)}</span></div>`
+      ).join('');
+      document.getElementById('origines-section').style.display = 'block';
+      scanReveals();
+    } catch(e) {}
+  }
+  loadOrigines();
+
+  // ── Init : URL (#brasero / ?carte=brasero), langue, entrée depuis l'accueil ─
   const urlParams = new URLSearchParams(window.location.search);
-  const urlCarte = urlParams.get('carte');
   const fromAccueil = urlParams.get('from') === 'accueil';
-
-  if (urlCarte) {
-    carteActive = urlCarte;
-    document.getElementById('brasero-banner').classList.toggle('visible', urlCarte === 'brasero');
+  if (/brasero/i.test(window.location.hash) || urlParams.get('carte') === 'brasero') {
+    carteActive = 'brasero';
+    document.getElementById('btn-retour').classList.add('visible');
   }
 
-  loadCartes();
-
-  // Animation d'entrée si on vient de accueil.html
   if (fromAccueil && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     document.body.style.opacity = '0';
     document.body.style.transform = 'translateY(10px)';
@@ -850,38 +841,16 @@
         document.body.style.transform = 'translateY(0)';
       });
     });
-    // Nettoie le paramètre ?from= de l'URL sans recharger
     const clean = new URL(window.location.href);
     clean.searchParams.delete('from');
     window.history.replaceState({}, '', clean.toString());
   }
 
   applyLangUI();
+  loadCartes();
   loadData();
 
-  // ── Origine des viandes ─────────────────────────────────────────────────
-  async function loadOrigines() {
-    try {
-      const r = await fetch(
-        `${SUPA_URL}/rest/v1/menu_origines?select=produit,origine&order=ordre`,
-        { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${SUPA_KEY}` } }
-      );
-      if (!r.ok) return;
-      const data = await r.json();
-      if (!data || data.length === 0) return;
-      const grid = document.getElementById('origines-grid');
-      grid.innerHTML = data.map(o =>
-        `<div class="origines-row">
-          <span class="origines-produit">${esc(o.produit)}</span>
-          <span class="origines-origine">${esc(o.origine)}</span>
-        </div>`
-      ).join('');
-      document.getElementById('origines-section').classList.add('visible');
-    } catch(e) {}
-  }
-  loadOrigines();
-
-  // ── Supabase Realtime — mise à jour instantanée sans rechargement ────────────
+  // ── Supabase Realtime — mise à jour instantanée sans rechargement ──────────
   (function initRealtime() {
     if (typeof supabase === 'undefined') return;
     const client = supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -911,6 +880,7 @@
         await pollPlatJour();
         fadeRefreshContent();
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_origines' }, () => loadOrigines())
       .subscribe();
   })();
 </script>

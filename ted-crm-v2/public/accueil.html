@@ -6,16 +6,27 @@
   <title>Le TED — Chassieu</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Caveat:wght@700&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
 
     body {
-      background: #fff;
-      color: #111;
+      background: linear-gradient(180deg, #1a1a1a 0%, #2d2d2d 100%);
+      color: #fff;
       min-height: 100dvh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 0 0 220px;
+    }
+
+    @keyframes ted-bg-in { from { opacity: 0; } to { opacity: 1; } }
+    #fond-photo {
+      position: fixed; inset: 0; z-index: 0;
+      background-image: url('assets/fond-festif.jpg');
+      background-size: cover; background-position: center 35%;
+      animation: ted-bg-in 0.6s ease-out;
+    }
+    #fond-voile {
+      position: fixed; inset: 0; z-index: 0;
+      background: linear-gradient(180deg, rgba(10,10,12,0.50) 0%, rgba(10,10,12,0.42) 22%, rgba(10,10,12,0.62) 48%, rgba(10,10,12,0.78) 78%, rgba(10,10,12,0.88) 100%);
     }
 
     .anim {
@@ -30,11 +41,14 @@
 
     /* ── Hero ──────────────────────────────────────────────────────────────── */
     #hero {
+      position: relative; z-index: 1;
       display: flex; flex-direction: column; align-items: center;
-      padding: 24px 24px 16px; text-align: center;
+      width: 100%; max-width: 480px;
+      padding: 42px 20px 0; text-align: center;
     }
     #logo-img {
-      width: 110px; height: 110px; object-fit: contain;
+      width: 108px; height: auto; object-fit: contain;
+      filter: drop-shadow(0 4px 18px rgba(0,0,0,0.45));
       clip-path: inset(100% 0 0 0);
       transition: clip-path 1.2s cubic-bezier(0.22, 1, 0.36, 1), opacity 400ms ease;
       opacity: 0;
@@ -43,195 +57,173 @@
     @media (prefers-reduced-motion: reduce) {
       #logo-img { clip-path: none !important; opacity: 1 !important; transition: none !important; }
     }
-    #hero-title { font-size: 36px; font-weight: 900; color: #E8C547; letter-spacing: 3px; margin-top: 20px; }
-    #hero-sub   { font-size: 12px; color: #888; letter-spacing: 2px; margin-top: 6px; text-transform: uppercase; }
-    #hero-line  { width: 40px; height: 2px; background: #E8C547; border-radius: 2px; margin-top: 18px; }
+    #hero-title {
+      margin-top: 14px;
+      font-size: clamp(34px, 10vw, 44px); font-weight: 700;
+      letter-spacing: 0.32em; text-indent: 0.32em;
+      color: #E8C547; text-shadow: 0 2px 14px rgba(0,0,0,0.5);
+    }
+    #hero-sub {
+      margin-top: 10px; font-size: 14px; font-weight: 400;
+      letter-spacing: 0.34em; text-indent: 0.34em;
+      color: rgba(255,255,255,0.85); text-shadow: 0 1px 8px rgba(0,0,0,0.6);
+      text-transform: uppercase;
+    }
+    #hero-line {
+      width: 72px; height: 3px; background: #E8C547; border-radius: 2px;
+      margin-top: 16px; box-shadow: 0 1px 8px rgba(0,0,0,0.4);
+    }
 
     /* ── Soirées ────────────────────────────────────────────────────────────── */
-    #soirees-section { width: 100%; max-width: 420px; padding: 0 24px; margin-top: 20px; }
+    #soirees-section { position: relative; z-index: 1; width: 100%; max-width: 480px; padding: 0 20px; margin-top: 40px; }
+    #soirees-head { display: flex; align-items: baseline; justify-content: space-between; margin: 0 4px 14px; }
     #soirees-label {
-      font-size: 11px; font-weight: 700; color: #b8860b;
-      letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 16px;
+      margin: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.28em;
+      color: #E8C547; text-transform: uppercase; text-shadow: 0 1px 6px rgba(0,0,0,0.6);
     }
-    .soiree-item {
-      display: flex; align-items: center;
-      padding: 14px 8px; border-bottom: 1px solid #f0f0f0;
-      cursor: pointer; border-radius: 8px; margin: 0 -8px;
-      transition: background 150ms ease;
+    #soirees-weekly { font-size: 12px; letter-spacing: 0.12em; color: rgba(255,255,255,0.65); text-transform: uppercase; }
+    #soirees-list { display: flex; flex-direction: column; gap: 12px; }
+
+    .soiree-card {
+      position: relative; display: flex; align-items: flex-end;
+      min-height: 118px; border-radius: 16px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.14);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.35);
+      cursor: pointer; isolation: isolate;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
     }
-    .soiree-item:last-child { border-bottom: none; }
-    .soiree-item:active { background: rgba(0,0,0,0.05); }
-    .soiree-info { flex: 1; min-width: 0; }
-    .soiree-nom  { font-size: 15px; font-weight: 600; color: #111; }
-    .soiree-when { font-size: 12px; color: #999; margin-top: 3px; }
-    .soiree-chevron { font-size: 16px; color: #ccc; flex-shrink: 0; margin-left: 12px; }
+    .soiree-card.ce-soir { border: 1.5px solid #E8C547; }
+    .soiree-card:hover { transform: translateY(-2px) scale(1.005); box-shadow: 0 14px 34px rgba(0,0,0,0.45); }
+    .soiree-card:active { transform: scale(0.985); }
+    .soiree-card .fond { position: absolute; inset: 0; background-size: cover; background-position: center 35%; z-index: 0; }
+    .soiree-card .degrade {
+      position: absolute; inset: 0; z-index: 1;
+      background: linear-gradient(90deg, rgba(8,8,10,0.82) 0%, rgba(8,8,10,0.55) 45%, rgba(8,8,10,0.18) 100%),
+                  linear-gradient(0deg, rgba(8,8,10,0.55) 0%, rgba(8,8,10,0) 55%);
+    }
+    .soiree-card .badge-cesoir {
+      position: absolute; top: 12px; right: 12px; z-index: 2;
+      display: flex; align-items: center; gap: 6px;
+      background: #E8C547; color: #111; font-size: 11px; font-weight: 800;
+      letter-spacing: 0.14em; padding: 5px 10px; border-radius: 999px;
+      text-transform: uppercase;
+    }
+    .soiree-card .contenu {
+      position: relative; z-index: 2;
+      display: flex; align-items: flex-end; justify-content: space-between; gap: 12px;
+      width: 100%; padding: 14px 16px;
+    }
+    .soiree-card .infos { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+    .soiree-card .horaire { font-size: 11px; font-weight: 800; letter-spacing: 0.22em; color: #E8C547; text-transform: uppercase; }
+    .soiree-card .nom { font-size: 21px; font-weight: 800; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.6); letter-spacing: 0.01em; }
+    .soiree-card .dj { font-size: 12px; font-weight: 500; letter-spacing: 0.10em; color: rgba(255,255,255,0.75); }
+    .soiree-card .chevron { font-size: 24px; line-height: 1; color: rgba(255,255,255,0.85); flex-shrink: 0; padding-bottom: 4px; }
 
     /* ── Sélecteur de langue (flottant haut droite) ──────────────────────── */
-    #lang-selector {
-      position: fixed; top: 14px; right: 16px; z-index: 300;
-    }
+    #lang-selector { position: fixed; top: 14px; right: 16px; z-index: 40; }
     #lang-btn {
-      background: #f5f5f5; border: 1px solid #e0e0e0;
-      color: #666; font-size: 11px; font-weight: 700; letter-spacing: 1px;
-      padding: 10px 16px; border-radius: 6px; cursor: pointer;
+      background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.25);
+      color: #eee; font-weight: 700; letter-spacing: 1px;
+      padding: 10px 16px; border-radius: 999px; cursor: pointer;
       min-height: 44px; min-width: 44px; font-size: 13px;
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
       transition: background 150ms ease; font-family: inherit;
     }
-    #lang-btn:hover { background: #eee; color: #111; }
+    #lang-btn:hover { background: rgba(0,0,0,0.55); color: #fff; }
     #lang-menu {
       position: absolute; top: calc(100% + 6px); right: 0;
-      background: #fff; border: 1px solid #eee; border-radius: 8px;
-      overflow: hidden; min-width: 56px; display: none; z-index: 400;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+      background: rgba(20,20,23,0.97); border: 1px solid #333; border-radius: 12px;
+      overflow: hidden; min-width: 56px; display: none; z-index: 41;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     }
     #lang-menu.open { display: block; }
     .lang-opt {
-      display: block; width: 100%; padding: 8px 14px;
-      color: #666; font-size: 12px; font-weight: 700; letter-spacing: 0.5px;
+      display: block; width: 100%; padding: 10px 16px;
+      color: #bbb; font-size: 12px; font-weight: 700; letter-spacing: 0.5px;
       background: none; border: none; cursor: pointer; text-align: left;
       transition: background 100ms ease; font-family: inherit;
     }
-    .lang-opt:hover { background: #f5f5f5; color: #111; }
-    .lang-opt.active { color: #b8860b; }
+    .lang-opt:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    .lang-opt.active { color: #E8C547; }
 
-    /* ── Boutons ────────────────────────────────────────────────────────────── */
+    /* ── Actions sticky (bas d'écran) ──────────────────────────────────────── */
     #cta-bar {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      padding: 16px 20px calc(16px + env(safe-area-inset-bottom, 0px));
-      background: linear-gradient(to bottom, transparent 0%, #fff 28%);
-      display: flex; flex-direction: column; gap: 10px;
+      position: sticky; bottom: 0; z-index: 5;
+      width: 100%; max-width: 480px;
+      margin-top: auto;
+      display: flex; flex-direction: column; gap: 12px;
+      padding: 40px 20px calc(16px + env(safe-area-inset-bottom, 0px));
+      background: linear-gradient(180deg, rgba(10,10,12,0) 0%, rgba(10,10,12,0.55) 38%, rgba(10,10,12,0.82) 100%);
     }
     .btn-cta {
-      display: block; width: 100%; padding: 16px; border-radius: 14px;
-      font-size: 15px; font-weight: 700; text-align: center;
-      text-decoration: none; border: 2px solid #E8C547;
-      transition: opacity 150ms ease;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 56px; border-radius: 16px;
+      font-size: 17px; font-weight: 700; text-align: center;
+      text-decoration: none; -webkit-tap-highlight-color: transparent;
+      transition: filter 0.15s ease, transform 0.15s ease, background 0.15s ease;
     }
-    .btn-cta:active { opacity: 0.75; }
-    .btn-primary { background: #E8C547; color: #111; }
-    .btn-outline  { background: transparent; color: #111; }
+    .btn-cta:active { transform: scale(0.98); }
+    .btn-primary { background: #E8C547; color: #111; font-size: 18px; box-shadow: 0 8px 24px rgba(232,197,71,0.30); }
+    .btn-primary:hover { filter: brightness(1.06); }
+    .btn-outline {
+      background: rgba(255,255,255,0.10); color: #fff; font-weight: 600;
+      border: 1.5px solid rgba(255,255,255,0.55);
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    }
+    .btn-outline:hover { background: rgba(255,255,255,0.18); }
 
-    /* ── Popup soirée ───────────────────────────────────────────────────────── */
-    #popup-overlay {
+    /* ── Fiche soirée (bottom sheet) ───────────────────────────────────────── */
+    #sheet-overlay {
       position: fixed; inset: 0; z-index: 200;
-      background: rgba(0,0,0,0.78);
-      display: flex; align-items: center; justify-content: center; padding: 16px;
-      opacity: 0; transition: opacity 200ms ease; pointer-events: none;
+      background: rgba(0,0,0,0.62);
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      opacity: 0; pointer-events: none; transition: opacity 200ms ease;
     }
-    #popup-overlay.open { opacity: 1; pointer-events: all; }
-
-    #popup-wrapper {
-      position: relative;
-      display: flex; flex-direction: column; align-items: center;
-      width: min(460px, 94vw);
+    #sheet-overlay.open { opacity: 1; pointer-events: all; }
+    #sheet {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      max-width: 480px; margin: 0 auto;
+      background: #141417; border-radius: 22px 22px 0 0; overflow: hidden;
+      box-shadow: 0 -12px 40px rgba(0,0,0,0.5);
+      transform: translateY(60%); opacity: 0.4;
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.28s ease;
     }
-
-    #popup-card {
-      background: linear-gradient(160deg, #1c1c1c 0%, #111 100%);
-      border: 1px solid #2a2a2a; border-radius: 20px;
-      width: 100%; overflow: hidden;
-      transform: scale(0.92); opacity: 0;
-      transition: transform 300ms cubic-bezier(0.34, 1.4, 0.64, 1), opacity 300ms ease;
-      position: relative; will-change: transform;
-      display: flex; flex-direction: column;
+    #sheet-overlay.open #sheet { transform: translateY(0); opacity: 1; }
+    @media (prefers-reduced-motion: reduce) { #sheet-overlay, #sheet { transition: none !important; } }
+    #sheet-media { position: relative; }
+    #sheet-img { width: 100%; height: 42vh; background-size: cover; background-position: center 20%; }
+    #sheet-handle {
+      position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+      width: 42px; height: 5px; border-radius: 999px;
+      background: rgba(255,255,255,0.55); box-shadow: 0 1px 4px rgba(0,0,0,0.4);
     }
-    @media (max-width: 480px) {
-      #popup-card { border-radius: 16px; }
+    #sheet-fade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20,20,23,0) 55%, rgba(20,20,23,0.95) 100%); }
+    #sheet-close {
+      position: absolute; top: 12px; right: 12px;
+      width: 40px; height: 40px; border: none; border-radius: 999px;
+      background: rgba(0,0,0,0.55); color: #fff; font-size: 18px; cursor: pointer;
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
     }
-
-    .popup-arrow {
-      position: absolute; top: 42%;
-      width: 40px; height: 40px; border-radius: 50%;
-      background: rgba(232,197,71,0.15); border: 1.5px solid rgba(232,197,71,0.5);
-      color: #E8C547; font-size: 20px; cursor: pointer;
+    #sheet-infos { position: absolute; left: 20px; right: 20px; bottom: 14px; display: flex; flex-direction: column; gap: 6px; }
+    #sheet-horaire { font-size: 12px; font-weight: 800; letter-spacing: 0.22em; color: #E8C547; text-transform: uppercase; }
+    #sheet-nom { font-size: 26px; font-weight: 800; color: #fff; text-shadow: 0 2px 12px rgba(0,0,0,0.7); }
+    #sheet-dj { font-size: 13px; font-weight: 500; letter-spacing: 0.08em; color: rgba(255,255,255,0.8); }
+    #sheet-body { display: flex; flex-direction: column; gap: 10px; padding: 16px 20px calc(18px + env(safe-area-inset-bottom)); }
+    #sheet-desc { font-size: 13.5px; line-height: 1.6; color: rgba(255,255,255,0.7); margin: 0; }
+    #sheet-reserver {
       display: flex; align-items: center; justify-content: center;
-      transition: background 150ms ease, opacity 200ms ease, transform 150ms ease;
-      opacity: 0; pointer-events: none; z-index: 10;
-      user-select: none; backdrop-filter: blur(4px);
+      min-height: 54px; background: #E8C547; color: #111;
+      font-size: 17px; font-weight: 700; text-decoration: none; border-radius: 16px;
+      -webkit-tap-highlight-color: transparent;
     }
-    #popup-arrow-left  { left: -52px; }
-    #popup-arrow-right { right: -52px; }
-    @media (max-width: 600px) {
-      #popup-arrow-left  { left: -44px; width:34px; height:34px; font-size:16px; }
-      #popup-arrow-right { right: -44px; width:34px; height:34px; font-size:16px; }
+    #sheet-reserver:active { transform: scale(0.98); }
+    #sheet-fermer {
+      min-height: 46px; background: none; border: none;
+      color: rgba(255,255,255,0.65); font-size: 15px; font-weight: 500;
+      cursor: pointer; font-family: inherit;
     }
-    #popup-overlay.open .popup-arrow { opacity: 1; pointer-events: all; }
-    .popup-arrow:hover { background: rgba(232,197,71,0.28); transform: scale(1.08); }
-    .popup-arrow:active { background: rgba(232,197,71,0.38); }
-
-    #popup-swipe-hint {
-      margin-top: 10px; font-size: 11px; color: rgba(255,255,255,0.35);
-      letter-spacing: 1.5px; text-transform: uppercase;
-      display: flex; align-items: center; gap: 6px;
-      opacity: 0; transition: opacity 400ms ease;
-    }
-    #popup-swipe-hint.show { opacity: 1; }
-    @keyframes nudge-left  { 0%,100%{transform:translateX(0)} 50%{transform:translateX(-4px)} }
-    @keyframes nudge-right { 0%,100%{transform:translateX(0)} 50%{transform:translateX(4px)} }
-    .hint-l { animation: nudge-left  1.4s ease-in-out infinite; }
-    .hint-r { animation: nudge-right 1.4s ease-in-out infinite; }
-    #popup-dots {
-      display: flex; justify-content: center; gap: 6px;
-      padding: 10px 0 14px;
-    }
-    .popup-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: rgba(255,255,255,0.2);
-      transition: background 250ms ease, transform 250ms ease;
-    }
-    .popup-dot.active {
-      background: #E8C547; transform: scale(1.3);
-    }
-    #popup-overlay.open #popup-card { transform: scale(1); opacity: 1; }
-
-    @media (prefers-reduced-motion: reduce) {
-      #popup-overlay, #popup-card { transition: none !important; }
-    }
-
-    #popup-progress-track { display: none; }
-    #popup-progress-bar   { display: none; }
-
-    #popup-close {
-      position: absolute; top: 14px; right: 14px;
-      width: 28px; height: 28px; border-radius: 50%;
-      background: rgba(255,255,255,0.07); border: none;
-      color: #666; font-size: 14px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: background 150ms ease, color 150ms ease;
-    }
-    #popup-close:hover { background: rgba(255,255,255,0.15); color: #fff; }
-
-    #popup-body { padding: 20px 20px 16px; flex-shrink: 0; }
-    #popup-jour {
-      font-size: clamp(18px, 5vw, 24px); font-weight: 800; color: #E8C547;
-      letter-spacing: 1px; text-transform: uppercase; line-height: 1;
-    }
-    #popup-nom     { font-size: clamp(13px, 3.5vw, 16px); font-weight: 600; color: #fff; margin-top: 6px; }
-    #popup-dj      { font-size: clamp(11px, 3vw, 13px); color: #c9a93a; margin-top: 4px; font-style: italic; }
-    #popup-desc    { font-size: clamp(11px, 3vw, 13px); color: #999; margin-top: 8px; line-height: 1.5;
-                     display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-    #popup-horaire { font-size: clamp(10px, 2.8vw, 12px); color: #555; margin-top: 8px; letter-spacing: 0.3px; }
-
-    #popup-flyer {
-      width: 100%; display: none; flex-shrink: 0;
-      border-radius: 20px 20px 0 0; overflow: hidden;
-      height: clamp(140px, 40vw, 200px);
-    }
-    #popup-flyer img {
-      width: 100%; height: 100%; display: block;
-      object-fit: cover; object-position: bottom center;
-    }
-    #popup-card.has-flyer #popup-body { padding-top: 14px; }
-
-    #popup-reserver {
-      display: block; width: 100%; margin-top: 14px;
-      padding: 16px; border-radius: 14px; border: none;
-      background: #E8C547; color: #111;
-      font-size: 15px; font-weight: 700; text-align: center;
-      cursor: pointer; text-decoration: none;
-      transition: opacity 150ms ease;
-    }
-    #popup-reserver:active { opacity: 0.8; }
 
     /* ── Roue cadeaux ──────────────────────────────────────────────────────────── */
     @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
@@ -273,8 +265,11 @@
 </head>
 <body>
 
+  <div id="fond-photo"></div>
+  <div id="fond-voile"></div>
+
   <div id="hero">
-    <img id="logo-img" src="/logo192.png" alt="Logo TED">
+    <img id="logo-img" src="/assets/logo-ours-or.png" alt="Logo Le TED">
     <div id="hero-texte" class="anim">
       <div id="hero-title">LE TED</div>
       <div id="hero-sub">Restaurant &amp; Club</div>
@@ -283,7 +278,10 @@
   </div>
 
   <div id="soirees-section">
-    <div id="soirees-label" class="anim">Nos soirées</div>
+    <div id="soirees-head" class="anim">
+      <h2 id="soirees-label">Nos soirées</h2>
+      <span id="soirees-weekly">Chaque semaine</span>
+    </div>
     <div id="soirees-list"></div>
   </div>
 
@@ -501,41 +499,23 @@
   </div><!-- /roue-form-overlay -->
 
   <!-- Popup soirée -->
-  <div id="popup-overlay" role="dialog" aria-modal="true" aria-labelledby="popup-nom">
-    <div id="popup-wrapper">
-      <button class="popup-arrow" id="popup-arrow-left" aria-label="Soirée précédente">&#8592;</button>
-      <button class="popup-arrow" id="popup-arrow-right" aria-label="Soirée suivante">&#8594;</button>
-      <div id="popup-card">
-      <div id="popup-progress-track"><div id="popup-progress-bar"></div></div>
-      <button id="popup-close" aria-label="Fermer">✕</button>
-      <div id="popup-flyer"><img id="popup-flyer-img" src="" alt="" /></div>
-      <div id="popup-body">
-        <div id="popup-jour"></div>
-        <div id="popup-nom"></div>
-        <div id="popup-dj"></div>
-        <div id="popup-desc"></div>
-        <div id="popup-horaire"></div>
-        <a id="popup-reserver" href="/reserver.html">Réserver une table</a>
-        <div id="popup-dots"></div>
+  <div id="sheet-overlay" role="dialog" aria-modal="true" aria-labelledby="sheet-nom">
+    <div id="sheet">
+      <div id="sheet-media">
+        <div id="sheet-img" role="img"></div>
+        <span id="sheet-handle"></span>
+        <div id="sheet-fade"></div>
+        <button id="sheet-close" aria-label="Fermer">✕</button>
+        <div id="sheet-infos">
+          <span id="sheet-horaire"></span>
+          <span id="sheet-nom"></span>
+          <span id="sheet-dj"></span>
+        </div>
       </div>
-    </div>
-      <!-- Hint swipe -->
-      <div id="popup-swipe-hint">
-        <span class="hint-l">&#8592;</span>
-        swiper
-        <span class="hint-r">&#8594;</span>
-      </div>
-    </div><!-- /popup-wrapper -->
-    <!-- Carte adjacente pour le swipe carousel -->
-    <div id="popup-card2" style="display:none;position:absolute;pointer-events:none;background:linear-gradient(160deg,#1c1c1c 0%,#111 100%);border:1px solid #2a2a2a;border-radius:20px;overflow:hidden;will-change:transform;">
-      <div id="popup2-flyer" style="display:none;width:100%;height:clamp(140px,40vw,200px);overflow:hidden;border-radius:20px 20px 0 0;flex-shrink:0;"><img id="popup2-flyer-img" src="" alt="" style="width:100%;height:100%;display:block;object-fit:cover;object-position:bottom center;" /></div>
-      <div style="padding:16px 16px 14px;">
-        <div id="popup2-jour" style="font-size:20px;font-weight:800;color:#E8C547;letter-spacing:1px;text-transform:uppercase;line-height:1;"></div>
-        <div id="popup2-nom" style="font-size:13px;font-weight:600;color:#fff;margin-top:4px;"></div>
-        <div id="popup2-dj" style="font-size:11px;color:#c9a93a;margin-top:3px;font-style:italic;"></div>
-        <div id="popup2-desc" style="font-size:11px;color:#999;margin-top:7px;line-height:1.5;"></div>
-        <div id="popup2-horaire" style="font-size:10px;color:#555;margin-top:8px;letter-spacing:0.3px;"></div>
-        <div style="display:block;width:100%;margin-top:14px;padding:16px;border-radius:14px;border:none;background:#E8C547;color:#111;font-size:15px;font-weight:700;text-align:center;">Réserver une table</div>
+      <div id="sheet-body">
+        <p id="sheet-desc"></p>
+        <a id="sheet-reserver" href="/reserver.html">Réserver une table</a>
+        <button id="sheet-fermer">Fermer</button>
       </div>
     </div>
   </div>
@@ -588,10 +568,10 @@
 
   // ── Langue ──────────────────────────────────────────────────────────────────
   const UI = {
-    fr: { nos_soirees:'Nos soirées', consulter:'Consulter la carte', carte_brasero:'Carte Brasero', reserver:'Réserver une table' },
-    en: { nos_soirees:'Our nights',  consulter:'View the menu',      carte_brasero:'Brasero menu',  reserver:'Book a table' },
-    es: { nos_soirees:'Nuestras noches', consulter:'Ver la carta',   carte_brasero:'Carta Brasero', reserver:'Reservar una mesa' },
-    it: { nos_soirees:'Le nostre serate', consulter:'Vedi il menu',  carte_brasero:'Menu Brasero',  reserver:'Prenota un tavolo' }
+    fr: { nos_soirees:'Nos soirées', chaque_semaine:'Chaque semaine', ce_soir:'● Ce soir', consulter:'Consulter la carte', carte_brasero:'Carte Brasero', reserver:'Réserver une table', fermer:'Fermer' },
+    en: { nos_soirees:'Our nights',  chaque_semaine:'Every week',     ce_soir:'● Tonight', consulter:'View the menu',      carte_brasero:'Brasero menu',  reserver:'Book a table',        fermer:'Close' },
+    es: { nos_soirees:'Nuestras noches', chaque_semaine:'Cada semana', ce_soir:'● Esta noche', consulter:'Ver la carta',   carte_brasero:'Carta Brasero', reserver:'Reservar una mesa',   fermer:'Cerrar' },
+    it: { nos_soirees:'Le nostre serate', chaque_semaine:'Ogni settimana', ce_soir:'● Stasera', consulter:'Vedi il menu',  carte_brasero:'Menu Brasero',  reserver:'Prenota un tavolo',   fermer:'Chiudi' }
   };
   let lang = localStorage.getItem('ted_langue') || 'fr';
 
@@ -605,9 +585,11 @@
     document.getElementById('lang-btn').textContent = lang.toUpperCase();
     document.querySelectorAll('.lang-opt').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase() === lang));
     document.getElementById('soirees-label').textContent = tUI('nos_soirees');
+    document.getElementById('soirees-weekly').textContent = tUI('chaque_semaine');
     document.getElementById('btn-consulter').textContent = tUI('consulter');
     document.getElementById('btn-brasero').textContent   = tUI('carte_brasero');
-    document.getElementById('popup-reserver').textContent = tUI('reserver');
+    document.getElementById('sheet-reserver').textContent = tUI('reserver');
+    document.getElementById('sheet-fermer').textContent   = tUI('fermer');
   }
 
   function toggleLangMenu() { document.getElementById('lang-menu').classList.toggle('open'); }
@@ -639,236 +621,54 @@
   setTimeout(() => { document.getElementById('logo-img').classList.add('visible'); }, 100);
   // 2. …puis la page se révèle en cascade du haut vers le bas
   setTimeout(() => { document.getElementById('hero-texte').classList.add('visible'); }, 1350);
-  setTimeout(() => { document.getElementById('soirees-label').classList.add('visible'); }, 1650);
+  setTimeout(() => { document.getElementById('soirees-head').classList.add('visible'); }, 1650);
   setTimeout(() => { document.getElementById('cta-bar').classList.add('visible'); }, 2600);
 
-  // ── Popup ───────────────────────────────────────────────────────────────────
-  const overlay     = document.getElementById('popup-overlay');
-  const progressBar = document.getElementById('popup-progress-bar');
-  let autoCloseTimer = null;
+  // ── Fiche soirée (bottom sheet) ────────────────────────────────────────────
+  const overlay = document.getElementById('sheet-overlay');
   let soireesData = [];
-  let currentPopupIdx = 0;
-  let peekTimer = null;
 
-  function fillCard(s) {
-    document.getElementById('popup-jour').textContent = s.jour || '';
-    document.getElementById('popup-nom').textContent  = tItem(s, 'nom');
-    const djEl = document.getElementById('popup-dj');
-    djEl.textContent  = s.dj ? `♪ ${s.dj}` : '';
-    djEl.style.display = s.dj ? '' : 'none';
-    const descEl = document.getElementById('popup-desc');
-    const descText = tItem(s, 'description');
-    descEl.textContent  = descText;
-    descEl.style.display = descText ? '' : 'none';
-    document.getElementById('popup-horaire').textContent = s.horaire ? `À partir de ${s.horaire}` : '';
-    const flyerEl  = document.getElementById('popup-flyer');
-    const flyerImg = document.getElementById('popup-flyer-img');
-    const card     = document.getElementById('popup-card');
-    if (s.image_url) {
-      flyerImg.src = s.image_url;
-      flyerEl.style.display = 'block';
-      card.classList.add('has-flyer');
-    } else {
-      flyerEl.style.display = 'none';
-      flyerImg.src = '';
-      card.classList.remove('has-flyer');
-    }
-    // Dots
-    const dotsEl = document.getElementById('popup-dots');
-    if (dotsEl) {
-      dotsEl.style.display = soireesData.length > 1 ? 'flex' : 'none';
-      dotsEl.innerHTML = soireesData.map((_, i) =>
-        `<div class="popup-dot${i === currentPopupIdx ? ' active' : ''}"></div>`
-      ).join('');
-    }
+  const JOURS_IDX = { 'dimanche':0, 'lundi':1, 'mardi':2, 'mercredi':3, 'jeudi':4, 'vendredi':5, 'samedi':6 };
+  const SOIREE_FALLBACK_IMG = { 3:'assets/soiree-mercredi.jpg', 4:'assets/soiree-jeudi.jpg', 5:'assets/soiree-vendredi.jpg', 6:'assets/soiree-samedi.jpg' };
+  function soireeJourIdx(s) {
+    const j = (s.jour || '').trim().toLowerCase();
+    return (j in JOURS_IDX) ? JOURS_IDX[j] : -1;
+  }
+  // Affiche uploadée dans le back-office en priorité, sinon visuel par défaut du jour
+  function soireeImage(s) {
+    return s.image_url || SOIREE_FALLBACK_IMG[soireeJourIdx(s)] || 'assets/fond-festif.jpg';
+  }
+  function soireeQuand(s) {
+    return [s.jour, s.horaire].filter(Boolean).join(' · ');
   }
 
   function openPopup(s) {
-    currentPopupIdx = soireesData.indexOf(s);
-    if (currentPopupIdx < 0) currentPopupIdx = 0;
-    const card = document.getElementById('popup-card');
-    card.style.transition = '';
-    card.style.transform  = '';
-    card.style.opacity    = '';
-    fillCard(s);
+    const img = document.getElementById('sheet-img');
+    img.style.backgroundImage = `url('${soireeImage(s)}')`;
+    img.setAttribute('aria-label', tItem(s, 'nom'));
+    document.getElementById('sheet-horaire').textContent = soireeQuand(s);
+    document.getElementById('sheet-nom').textContent = tItem(s, 'nom');
+    const dj = document.getElementById('sheet-dj');
+    dj.textContent = s.dj || '';
+    dj.style.display = s.dj ? '' : 'none';
+    const de = document.getElementById('sheet-desc');
+    const dt = tItem(s, 'description');
+    de.textContent = dt;
+    de.style.display = dt ? '' : 'none';
     overlay.classList.add('open');
     document.body.style.overflow = 'hidden';
-    const showArrows = soireesData.length > 1;
-    document.getElementById('popup-arrow-left').style.display  = showArrows ? '' : 'none';
-    document.getElementById('popup-arrow-right').style.display = showArrows ? '' : 'none';
-    const hint = document.getElementById('popup-swipe-hint');
-    if (hint) hint.classList.toggle('show', showArrows);
-    // Peek hint : légère poussée à gauche si une soirée suivante existe
-    if (soireesData.length > 1 && currentPopupIdx < soireesData.length - 1) {
-      clearTimeout(peekTimer);
-      peekTimer = setTimeout(() => {
-        card.style.transition = 'transform 350ms cubic-bezier(0.4,0,0.6,1)';
-        card.style.transform  = 'translateX(-22px)';
-        setTimeout(() => {
-          card.style.transition = 'transform 420ms cubic-bezier(0.34,1.4,0.64,1)';
-          card.style.transform  = '';
-        }, 350);
-      }, 500);
-    }
   }
-
-  // ── Swipe carousel (deux cartes côte à côte) ──────────────────────────────
-  const card  = document.getElementById('popup-card');
-  const card2 = document.getElementById('popup-card2');
-  let tsX = 0, tsY = 0, tCurX = 0, swipeActive = false, swipeLocked = false, swipeDir = null;
-
-  function fillCard2(s) {
-    document.getElementById('popup2-jour').textContent = s.jour || '';
-    document.getElementById('popup2-nom').textContent  = tItem(s, 'nom');
-    const dj = document.getElementById('popup2-dj');
-    dj.textContent = s.dj ? `♪ ${s.dj}` : ''; dj.style.display = s.dj ? '' : 'none';
-    const desc = document.getElementById('popup2-desc');
-    const dt = tItem(s, 'description');
-    desc.textContent = dt; desc.style.display = dt ? '' : 'none';
-    document.getElementById('popup2-horaire').textContent = s.horaire ? `À partir de ${s.horaire}` : '';
-    const fl = document.getElementById('popup2-flyer'), fi = document.getElementById('popup2-flyer-img');
-    if (s.image_url) { fi.src = s.image_url; fl.style.display = 'block'; }
-    else             { fl.style.display = 'none'; fi.src = ''; }
-  }
-
-  function positionCard2(direction) {
-    const rect = card.getBoundingClientRect();
-    const gap  = 16;
-    card2.style.width  = rect.width  + 'px';
-    card2.style.top    = rect.top    + 'px';
-    card2.style.height = rect.height + 'px';
-    if (direction === 'left') {
-      card2.style.left = (rect.right + gap) + 'px';
-    } else {
-      card2.style.left = (rect.left - rect.width - gap) + 'px';
-    }
-    card2.style.transform = 'translateX(0)';
-    card2.style.transition = 'none';
-    card2.style.display = '';
-  }
-
-  function adjIdx(direction) {
-    const n = soireesData.length;
-    return direction === 'left'
-      ? (currentPopupIdx + 1) % n
-      : (currentPopupIdx - 1 + n) % n;
-  }
-
-  function commitNavigate(direction, dx) {
-    const step = direction === 'left'
-      ? -(card.offsetWidth + 16)
-      :  (card.offsetWidth + 16);
-    const dur = Math.max(80, Math.min(180, Math.abs(step - dx) / 3));
-    card.style.transition  = `transform ${dur}ms ease-out`;
-    card2.style.transition = `transform ${dur}ms ease-out`;
-    card.style.transform   = `translateX(${step}px)`;
-    card2.style.transform  = `translateX(${step}px)`;
-    setTimeout(() => {
-      currentPopupIdx = adjIdx(direction);
-      fillCard(soireesData[currentPopupIdx]);
-      card.style.transition  = 'none';
-      card.style.transform   = '';
-      card2.style.transition = 'none';
-      card2.style.display    = 'none';
-      card2.style.transform  = '';
-    }, dur);
-  }
-
-  function navigatePopup(direction) {
-    if (soireesData.length < 2) return;
-    fillCard2(soireesData[adjIdx(direction)]);
-    positionCard2(direction);
-    commitNavigate(direction, 0);
-  }
-
-  overlay.addEventListener('touchstart', e => {
-    tsX = tCurX = e.touches[0].clientX;
-    tsY = e.touches[0].clientY;
-    swipeActive = true; swipeLocked = false; swipeDir = null;
-    card.style.transition = 'none';
-  }, { passive: true });
-
-  overlay.addEventListener('touchmove', e => {
-    if (!swipeActive) return;
-    const dx = e.touches[0].clientX - tsX;
-    const dy = e.touches[0].clientY - tsY;
-    tCurX = e.touches[0].clientX;
-    if (!swipeLocked && Math.abs(dy) > Math.abs(dx) + 8) { swipeActive = false; return; }
-    if (Math.abs(dx) < 4) return;
-    swipeLocked = true;
-    if (!swipeDir) {
-      swipeDir = dx < 0 ? 'left' : 'right';
-      if (soireesData.length > 1) {
-        fillCard2(soireesData[adjIdx(swipeDir)]);
-        positionCard2(swipeDir);
-      }
-    }
-    card.style.transform  = `translateX(${dx}px)`;
-    if (card2.style.display !== 'none') card2.style.transform = `translateX(${dx}px)`;
-  }, { passive: true });
-
-  overlay.addEventListener('touchend', () => {
-    if (!swipeActive) return;
-    swipeActive = false;
-    const dx = tCurX - tsX;
-    if (dx < -40 && soireesData.length > 1) {
-      commitNavigate('left', dx);
-    } else if (dx > 40 && soireesData.length > 1) {
-      commitNavigate('right', dx);
-    } else {
-      card.style.transition  = 'transform 200ms cubic-bezier(0.34,1.4,0.64,1)';
-      card.style.transform   = '';
-      card2.style.transition = 'transform 200ms ease-out';
-      card2.style.transform  = '';
-      setTimeout(() => { card2.style.display = 'none'; }, 200);
-    }
-  }, { passive: true });
-
-  // ── Flèches clavier ────────────────────────────────────────────────────────
-  document.addEventListener('keydown', e => {
-    if (!overlay.classList.contains('open')) return;
-    if (e.key === 'ArrowRight') navigatePopup('left');
-    if (e.key === 'ArrowLeft')  navigatePopup('right');
-  });
 
   function closePopup() {
-    clearTimeout(autoCloseTimer);
-    clearTimeout(peekTimer);
     if (!overlay.classList.contains('open')) return;
-    if (prefersReduced) {
-      overlay.classList.remove('open');
-      document.body.style.overflow = '';
-      return;
-    }
-    card.style.transition = 'transform 250ms ease, opacity 250ms ease';
-    card.style.transform  = 'scale(0.95)';
-    card.style.opacity    = '0';
-    overlay.style.transition = 'opacity 250ms ease';
-    overlay.style.opacity    = '0';
-    setTimeout(() => {
-      overlay.classList.remove('open');
-      overlay.style.opacity = ''; overlay.style.transition = '';
-      card.style.transform  = ''; card.style.opacity = ''; card.style.transition = '';
-      document.body.style.overflow = '';
-    }, 260);
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
   }
 
-  document.getElementById('popup-close').addEventListener('click', closePopup);
+  overlay.addEventListener('click', e => { if (e.target === overlay) closePopup(); });
+  document.getElementById('sheet-close').addEventListener('click', closePopup);
+  document.getElementById('sheet-fermer').addEventListener('click', closePopup);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closePopup(); });
-  document.getElementById('popup-overlay').addEventListener('click', e => {
-    if (e.target === document.getElementById('popup-overlay')) closePopup();
-  });
-
-  document.getElementById('popup-arrow-left').addEventListener('click', () => {
-    if (soireesData.length < 2) return;
-    fillCard2(soireesData[adjIdx('right')]);
-    commitNavigate('right', 0);
-  });
-  document.getElementById('popup-arrow-right').addEventListener('click', () => {
-    if (soireesData.length < 2) return;
-    fillCard2(soireesData[adjIdx('left')]);
-    commitNavigate('left', 0);
-  });
 
   // ── Cache sessionStorage soirées (TTL 5 min) ───────────────────────────────
   const SOIREES_KEY   = 'ted_soirees_v2';
@@ -897,19 +697,25 @@
     }
     soireesData = soirees;
     list.innerHTML = '';
+    const today = new Date().getDay();
     soirees.forEach((s, i) => {
       const el = document.createElement('div');
-      el.className = animate ? 'soiree-item anim' : 'soiree-item anim visible';
+      const ceSoir = soireeJourIdx(s) === today;
+      el.className = (animate ? 'soiree-card anim' : 'soiree-card anim visible') + (ceSoir ? ' ce-soir' : '');
       el.setAttribute('role', 'button');
       el.setAttribute('tabindex', '0');
-      const sNom = tItem(s, 'nom');
-      const when = [s.jour, s.horaire].filter(Boolean).map(esc).join(' · ');
       el.innerHTML = `
-        <div class="soiree-info">
-          <div class="soiree-nom">${esc(sNom)}</div>
-          ${when ? `<div class="soiree-when">${when}</div>` : ''}
+        <div class="fond" style="background-image:url('${soireeImage(s)}')"></div>
+        <div class="degrade"></div>
+        ${ceSoir ? `<span class="badge-cesoir">${esc(tUI('ce_soir'))}</span>` : ''}
+        <div class="contenu">
+          <div class="infos">
+            <span class="horaire">${esc(soireeQuand(s))}</span>
+            <span class="nom">${esc(tItem(s, 'nom'))}</span>
+            ${s.dj ? `<span class="dj">${esc(s.dj)}</span>` : ''}
+          </div>
+          <span class="chevron">›</span>
         </div>
-        <div class="soiree-chevron">›</div>
       `;
       el.addEventListener('click', () => openPopup(s));
       el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') openPopup(s); });
