@@ -769,6 +769,12 @@
     fetchSoirees(false).catch(() => {});
   })();
 
+  // Retour de veille / re-focus : re-fetch silencieux des soirées (le téléphone
+  // a pu rester des heures sur la page — Safari coupe tout en arrière-plan)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') fetchSoirees(true).catch(() => {});
+  });
+
   // ── bfcache : retour navigateur — toujours re-rendre les soirées ────────────
   window.addEventListener('pageshow', e => {
     // Annule la transition de sortie : au retour arrière, le navigateur restaure

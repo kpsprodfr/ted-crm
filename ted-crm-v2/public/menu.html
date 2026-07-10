@@ -476,9 +476,9 @@
     return r.json();
   }
 
-  const CAT_COLS   = 'id,nom,nom_en,nom_es,nom_it,carte,ordre,visible';
+  const CAT_COLS   = 'id,nom,nom_en,nom_es,nom_it,carte,ordre,visible,banner_url,banner_phrase';
   const PROD_COLS  = 'id,nom,nom_en,nom_es,nom_it,description,description_en,description_es,description_it,prix,prix_detail,accord_vin,badges,ordre,disponible,carte,categorie_id';
-  const CAT_COLS_FR  = 'id,nom,carte,ordre,visible';
+  const CAT_COLS_FR  = 'id,nom,carte,ordre,visible,banner_url,banner_phrase';
   const PROD_COLS_FR = 'id,nom,description,prix,prix_detail,accord_vin,badges,ordre,disponible,carte,categorie_id';
   const PLAT_COLS  = 'id,nom,description,prix,type,carte,actif';
 
@@ -546,6 +546,7 @@
 
   // ── bfcache : retour navigateur ─────────────────────────────────────────────
   window.addEventListener('pageshow', e => {
+    if (e.persisted && allCategories.length) fetchFromNetwork(true).catch(() => {});
     if (e.persisted && allCategories.length === 0) {
       const hit = cacheGet();
       if (hit) {
@@ -622,8 +623,11 @@
   }
 
   // ── Bandeaux photo d'ambiance par catégorie (assets locaux uniquement) ─────
-  function bandeauPour(nomCat) {
-    const n = (nomCat || '').toLowerCase();
+  function bandeauPour(cat, fallbackAuto) {
+    // Image définie dans le back-office (CRM → Menu → Catégories) : prioritaire
+    if (cat && cat.banner_url) return { img: cat.banner_url, phraseCustom: cat.banner_phrase || '' };
+    if (!fallbackAuto) return null;
+    const n = ((cat && cat.nom) || '').toLowerCase();
     if (/dessert/.test(n))                return { img: 'assets/banner-desserts.webp',       cle: 'desserts' };
     if (/vin/.test(n) && /verre/.test(n)) return { img: 'assets/banner-boissons.webp',       cle: 'vinsverre' };
     if (/club/.test(n))                   return { img: 'assets/fond-festif.jpg',            cle: 'club' };
@@ -690,9 +694,9 @@
       if (isFoodSection(cat.nom)) hasFood = true;
 
       // Bandeau photo d'ambiance avant certaines catégories (carte normale)
-      const bd = carteActive === 'restaurant' ? bandeauPour(cat.nom) : null;
+      const bd = bandeauPour(cat, carteActive === 'restaurant');
       if (bd) {
-        const phrase = (tUI('phrases') || {})[bd.cle] || '';
+        const phrase = bd.phraseCustom !== undefined ? bd.phraseCustom : ((tUI('phrases') || {})[bd.cle] || '');
         html += `<div class="bandeau">
           <div class="img" style="background-image:url('${bd.img}');"></div>
           <div class="voile"></div>
@@ -867,22 +871,46 @@
       });
     }
 
-    client
-      .channel('menu-live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_produits' }, async () => {
-        await fetchFromNetwork(true);
-        fadeRefreshContent();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_categories' }, async () => {
-        await fetchFromNetwork(true);
-        fadeRefreshContent();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_plat_jour' }, async () => {
-        await pollPlatJour();
-        fadeRefreshContent();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_origines' }, () => loadOrigines())
-      .subscribe();
+    // Reconnexion automatique : Safari coupe le websocket quand la page part
+    // en veille — sans ça, plus aucune mise à jour en direct au retour.
+    let ch = null, attempts = 0, timer = null;
+    function connect() {
+      ch = client
+        .channel('menu-live')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_produits' }, async () => {
+          await fetchFromNetwork(true);
+          fadeRefreshContent();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_categories' }, async () => {
+          await fetchFromNetwork(true);
+          fadeRefreshContent();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_cartes' }, () => loadCartes())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_plat_jour' }, async () => {
+          await pollPlatJour();
+          fadeRefreshContent();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_origines' }, () => loadOrigines())
+        .subscribe(status => {
+          if (status === 'SUBSCRIBED') { attempts = 0; return; }
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            try { client.removeChannel(ch); } catch(e) {}
+            const delay = Math.min(30000, 1000 * Math.pow(2, attempts));
+            attempts += 1;
+            clearTimeout(timer);
+            timer = setTimeout(connect, delay);
+          }
+        });
+    }
+    connect();
+
+    // Retour de veille / re-focus : refetch immédiat (le socket a pu manquer des events)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && allCategories.length) {
+        fetchFromNetwork(true).catch(() => {});
+        loadOrigines();
+      }
+    });
   })();
 </script>
 </body>

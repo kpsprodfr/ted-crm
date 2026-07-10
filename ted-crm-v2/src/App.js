@@ -3349,8 +3349,57 @@ function CatsSheet({ categories: initCats, onClose, showToast, carte, produits }
   const [editNom, setEditNom] = useState('');
   const [adding, setAdding] = useState(false);
   const [confirmDel, setConfirmDel] = useState(null); // { cat, nbProds }
+  const [bannerCat, setBannerCat] = useState(null);   // catégorie dont on édite le bandeau
+  const [bannerPhrase, setBannerPhrase] = useState('');
+  const [bannerUploading, setBannerUploading] = useState(false);
+  const [bannerSaving, setBannerSaving] = useState(false);
   const dragIdx = useRef(null);
   const dragOverIdx = useRef(null);
+
+  function openBanner(cat) {
+    setBannerCat(cat);
+    setBannerPhrase(cat.banner_phrase || '');
+  }
+
+  async function uploadBanner(file) {
+    if (!file || !bannerCat) return;
+    if (file.size > 5 * 1024 * 1024) { showToast('❌ Image trop lourde (max 5 Mo)'); return; }
+    setBannerUploading(true);
+    try {
+      const ext = file.name.split('.').pop().toLowerCase();
+      const path = `banner-cat-${bannerCat.id}-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from('soirees-flyers').upload(path, file, { upsert: true, contentType: file.type });
+      if (error) throw error;
+      const { data } = supabase.storage.from('soirees-flyers').getPublicUrl(path);
+      const url = data.publicUrl;
+      await supabase.from('menu_categories').update({ banner_url: url }).eq('id', bannerCat.id);
+      setCats(prev => prev.map(c => c.id === bannerCat.id ? { ...c, banner_url: url } : c));
+      setBannerCat(prev => ({ ...prev, banner_url: url }));
+      showToast('✅ Image du bandeau enregistrée');
+    } catch (e) {
+      logError(e.message, 'catsSheet:uploadBanner');
+      showToast('❌ Échec de l\'upload', 'error');
+    }
+    setBannerUploading(false);
+  }
+
+  async function saveBannerPhrase() {
+    if (!bannerCat || bannerSaving) return;
+    setBannerSaving(true);
+    await supabase.from('menu_categories').update({ banner_phrase: bannerPhrase.trim() || null }).eq('id', bannerCat.id);
+    setCats(prev => prev.map(c => c.id === bannerCat.id ? { ...c, banner_phrase: bannerPhrase.trim() || null } : c));
+    setBannerSaving(false);
+    setBannerCat(null);
+    showToast('✅ Bandeau enregistré');
+  }
+
+  async function removeBanner() {
+    if (!bannerCat) return;
+    await supabase.from('menu_categories').update({ banner_url: null, banner_phrase: null }).eq('id', bannerCat.id);
+    setCats(prev => prev.map(c => c.id === bannerCat.id ? { ...c, banner_url: null, banner_phrase: null } : c));
+    setBannerCat(null);
+    showToast('Bandeau retiré');
+  }
 
   async function addCat() {
     if (!newNom.trim()) return;
@@ -3420,6 +3469,36 @@ function CatsSheet({ categories: initCats, onClose, showToast, carte, produits }
         </div>
       </div>
     )}
+    {bannerCat && (
+      <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:4500, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }} onClick={() => !bannerUploading && setBannerCat(null)}>
+        <div style={{ background:'#fff', borderRadius:16, width:'100%', maxWidth:440, padding:'22px 20px', boxShadow:'0 8px 40px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
+          <h3 style={{ margin:'0 0 4px', fontSize:16, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:8 }}>
+            <ImageIcon size={17}/> Bandeau photo — {bannerCat.nom}
+          </h3>
+          <p style={{ margin:'0 0 14px', fontSize:12.5, color:'#888', lineHeight:1.5 }}>
+            Cette image s'affiche sur la carte client, juste au-dessus de la catégorie, avec une phrase d'ambiance optionnelle.
+          </p>
+          {bannerCat.banner_url ? (
+            <div style={{ position:'relative', height:110, borderRadius:10, overflow:'hidden', marginBottom:12, background:`#111 url('${bannerCat.banner_url}') center/cover` }}>
+              {bannerPhrase && <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(20,16,11,0.45)', color:'#fff', fontStyle:'italic', fontFamily:'Georgia,serif', fontSize:16, textShadow:'0 2px 6px rgba(0,0,0,0.9)', padding:'0 16px', textAlign:'center' }}>{bannerPhrase}</div>}
+            </div>
+          ) : (
+            <div style={{ height:70, borderRadius:10, marginBottom:12, background:'#f5f5f5', border:'1.5px dashed #ddd', display:'flex', alignItems:'center', justifyContent:'center', color:'#aaa', fontSize:13 }}>Aucune image pour l'instant</div>
+          )}
+          <label style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, height:42, border:'1.5px solid #ddd', borderRadius:10, cursor: bannerUploading ? 'wait' : 'pointer', fontSize:13, fontWeight:700, color:'#333', marginBottom:12, background:'#fafafa' }}>
+            <ImageIcon size={15}/> {bannerUploading ? 'Envoi en cours…' : (bannerCat.banner_url ? 'Remplacer l\'image' : 'Choisir une image')}
+            <input type="file" accept="image/*" disabled={bannerUploading} style={{ display:'none' }} onChange={e => { const f = e.target.files && e.target.files[0]; if (f) uploadBanner(f); e.target.value=''; }} />
+          </label>
+          <label style={{ fontSize:12, fontWeight:700, color:'#666', display:'block', marginBottom:6 }}>Phrase d'ambiance (optionnelle)</label>
+          <input value={bannerPhrase} onChange={e => setBannerPhrase(e.target.value.slice(0,80))} placeholder="Ex. Une douceur pour finir en beauté" style={{ width:'100%', height:42, border:'1.5px solid #ddd', borderRadius:10, padding:'0 12px', fontSize:14, boxSizing:'border-box', marginBottom:16, outline:'none' }} />
+          <div style={{ display:'flex', gap:8 }}>
+            {bannerCat.banner_url && <button onClick={removeBanner} style={{ ...btnDanger, flex:1 }}>Retirer</button>}
+            <button onClick={() => setBannerCat(null)} style={{ ...btnSecondary, flex:1 }}>Annuler</button>
+            <button onClick={saveBannerPhrase} disabled={bannerSaving} style={{ ...btnPrimary, flex:1 }}>{bannerSaving ? '…' : 'Enregistrer'}</button>
+          </div>
+        </div>
+      </div>
+    )}
     <MenuBottomSheet title="Gérer les catégories" onClose={onClose} footer={<button onClick={onClose} style={{ ...btnPrimary, width:'100%' }}>Fermer</button>}>
       <div style={{ display:'flex', gap:8, marginBottom:16 }}>
         <input value={newNom} onChange={e=>setNewNom(e.target.value)} placeholder="Nouvelle catégorie..." style={{ ...inp(false), flex:1, height:42 }} onKeyDown={e=>e.key==='Enter'&&addCat()} />
@@ -3448,6 +3527,7 @@ function CatsSheet({ categories: initCats, onClose, showToast, carte, produits }
             )}
             <span style={{ fontSize:10, color:'#aaa', background:'#e8e8e8', borderRadius:5, padding:'2px 6px', flexShrink:0 }}>{cat.carte}</span>
             <button draggable={false} onPointerDown={e=>e.stopPropagation()} onClick={()=>{setEditingId(cat.id);setEditNom(cat.nom);}} style={{ background:'none', border:'none', cursor:'pointer', color:'#888', display:'flex', padding:4, flexShrink:0 }}><Pencil size={13}/></button>
+            <button draggable={false} onPointerDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation();openBanner(cat);}} title={cat.banner_url ? 'Bandeau photo défini — modifier' : 'Ajouter un bandeau photo au-dessus de cette catégorie'} style={{ background:'none', border:'none', cursor:'pointer', color: cat.banner_url ? '#b8860b' : '#bbb', display:'flex', padding:4, flexShrink:0 }}><ImageIcon size={14}/></button>
             <MenuToggle value={cat.visible!==false} onChange={()=>toggleVisible(cat)} />
             <button draggable={false} onPointerDown={e=>e.stopPropagation()} onClick={e=>{e.stopPropagation();deleteCat(cat);}} style={{ background:'none', border:'none', cursor:'pointer', color:'#e57373', display:'flex', padding:4, flexShrink:0 }}><Trash2 size={14}/></button>
           </div>
