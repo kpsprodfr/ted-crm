@@ -57,19 +57,22 @@ export async function onRequestGet(context) {
   }
 
   // 4. Backups (binding KV + fraîcheur du dernier backup)
+  // Lecture d'une clé unique (get, quota ~100k/j) plutôt qu'un list() (quota
+  // ~1000/j) — cette route est appelée toutes les 60s par la pastille du CRM,
+  // un list() ici épuisait le quota KV gratuit en une journée.
   if (!env.BACKUPS) {
     components.backups = { status: 'degraded', detail: 'Binding KV "BACKUPS" absent — backups inactifs (voir MAINTENANCE.md)' };
   } else {
     try {
-      const list = await env.BACKUPS.list({ prefix: 'backup:', limit: 1000 });
-      const dates = list.keys.map((k) => k.name.replace('backup:', '')).sort();
-      const last = dates[dates.length - 1] || null;
+      const raw = await env.BACKUPS.get('backups:meta:latest');
+      const meta = raw ? JSON.parse(raw) : null;
+      const last = meta ? meta.date : null;
       const ageDays = last ? Math.floor((Date.now() - new Date(last + 'T02:00:00Z').getTime()) / 86400000) : null;
       components.backups = !last
         ? { status: 'degraded', detail: 'Aucun backup encore présent' }
         : ageDays > 2
           ? { status: 'degraded', detail: `Dernier backup : ${last} (${ageDays} j)` }
-          : { status: 'ok', last_backup: last, count: dates.length };
+          : { status: 'ok', last_backup: last, count: meta.count };
     } catch (e) {
       components.backups = { status: 'degraded', detail: e.message };
     }

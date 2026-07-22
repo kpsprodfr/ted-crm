@@ -5577,7 +5577,7 @@ function CRMApp({ user, onLogout }) {
         .catch(() => { if (!stop) { setHealthStatus('down'); setHealthDetail('API injoignable'); } });
     };
     check();
-    const iv = setInterval(check, 60000);
+    const iv = setInterval(check, 180000);
     return () => { stop = true; clearInterval(iv); };
   }, []);
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);

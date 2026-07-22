@@ -74,6 +74,7 @@ export async function onRequest(context) {
 
   // Rétention : on garde les 30 derniers
   let deleted = 0;
+  let totalCount = 1;
   try {
     const list = await env.BACKUPS.list({ prefix: 'backup:' });
     const keys = list.keys.map((k) => k.name).sort(); // backup:YYYY-MM-DD → tri lexico = tri chrono
@@ -81,9 +82,13 @@ export async function onRequest(context) {
       await env.BACKUPS.delete(keys[deleted]);
       deleted += 1;
     }
+    totalCount = keys.length - deleted;
   } catch (e) {
     errors.push(`rétention: ${e.message}`);
   }
+
+  // Marqueur léger pour /api/health (évite un list() à chaque appel, cf. health.js)
+  await env.BACKUPS.put('backups:meta:latest', JSON.stringify({ date: today, count: totalCount }));
 
   // Email récapitulatif
   const lignes = BACKUP_TABLES.map((t) => `<tr><td style="padding:4px 12px;border-bottom:1px solid #eee;">${t}</td><td style="padding:4px 12px;border-bottom:1px solid #eee;text-align:right;">${counts[t] >= 0 ? counts[t] + ' lignes' : '⚠️ erreur'}</td></tr>`).join('');
