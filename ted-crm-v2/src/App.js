@@ -2992,6 +2992,7 @@ function CommandesPage({ showToast, user }) {
   const [horizonJours, setHorizonJours] = useState(15);
   const [showParams, setShowParams] = useState(false);
   const [showCalendrier, setShowCalendrier] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   const [tick, setTick] = useState(0); // rafraîchit les comptes à rebours
   const basculeesRef = useRef(new Set()); // commandes déjà passées en « Prête » automatiquement
   const isMobile = useIsMobile();
@@ -3222,8 +3223,8 @@ function CommandesPage({ showToast, user }) {
         </div>
       )}
 
-      {/* ── Stats du jour ── */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+      {/* ── Stats du jour + accès statistiques et calendrier ── */}
+      <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr auto auto', gap:12 }}>
         <div style={{ background:'#fff', borderRadius:14, padding:'14px 16px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', textAlign:'center' }}>
           <p style={{ fontSize:24, fontWeight:900, color:'#111', margin:'0 0 3px' }}>{nbJour}</p>
           <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0 }}>Commandes aujourd'hui</p>
@@ -3232,11 +3233,19 @@ function CommandesPage({ showToast, user }) {
           <p style={{ fontSize:24, fontWeight:900, color:'#111', margin:'0 0 3px' }}>{fmtEuro(caJour)}</p>
           <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0 }}>Total du jour</p>
         </div>
+        <button onClick={()=>setShowStats(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:14, padding: isMobile ? '14px 16px' : '14px 22px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:7 }}>
+          <ArrowUpDown size={22} strokeWidth={1.8} color="#666" style={{ transform:'rotate(90deg)' }} />
+          <span style={{ fontSize:10.5, fontWeight:700, color:'#666', letterSpacing:0.3 }}>Statistiques</span>
+        </button>
+        <button onClick={()=>setShowCalendrier(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:14, padding: isMobile ? '14px 16px' : '14px 22px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:7 }}>
+          <CalendarDays size={22} strokeWidth={1.8} color="#666" />
+          <span style={{ fontSize:10.5, fontWeight:700, color:'#666', letterSpacing:0.3 }}>Calendrier</span>
+        </button>
       </div>
 
       {/* ── 15 jours (même bande que la page Réservations) ── */}
-      <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', padding:14, boxShadow:'0 1px 4px rgba(0,0,0,0.04)', display:'flex', alignItems:'stretch', gap:14 }}>
-        <div className="jours-strip" style={{ flex:1, minWidth:0, display:'flex', gap:8, overflowX:'scroll', WebkitOverflowScrolling:'touch', scrollSnapType:'x mandatory', userSelect:'none', WebkitUserSelect:'none' }}>
+      <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', padding:14, boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
+        <div className="jours-strip" style={{ display:'flex', gap:8, overflowX:'scroll', WebkitOverflowScrolling:'touch', scrollSnapType:'x mandatory', userSelect:'none', WebkitUserSelect:'none' }}>
           {quinzeJoursCmd.map(j => {
             // Aujourd'hui renvoie sur l'onglet « Aujourd'hui » plutôt que de créer un filtre à part
             const isSelected = j.isAujourd
@@ -3261,15 +3270,6 @@ function CommandesPage({ showToast, user }) {
               </div>
             );
           })}
-        </div>
-
-        {/* Ouvrir le calendrier — fixe en bout de frise, séparé par un filet */}
-        <div onClick={()=>setShowCalendrier(true)}
-          style={{ flexShrink:0, width:92, borderLeft:'1.5px solid #f0f0f0', paddingLeft:14, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:7, cursor:'pointer' }}>
-          <div style={{ width:44, height:44, borderRadius:12, border:'2px solid #eee', background:'#fafafa', display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <CalendarDays size={22} strokeWidth={1.8} color="#666" />
-          </div>
-          <div style={{ fontSize:10.5, fontWeight:700, color:'#666', lineHeight:1.25, textAlign:'center' }}>Ouvrir le<br/>calendrier</div>
         </div>
       </div>
 
@@ -3324,6 +3324,7 @@ function CommandesPage({ showToast, user }) {
           onClose={()=>setShowParams(false)}
         />
       )}
+      {showStats && <StatistiquesCommandesModal commandes={commandes} onClose={()=>setShowStats(false)} showToast={showToast} />}
       {showCalendrier && (
         <CalendrierCommandesModal
           commandes={commandes}
@@ -3635,6 +3636,249 @@ function ATraiterPanel({ commandes, delaiDefaut, autoAccept, onAccepter, onRefus
           onConfirm={(motif)=>{ const c = refusCmd; setRefusCmd(null); onRefuser(c, motif); }}
         />
       )}
+    </>
+  );
+}
+
+// ── Statistiques des commandes ───────────────────────────────────────────────
+// Palette de données validée (CVD) : or foncé #b8860b + bleu #2563eb sur fond clair.
+const STAT_OR = '#b8860b';
+const STAT_BLEU = '#2563eb';
+
+function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
+  const [periode, setPeriode] = useState('mois'); // jour | mois | annee
+  const isMobile = useIsMobile();
+
+  const auj = new Date();
+  const aujStr = dateLocale(auj);
+  const jourDe = (c) => c.date_retrait || (c.created_at || '').split('T')[0];
+
+  // Commandes retenues : tout sauf les refusées
+  const valides = commandes.filter(c => c.statut !== 'annulee');
+
+  const debutPeriode = (() => {
+    if (periode === 'jour') return aujStr;
+    if (periode === 'mois') return `${auj.getFullYear()}-${String(auj.getMonth()+1).padStart(2,'0')}-01`;
+    return `${auj.getFullYear()}-01-01`;
+  })();
+  const dansPeriode = valides.filter(c => jourDe(c) >= debutPeriode && jourDe(c) <= aujStr);
+
+  const nb = dansPeriode.length;
+  const ca = dansPeriode.reduce((s, c) => s + (Number(c.total) || 0), 0);
+  const panierMoyen = nb ? ca / nb : 0;
+  const clients = new Set(dansPeriode.map(c => (c.client_tel || c.client_nom || '').trim().toLowerCase()).filter(Boolean)).size;
+  const nbEnLigne = dansPeriode.filter(c => c.source === 'en_ligne').length;
+  const nbTel = nb - nbEnLigne;
+  const partEnLigne = nb ? Math.round((nbEnLigne / nb) * 100) : 0;
+  const articles = dansPeriode.reduce((s, c) => s + (c.items || []).reduce((n, it) => n + (Number(it.quantite) || 1), 0), 0);
+  const refusees = commandes.filter(c => c.statut === 'annulee' && jourDe(c) >= debutPeriode && jourDe(c) <= aujStr).length;
+
+  // Évolution : 14 derniers jours (période jour/mois) ou 12 mois (année)
+  const serie = (() => {
+    if (periode === 'annee') {
+      return Array.from({ length: 12 }, (_, i) => {
+        const prefix = `${auj.getFullYear()}-${String(i+1).padStart(2,'0')}`;
+        const lot = valides.filter(c => (jourDe(c) || '').startsWith(prefix));
+        return {
+          cle: ['J','F','M','A','M','J','J','A','S','O','N','D'][i],
+          titre: new Date(auj.getFullYear(), i, 1).toLocaleDateString('fr-FR', { month:'long' }),
+          nb: lot.length,
+          ca: lot.reduce((s, c) => s + (Number(c.total) || 0), 0),
+        };
+      });
+    }
+    return Array.from({ length: 14 }, (_, i) => {
+      const d = new Date(); d.setDate(d.getDate() - (13 - i));
+      const str = dateLocale(d);
+      const lot = valides.filter(c => jourDe(c) === str);
+      return {
+        cle: String(d.getDate()),
+        titre: d.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' }),
+        nb: lot.length,
+        ca: lot.reduce((s, c) => s + (Number(c.total) || 0), 0),
+      };
+    });
+  })();
+  const maxCa = Math.max(1, ...serie.map(p => p.ca));
+
+  // Produits les plus commandés
+  const topProduits = (() => {
+    const compte = {};
+    dansPeriode.forEach(c => (c.items || []).forEach(it => {
+      const nom = (it.nom || '').trim();
+      if (!nom) return;
+      if (!compte[nom]) compte[nom] = { nom, qte: 0, ca: 0 };
+      compte[nom].qte += Number(it.quantite) || 1;
+      compte[nom].ca  += (Number(it.prix) || 0) * (Number(it.quantite) || 1);
+    }));
+    return Object.values(compte).sort((a, b) => b.qte - a.qte).slice(0, 5);
+  })();
+  const maxQte = Math.max(1, ...topProduits.map(p => p.qte));
+
+  const labelPeriode = periode === 'jour' ? "aujourd'hui" : periode === 'mois' ? 'ce mois-ci' : 'cette année';
+
+  function exporterCSV() {
+    const lignes = [['Numero','Date retrait','Heure','Client','Telephone','Source','Statut','Articles','Total EUR'].join(';')];
+    dansPeriode
+      .slice()
+      .sort((a, b) => (jourDe(a) < jourDe(b) ? -1 : 1))
+      .forEach(c => {
+        const detail = (c.items || []).map(it => `${it.quantite || 1}x ${it.nom}`).join(' / ');
+        lignes.push([
+          c.numero || '', jourDe(c) || '', c.heure_retrait || '',
+          (c.client_nom || '').replace(/;/g, ','), c.client_tel || '',
+          c.source === 'en_ligne' ? 'En ligne' : 'Telephone',
+          cmdStatut(c.statut).label,
+          detail.replace(/;/g, ','),
+          String(Number(c.total) || 0).replace('.', ','),
+        ].join(';'));
+      });
+    const blob = new Blob(['﻿' + lignes.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `commandes-${periode}-${aujStr}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(`✅ ${dansPeriode.length} commande${dansPeriode.length > 1 ? 's' : ''} exportée${dansPeriode.length > 1 ? 's' : ''}`);
+  }
+
+  const Tuile = ({ valeur, libelle, accent }) => (
+    <div style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:14, padding:'16px 14px', textAlign:'center' }}>
+      <p style={{ fontSize:26, fontWeight:900, color: accent || '#111', margin:'0 0 4px', lineHeight:1.1 }}>{valeur}</p>
+      <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0 }}>{libelle}</p>
+    </div>
+  );
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:5200 }} />
+      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#f7f7f7', borderRadius:20, width:'min(880px, calc(100vw - 28px))', maxHeight:'92vh', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.28)', zIndex:5201, overflow:'hidden' }}>
+
+        {/* En-tête */}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, padding:'20px 24px 16px', borderBottom:'1px solid #e8e8e8', background:'#fff', flexShrink:0 }}>
+          <h2 style={{ margin:0, fontSize:18, fontWeight:800, color:'#111' }}>Statistiques des commandes</h2>
+          <button onClick={onClose} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666', flexShrink:0 }}>✕</button>
+        </div>
+
+        {/* Période */}
+        <div style={{ display:'flex', gap:8, padding:'14px 24px 0', background:'#f7f7f7', flexShrink:0 }}>
+          {[{id:'jour',label:"Aujourd'hui"},{id:'mois',label:'Ce mois'},{id:'annee',label:'Cette année'}].map(p => (
+            <button key={p.id} onClick={()=>setPeriode(p.id)} style={{ flex:1, height:40, borderRadius:10, fontSize:13.5, fontWeight:700, border:'none', cursor:'pointer', background: periode===p.id ? '#111' : '#fff', color: periode===p.id ? '#fff' : '#666' }}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ padding:'16px 24px 22px', overflowY:'auto', display:'flex', flexDirection:'column', gap:18 }}>
+
+          {/* Chiffres clés */}
+          <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap:10 }}>
+            <Tuile valeur={nb} libelle={`Commandes ${labelPeriode}`} />
+            <Tuile valeur={fmtEuro(ca)} libelle="Chiffre d'affaires" />
+            <Tuile valeur={fmtEuro(panierMoyen)} libelle="Panier moyen" />
+            <Tuile valeur={clients} libelle="Clients" />
+          </div>
+
+          {/* Évolution — une seule série, donc pas de légende */}
+          <div style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:16, padding:'16px 18px' }}>
+            <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', marginBottom:14 }}>
+              <h3 style={{ margin:0, fontSize:14, fontWeight:800, color:'#111' }}>
+                {periode === 'annee' ? "Chiffre d'affaires par mois" : "Chiffre d'affaires des 14 derniers jours"}
+              </h3>
+              <span style={{ fontSize:11.5, color:'#999' }}>max {fmtEuro(maxCa)}</span>
+            </div>
+            {nb === 0 && serie.every(p => p.ca === 0) ? (
+              <p style={{ margin:0, padding:'26px 0', textAlign:'center', color:'#bbb', fontSize:13.5 }}>Aucune donnée sur cette période</p>
+            ) : (
+              <div style={{ display:'flex', alignItems:'flex-end', gap: periode === 'annee' ? 8 : 5, height:150 }}>
+                {serie.map((p, i) => {
+                  const h = Math.round((p.ca / maxCa) * 118);
+                  return (
+                    <div key={i} title={`${p.titre} — ${p.nb} commande${p.nb > 1 ? 's' : ''} · ${fmtEuro(p.ca)}`}
+                      style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'default' }}>
+                      <div style={{ width:'100%', height:118, display:'flex', alignItems:'flex-end' }}>
+                        <div style={{ width:'100%', height: Math.max(p.ca > 0 ? 4 : 2, h), background: p.ca > 0 ? STAT_OR : '#ececec', borderRadius:'4px 4px 0 0', transition:'height 0.2s' }} />
+                      </div>
+                      <span style={{ fontSize:10, color:'#999', fontWeight:600 }}>{p.cle}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:14 }}>
+
+            {/* Origine des commandes — 2 catégories, libellées (jamais la couleur seule) */}
+            <div style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:16, padding:'16px 18px' }}>
+              <h3 style={{ margin:'0 0 14px', fontSize:14, fontWeight:800, color:'#111' }}>Origine des commandes</h3>
+              {nb === 0 ? (
+                <p style={{ margin:0, padding:'18px 0', textAlign:'center', color:'#bbb', fontSize:13.5 }}>Aucune commande</p>
+              ) : (
+                <>
+                  <div style={{ display:'flex', height:16, borderRadius:8, overflow:'hidden', gap:2, marginBottom:14 }}>
+                    {nbEnLigne > 0 && <div style={{ width:`${partEnLigne}%`, background:STAT_BLEU }} />}
+                    {nbTel > 0 && <div style={{ flex:1, background:STAT_OR }} />}
+                  </div>
+                  <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:9 }}>
+                      <span style={{ width:11, height:11, borderRadius:3, background:STAT_BLEU, flexShrink:0 }} />
+                      <span style={{ fontSize:13.5, color:'#111', flex:1 }}>En ligne</span>
+                      <span style={{ fontSize:13.5, color:'#555' }}>{nbEnLigne} · {partEnLigne} %</span>
+                    </div>
+                    <div style={{ display:'flex', alignItems:'center', gap:9 }}>
+                      <span style={{ width:11, height:11, borderRadius:3, background:STAT_OR, flexShrink:0 }} />
+                      <span style={{ fontSize:13.5, color:'#111', flex:1 }}>Téléphone</span>
+                      <span style={{ fontSize:13.5, color:'#555' }}>{nbTel} · {100 - partEnLigne} %</span>
+                    </div>
+                  </div>
+                  <div style={{ display:'flex', gap:20, marginTop:16, paddingTop:14, borderTop:'1px solid #f2f2f2' }}>
+                    <div>
+                      <div style={{ fontSize:18, fontWeight:900, color:'#111' }}>{articles}</div>
+                      <div style={{ fontSize:10.5, color:'#999', fontWeight:700, textTransform:'uppercase', letterSpacing:0.4 }}>Articles vendus</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize:18, fontWeight:900, color:'#111' }}>{refusees}</div>
+                      <div style={{ fontSize:10.5, color:'#999', fontWeight:700, textTransform:'uppercase', letterSpacing:0.4 }}>Refusées</div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Produits les plus commandés */}
+            <div style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:16, padding:'16px 18px' }}>
+              <h3 style={{ margin:'0 0 14px', fontSize:14, fontWeight:800, color:'#111' }}>Produits les plus commandés</h3>
+              {topProduits.length === 0 ? (
+                <p style={{ margin:0, padding:'18px 0', textAlign:'center', color:'#bbb', fontSize:13.5 }}>Aucun article</p>
+              ) : (
+                <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+                  {topProduits.map((p, i) => (
+                    <div key={i}>
+                      <div style={{ display:'flex', justifyContent:'space-between', gap:10, marginBottom:5 }}>
+                        <span style={{ fontSize:13.5, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.nom}</span>
+                        <span style={{ fontSize:13.5, color:'#555', whiteSpace:'nowrap' }}>{p.qte} · {fmtEuro(p.ca)}</span>
+                      </div>
+                      <div style={{ height:8, background:'#f2f2f2', borderRadius:4, overflow:'hidden' }}>
+                        <div style={{ width:`${Math.round((p.qte / maxQte) * 100)}%`, height:'100%', background:STAT_OR, borderRadius:4 }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Export */}
+        <div style={{ display:'flex', gap:10, padding:'14px 24px calc(18px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #e8e8e8', background:'#fff', flexShrink:0 }}>
+          <button onClick={onClose} style={{ ...btnSecondary, flex:1, height:48 }}>Fermer</button>
+          <button onClick={exporterCSV} disabled={nb === 0} style={{ flex:2, height:48, border:'none', borderRadius:10, background: nb ? '#111' : '#f0f0f0', color: nb ? '#fff' : '#bbb', fontSize:14.5, fontWeight:800, cursor: nb ? 'pointer' : 'not-allowed', display:'flex', alignItems:'center', justifyContent:'center', gap:9 }}>
+            <Download size={17} strokeWidth={2} /> Exporter ({nb})
+          </button>
+        </div>
+      </div>
     </>
   );
 }
