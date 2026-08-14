@@ -3135,19 +3135,6 @@ function CommandesPage({ showToast, user }) {
     return (a.heure_retrait || '99:99').localeCompare(b.heure_retrait || '99:99');
   });
 
-  // 15 jours à venir, avec le nombre de commandes par jour
-  const quinzeJoursCmd = Array.from({ length: 15 }, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate() + i);
-    const str = dateLocale(d);
-    return {
-      date: str,
-      jour: d.toLocaleDateString('fr-FR', { weekday:'short' }).toUpperCase().replace('.', ''),
-      num: d.getDate(),
-      mois: d.toLocaleDateString('fr-FR', { month:'short' }),
-      isAujourd: str === aujourdhui,
-      nb: commandes.filter(c => jourDe(c) === str && !['annulee'].includes(c.statut)).length,
-    };
-  });
   const nbAVenir = commandes.filter(c => jourDe(c) > aujourdhui && !['recuperee','annulee'].includes(c.statut)).length;
 
   const caJour = commandes
@@ -3241,36 +3228,6 @@ function CommandesPage({ showToast, user }) {
           <CalendarDays size={22} strokeWidth={1.8} color="#666" />
           <span style={{ fontSize:10.5, fontWeight:700, color:'#666', letterSpacing:0.3 }}>Calendrier</span>
         </button>
-      </div>
-
-      {/* ── 15 jours (même bande que la page Réservations) ── */}
-      <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', padding:14, boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
-        <div className="jours-strip" style={{ display:'flex', gap:8, overflowX:'scroll', WebkitOverflowScrolling:'touch', scrollSnapType:'x mandatory', userSelect:'none', WebkitUserSelect:'none' }}>
-          {quinzeJoursCmd.map(j => {
-            // Aujourd'hui renvoie sur l'onglet « Aujourd'hui » plutôt que de créer un filtre à part
-            const isSelected = j.isAujourd
-              ? (!jourSelectionne && filtre === 'jour')
-              : jourSelectionne === j.date;
-            const onJourClick = () => {
-              if (j.isAujourd) {
-                setJourSelectionne(null);
-                setFiltre('jour');
-              } else {
-                setJourSelectionne(jourSelectionne === j.date ? null : j.date);
-              }
-            };
-            return (
-              <div key={j.date} onClick={onJourClick}
-                style={{ borderRadius:12, padding:'10px 6px', textAlign:'center', cursor:'pointer', border:'2px solid', borderColor: isSelected?'#E8C547':'#eee', background: isSelected?'#fffbea':'#fff', transition:'border-color 0.15s, background 0.15s', flexShrink:0, width:'calc((100% - 40px) / 6)', scrollSnapAlign:'start' }}>
-                <div style={{ fontSize:10, fontWeight:700, marginBottom:4, color: isSelected?'#E8C547': j.isAujourd?'#E8C547':'#999' }}>{j.isAujourd?'AUJ.':j.jour}</div>
-                <div style={{ fontSize:20, fontWeight:900, marginBottom:2, color:'#111' }}>{j.num}</div>
-                <div style={{ fontSize:10, color:'#999', marginBottom:4 }}>{j.mois}</div>
-                <div style={{ fontSize:11, fontWeight:700, color: j.nb>0?'#111':'#ccc' }}>{j.nb>0?`${j.nb} cmd`:'—'}</div>
-                {j.isAujourd && <div style={{ width:5, height:5, borderRadius:'50%', background:'#E8C547', margin:'4px auto 0' }}/>}
-              </div>
-            );
-          })}
-        </div>
       </div>
 
       {/* ── Filtres ── */}
@@ -3753,16 +3710,16 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
   return (
     <>
       <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:5200 }} />
-      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#f7f7f7', borderRadius:20, width:'min(880px, calc(100vw - 28px))', maxHeight:'92vh', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.28)', zIndex:5201, overflow:'hidden' }}>
+      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#f7f7f7', borderRadius:20, width:'min(1240px, calc(100vw - 24px))', height:'min(940px, calc(100vh - 24px))', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.28)', zIndex:5201, overflow:'hidden' }}>
 
         {/* En-tête */}
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, padding:'20px 24px 16px', borderBottom:'1px solid #e8e8e8', background:'#fff', flexShrink:0 }}>
-          <h2 style={{ margin:0, fontSize:18, fontWeight:800, color:'#111' }}>Statistiques des commandes</h2>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, padding:'22px 28px 18px', borderBottom:'1px solid #e8e8e8', background:'#fff', flexShrink:0 }}>
+          <h2 style={{ margin:0, fontSize:20, fontWeight:800, color:'#111' }}>Statistiques des commandes</h2>
           <button onClick={onClose} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666', flexShrink:0 }}>✕</button>
         </div>
 
         {/* Période */}
-        <div style={{ display:'flex', gap:8, padding:'14px 24px 0', background:'#f7f7f7', flexShrink:0 }}>
+        <div style={{ display:'flex', gap:8, padding:'16px 28px 0', background:'#f7f7f7', flexShrink:0 }}>
           {[{id:'jour',label:"Aujourd'hui"},{id:'mois',label:'Ce mois'},{id:'annee',label:'Cette année'}].map(p => (
             <button key={p.id} onClick={()=>setPeriode(p.id)} style={{ flex:1, height:40, borderRadius:10, fontSize:13.5, fontWeight:700, border:'none', cursor:'pointer', background: periode===p.id ? '#111' : '#fff', color: periode===p.id ? '#fff' : '#666' }}>
               {p.label}
@@ -3770,7 +3727,7 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
           ))}
         </div>
 
-        <div style={{ padding:'16px 24px 22px', overflowY:'auto', display:'flex', flexDirection:'column', gap:18 }}>
+        <div style={{ padding:'18px 28px 24px', overflowY:'auto', display:'flex', flexDirection:'column', gap:20, flex:1, minHeight:0 }}>
 
           {/* Chiffres clés */}
           <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap:10 }}>
@@ -3791,13 +3748,13 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
             {nb === 0 && serie.every(p => p.ca === 0) ? (
               <p style={{ margin:0, padding:'26px 0', textAlign:'center', color:'#bbb', fontSize:13.5 }}>Aucune donnée sur cette période</p>
             ) : (
-              <div style={{ display:'flex', alignItems:'flex-end', gap: periode === 'annee' ? 8 : 5, height:150 }}>
+              <div style={{ display:'flex', alignItems:'flex-end', gap: periode === 'annee' ? 10 : 6, height:230 }}>
                 {serie.map((p, i) => {
-                  const h = Math.round((p.ca / maxCa) * 118);
+                  const h = Math.round((p.ca / maxCa) * 198);
                   return (
                     <div key={i} title={`${p.titre} — ${p.nb} commande${p.nb > 1 ? 's' : ''} · ${fmtEuro(p.ca)}`}
                       style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'default' }}>
-                      <div style={{ width:'100%', height:118, display:'flex', alignItems:'flex-end' }}>
+                      <div style={{ width:'100%', height:198, display:'flex', alignItems:'flex-end' }}>
                         <div style={{ width:'100%', height: Math.max(p.ca > 0 ? 4 : 2, h), background: p.ca > 0 ? STAT_OR : '#ececec', borderRadius:'4px 4px 0 0', transition:'height 0.2s' }} />
                       </div>
                       <span style={{ fontSize:10, color:'#999', fontWeight:600 }}>{p.cle}</span>
@@ -3872,7 +3829,7 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
         </div>
 
         {/* Export */}
-        <div style={{ display:'flex', gap:10, padding:'14px 24px calc(18px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #e8e8e8', background:'#fff', flexShrink:0 }}>
+        <div style={{ display:'flex', gap:10, padding:'16px 28px calc(20px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #e8e8e8', background:'#fff', flexShrink:0 }}>
           <button onClick={onClose} style={{ ...btnSecondary, flex:1, height:48 }}>Fermer</button>
           <button onClick={exporterCSV} disabled={nb === 0} style={{ flex:2, height:48, border:'none', borderRadius:10, background: nb ? '#111' : '#f0f0f0', color: nb ? '#fff' : '#bbb', fontSize:14.5, fontWeight:800, cursor: nb ? 'pointer' : 'not-allowed', display:'flex', alignItems:'center', justifyContent:'center', gap:9 }}>
             <Download size={17} strokeWidth={2} /> Exporter ({nb})
@@ -3913,26 +3870,26 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, onChoisir, onClo
   return (
     <>
       <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:5200 }} />
-      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:20, width:'min(520px, calc(100vw - 32px))', maxHeight:'90vh', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.28)', zIndex:5201, overflow:'hidden' }}>
+      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:20, width:'min(880px, calc(100vw - 24px))', height:'min(820px, calc(100vh - 24px))', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.28)', zIndex:5201, overflow:'hidden' }}>
 
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'20px 24px 16px', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
-          <h2 style={{ margin:0, fontSize:18, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:9 }}>
-            <CalendarDays size={18} strokeWidth={2} /> Calendrier des commandes
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'22px 28px 18px', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
+          <h2 style={{ margin:0, fontSize:20, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:9 }}>
+            <CalendarDays size={20} strokeWidth={2} /> Calendrier des commandes
           </h2>
           <button onClick={onClose} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666' }}>✕</button>
         </div>
 
-        <div style={{ padding:'16px 22px 20px', overflowY:'auto' }}>
-          <div style={{ background:'#f8f8f8', borderRadius:12, padding:14 }}>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
-              <button onClick={()=>changerMois(-1)} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, fontSize:16, cursor:'pointer', fontWeight:700 }}>‹</button>
-              <span style={{ fontWeight:800, fontSize:18 }}>{MOIS[mois]} {annee}</span>
-              <button onClick={()=>changerMois(1)} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, fontSize:16, cursor:'pointer', fontWeight:700 }}>›</button>
+        <div style={{ padding:'18px 28px 22px', overflowY:'auto', flex:1, minHeight:0, display:'flex', flexDirection:'column' }}>
+          <div style={{ background:'#f8f8f8', borderRadius:14, padding:18, flex:1, display:'flex', flexDirection:'column' }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+              <button onClick={()=>changerMois(-1)} style={{ background:'#f0f0f0', border:'none', borderRadius:9, width:40, height:40, fontSize:18, cursor:'pointer', fontWeight:700 }}>‹</button>
+              <span style={{ fontWeight:800, fontSize:21 }}>{MOIS[mois]} {annee}</span>
+              <button onClick={()=>changerMois(1)} style={{ background:'#f0f0f0', border:'none', borderRadius:9, width:40, height:40, fontSize:18, cursor:'pointer', fontWeight:700 }}>›</button>
             </div>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2, marginBottom:4 }}>
-              {JOURS.map(j => <div key={j} style={{ textAlign:'center', fontSize:13, fontWeight:700, color:'#999', padding:'8px 0' }}>{j}</div>)}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:3, marginBottom:6 }}>
+              {JOURS.map(j => <div key={j} style={{ textAlign:'center', fontSize:14, fontWeight:700, color:'#999', padding:'8px 0' }}>{j}</div>)}
             </div>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:3 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:5, flex:1 }}>
               {cases.map((d, i) => {
                 if (!d) return <div key={i} />;
                 const iso = `${annee}-${String(mois+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -3942,27 +3899,29 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, onChoisir, onClo
                 const estPasse = new Date(iso) < new Date(new Date().setHours(0,0,0,0));
                 return (
                   <button key={i} onClick={()=>onChoisir(iso)}
-                    style={{ textAlign:'center', height:48, borderRadius:6, cursor:'pointer', position:'relative',
+                    style={{ textAlign:'center', minHeight:72, borderRadius:10, cursor:'pointer', position:'relative',
+                      display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4,
                       border: isToday && !isSelected ? '2px solid #E8C547' : '2px solid transparent',
-                      background: isSelected ? '#111' : isToday ? '#fffbea' : 'transparent',
+                      background: isSelected ? '#111' : isToday ? '#fffbea' : '#fff',
                       color: isSelected ? '#fff' : '#111',
-                      fontWeight: isSelected ? 800 : isToday ? 900 : 400, fontSize:16,
-                      boxSizing:'border-box', opacity: estPasse ? 0.4 : 1, transition:'background 0.15s' }}>
+                      fontWeight: isSelected ? 800 : isToday ? 900 : 500, fontSize:19,
+                      boxSizing:'border-box', opacity: estPasse ? 0.45 : 1, transition:'background 0.15s' }}>
                     {d}
-                    {nb > 0 && <span style={{ display:'block', width:4, height:4, borderRadius:'50%', background: isSelected ? '#E8C547' : '#E8C547', margin:'2px auto 0' }} />}
+                    {nb > 0
+                      ? <span style={{ fontSize:10.5, fontWeight:800, letterSpacing:0.2, color: isSelected ? '#E8C547' : '#b8860b' }}>{nb} cmd</span>
+                      : <span style={{ fontSize:10.5, color:'transparent' }}>—</span>}
                   </button>
                 );
               })}
             </div>
           </div>
-          <p style={{ margin:'12px 2px 0', fontSize:12.5, color:'#888', display:'flex', alignItems:'center', gap:7 }}>
-            <span style={{ width:5, height:5, borderRadius:'50%', background:'#E8C547', display:'inline-block' }} />
-            Un point sous la date indique des commandes ce jour-là.
+          <p style={{ margin:'14px 2px 0', fontSize:13, color:'#888' }}>
+            Le nombre de commandes s'affiche sous chaque date. Cliquez sur un jour pour n'afficher que ses commandes.
           </p>
         </div>
 
-        <div style={{ padding:'12px 24px calc(16px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #f0f0f0', flexShrink:0 }}>
-          <button onClick={onClose} style={{ width:'100%', height:46, border:'1.5px solid #ddd', borderRadius:12, background:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', color:'#666' }}>Fermer</button>
+        <div style={{ padding:'14px 28px calc(18px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #f0f0f0', flexShrink:0 }}>
+          <button onClick={onClose} style={{ width:'100%', height:48, border:'1.5px solid #ddd', borderRadius:12, background:'#fff', fontSize:14.5, fontWeight:600, cursor:'pointer', color:'#666' }}>Fermer</button>
         </div>
       </div>
     </>
