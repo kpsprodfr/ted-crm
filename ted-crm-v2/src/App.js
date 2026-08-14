@@ -3054,12 +3054,13 @@ function CommandesPage({ showToast, user }) {
     if (cle === 'acceptation_auto') showToast(valeur === 'true' ? '✅ Acceptation automatique activée' : 'Acceptation automatique désactivée');
   }
 
-  async function changerStatut(cmd, statut, silencieux = false) {
+  async function changerStatut(cmd, statut, silencieux = false, motifRefus = null) {
     const patch = { statut, updated_at: new Date().toISOString() };
     if (statut === 'recuperee' || statut === 'annulee') {
       patch.traited_at = new Date().toISOString();
       patch.traited_by = user?.email || null;
     }
+    if (motifRefus) patch.motif_refus = motifRefus;
     setCommandes(prev => prev.map(c => c.id === cmd.id ? { ...c, ...patch } : c));
     setDetail(prev => prev && prev.id === cmd.id ? { ...prev, ...patch } : prev);
     const { error } = await safeQuery(
@@ -3210,7 +3211,7 @@ function CommandesPage({ showToast, user }) {
           delaiDefaut={delaiDefaut}
           autoAccept={autoAccept}
           onAccepter={accepter}
-          onRefuser={(c)=>changerStatut(c, 'annulee')}
+          onRefuser={(c, motif)=>changerStatut(c, 'annulee', false, motif)}
           onOuvrir={(c)=>{ setShowATraiter(false); setDetail(c); }}
           onClose={()=>setShowATraiter(false)}
         />
@@ -3220,6 +3221,15 @@ function CommandesPage({ showToast, user }) {
     </div>
   );
 }
+
+// Motifs de refus proposés au commerçant (commandes)
+const MOTIFS_REFUS_CMD = [
+  'Trop de commandes en cours',
+  'Produit indisponible',
+  'Horaire de retrait impossible',
+  'Établissement fermé',
+  'Client injoignable',
+];
 
 // Délais proposés à l'acceptation (minutes)
 const DELAIS_RAPIDES = [10, 15, 20, 25, 30, 45, 60, 90];
@@ -3285,13 +3295,14 @@ function CommandeCarte({ cmd, onOpen, onStatut }) {
 function ATraiterPanel({ commandes, delaiDefaut, autoAccept, onAccepter, onRefuser, onOuvrir, onClose }) {
   const [delais, setDelais] = useState({});       // délai choisi par commande
   const [choixOuvert, setChoixOuvert] = useState(null); // id de la commande en cours de choix
+  const [refusCmd, setRefusCmd] = useState(null);       // commande en cours de refus
   const isMobile = useIsMobile();
   const getDelai = (id) => delais[id] != null ? parseInt(delais[id]) : (parseInt(delaiDefaut) || 30);
 
   return (
     <>
       <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:4999 }} />
-      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#f5f5f5', borderRadius:20, width:'min(760px, calc(100vw - 28px))', maxHeight:'90vh', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.25)', zIndex:5000, overflow:'hidden' }}>
+      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#f5f5f5', borderRadius:20, width:'min(1040px, calc(100vw - 28px))', maxHeight:'92vh', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.25)', zIndex:5000, overflow:'hidden' }}>
 
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'20px 24px 16px', borderBottom:'1px solid #e8e8e8', background:'#fff', flexShrink:0 }}>
           <div>
@@ -3362,7 +3373,7 @@ function ATraiterPanel({ commandes, delaiDefaut, autoAccept, onAccepter, onRefus
                 </div>
 
                 {/* Bloc d'acceptation, à droite */}
-                <div style={{ width: isMobile ? '100%' : 246, flexShrink:0, display:'flex', flexDirection:'column', gap:10, justifyContent:'center', borderLeft: isMobile ? 'none' : '1px solid #f0f0f0', paddingLeft: isMobile ? 0 : 18 }}>
+                <div style={{ width: isMobile ? '100%' : 340, flexShrink:0, display:'flex', flexDirection:'column', gap:11, justifyContent:'center', borderLeft: isMobile ? 'none' : '1px solid #f0f0f0', paddingLeft: isMobile ? 0 : 20 }}>
                   {choixOuvert !== cmd.id ? (
                     <>
                       {/* Gros bouton d'acceptation */}
@@ -3370,23 +3381,23 @@ function ATraiterPanel({ commandes, delaiDefaut, autoAccept, onAccepter, onRefus
                         <CheckCircle size={30} strokeWidth={2.4} />
                         Accepter
                       </button>
-                      <button onClick={()=>onRefuser(cmd)} style={{ width:'100%', height:40, border:'1.5px solid #eee', borderRadius:10, background:'#fff', color:'#dc2626', fontSize:13.5, fontWeight:700, cursor:'pointer' }}>Refuser</button>
+                      <button onClick={()=>setRefusCmd(cmd)} style={{ width:'100%', height:44, border:'1.5px solid #eee', borderRadius:11, background:'#fff', color:'#dc2626', fontSize:14.5, fontWeight:700, cursor:'pointer' }}>Refuser</button>
                     </>
                   ) : (
                     <>
                       {/* Choix du délai puis confirmation */}
-                      <label style={{ fontSize:12, fontWeight:800, color:'#111', display:'block' }}>Prête dans :</label>
-                      <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:6 }}>
+                      <label style={{ fontSize:13.5, fontWeight:800, color:'#111', display:'block' }}>Prête dans :</label>
+                      <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8 }}>
                         {DELAIS_RAPIDES.map(m => (
-                          <button key={m} onClick={()=>setDelais(p=>({...p,[cmd.id]:m}))} style={{ height:40, borderRadius:9, border: d===m ? '2px solid #16a34a' : '1.5px solid #ddd', background: d===m ? '#16a34a' : '#fff', color: d===m ? '#fff' : '#333', fontSize:13, fontWeight:800, cursor:'pointer', padding:0 }}>
+                          <button key={m} onClick={()=>setDelais(p=>({...p,[cmd.id]:m}))} style={{ height:56, borderRadius:11, border: d===m ? '2px solid #16a34a' : '1.5px solid #ddd', background: d===m ? '#16a34a' : '#fff', color: d===m ? '#fff' : '#333', fontSize:15.5, fontWeight:800, cursor:'pointer', padding:0 }}>
                             {fmtDelai(m)}
                           </button>
                         ))}
                       </div>
                       <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                        <button onClick={()=>setDelais(p=>({...p,[cmd.id]:Math.max(5, d - 5)}))} style={{ width:38, height:38, borderRadius:9, border:'1.5px solid #ddd', background:'#fff', fontSize:19, fontWeight:700, cursor:'pointer', lineHeight:1 }}>−</button>
-                        <div style={{ flex:1, height:38, border:'1.5px solid #ddd', borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14.5, fontWeight:800, background:'#fafafa' }}>{fmtDelai(d)}</div>
-                        <button onClick={()=>setDelais(p=>({...p,[cmd.id]:Math.min(180, d + 5)}))} style={{ width:38, height:38, borderRadius:9, border:'1.5px solid #ddd', background:'#fff', fontSize:19, fontWeight:700, cursor:'pointer', lineHeight:1 }}>+</button>
+                        <button onClick={()=>setDelais(p=>({...p,[cmd.id]:Math.max(5, d - 5)}))} style={{ width:46, height:46, borderRadius:11, border:'1.5px solid #ddd', background:'#fff', fontSize:22, fontWeight:700, cursor:'pointer', lineHeight:1 }}>−</button>
+                        <div style={{ flex:1, height:46, border:'1.5px solid #ddd', borderRadius:11, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, fontWeight:800, background:'#fafafa' }}>{fmtDelai(d)}</div>
+                        <button onClick={()=>setDelais(p=>({...p,[cmd.id]:Math.min(180, d + 5)}))} style={{ width:46, height:46, borderRadius:11, border:'1.5px solid #ddd', background:'#fff', fontSize:22, fontWeight:700, cursor:'pointer', lineHeight:1 }}>+</button>
                       </div>
                       <button onClick={()=>{ setChoixOuvert(null); onAccepter(cmd, d); }} style={{ width:'100%', minHeight:62, border:'none', borderRadius:14, background:'#16a34a', color:'#fff', fontSize:17, fontWeight:900, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:2, boxShadow:'0 4px 14px rgba(22,163,74,0.3)' }}>
                         <span style={{ display:'flex', alignItems:'center', gap:8 }}><CheckCircle size={19} strokeWidth={2.4} /> Accepter</span>
@@ -3403,6 +3414,61 @@ function ATraiterPanel({ commandes, delaiDefaut, autoAccept, onAccepter, onRefus
 
         <div style={{ padding:'12px 24px calc(16px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #e8e8e8', background:'#fff', flexShrink:0 }}>
           <button onClick={onClose} style={{ width:'100%', height:46, border:'1.5px solid #ddd', borderRadius:12, background:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', color:'#666' }}>Fermer</button>
+        </div>
+      </div>
+
+      {refusCmd && (
+        <RefusCommandeModal
+          cmd={refusCmd}
+          onClose={()=>setRefusCmd(null)}
+          onConfirm={(motif)=>{ const c = refusCmd; setRefusCmd(null); onRefuser(c, motif); }}
+        />
+      )}
+    </>
+  );
+}
+
+// ── Refus d'une commande : motif obligatoire ─────────────────────────────────
+function RefusCommandeModal({ cmd, onClose, onConfirm }) {
+  const [motif, setMotif] = useState('');
+  const valide = motif.trim().length > 0;
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:5100 }} />
+      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:20, width:'min(460px, calc(100vw - 32px))', boxShadow:'0 32px 80px rgba(0,0,0,0.3)', zIndex:5101, overflow:'hidden' }}>
+        <div style={{ padding:'22px 24px 18px', borderBottom:'1px solid #f0f0f0' }}>
+          <h3 style={{ margin:0, fontSize:17, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:9 }}>
+            <AlertCircle size={18} strokeWidth={2} color="#dc2626" /> Refuser la commande N° {cmd.numero || '—'}
+          </h3>
+          <p style={{ margin:'5px 0 0', fontSize:13, color:'#888' }}>
+            {cmd.client_nom || 'Client'} · {fmtEuro(cmd.total)} — indiquez le motif du refus.
+          </p>
+        </div>
+
+        <div style={{ padding:'18px 24px 20px', display:'flex', flexDirection:'column', gap:14 }}>
+          <div>
+            <label style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, display:'block', marginBottom:8 }}>Motif</label>
+            <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
+              {MOTIFS_REFUS_CMD.map(m => (
+                <button key={m} onClick={()=>setMotif(m)} style={{ width:'100%', minHeight:46, padding:'0 14px', borderRadius:11, border: motif===m ? '2px solid #dc2626' : '1.5px solid #eee', background: motif===m ? '#fef2f2' : '#fff', color: motif===m ? '#b91c1c' : '#333', fontSize:14, fontWeight:700, cursor:'pointer', textAlign:'left' }}>
+                  {m}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, display:'block', marginBottom:6 }}>Précision (facultatif)</label>
+            <textarea value={motif} onChange={e=>setMotif(e.target.value.slice(0, 300))} rows={2} placeholder="Motif communiqué au client…" style={{ width:'100%', border:'1.5px solid #ddd', borderRadius:10, padding:'10px 12px', fontSize:14, outline:'none', resize:'vertical', fontFamily:'inherit', boxSizing:'border-box' }} />
+          </div>
+
+          <div style={{ display:'flex', gap:10 }}>
+            <button onClick={onClose} style={{ ...btnSecondary, flex:1, height:46 }}>Annuler</button>
+            <button onClick={()=>valide && onConfirm(motif.trim())} disabled={!valide} style={{ flex:2, height:46, border:'none', borderRadius:10, background: valide ? '#dc2626' : '#f0f0f0', color: valide ? '#fff' : '#bbb', fontSize:14.5, fontWeight:800, cursor: valide ? 'pointer' : 'not-allowed' }}>
+              Confirmer le refus
+            </button>
+          </div>
         </div>
       </div>
     </>
@@ -3460,6 +3526,13 @@ function CommandeDetail({ cmd, onClose, onStatut }) {
             <div style={{ background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:10, padding:'10px 14px' }}>
               <p style={{ fontSize:11, fontWeight:700, color:'#92400e', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 4px' }}>Note</p>
               <p style={{ fontSize:13.5, color:'#111', margin:0, lineHeight:1.5 }}>{cmd.note}</p>
+            </div>
+          )}
+
+          {cmd.motif_refus && (
+            <div style={{ background:'#fef2f2', border:'1.5px solid #fca5a5', borderRadius:10, padding:'10px 14px' }}>
+              <p style={{ fontSize:11, fontWeight:700, color:'#b91c1c', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 4px' }}>Motif du refus</p>
+              <p style={{ fontSize:13.5, color:'#111', margin:0, lineHeight:1.5 }}>{cmd.motif_refus}</p>
             </div>
           )}
 
