@@ -3156,10 +3156,12 @@ function CommandesPage({ showToast, user }) {
   // seulement d'être récupérées, elles ne demandent plus de travail.
   const nbEnCours = commandes.filter(c => c.statut === 'en_preparation' && jourDe(c) <= aujourdhui).length;
 
-  const caJour = commandes
-    .filter(c => (c.created_at || '').startsWith(aujourdhui) && c.statut !== 'annulee')
-    .reduce((s, c) => s + (Number(c.total) || 0), 0);
-  const nbJour = commandes.filter(c => (c.created_at || '').startsWith(aujourdhui) && c.statut !== 'annulee').length;
+  // Les deux tuiles suivent le jour affiché : aujourd'hui par défaut,
+  // ou la date choisie dans le calendrier.
+  const jourAffiche = jourSelectionne || aujourdhui;
+  const cmdDuJour = commandes.filter(c => jourDe(c) === jourAffiche && c.statut !== 'annulee');
+  const caJour = cmdDuJour.reduce((s, c) => s + (Number(c.total) || 0), 0);
+  const nbJour = cmdDuJour.length;
 
   if (loading) return <div style={{ textAlign:'center', paddingTop:80, fontSize:16, color:'#888' }}>Chargement des commandes…</div>;
 
@@ -3233,11 +3235,11 @@ function CommandesPage({ showToast, user }) {
       <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr auto auto', gap:12 }}>
         <div style={{ background:'#fff', borderRadius:14, padding:'14px 16px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', textAlign:'center' }}>
           <p style={{ fontSize:24, fontWeight:900, color:'#111', margin:'0 0 3px' }}>{nbJour}</p>
-          <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0 }}>Commandes aujourd'hui</p>
+          <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0 }}>Commandes {labelJour(jourAffiche)}</p>
         </div>
         <div style={{ background:'#fff', borderRadius:14, padding:'14px 16px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', textAlign:'center' }}>
           <p style={{ fontSize:24, fontWeight:900, color:'#111', margin:'0 0 3px' }}>{fmtEuro(caJour)}</p>
-          <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0 }}>Total du jour</p>
+          <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0 }}>{jourSelectionne ? `Total du ${labelJour(jourAffiche)}` : 'Total du jour'}</p>
         </div>
         <button onClick={()=>setShowStats(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:14, padding: isMobile ? '14px 16px' : '14px 22px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:7 }}>
           <ArrowUpDown size={22} strokeWidth={1.8} color="#666" style={{ transform:'rotate(90deg)' }} />
