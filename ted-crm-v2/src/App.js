@@ -3152,6 +3152,10 @@ function CommandesPage({ showToast, user }) {
 
   const nbAVenir = commandes.filter(c => jourDe(c) > aujourdhui && !['recuperee','annulee'].includes(c.statut)).length;
 
+  // Commandes réellement en cours de préparation : celles déjà prêtes attendent
+  // seulement d'être récupérées, elles ne demandent plus de travail.
+  const nbEnCours = commandes.filter(c => c.statut === 'en_preparation' && jourDe(c) <= aujourdhui).length;
+
   const caJour = commandes
     .filter(c => (c.created_at || '').startsWith(aujourdhui) && c.statut !== 'annulee')
     .reduce((s, c) => s + (Number(c.total) || 0), 0);
@@ -3239,24 +3243,24 @@ function CommandesPage({ showToast, user }) {
           <ArrowUpDown size={22} strokeWidth={1.8} color="#666" style={{ transform:'rotate(90deg)' }} />
           <span style={{ fontSize:10.5, fontWeight:700, color:'#666', letterSpacing:0.3 }}>Statistiques</span>
         </button>
-        <button onClick={()=>setShowCalendrier(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:14, padding: isMobile ? '14px 16px' : '14px 22px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:7 }}>
+        <button onClick={()=>setShowCalendrier(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:14, padding: isMobile ? '12px 14px' : '12px 18px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:6 }}>
           <CalendarDays size={22} strokeWidth={1.8} color="#666" />
           <span style={{ fontSize:10.5, fontWeight:700, color:'#666', letterSpacing:0.3 }}>Calendrier</span>
+          {/* Jour actuellement affiché — remplacé par la date choisie dans le calendrier */}
+          <span style={{ marginTop:1, padding:'4px 11px', borderRadius:20, fontSize:11.5, fontWeight:800, whiteSpace:'nowrap',
+            background: jourSelectionne ? '#111' : '#f5f5f5', color: jourSelectionne ? '#fff' : '#444' }}>
+            {jourSelectionne ? labelJour(jourSelectionne) : "Aujourd'hui"}
+          </span>
         </button>
       </div>
 
       {/* ── Filtres ── */}
       <div style={{ display:'flex', gap:8, overflowX:'auto', paddingBottom:2, alignItems:'center' }}>
-        {[{id:'actives',label:'En cours'},{id:'jour',label:"Aujourd'hui"},{id:'avenir',label:`À venir${nbAVenir ? ' · ' + nbAVenir : ''}`},{id:'toutes',label:'Toutes'}].map(f => (
+        {[{id:'actives',label:`En cours${nbEnCours ? ` (${nbEnCours})` : ''}`},{id:'avenir',label:`À venir${nbAVenir ? ' · ' + nbAVenir : ''}`},{id:'toutes',label:'Toutes'}].map(f => (
           <button key={f.id} onClick={()=>{ setFiltre(f.id); setJourSelectionne(null); }} style={{ height:36, padding:'0 16px', borderRadius:10, fontSize:13, fontWeight:700, border:'none', flexShrink:0, cursor:'pointer', background: (!jourSelectionne && filtre===f.id) ? '#111' : '#fff', color: (!jourSelectionne && filtre===f.id) ? '#fff' : '#666' }}>
             {f.label}
           </button>
         ))}
-        {jourSelectionne && (
-          <button onClick={()=>setJourSelectionne(null)} style={{ height:36, padding:'0 14px', borderRadius:10, fontSize:13, fontWeight:700, border:'none', flexShrink:0, cursor:'pointer', background:'#E8C547', color:'#111', display:'flex', alignItems:'center', gap:7 }}>
-            {new Date(jourSelectionne + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' })} ✕
-          </button>
-        )}
       </div>
 
       {/* ── Liste des commandes acceptées ── */}
@@ -3893,16 +3897,20 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
 // ── Calendrier des commandes (même grille que la page Réservations) ─────────
 function CalendrierCommandesModal({ commandes, jourSelectionne, onChoisir, onClose }) {
   const [calDate, setCalDate] = useState(new Date());
-  // Jour sur lequel on vient de cliquer : on laisse l'effet visuel se jouer
-  // avant de refermer la modale, sinon le clic n'a aucun retour.
-  const [jourClique, setJourClique] = useState(null);
-  const timerRef = useRef(null);
-  useEffect(() => () => clearTimeout(timerRef.current), []);
+  // Même enchaînement que le calendrier de « Nouvelle réservation » :
+  // flash sur la date choisie (200 ms), puis fermeture animée (300 ms).
+  const [dateFlash, setDateFlash] = useState(null);
+  const [calFermeture, setCalFermeture] = useState(false);
+  const timersRef = useRef([]);
+  useEffect(() => () => timersRef.current.forEach(clearTimeout), []);
 
   function choisirJour(iso) {
-    if (jourClique) return; // un seul clic pris en compte
-    setJourClique(iso);
-    timerRef.current = setTimeout(() => onChoisir(iso), 240);
+    if (dateFlash) return; // un seul clic pris en compte
+    setDateFlash(iso);
+    timersRef.current.push(setTimeout(() => {
+      setCalFermeture(true);
+      timersRef.current.push(setTimeout(() => onChoisir(iso), 300));
+    }, 200));
   }
 
   const JOURS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
@@ -3931,8 +3939,11 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, onChoisir, onClo
 
   return (
     <>
-      <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:5200 }} />
-      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:20, width:'min(880px, calc(100vw - 24px))', height:'min(820px, calc(100vh - 24px))', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.28)', zIndex:5201, overflow:'hidden' }}>
+      <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:5200, opacity: calFermeture ? 0 : 1, transition:'opacity 0.3s' }} />
+      {/* Conteneur de centrage : la classe cal-fermeture anime `transform`,
+          elle ne peut donc pas cohabiter avec un centrage par translate(-50%,-50%). */}
+      <div style={{ position:'fixed', inset:0, display:'flex', alignItems:'center', justifyContent:'center', zIndex:5201, pointerEvents:'none' }}>
+      <div onClick={e=>e.stopPropagation()} className={calFermeture ? 'cal-fermeture' : ''} style={{ background:'#fff', borderRadius:20, width:'min(880px, calc(100vw - 24px))', height:'min(820px, calc(100vh - 24px))', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.28)', overflow:'hidden', pointerEvents:'auto' }}>
 
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'22px 28px 18px', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
           <h2 style={{ margin:0, fontSize:20, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:9 }}>
@@ -3957,24 +3968,19 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, onChoisir, onClo
                 const iso = `${annee}-${String(mois+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                 const nb = parJour[iso] || 0;
                 const isToday = today.getFullYear()===annee && today.getMonth()===mois && today.getDate()===d;
-                const estClique = jourClique === iso;
-                const isSelected = jourSelectionne === iso || estClique;
+                const isSelected = jourSelectionne === iso || dateFlash === iso;
                 const estPasse = new Date(iso) < new Date(new Date().setHours(0,0,0,0));
-                const estEstompe = jourClique && !estClique; // les autres jours s'effacent
                 return (
-                  <button key={i} onClick={()=>choisirJour(iso)}
+                  <button key={i} className={dateFlash === iso ? 'date-flash' : ''} onPointerDown={()=>choisirJour(iso)}
                     style={{ textAlign:'center', minHeight:72, borderRadius:10, cursor:'pointer', position:'relative',
                       display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4,
                       border: isToday && !isSelected ? '2px solid #E8C547' : '2px solid transparent',
                       background: isSelected ? '#111' : isToday ? '#fffbea' : '#fff',
                       color: isSelected ? '#fff' : '#111',
                       fontWeight: isSelected ? 800 : isToday ? 900 : 500, fontSize:19,
-                      boxSizing:'border-box',
-                      opacity: estEstompe ? 0.3 : estPasse ? 0.45 : 1,
-                      transform: estClique ? 'scale(1.06)' : 'scale(1)',
-                      boxShadow: estClique ? '0 8px 22px rgba(0,0,0,0.28)' : 'none',
-                      zIndex: estClique ? 2 : 1,
-                      transition:'background 0.15s, transform 0.16s cubic-bezier(0.34,1.4,0.64,1), box-shadow 0.16s, opacity 0.16s' }}>
+                      boxSizing:'border-box', opacity: estPasse ? 0.45 : 1,
+                      touchAction:'manipulation', WebkitTapHighlightColor:'transparent',
+                      transition:'background 0.15s' }}>
                     {d}
                     {nb > 0
                       ? <span style={{ fontSize:10.5, fontWeight:800, letterSpacing:0.2, color: isSelected ? '#E8C547' : '#b8860b' }}>{nb} cmd</span>
@@ -3992,6 +3998,7 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, onChoisir, onClo
         <div style={{ padding:'14px 28px calc(18px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #f0f0f0', flexShrink:0 }}>
           <button onClick={onClose} style={{ width:'100%', height:48, border:'1.5px solid #ddd', borderRadius:12, background:'#fff', fontSize:14.5, fontWeight:600, cursor:'pointer', color:'#666' }}>Fermer</button>
         </div>
+      </div>
       </div>
     </>
   );
