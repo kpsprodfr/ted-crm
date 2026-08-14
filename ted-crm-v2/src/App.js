@@ -4409,6 +4409,113 @@ function CommandeDetail({ cmd, onClose, onStatut, onEdit, onSupprimer }) {
   );
 }
 
+// ── Toute la carte, en grand — pensée pour la prise de commande sur tablette ──
+// Cibles tactiles larges : chaque produit est une carte, les boutons − / + font
+// 52 px de côté, bien au-delà des 44 px recommandés pour le doigt.
+function CatalogueModal({ parCategorie, quantiteDe, onAjouter, onRetirer, nbArticles, total, onClose }) {
+  const isMobile = useIsMobile();
+  const [filtreCat, setFiltreCat] = useState('toutes');
+  const [recherche, setRecherche] = useState('');
+
+  const categoriesAffichees = parCategorie
+    .filter(c => filtreCat === 'toutes' || c.id === filtreCat)
+    .map(c => ({
+      ...c,
+      produits: recherche.trim()
+        ? c.produits.filter(p => normalizeStr(p.nom || '').includes(normalizeStr(recherche)))
+        : c.produits,
+    }))
+    .filter(c => c.produits.length > 0);
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:5300 }} />
+      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:22, width:'min(1080px, calc(100vw - 20px))', height:'min(940px, calc(100vh - 20px))', display:'flex', flexDirection:'column', boxShadow:'0 40px 100px rgba(0,0,0,0.35)', zIndex:5301, overflow:'hidden' }}>
+
+        {/* En-tête */}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:14, padding:'20px 26px 16px', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
+          <h2 style={{ margin:0, fontSize:21, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:10 }}>
+            <UtensilsCrossed size={22} strokeWidth={2} /> Ajouter des articles
+          </h2>
+          <button onClick={onClose} style={{ width:46, height:46, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:22, color:'#666', flexShrink:0 }}>✕</button>
+        </div>
+
+        {/* Recherche + filtres de catégorie */}
+        <div style={{ padding:'14px 26px 0', flexShrink:0 }}>
+          <div style={{ position:'relative', marginBottom:12 }}>
+            <Search size={19} strokeWidth={2} color="#999" style={{ position:'absolute', left:16, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} />
+            <input value={recherche} onChange={e=>setRecherche(e.target.value)} placeholder="Rechercher dans la carte…"
+              style={{ width:'100%', height:56, border:'1.5px solid #eee', borderRadius:14, padding:'0 16px 0 48px', fontSize:16.5, outline:'none', boxSizing:'border-box' }} />
+          </div>
+          <div style={{ display:'flex', gap:9, overflowX:'auto', paddingBottom:10 }}>
+            {[{ id:'toutes', nom:'Toutes' }, ...parCategorie].map(c => (
+              <button key={c.id} onClick={()=>setFiltreCat(c.id)}
+                style={{ height:46, padding:'0 20px', borderRadius:12, fontSize:14.5, fontWeight:700, border:'none', flexShrink:0, cursor:'pointer', whiteSpace:'nowrap',
+                  background: filtreCat === c.id ? '#111' : '#f5f5f5',
+                  color: filtreCat === c.id ? '#fff' : '#666' }}>
+                {c.nom}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Grille de produits */}
+        <div style={{ padding:'6px 26px 22px', overflowY:'auto', flex:1, minHeight:0 }}>
+          {categoriesAffichees.length === 0 ? (
+            <p style={{ margin:0, padding:'60px 20px', textAlign:'center', fontSize:15, color:'#bbb' }}>
+              {recherche.trim() ? `Aucun article ne correspond à « ${recherche.trim()} »` : 'Aucun produit disponible dans la carte.'}
+            </p>
+          ) : categoriesAffichees.map(c => (
+            <div key={c.id} style={{ marginBottom:22 }}>
+              <p style={{ margin:'12px 0 12px', fontSize:12.5, fontWeight:800, color:'#888', textTransform:'uppercase', letterSpacing:1 }}>{c.nom}</p>
+              <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(300px, 1fr))', gap:12 }}>
+                {c.produits.map(p => {
+                  const q = quantiteDe(p);
+                  return (
+                    <div key={p.id}
+                      style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', borderRadius:16,
+                        border: q ? '2px solid #E8C547' : '1.5px solid #eee',
+                        background: q ? '#fffdf5' : '#fff', minHeight:78, boxSizing:'border-box' }}>
+                      {/* Toute la zone texte ajoute l'article d'un simple appui */}
+                      <button onClick={()=>onAjouter(p)}
+                        style={{ flex:1, minWidth:0, border:'none', background:'none', textAlign:'left', cursor:'pointer', padding:0, alignSelf:'stretch' }}>
+                        <div style={{ fontSize:15.5, fontWeight: q ? 800 : 600, color:'#111', lineHeight:1.3, marginBottom:4 }}>{p.nom}</div>
+                        <div style={{ fontSize:14, fontWeight:700, color:'#888' }}>{fmtEuro(p.prix)}</div>
+                      </button>
+                      <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+                        <button onClick={()=>onRetirer(p)} disabled={!q}
+                          style={{ width:52, height:52, borderRadius:13, border:'1.5px solid #ddd', background:'#fff', fontSize:24, fontWeight:700,
+                            cursor: q ? 'pointer' : 'not-allowed', color: q ? '#111' : '#ddd', touchAction:'manipulation' }}>−</button>
+                        <span style={{ minWidth:28, textAlign:'center', fontSize:19, fontWeight:900, color: q ? '#111' : '#ccc' }}>{q}</span>
+                        <button onClick={()=>onAjouter(p)}
+                          style={{ width:52, height:52, borderRadius:13, border:'none', background:'#111', color:'#E8C547', fontSize:24, fontWeight:700,
+                            cursor:'pointer', touchAction:'manipulation' }}>+</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Pied : récapitulatif et retour à la commande */}
+        <div style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 26px calc(18px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #f0f0f0', flexShrink:0 }}>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:12.5, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.6 }}>Au panier</div>
+            <div style={{ fontSize:19, fontWeight:900, color:'#111' }}>
+              {nbArticles} article{nbArticles > 1 ? 's' : ''} · {fmtEuro(total)}
+            </div>
+          </div>
+          <button onClick={onClose} style={{ height:60, padding:'0 34px', border:'none', borderRadius:15, background:'#E8C547', color:'#111', fontSize:17, fontWeight:800, cursor:'pointer', flexShrink:0 }}>
+            Terminer
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ── Créneaux de retrait proposés en un clic (mêmes services que les résas) ────
 const CRENEAUX_MIDI = ['11:30','11:45','12:00','12:15','12:30','12:45','13:00','13:15','13:30','13:45','14:00','14:15'];
 const CRENEAUX_SOIR = ['18:00','18:30','19:00','19:15','19:30','19:45','20:00','20:15','20:30','20:45','21:00','21:30'];
@@ -4744,46 +4851,18 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
                   </div>
                 )}
               </div>
-              {/* Ouvre toute la carte */}
-              <button onClick={()=>setShowCatalogue(v=>!v)} title="Voir toute la carte"
-                style={{ width:48, height:48, flexShrink:0, borderRadius:10, cursor:'pointer', fontSize:24, fontWeight:400, lineHeight:1,
-                  border: showCatalogue ? 'none' : '1.5px solid #ddd',
-                  background: showCatalogue ? '#111' : '#fff',
-                  color: showCatalogue ? '#E8C547' : '#111',
+              {/* Ouvre toute la carte dans une modale pensée pour la tablette */}
+              <button onClick={()=>setShowCatalogue(true)} title="Voir toute la carte"
+                style={{ width:52, height:52, flexShrink:0, borderRadius:12, cursor:'pointer', fontSize:28, fontWeight:400, lineHeight:1,
+                  border:'none', background:'#111', color:'#E8C547',
                   display:'flex', alignItems:'center', justifyContent:'center' }}>
-                {showCatalogue ? '×' : '+'}
+                +
               </button>
             </div>
             {recherche.trim() && (
               <button onClick={ajouterLibre} style={{ ...btnSecondary, marginTop:8, height:34 }}>+ Ajouter « {recherche.trim()} » (hors carte)</button>
             )}
 
-            {/* Catalogue complet */}
-            {showCatalogue && (
-              <div style={{ marginTop:10, border:'1.5px solid #eee', borderRadius:12, maxHeight:320, overflowY:'auto', background:'#fafafa' }}>
-                {parCategorie.length === 0 ? (
-                  <p style={{ margin:0, padding:'20px 14px', textAlign:'center', fontSize:13, color:'#999' }}>Aucun produit disponible dans la carte.</p>
-                ) : parCategorie.map(c => (
-                  <div key={c.id}>
-                    <p style={{ margin:0, padding:'9px 14px', fontSize:11, fontWeight:800, color:'#888', textTransform:'uppercase', letterSpacing:0.8, background:'#f0f0f0', position:'sticky', top:0 }}>{c.nom}</p>
-                    {c.produits.map(p => {
-                      const q = quantiteDe(p);
-                      return (
-                        <div key={p.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 14px', borderBottom:'1px solid #f0f0f0', background: q ? '#fffdf5' : '#fff' }}>
-                          <span style={{ flex:1, minWidth:0, fontSize:13.5, fontWeight: q ? 700 : 500, color:'#111' }}>{p.nom}</span>
-                          <span style={{ fontSize:13, color:'#888', whiteSpace:'nowrap' }}>{fmtEuro(p.prix)}</span>
-                          <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
-                            <button onClick={()=>retirerUn(p)} disabled={!q} style={{ width:28, height:28, borderRadius:7, border:'1.5px solid #ddd', background:'#fff', fontSize:15, fontWeight:700, cursor: q ? 'pointer' : 'not-allowed', color: q ? '#111' : '#ddd' }}>−</button>
-                            <span style={{ minWidth:18, textAlign:'center', fontSize:14, fontWeight:800, color: q ? '#111' : '#ccc' }}>{q}</span>
-                            <button onClick={()=>ajouter(p)} style={{ width:28, height:28, borderRadius:7, border:'none', background:'#111', color:'#E8C547', fontSize:15, fontWeight:700, cursor:'pointer' }}>+</button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Panier */}
@@ -4826,6 +4905,19 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
           </button>
         </div>
       </div>
+
+      {/* Toute la carte, en grand, pour la prise de commande sur tablette */}
+      {showCatalogue && (
+        <CatalogueModal
+          parCategorie={parCategorie}
+          quantiteDe={quantiteDe}
+          onAjouter={ajouter}
+          onRetirer={retirerUn}
+          nbArticles={items.reduce((n, it) => n + (Number(it.quantite) || 0), 0)}
+          total={total}
+          onClose={()=>setShowCatalogue(false)}
+        />
+      )}
 
       {/* Fermeture avec des modifications non enregistrées */}
       {confirmeFermeture && (
