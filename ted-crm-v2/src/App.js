@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus, UserPlus, Trophy, ArrowUpDown, LayoutGrid, Settings, MapPin, Dices, Bell, X, Award, Gift, Image as ImageIcon, BadgeCheck, ShoppingBag } from 'lucide-react';
+import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus, UserPlus, Trophy, ArrowUpDown, LayoutGrid, Settings, MapPin, Dices, Bell, X, Award, Gift, Image as ImageIcon, BadgeCheck, ShoppingBag, BarChart3 } from 'lucide-react';
 import { supabase } from "./supabase";
 import { safeQuery, resilientChannel, logError } from "./lib/db";
 
@@ -3247,7 +3247,7 @@ function CommandesPage({ showToast, user }) {
           <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0 }}>{jourSelectionne ? `Total du ${labelJour(jourAffiche)}` : 'Total du jour'}</p>
         </div>
         <button onClick={()=>setShowStats(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:14, padding: isMobile ? '14px 16px' : '14px 22px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:7 }}>
-          <ArrowUpDown size={22} strokeWidth={1.8} color="#666" style={{ transform:'rotate(90deg)' }} />
+          <BarChart3 size={22} strokeWidth={1.8} color="#666" />
           <span style={{ fontSize:10.5, fontWeight:700, color:'#666', letterSpacing:0.3 }}>Statistiques</span>
         </button>
         <button onClick={()=>setShowCalendrier(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:14, padding: isMobile ? '12px 14px' : '12px 18px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:6 }}>
@@ -3264,7 +3264,12 @@ function CommandesPage({ showToast, user }) {
       {/* ── Filtres ── */}
       <div style={{ display:'flex', gap:8, overflowX:'auto', paddingBottom:2, alignItems:'center' }}>
         {[{id:'actives',label:`En cours${nbEnCours ? ` (${nbEnCours})` : ''}`},{id:'recuperees',label:`Récupérées${nbRecuperees ? ` (${nbRecuperees})` : ''}`}].map(f => (
-          <button key={f.id} onClick={()=>setFiltre(f.id)} style={{ height:36, padding:'0 16px', borderRadius:10, fontSize:13, fontWeight:700, border:'none', flexShrink:0, cursor:'pointer', background: filtre===f.id ? '#111' : '#fff', color: filtre===f.id ? '#fff' : '#666' }}>
+          <button key={f.id} onClick={()=>{
+            setFiltre(f.id);
+            // « En cours » ramène toujours à la journée de travail en cours,
+            // même si le calendrier affichait un autre jour.
+            if (f.id === 'actives') setJourSelectionne(null);
+          }} style={{ height:36, padding:'0 16px', borderRadius:10, fontSize:13, fontWeight:700, border:'none', flexShrink:0, cursor:'pointer', background: filtre===f.id ? '#111' : '#fff', color: filtre===f.id ? '#fff' : '#666' }}>
             {f.label}
           </button>
         ))}
@@ -3492,23 +3497,18 @@ function CommandeCarte({ cmd, onOpen, onStatut }) {
 
       {/* Gros bouton d'action, à droite */}
       {actionnable && (
-        <div style={{ width: isMobile ? '100%' : 340, flexShrink:0, display:'flex', flexDirection:'column', gap:11, justifyContent:'center', borderLeft: isMobile ? 'none' : '1px solid #f0f0f0', paddingLeft: isMobile ? 0 : 20 }}>
+        <div style={{ width: isMobile ? '100%' : 200, flexShrink:0, display:'flex', flexDirection:'column', gap:11, alignItems:'center', justifyContent:'center', borderLeft: isMobile ? 'none' : '1px solid #f0f0f0', paddingLeft: isMobile ? 0 : 20 }}>
           {cmd.statut === 'en_preparation' && (
-            <button onClick={()=>onStatut(cmd, 'prete')} style={{ width:'100%', minHeight:104, border:'none', borderRadius:16, background:'#16a34a', color:'#fff', fontSize:22, fontWeight:900, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:5, boxShadow:'0 6px 20px rgba(22,163,74,0.35)' }}>
-              <CheckCircle size={30} strokeWidth={2.4} />
+            <button onClick={()=>onStatut(cmd, 'prete')} style={{ width:150, height:150, flexShrink:0, border:'none', borderRadius:16, background:'#16a34a', color:'#fff', fontSize:17, fontWeight:900, lineHeight:1.15, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8, boxShadow:'0 6px 20px rgba(22,163,74,0.35)' }}>
+              <CheckCircle size={34} strokeWidth={2.4} />
               Marquer prête
             </button>
           )}
           {cmd.statut === 'prete' && (
-            <button onClick={()=>onStatut(cmd, 'recuperee')} style={{ width:'100%', minHeight:104, border:'none', borderRadius:16, background:'#111', color:'#fff', fontSize:22, fontWeight:900, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:5, boxShadow:'0 6px 20px rgba(0,0,0,0.25)' }}>
-              <BadgeCheck size={30} strokeWidth={2.2} />
+            <button onClick={()=>onStatut(cmd, 'recuperee')} style={{ width:150, height:150, flexShrink:0, border:'none', borderRadius:16, background:'#111', color:'#fff', fontSize:17, fontWeight:900, lineHeight:1.15, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8, boxShadow:'0 6px 20px rgba(0,0,0,0.25)' }}>
+              <BadgeCheck size={34} strokeWidth={2.2} />
               Récupérée
             </button>
-          )}
-          {cmd.client_tel && (
-            <a href={`tel:${cmd.client_tel}`} style={{ width:'100%', height:44, borderRadius:11, background:'#f5f5f5', color:'#111', fontSize:14.5, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', gap:8, textDecoration:'none' }}>
-              <Phone size={16} strokeWidth={2} /> Appeler
-            </a>
           )}
         </div>
       )}
