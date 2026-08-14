@@ -2979,7 +2979,7 @@ const fmtEuro   = (n) => (Number(n) || 0).toFixed(2).replace('.', ',') + ' €';
 function CommandesPage({ showToast, user }) {
   const [commandes, setCommandes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filtre, setFiltre] = useState('actives'); // actives | recuperees
+  const [filtre, setFiltre] = useState('actives'); // actives | arecuperer | terminees
   const [jourSelectionne, setJourSelectionne] = useState(null); // AAAA-MM-JJ ou null
   const [detail, setDetail] = useState(null);
   const [editCmd, setEditCmd] = useState(null);
@@ -3128,13 +3128,15 @@ function CommandesPage({ showToast, user }) {
   const jourAffiche = jourSelectionne || aujourdhui;
 
   // Les deux filtres portent sur ce jour affiché.
+  // Sur la journée en cours, les deux filtres actifs remontent aussi les
+  // commandes des jours précédents jamais terminées, pour qu'aucune ne disparaisse.
+  const duJour = (c) => jourAffiche === aujourdhui ? jourDe(c) <= aujourdhui : jourDe(c) === jourAffiche;
+
   const listeFiltree = commandes.filter(c => {
     if (c.statut === 'nouvelle') return false;
-    if (filtre === 'recuperees') return c.statut === 'recuperee' && jourDe(c) === jourAffiche;
-    // En cours : sur la journée en cours, on remonte aussi les commandes des
-    // jours précédents jamais terminées, pour qu'aucune ne disparaisse.
-    return ['en_preparation', 'prete'].includes(c.statut)
-      && (jourAffiche === aujourdhui ? jourDe(c) <= aujourdhui : jourDe(c) === jourAffiche);
+    if (filtre === 'terminees')   return c.statut === 'recuperee' && jourDe(c) === jourAffiche;
+    if (filtre === 'arecuperer')  return c.statut === 'prete' && duJour(c);
+    return c.statut === 'en_preparation' && duJour(c);
   }).sort((a, b) => {
     // Les commandes terminées passent après celles encore en cours…
     const ta = estTerminee(a), tb = estTerminee(b);
@@ -3155,13 +3157,10 @@ function CommandesPage({ showToast, user }) {
     return (b.created_at || '').localeCompare(a.created_at || '');
   });
 
-  // Compteur « En cours » : uniquement les commandes à préparer. Celles déjà
-  // prêtes attendent le client, elles ne demandent plus de travail.
-  const nbEnCours = commandes.filter(c => c.statut === 'en_preparation'
-    && (jourAffiche === aujourdhui ? jourDe(c) <= aujourdhui : jourDe(c) === jourAffiche)).length;
-
-  // Compteur « Récupérées » du jour affiché.
-  const nbRecuperees = commandes.filter(c => c.statut === 'recuperee' && jourDe(c) === jourAffiche).length;
+  // Compteurs des trois filtres.
+  const nbEnCours    = commandes.filter(c => c.statut === 'en_preparation' && duJour(c)).length;
+  const nbARecuperer = commandes.filter(c => c.statut === 'prete' && duJour(c)).length;
+  const nbTerminees  = commandes.filter(c => c.statut === 'recuperee' && jourDe(c) === jourAffiche).length;
 
   // Les deux tuiles suivent le même jour affiché.
   const cmdDuJour = commandes.filter(c => jourDe(c) === jourAffiche && c.statut !== 'annulee');
@@ -3263,7 +3262,11 @@ function CommandesPage({ showToast, user }) {
 
       {/* ── Filtres ── */}
       <div style={{ display:'flex', gap:8, overflowX:'auto', paddingBottom:2, alignItems:'center' }}>
-        {[{id:'actives',label:`En cours${nbEnCours ? ` (${nbEnCours})` : ''}`},{id:'recuperees',label:`Récupérées${nbRecuperees ? ` (${nbRecuperees})` : ''}`}].map(f => (
+        {[
+          {id:'actives',    label:`En cours${nbEnCours ? ` (${nbEnCours})` : ''}`},
+          {id:'arecuperer', label:`À récupérer${nbARecuperer ? ` (${nbARecuperer})` : ''}`},
+          {id:'terminees',  label:`Terminées${nbTerminees ? ` (${nbTerminees})` : ''}`},
+        ].map(f => (
           <button key={f.id} onClick={()=>{
             setFiltre(f.id);
             // « En cours » ramène toujours à la journée de travail en cours,
@@ -3278,7 +3281,7 @@ function CommandesPage({ showToast, user }) {
       {/* ── Liste des commandes acceptées ── */}
       {listeFiltree.length === 0 ? (
         <div style={{ background:'#fff', borderRadius:14, padding:'40px 20px', textAlign:'center', color:'#bbb', fontSize:14, boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
-          {`Aucune commande ${filtre === 'recuperees' ? 'récupérée' : 'en cours'} ${jourSelectionne ? `le ${labelJour(jourAffiche)}` : "aujourd'hui"}`}
+          {`Aucune commande ${filtre === 'terminees' ? 'terminée' : filtre === 'arecuperer' ? 'à récupérer' : 'en cours'} ${jourSelectionne ? `le ${labelJour(jourAffiche)}` : "aujourd'hui"}`}
         </div>
       ) : (
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
@@ -3928,11 +3931,18 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, onChoisir, onClo
   const dernierJour = new Date(annee, mois + 1, 0);
   const debutSemaine = (premierJour.getDay() + 6) % 7;
 
+  // Répartition midi / soir par jour. Même bascule que les réservations : 15h.
+  // Sans heure de retrait, on se rabat sur l'heure de réception de la commande.
   const parJour = {};
   commandes.filter(c => c.statut !== 'annulee').forEach(c => {
     const j = c.date_retrait || (c.created_at || '').split('T')[0];
     if (!j) return;
-    parJour[j] = (parJour[j] || 0) + 1;
+    const h = c.heure_retrait
+      ? parseInt(String(c.heure_retrait).slice(0, 2), 10)
+      : (c.created_at ? new Date(c.created_at).getHours() : 12);
+    if (!parJour[j]) parJour[j] = { midi: 0, soir: 0, total: 0 };
+    parJour[j][h < 15 ? 'midi' : 'soir'] += 1;
+    parJour[j].total += 1;
   });
 
   const cases = [];
@@ -3972,7 +3982,7 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, onChoisir, onClo
               {cases.map((d, i) => {
                 if (!d) return <div key={i} />;
                 const iso = `${annee}-${String(mois+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-                const nb = parJour[iso] || 0;
+                const svc = parJour[iso];
                 const isToday = today.getFullYear()===annee && today.getMonth()===mois && today.getDate()===d;
                 const isSelected = jourSelectionne === iso || dateFlash === iso;
                 const estPasse = new Date(iso) < new Date(new Date().setHours(0,0,0,0));
@@ -3988,16 +3998,25 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, onChoisir, onClo
                       touchAction:'manipulation', WebkitTapHighlightColor:'transparent',
                       transition:'background 0.15s' }}>
                     {d}
-                    {nb > 0
-                      ? <span style={{ fontSize:10.5, fontWeight:800, letterSpacing:0.2, color: isSelected ? '#E8C547' : '#b8860b' }}>{nb} cmd</span>
-                      : <span style={{ fontSize:10.5, color:'transparent' }}>—</span>}
+                    {svc ? (
+                      <span style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:7, fontSize:10.5, fontWeight:800, letterSpacing:0.2 }}>
+                        <span style={{ display:'inline-flex', alignItems:'center', gap:2.5, color: svc.midi ? (isSelected ? '#E8C547' : '#b8860b') : (isSelected ? '#555' : '#ccc') }}>
+                          <Sun size={10} strokeWidth={2.6} />{svc.midi}
+                        </span>
+                        <span style={{ display:'inline-flex', alignItems:'center', gap:2.5, color: svc.soir ? (isSelected ? '#93c5fd' : '#2563eb') : (isSelected ? '#555' : '#ccc') }}>
+                          <Moon size={10} strokeWidth={2.6} />{svc.soir}
+                        </span>
+                      </span>
+                    ) : <span style={{ fontSize:10.5, color:'transparent' }}>—</span>}
                   </button>
                 );
               })}
             </div>
           </div>
           <p style={{ margin:'14px 2px 0', fontSize:13, color:'#888' }}>
-            Le nombre de commandes s'affiche sous chaque date. Cliquez sur un jour pour n'afficher que ses commandes.
+            Sous chaque date, les commandes du service du midi (<Sun size={11} strokeWidth={2.6} style={{ display:'inline', verticalAlign:'-1px', color:'#b8860b' }} /> avant 15h)
+            et du soir (<Moon size={11} strokeWidth={2.6} style={{ display:'inline', verticalAlign:'-1px', color:'#2563eb' }} /> à partir de 15h).
+            Cliquez sur un jour pour n'afficher que ses commandes.
           </p>
         </div>
 
