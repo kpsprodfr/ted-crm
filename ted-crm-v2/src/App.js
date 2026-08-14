@@ -3093,6 +3093,19 @@ function CommandesPage({ showToast, user }) {
     if (!silencieux) showToast(`Commande ${cmd.numero || ''} → ${cmdStatut(statut).label}`);
   }
 
+  // Suppression définitive. La commande disparaît de la base : à réserver aux
+  // saisies erronées. Pour une commande réellement annulée, préférer le statut.
+  async function supprimerCommande(cmd) {
+    const { error } = await safeQuery(
+      () => supabase.from('commandes').delete().eq('id', cmd.id),
+      { context: 'supprimerCommande' }
+    );
+    if (error) { showToast('Erreur lors de la suppression', 'error'); return; }
+    setCommandes(prev => prev.filter(c => c.id !== cmd.id));
+    setDetail(null);
+    showToast(`Commande ${cmd.numero || ''} supprimée`);
+  }
+
   // Acceptation manuelle : démarre le chrono, la suite s'enchaîne toute seule
   async function accepter(cmd, minutes) {
     const delai = parseInt(minutes) || delaiDefaut;
@@ -3306,7 +3319,7 @@ function CommandesPage({ showToast, user }) {
           onClose={()=>setShowATraiter(false)}
         />
       )}
-      {detail && !editCmd && <CommandeDetail cmd={detail} onClose={()=>setDetail(null)} onStatut={changerStatut} onEdit={(c)=>setEditCmd(c)} />}
+      {detail && !editCmd && <CommandeDetail cmd={detail} onClose={()=>setDetail(null)} onStatut={changerStatut} onEdit={(c)=>setEditCmd(c)} onSupprimer={supprimerCommande} />}
       {showNouvelle && <NouvelleCommandeModal onClose={()=>setShowNouvelle(false)} onSaved={()=>{ setShowNouvelle(false); loadCommandes(true); }} showToast={showToast} delaiDefaut={delaiDefaut} />}
       {editCmd && (
         <NouvelleCommandeModal
@@ -4257,7 +4270,9 @@ function RefusCommandeModal({ cmd, onClose, onConfirm }) {
 }
 
 // ── Fiche détail d'une commande ──────────────────────────────────────────────
-function CommandeDetail({ cmd, onClose, onStatut, onEdit }) {
+function CommandeDetail({ cmd, onClose, onStatut, onEdit, onSupprimer }) {
+  // Confirmation en deux temps : la suppression est definitive.
+  const [confirmeSuppr, setConfirmeSuppr] = useState(false);
   const st = cmdStatut(cmd.statut);
   const dateLabel = cmd.created_at ? new Date(cmd.created_at).toLocaleString('fr-FR', { weekday:'long', day:'numeric', month:'long', hour:'2-digit', minute:'2-digit' }) : '';
   return (
@@ -4343,6 +4358,27 @@ function CommandeDetail({ cmd, onClose, onStatut, onEdit }) {
           </div>
 
           <button onClick={onClose} style={{ width:'100%', height:48, border:'1.5px solid #eee', borderRadius:12, background:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', color:'#666' }}>Fermer</button>
+
+          {/* Suppression définitive, en retrait du reste */}
+          {onSupprimer && (
+            <div style={{ borderTop:'1px solid #f5f5f5', paddingTop:14, marginTop:2 }}>
+              {!confirmeSuppr ? (
+                <button onClick={()=>setConfirmeSuppr(true)} style={{ width:'100%', height:40, border:'none', borderRadius:10, background:'none', fontSize:13, fontWeight:700, cursor:'pointer', color:'#dc2626', display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}>
+                  <Trash2 size={14} strokeWidth={2} /> Supprimer la commande
+                </button>
+              ) : (
+                <div style={{ background:'#fef2f2', border:'1.5px solid #fca5a5', borderRadius:12, padding:'12px 14px' }}>
+                  <p style={{ margin:'0 0 10px', fontSize:13, color:'#7f1d1d', lineHeight:1.5 }}>
+                    Supprimer définitivement la commande N° {cmd.numero || '—'} ? Elle disparaîtra aussi des statistiques.
+                  </p>
+                  <div style={{ display:'flex', gap:8 }}>
+                    <button onClick={()=>setConfirmeSuppr(false)} style={{ flex:1, height:40, border:'1.5px solid #ddd', borderRadius:10, background:'#fff', fontSize:13.5, fontWeight:700, cursor:'pointer', color:'#666' }}>Annuler</button>
+                    <button onClick={()=>onSupprimer(cmd)} style={{ flex:1, height:40, border:'none', borderRadius:10, background:'#dc2626', color:'#fff', fontSize:13.5, fontWeight:800, cursor:'pointer' }}>Supprimer</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </>
