@@ -2981,6 +2981,7 @@ function CommandesPage({ showToast, user }) {
   const [loading, setLoading] = useState(true);
   const [filtre, setFiltre] = useState('actives'); // actives | arecuperer | terminees
   const [jourSelectionne, setJourSelectionne] = useState(null); // AAAA-MM-JJ ou null
+  const [service, setService] = useState(null);                 // 'midi' | 'soir' | null (toute la journée)
   const [detail, setDetail] = useState(null);
   const [editCmd, setEditCmd] = useState(null);
   const [showNouvelle, setShowNouvelle] = useState(false);
@@ -3130,11 +3131,13 @@ function CommandesPage({ showToast, user }) {
   // Les deux filtres portent sur ce jour affiché.
   // Sur la journée en cours, les deux filtres actifs remontent aussi les
   // commandes des jours précédents jamais terminées, pour qu'aucune ne disparaisse.
-  const duJour = (c) => jourAffiche === aujourdhui ? jourDe(c) <= aujourdhui : jourDe(c) === jourAffiche;
+  // …et sur le service choisi au calendrier (null = toute la journée).
+  const duService = (c) => !service || serviceDe(c) === service;
+  const duJour = (c) => (jourAffiche === aujourdhui ? jourDe(c) <= aujourdhui : jourDe(c) === jourAffiche) && duService(c);
 
   const listeFiltree = commandes.filter(c => {
     if (c.statut === 'nouvelle') return false;
-    if (filtre === 'terminees')   return c.statut === 'recuperee' && jourDe(c) === jourAffiche;
+    if (filtre === 'terminees')   return c.statut === 'recuperee' && jourDe(c) === jourAffiche && duService(c);
     if (filtre === 'arecuperer')  return c.statut === 'prete' && duJour(c);
     return c.statut === 'en_preparation' && duJour(c);
   }).sort((a, b) => {
@@ -3160,10 +3163,10 @@ function CommandesPage({ showToast, user }) {
   // Compteurs des trois filtres.
   const nbEnCours    = commandes.filter(c => c.statut === 'en_preparation' && duJour(c)).length;
   const nbARecuperer = commandes.filter(c => c.statut === 'prete' && duJour(c)).length;
-  const nbTerminees  = commandes.filter(c => c.statut === 'recuperee' && jourDe(c) === jourAffiche).length;
+  const nbTerminees  = commandes.filter(c => c.statut === 'recuperee' && jourDe(c) === jourAffiche && duService(c)).length;
 
-  // Les deux tuiles suivent le même jour affiché.
-  const cmdDuJour = commandes.filter(c => jourDe(c) === jourAffiche && c.statut !== 'annulee');
+  // Les deux tuiles suivent le même jour et le même service.
+  const cmdDuJour = commandes.filter(c => jourDe(c) === jourAffiche && c.statut !== 'annulee' && duService(c));
   const caJour = cmdDuJour.reduce((s, c) => s + (Number(c.total) || 0), 0);
   const nbJour = cmdDuJour.length;
 
@@ -3239,7 +3242,7 @@ function CommandesPage({ showToast, user }) {
       <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr auto auto', gap:12 }}>
         <div style={{ background:'#fff', borderRadius:14, padding:'14px 16px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', textAlign:'center' }}>
           <p style={{ fontSize:24, fontWeight:900, color:'#111', margin:'0 0 3px' }}>{nbJour}</p>
-          <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0 }}>Commandes {labelJour(jourAffiche)}</p>
+          <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0 }}>Commandes {labelJour(jourAffiche)}{service ? ` · ${service === 'midi' ? 'midi' : 'soir'}` : ''}</p>
         </div>
         <div style={{ background:'#fff', borderRadius:14, padding:'14px 16px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', textAlign:'center' }}>
           <p style={{ fontSize:24, fontWeight:900, color:'#111', margin:'0 0 3px' }}>{fmtEuro(caJour)}</p>
@@ -3254,8 +3257,9 @@ function CommandesPage({ showToast, user }) {
           <span style={{ fontSize:10.5, fontWeight:700, color:'#666', letterSpacing:0.3 }}>Calendrier</span>
           {/* Jour actuellement affiché — remplacé par la date choisie dans le calendrier */}
           <span style={{ marginTop:1, padding:'4px 11px', borderRadius:20, fontSize:11.5, fontWeight:800, whiteSpace:'nowrap',
-            background: jourSelectionne ? '#111' : '#f5f5f5', color: jourSelectionne ? '#fff' : '#444' }}>
+            background: (jourSelectionne || service) ? '#111' : '#f5f5f5', color: (jourSelectionne || service) ? '#fff' : '#444' }}>
             {jourSelectionne ? labelJour(jourSelectionne) : "Aujourd'hui"}
+            {service && ` · ${service === 'midi' ? 'Midi' : 'Soir'}`}
           </span>
         </button>
       </div>
@@ -3270,8 +3274,8 @@ function CommandesPage({ showToast, user }) {
           <button key={f.id} onClick={()=>{
             setFiltre(f.id);
             // « En cours » ramène toujours à la journée de travail en cours,
-            // même si le calendrier affichait un autre jour.
-            if (f.id === 'actives') setJourSelectionne(null);
+            // toute la journée, même si le calendrier affichait autre chose.
+            if (f.id === 'actives') { setJourSelectionne(null); setService(null); }
           }} style={{ height:36, padding:'0 16px', borderRadius:10, fontSize:13, fontWeight:700, border:'none', flexShrink:0, cursor:'pointer', background: filtre===f.id ? '#111' : '#fff', color: filtre===f.id ? '#fff' : '#666' }}>
             {f.label}
           </button>
@@ -3281,7 +3285,7 @@ function CommandesPage({ showToast, user }) {
       {/* ── Liste des commandes acceptées ── */}
       {listeFiltree.length === 0 ? (
         <div style={{ background:'#fff', borderRadius:14, padding:'40px 20px', textAlign:'center', color:'#bbb', fontSize:14, boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
-          {`Aucune commande ${filtre === 'terminees' ? 'terminée' : filtre === 'arecuperer' ? 'à récupérer' : 'en cours'} ${jourSelectionne ? `le ${labelJour(jourAffiche)}` : "aujourd'hui"}`}
+          {`Aucune commande ${filtre === 'terminees' ? 'terminée' : filtre === 'arecuperer' ? 'à récupérer' : 'en cours'} ${jourSelectionne ? `le ${labelJour(jourAffiche)}` : "aujourd'hui"}${service ? ` au service du ${service}` : ''}`}
         </div>
       ) : (
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
@@ -3327,11 +3331,11 @@ function CommandesPage({ showToast, user }) {
         <CalendrierCommandesModal
           commandes={commandes}
           jourSelectionne={jourSelectionne}
-          onChoisir={(iso)=>{
+          service={service}
+          onChoisir={(iso, svc)=>{
             setShowCalendrier(false);
-            // Choisir aujourd'hui revient à l'état par défaut ; le filtre
-            // En cours / Récupérées en cours est conservé.
             setJourSelectionne(iso === aujourdhui ? null : iso);
+            setService(svc);
           }}
           onClose={()=>setShowCalendrier(false)}
         />
@@ -3350,6 +3354,18 @@ function labelJour(dateStr) {
   if (dateStr === demain) return 'Demain';
   return new Date(dateStr + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
 }
+
+// Service d'une commande. Même bascule que les réservations : 15h.
+// Sans heure de retrait, on se rabat sur l'heure de réception.
+function serviceDe(c) {
+  const h = c.heure_retrait
+    ? parseInt(String(c.heure_retrait).slice(0, 2), 10)
+    : (c.created_at ? new Date(c.created_at).getHours() : 12);
+  return h < 15 ? 'midi' : 'soir';
+}
+
+// Service en cours à l'instant présent
+const serviceActuel = () => new Date().getHours() < 15 ? 'midi' : 'soir';
 
 // Une commande récupérée ou annulée ne bouge plus : elle sort du flux en cours.
 const estTerminee = (c) => c.statut === 'recuperee' || c.statut === 'annulee';
@@ -3904,8 +3920,10 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
 }
 
 // ── Calendrier des commandes (même grille que la page Réservations) ─────────
-function CalendrierCommandesModal({ commandes, jourSelectionne, onChoisir, onClose }) {
+function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChoisir, onClose }) {
   const [calDate, setCalDate] = useState(new Date());
+  // Service consulté : celui déjà choisi, sinon celui en cours à cette heure-ci.
+  const [svcChoisi, setSvcChoisi] = useState(service || serviceActuel());
   // Même enchaînement que le calendrier de « Nouvelle réservation » :
   // flash sur la date choisie (200 ms), puis fermeture animée (300 ms).
   const [dateFlash, setDateFlash] = useState(null);
@@ -3918,7 +3936,7 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, onChoisir, onClo
     setDateFlash(iso);
     timersRef.current.push(setTimeout(() => {
       setCalFermeture(true);
-      timersRef.current.push(setTimeout(() => onChoisir(iso), 300));
+      timersRef.current.push(setTimeout(() => onChoisir(iso, svcChoisi), 300));
     }, 200));
   }
 
@@ -3968,7 +3986,26 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, onChoisir, onClo
           <button onClick={onClose} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666' }}>✕</button>
         </div>
 
-        <div style={{ padding:'18px 28px 22px', overflowY:'auto', flex:1, minHeight:0, display:'flex', flexDirection:'column' }}>
+        {/* Choix du service, comme sur la page Réservations */}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, padding:'16px 28px 0', flexShrink:0 }}>
+          {[{id:'midi',label:'Midi',icone:<Sun size={17} strokeWidth={2} />,horaire:'avant 15h'},
+            {id:'soir',label:'Soir',icone:<Moon size={17} strokeWidth={2} />,horaire:'à partir de 15h'}].map(sv => {
+            const actif = svcChoisi === sv.id;
+            return (
+              <button key={sv.id} onClick={()=>setSvcChoisi(sv.id)}
+                style={{ padding:'10px 16px', borderRadius:12, cursor:'pointer', textAlign:'center',
+                  border: actif ? '2px solid #111' : '1.5px solid #eee',
+                  background: actif ? '#111' : '#fff', color: actif ? '#E8C547' : '#111',
+                  display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
+                {sv.icone}
+                <span style={{ fontSize:15, fontWeight:800 }}>{sv.label}</span>
+                <span style={{ fontSize:11.5, color: actif ? '#999' : '#aaa', fontWeight:600 }}>{sv.horaire}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{ padding:'14px 28px 22px', overflowY:'auto', flex:1, minHeight:0, display:'flex', flexDirection:'column' }}>
           <div style={{ background:'#f8f8f8', borderRadius:14, padding:18, flex:1, display:'flex', flexDirection:'column' }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
               <button onClick={()=>changerMois(-1)} style={{ background:'#f0f0f0', border:'none', borderRadius:9, width:40, height:40, fontSize:18, cursor:'pointer', fontWeight:700 }}>‹</button>
@@ -3988,7 +4025,7 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, onChoisir, onClo
                 const estPasse = new Date(iso) < new Date(new Date().setHours(0,0,0,0));
                 return (
                   <button key={i} className={dateFlash === iso ? 'date-flash' : ''} onPointerDown={()=>choisirJour(iso)}
-                    style={{ textAlign:'center', minHeight:72, borderRadius:10, cursor:'pointer', position:'relative',
+                    style={{ textAlign:'center', minHeight:58, borderRadius:10, cursor:'pointer', position:'relative',
                       display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4,
                       border: isToday && !isSelected ? '2px solid #E8C547' : '2px solid transparent',
                       background: isSelected ? '#111' : isToday ? '#fffbea' : '#fff',
@@ -4000,12 +4037,20 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, onChoisir, onClo
                     {d}
                     {svc ? (
                       <span style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:7, fontSize:10.5, fontWeight:800, letterSpacing:0.2 }}>
-                        <span style={{ display:'inline-flex', alignItems:'center', gap:2.5, color: svc.midi ? (isSelected ? '#E8C547' : '#b8860b') : (isSelected ? '#555' : '#ccc') }}>
-                          <Sun size={10} strokeWidth={2.6} />{svc.midi}
-                        </span>
-                        <span style={{ display:'inline-flex', alignItems:'center', gap:2.5, color: svc.soir ? (isSelected ? '#93c5fd' : '#2563eb') : (isSelected ? '#555' : '#ccc') }}>
-                          <Moon size={10} strokeWidth={2.6} />{svc.soir}
-                        </span>
+                        {['midi','soir'].map(sv => {
+                          const n = svc[sv];
+                          const enAvant = svcChoisi === sv;   // le service consulté ressort
+                          const teinte = sv === 'midi'
+                            ? (isSelected ? '#E8C547' : '#b8860b')
+                            : (isSelected ? '#93c5fd' : '#2563eb');
+                          return (
+                            <span key={sv} style={{ display:'inline-flex', alignItems:'center', gap:2.5,
+                              color: n ? teinte : (isSelected ? '#555' : '#ccc'),
+                              opacity: enAvant ? 1 : 0.35 }}>
+                              {sv === 'midi' ? <Sun size={10} strokeWidth={2.6} /> : <Moon size={10} strokeWidth={2.6} />}{n}
+                            </span>
+                          );
+                        })}
                       </span>
                     ) : <span style={{ fontSize:10.5, color:'transparent' }}>—</span>}
                   </button>
@@ -4014,9 +4059,9 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, onChoisir, onClo
             </div>
           </div>
           <p style={{ margin:'14px 2px 0', fontSize:13, color:'#888' }}>
-            Sous chaque date, les commandes du service du midi (<Sun size={11} strokeWidth={2.6} style={{ display:'inline', verticalAlign:'-1px', color:'#b8860b' }} /> avant 15h)
-            et du soir (<Moon size={11} strokeWidth={2.6} style={{ display:'inline', verticalAlign:'-1px', color:'#2563eb' }} /> à partir de 15h).
-            Cliquez sur un jour pour n'afficher que ses commandes.
+            Sous chaque date : le nombre de commandes du midi (<Sun size={11} strokeWidth={2.6} style={{ display:'inline', verticalAlign:'-1px', color:'#b8860b' }} />)
+            et du soir (<Moon size={11} strokeWidth={2.6} style={{ display:'inline', verticalAlign:'-1px', color:'#2563eb' }} />), le service choisi ci-dessus étant mis en avant.
+            Cliquez sur un jour pour afficher son service {svcChoisi === 'midi' ? 'du midi' : 'du soir'}.
           </p>
         </div>
 
