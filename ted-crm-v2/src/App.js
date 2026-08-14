@@ -2979,10 +2979,14 @@ const fmtEuro   = (n) => (Number(n) || 0).toFixed(2).replace('.', ',') + ' €';
 function CommandesPage({ showToast, user }) {
   const [commandes, setCommandes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filtre, setFiltre] = useState('actives'); // actives | toutes | jour
+  const [filtre, setFiltre] = useState('actives'); // actives | jour | toutes
   const [detail, setDetail] = useState(null);
   const [showNouvelle, setShowNouvelle] = useState(false);
+  const [showATraiter, setShowATraiter] = useState(false);
   const [showLienDropdown, setShowLienDropdown] = useState(false);
+  const [autoAccept, setAutoAccept] = useState(false);
+  const [delaiDefaut, setDelaiDefaut] = useState(30);
+  const [tick, setTick] = useState(0); // rafraîchit les comptes à rebours
   const isMobile = useIsMobile();
   const LIEN_COMMANDE = 'https://ted-crm.pages.dev/commander.html';
 
@@ -2996,14 +3000,40 @@ function CommandesPage({ showToast, user }) {
     if (!silent) setLoading(false);
   }
 
-  useEffect(() => { loadCommandes(); }, []);
+  async function loadConfig() {
+    const { data } = await safeQuery(
+      () => supabase.from('commandes_config').select('cle,valeur'),
+      { fallback: [], context: 'loadCommandesConfig' }
+    );
+    (data || []).forEach(r => {
+      if (r.cle === 'acceptation_auto') setAutoAccept(r.valeur === 'true');
+      if (r.cle === 'delai_minutes') setDelaiDefaut(parseInt(r.valeur) || 30);
+    });
+  }
+
+  useEffect(() => { loadCommandes(); loadConfig(); }, []);
 
   // Temps réel : nouvelle commande en ligne → apparaît immédiatement
   useEffect(() => {
     return resilientChannel(supabase, 'commandes-rt', (chan) => chan
       .on('postgres_changes', { event: '*', schema: 'public', table: 'commandes' }, () => loadCommandes(true))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'commandes_config' }, () => loadConfig())
     );
   }, []);
+
+  // Horloge : comptes à rebours + passage automatique en « Prête » à échéance
+  useEffect(() => {
+    const iv = setInterval(() => setTick(t => t + 1), 20000);
+    return () => clearInterval(iv);
+  }, []);
+
+  useEffect(() => {
+    const aBasculer = commandes.filter(c =>
+      c.statut === 'en_preparation' && c.pret_estime_a && new Date(c.pret_estime_a) <= new Date()
+    );
+    if (!aBasculer.length) return;
+    aBasculer.forEach(c => changerStatut(c, 'prete', true));
+  }, [tick, commandes]);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -3013,7 +3043,18 @@ function CommandesPage({ showToast, user }) {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
-  async function changerStatut(cmd, statut) {
+  async function majConfig(cle, valeur) {
+    if (cle === 'acceptation_auto') setAutoAccept(valeur === 'true');
+    if (cle === 'delai_minutes') setDelaiDefaut(parseInt(valeur) || 30);
+    const { error } = await safeQuery(
+      () => supabase.from('commandes_config').upsert({ cle, valeur: String(valeur), updated_at: new Date().toISOString() }, { onConflict: 'cle' }),
+      { context: 'majCommandesConfig' }
+    );
+    if (error) { showToast('Erreur d\'enregistrement du réglage', 'error'); loadConfig(); return; }
+    if (cle === 'acceptation_auto') showToast(valeur === 'true' ? '✅ Acceptation automatique activée' : 'Acceptation automatique désactivée');
+  }
+
+  async function changerStatut(cmd, statut, silencieux = false) {
     const patch = { statut, updated_at: new Date().toISOString() };
     if (statut === 'recuperee' || statut === 'annulee') {
       patch.traited_at = new Date().toISOString();
@@ -3026,13 +3067,36 @@ function CommandesPage({ showToast, user }) {
       { context: 'changerStatutCommande' }
     );
     if (error) { showToast('Erreur de mise à jour', 'error'); loadCommandes(true); return; }
-    showToast(`Commande ${cmd.numero || ''} → ${cmdStatut(statut).label}`);
+    if (!silencieux) showToast(`Commande ${cmd.numero || ''} → ${cmdStatut(statut).label}`);
+  }
+
+  // Acceptation manuelle : démarre le chrono, la suite s'enchaîne toute seule
+  async function accepter(cmd, minutes) {
+    const delai = parseInt(minutes) || delaiDefaut;
+    const patch = {
+      statut: 'en_preparation',
+      delai_minutes: delai,
+      acceptee_at: new Date().toISOString(),
+      acceptee_auto: false,
+      pret_estime_a: new Date(Date.now() + delai * 60000).toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    setCommandes(prev => prev.map(c => c.id === cmd.id ? { ...c, ...patch } : c));
+    const { error } = await safeQuery(
+      () => supabase.from('commandes').update(patch).eq('id', cmd.id),
+      { context: 'accepterCommande' }
+    );
+    if (error) { showToast('Erreur lors de l\'acceptation', 'error'); loadCommandes(true); return; }
+    showToast(`✅ Commande ${cmd.numero || ''} acceptée — prête dans ~${delai} min`);
   }
 
   const aujourdhui = new Date().toISOString().split('T')[0];
-  const nouvelles = commandes.filter(c => c.statut === 'nouvelle');
+  const aTraiter = commandes.filter(c => c.statut === 'nouvelle');
+  // La liste principale ne montre PAS les commandes à traiter : elles passent
+  // d'abord par le panneau dédié (bandeau rouge en haut).
   const listeFiltree = commandes.filter(c => {
-    if (filtre === 'actives') return ['nouvelle', 'en_preparation', 'prete'].includes(c.statut);
+    if (c.statut === 'nouvelle') return false;
+    if (filtre === 'actives') return ['en_preparation', 'prete'].includes(c.statut);
     if (filtre === 'jour') return (c.created_at || '').startsWith(aujourdhui);
     return true;
   });
@@ -3073,16 +3137,40 @@ function CommandesPage({ showToast, user }) {
         </div>
       </div>
 
-      {/* ── Bandeau nouvelles commandes ── */}
-      <div onClick={()=>setFiltre('actives')} className={nouvelles.length > 0 ? 'alarm-blink' : ''} style={{ background: nouvelles.length > 0 ? '#dc2626' : '#fff', border: nouvelles.length > 0 ? 'none' : '1.5px solid #f0f0f0', borderRadius:16, padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', flexShrink:0, boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
-        <span style={{ fontSize:15, fontWeight:800, color: nouvelles.length > 0 ? '#fff' : '#111', display:'flex', alignItems:'center', gap:8 }}>
-          <ClipboardList size={16} strokeWidth={2} color={nouvelles.length > 0 ? '#fff' : '#666'} /> Nouvelles commandes à traiter
+      {/* ── Bandeau : porte d'entrée vers les commandes à traiter ── */}
+      <div onClick={()=>setShowATraiter(true)} className={aTraiter.length > 0 ? 'alarm-blink' : ''} style={{ background: aTraiter.length > 0 ? '#dc2626' : '#fff', border: aTraiter.length > 0 ? 'none' : '1.5px solid #f0f0f0', borderRadius:16, padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', flexShrink:0, boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
+        <span style={{ fontSize:15, fontWeight:800, color: aTraiter.length > 0 ? '#fff' : '#111', display:'flex', alignItems:'center', gap:8 }}>
+          <ClipboardList size={16} strokeWidth={2} color={aTraiter.length > 0 ? '#fff' : '#666'} /> Nouvelles commandes à traiter
         </span>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          {nouvelles.length > 0
-            ? <span style={{ background:'#fff', color:'#dc2626', borderRadius:'50%', width:26, height:26, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800 }}>{nouvelles.length}</span>
+          {aTraiter.length > 0
+            ? <span style={{ background:'#fff', color:'#dc2626', borderRadius:'50%', width:26, height:26, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800 }}>{aTraiter.length}</span>
             : <span style={{ fontSize:13, color:'#999', fontWeight:600 }}>Aucune</span>}
-          <span style={{ color: nouvelles.length > 0 ? '#fff' : '#ccc', fontSize:18 }}>›</span>
+          <span style={{ color: aTraiter.length > 0 ? '#fff' : '#ccc', fontSize:18 }}>›</span>
+        </div>
+      </div>
+
+      {/* ── Réglage acceptation automatique ── */}
+      <div style={{ background:'#fff', borderRadius:16, padding:'14px 18px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', display:'flex', alignItems:'center', justifyContent:'space-between', gap:14, flexWrap:'wrap' }}>
+        <div style={{ minWidth:0 }}>
+          <div style={{ fontSize:14.5, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:8 }}>
+            <CircleCheck size={16} strokeWidth={2} color={autoAccept ? '#16a34a' : '#bbb'} /> Acceptation automatique
+          </div>
+          <div style={{ fontSize:12.5, color:'#888', marginTop:3 }}>
+            {autoAccept
+              ? `Les commandes sont acceptées seules — prêtes en ~${delaiDefaut} min`
+              : 'Chaque commande doit être acceptée à la main'}
+          </div>
+        </div>
+        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+            <input type="number" min="5" max="180" step="5" value={delaiDefaut}
+              onChange={e=>setDelaiDefaut(e.target.value)}
+              onBlur={e=>majConfig('delai_minutes', Math.max(5, Math.min(180, parseInt(e.target.value) || 30)))}
+              style={{ width:64, height:38, border:'1.5px solid #ddd', borderRadius:8, padding:'0 8px', fontSize:14, fontWeight:700, textAlign:'center', outline:'none' }} />
+            <span style={{ fontSize:13, color:'#888', fontWeight:600 }}>min</span>
+          </div>
+          <MenuToggle value={autoAccept} onChange={()=>majConfig('acceptation_auto', autoAccept ? 'false' : 'true')} />
         </div>
       </div>
 
@@ -3107,55 +3195,192 @@ function CommandesPage({ showToast, user }) {
         ))}
       </div>
 
-      {/* ── Liste des commandes ── */}
+      {/* ── Liste des commandes acceptées ── */}
       {listeFiltree.length === 0 ? (
         <div style={{ background:'#fff', borderRadius:14, padding:'40px 20px', textAlign:'center', color:'#bbb', fontSize:14, boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
           Aucune commande {filtre === 'actives' ? 'en cours' : filtre === 'jour' ? "aujourd'hui" : ''}
         </div>
       ) : (
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-          {listeFiltree.map(c => {
-            const st = cmdStatut(c.statut);
-            const nbArticles = (c.items || []).reduce((s, it) => s + (Number(it.quantite) || 1), 0);
-            const heure = c.created_at ? new Date(c.created_at).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }) : '';
+          {listeFiltree.map(c => <CommandeCarte key={c.id} cmd={c} onOpen={()=>setDetail(c)} onStatut={changerStatut} />)}
+        </div>
+      )}
+
+      {showATraiter && (
+        <ATraiterPanel
+          commandes={aTraiter}
+          delaiDefaut={delaiDefaut}
+          autoAccept={autoAccept}
+          onAccepter={accepter}
+          onRefuser={(c)=>changerStatut(c, 'annulee')}
+          onOuvrir={(c)=>{ setShowATraiter(false); setDetail(c); }}
+          onClose={()=>setShowATraiter(false)}
+        />
+      )}
+      {detail && <CommandeDetail cmd={detail} onClose={()=>setDetail(null)} onStatut={changerStatut} />}
+      {showNouvelle && <NouvelleCommandeModal onClose={()=>setShowNouvelle(false)} onSaved={()=>{ setShowNouvelle(false); loadCommandes(true); }} showToast={showToast} delaiDefaut={delaiDefaut} />}
+    </div>
+  );
+}
+
+// ── Compte à rebours « prête dans X min » ────────────────────────────────────
+function minutesRestantes(cmd) {
+  if (!cmd.pret_estime_a) return null;
+  return Math.round((new Date(cmd.pret_estime_a) - new Date()) / 60000);
+}
+
+// ── Carte d'une commande déjà acceptée ───────────────────────────────────────
+function CommandeCarte({ cmd, onOpen, onStatut }) {
+  const st = cmdStatut(cmd.statut);
+  const nbArticles = (cmd.items || []).reduce((s, it) => s + (Number(it.quantite) || 1), 0);
+  const heure = cmd.created_at ? new Date(cmd.created_at).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }) : '';
+  const reste = minutesRestantes(cmd);
+
+  return (
+    <div onClick={onOpen} style={{ background:'#fff', borderRadius:14, padding:'14px 16px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', borderLeft:`4px solid ${st.bg}` }}>
+      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12 }}>
+        <div style={{ minWidth:0, flex:1 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+            <span style={{ fontSize:16, fontWeight:800, color:'#111' }}>{cmd.client_nom || 'Client'}</span>
+            <span style={{ background:st.bg, color:st.fg, borderRadius:20, padding:'3px 10px', fontSize:11, fontWeight:700, whiteSpace:'nowrap' }}>{st.court}</span>
+            {cmd.acceptee_auto && <span style={{ background:'#f0fdf4', color:'#16a34a', borderRadius:20, padding:'3px 9px', fontSize:11, fontWeight:700 }}>Auto</span>}
+            {cmd.source === 'en_ligne'
+              ? <span style={{ background:'#eff6ff', color:'#2563eb', borderRadius:20, padding:'3px 9px', fontSize:11, fontWeight:700, display:'inline-flex', alignItems:'center', gap:4 }}><MonitorSmartphone size={11} /> En ligne</span>
+              : <span style={{ background:'#f5f5f5', color:'#666', borderRadius:20, padding:'3px 9px', fontSize:11, fontWeight:700, display:'inline-flex', alignItems:'center', gap:4 }}><Phone size={11} /> Téléphone</span>}
+          </div>
+          <div style={{ fontSize:13, color:'#888', marginTop:4 }}>
+            N° {cmd.numero || '—'} · {nbArticles} article{nbArticles > 1 ? 's' : ''} · reçue à {heure}
+          </div>
+          {cmd.statut === 'en_preparation' && reste !== null && (
+            <div style={{ fontSize:13, fontWeight:800, color: reste <= 5 ? '#dc2626' : '#b8860b', marginTop:5, display:'flex', alignItems:'center', gap:6 }}>
+              <Clock size={13} strokeWidth={2.2} />
+              {reste > 0 ? `Prête dans ${reste} min` : 'À sortir maintenant'}
+            </div>
+          )}
+        </div>
+        <div style={{ textAlign:'right', flexShrink:0 }}>
+          <div style={{ fontSize:17, fontWeight:900, color:'#111' }}>{fmtEuro(cmd.total)}</div>
+          <span style={{ color:'#ccc', fontSize:18 }}>›</span>
+        </div>
+      </div>
+      {['en_preparation','prete'].includes(cmd.statut) && (
+        <div style={{ display:'flex', gap:8, marginTop:12 }} onClick={e=>e.stopPropagation()}>
+          {cmd.statut === 'en_preparation' && <button onClick={()=>onStatut(cmd,'prete')} style={{ flex:1, height:38, border:'none', borderRadius:9, background:'#16a34a', color:'#fff', fontSize:13, fontWeight:800, cursor:'pointer' }}>Marquer prête</button>}
+          {cmd.statut === 'prete' && <button onClick={()=>onStatut(cmd,'recuperee')} style={{ flex:1, height:38, border:'none', borderRadius:9, background:'#111', color:'#fff', fontSize:13, fontWeight:800, cursor:'pointer' }}>Récupérée</button>}
+          {cmd.client_tel && <a href={`tel:${cmd.client_tel}`} onClick={e=>e.stopPropagation()} style={{ height:38, padding:'0 14px', borderRadius:9, background:'#f5f5f5', color:'#111', fontSize:13, fontWeight:700, display:'flex', alignItems:'center', gap:6, textDecoration:'none' }}><Phone size={14} /> Appeler</a>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Panneau « Commandes à traiter » ──────────────────────────────────────────
+function ATraiterPanel({ commandes, delaiDefaut, autoAccept, onAccepter, onRefuser, onOuvrir, onClose }) {
+  const [delais, setDelais] = useState({}); // délai ajusté par commande
+  const isMobile = useIsMobile();
+  const getDelai = (id) => delais[id] != null ? delais[id] : delaiDefaut;
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:4999 }} />
+      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#f5f5f5', borderRadius:20, width:'min(760px, calc(100vw - 28px))', maxHeight:'90vh', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.25)', zIndex:5000, overflow:'hidden' }}>
+
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'20px 24px 16px', borderBottom:'1px solid #e8e8e8', background:'#fff', flexShrink:0 }}>
+          <div>
+            <h2 style={{ margin:0, fontSize:18, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:8 }}>
+              <ClipboardList size={18} strokeWidth={2} /> Commandes à traiter
+            </h2>
+            <p style={{ margin:'3px 0 0', fontSize:12.5, color:'#888' }}>
+              {commandes.length === 0 ? 'Tout est traité' : `${commandes.length} commande${commandes.length > 1 ? 's' : ''} en attente d'acceptation`}
+            </p>
+          </div>
+          <button onClick={onClose} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666' }}>✕</button>
+        </div>
+
+        <div style={{ padding:'16px 20px 20px', overflowY:'auto', display:'flex', flexDirection:'column', gap:12 }}>
+          {autoAccept && (
+            <div style={{ background:'#f0fdf4', border:'1.5px solid #86efac', borderRadius:12, padding:'11px 14px', fontSize:13, color:'#15803d', display:'flex', alignItems:'center', gap:8 }}>
+              <CircleCheck size={15} strokeWidth={2} /> Acceptation automatique active — les nouvelles commandes sont acceptées seules avec ~{delaiDefaut} min de délai.
+            </div>
+          )}
+
+          {commandes.length === 0 ? (
+            <div style={{ background:'#fff', borderRadius:14, padding:'50px 20px', textAlign:'center', color:'#bbb', fontSize:14 }}>
+              Aucune commande en attente 👌
+            </div>
+          ) : commandes.map(cmd => {
+            const nbArticles = (cmd.items || []).reduce((s, it) => s + (Number(it.quantite) || 1), 0);
+            const heure = cmd.created_at ? new Date(cmd.created_at).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }) : '';
+            const d = getDelai(cmd.id);
             return (
-              <div key={c.id} onClick={()=>setDetail(c)} style={{ background:'#fff', borderRadius:14, padding:'14px 16px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', borderLeft:`4px solid ${st.bg}` }}>
-                <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12 }}>
-                  <div style={{ minWidth:0, flex:1 }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-                      <span style={{ fontSize:16, fontWeight:800, color:'#111' }}>{c.client_nom || 'Client'}</span>
-                      <span style={{ background:st.bg, color:st.fg, borderRadius:20, padding:'3px 10px', fontSize:11, fontWeight:700, whiteSpace:'nowrap' }}>{st.court}</span>
-                      {c.source === 'en_ligne' && <span style={{ background:'#eff6ff', color:'#2563eb', borderRadius:20, padding:'3px 9px', fontSize:11, fontWeight:700, display:'inline-flex', alignItems:'center', gap:4 }}><MonitorSmartphone size={11} /> En ligne</span>}
-                      {c.source === 'telephone' && <span style={{ background:'#f5f5f5', color:'#666', borderRadius:20, padding:'3px 9px', fontSize:11, fontWeight:700, display:'inline-flex', alignItems:'center', gap:4 }}><Phone size={11} /> Téléphone</span>}
-                    </div>
-                    <div style={{ fontSize:13, color:'#888', marginTop:4 }}>
-                      N° {c.numero || '—'} · {nbArticles} article{nbArticles > 1 ? 's' : ''} · reçue à {heure}
-                      {c.heure_retrait ? ` · retrait ${c.heure_retrait}` : ''}
+              <div key={cmd.id} style={{ background:'#fff', borderRadius:16, padding:'16px 18px', boxShadow:'0 1px 4px rgba(0,0,0,0.05)', borderLeft:'4px solid #dc2626', display:'flex', gap:16, alignItems:'stretch', flexDirection: isMobile ? 'column' : 'row' }}>
+
+                {/* Informations de la commande */}
+                <div style={{ flex:1, minWidth:0, cursor:'pointer' }} onClick={()=>onOuvrir(cmd)}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                    <span style={{ fontSize:17, fontWeight:800, color:'#111' }}>{cmd.client_nom || 'Client'}</span>
+                    {cmd.source === 'en_ligne'
+                      ? <span style={{ background:'#eff6ff', color:'#2563eb', borderRadius:20, padding:'3px 9px', fontSize:11, fontWeight:700, display:'inline-flex', alignItems:'center', gap:4 }}><MonitorSmartphone size={11} /> En ligne</span>
+                      : <span style={{ background:'#f5f5f5', color:'#666', borderRadius:20, padding:'3px 9px', fontSize:11, fontWeight:700, display:'inline-flex', alignItems:'center', gap:4 }}><Phone size={11} /> Téléphone</span>}
+                  </div>
+                  <div style={{ fontSize:13, color:'#888', marginTop:4 }}>
+                    N° {cmd.numero || '—'} · reçue à {heure}
+                    {cmd.heure_retrait ? ` · souhaite ${cmd.heure_retrait}` : ''}
+                    {cmd.client_tel ? ` · ${cmd.client_tel}` : ''}
+                  </div>
+
+                  {/* Détail des articles */}
+                  <div style={{ marginTop:10, background:'#fafafa', borderRadius:10, padding:'10px 12px' }}>
+                    {(cmd.items || []).map((it, i) => (
+                      <div key={i} style={{ display:'flex', justifyContent:'space-between', gap:10, padding:'3px 0', fontSize:13.5 }}>
+                        <span style={{ color:'#111' }}>
+                          <strong style={{ color:'#888' }}>{it.quantite || 1}×</strong> {it.nom}
+                          {it.note ? <em style={{ color:'#888', fontSize:12 }}> — {it.note}</em> : ''}
+                        </span>
+                        <span style={{ fontWeight:700, whiteSpace:'nowrap' }}>{fmtEuro((Number(it.prix)||0) * (Number(it.quantite)||1))}</span>
+                      </div>
+                    ))}
+                    <div style={{ display:'flex', justifyContent:'space-between', marginTop:8, paddingTop:8, borderTop:'1.5px solid #e8e8e8' }}>
+                      <span style={{ fontSize:12.5, fontWeight:800 }}>{nbArticles} article{nbArticles > 1 ? 's' : ''}</span>
+                      <span style={{ fontSize:16, fontWeight:900 }}>{fmtEuro(cmd.total)}</span>
                     </div>
                   </div>
-                  <div style={{ textAlign:'right', flexShrink:0 }}>
-                    <div style={{ fontSize:17, fontWeight:900, color:'#111' }}>{fmtEuro(c.total)}</div>
-                    <span style={{ color:'#ccc', fontSize:18 }}>›</span>
-                  </div>
+
+                  {cmd.note && (
+                    <div style={{ marginTop:8, background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:9, padding:'8px 12px', fontSize:12.5, color:'#111' }}>
+                      <strong>Note :</strong> {cmd.note}
+                    </div>
+                  )}
                 </div>
-                {/* Actions rapides */}
-                {['nouvelle','en_preparation','prete'].includes(c.statut) && (
-                  <div style={{ display:'flex', gap:8, marginTop:12 }} onClick={e=>e.stopPropagation()}>
-                    {c.statut === 'nouvelle' && <button onClick={()=>changerStatut(c,'en_preparation')} style={{ flex:1, height:38, border:'none', borderRadius:9, background:'#E8C547', color:'#111', fontSize:13, fontWeight:800, cursor:'pointer' }}>Accepter</button>}
-                    {c.statut === 'en_preparation' && <button onClick={()=>changerStatut(c,'prete')} style={{ flex:1, height:38, border:'none', borderRadius:9, background:'#16a34a', color:'#fff', fontSize:13, fontWeight:800, cursor:'pointer' }}>Marquer prête</button>}
-                    {c.statut === 'prete' && <button onClick={()=>changerStatut(c,'recuperee')} style={{ flex:1, height:38, border:'none', borderRadius:9, background:'#111', color:'#fff', fontSize:13, fontWeight:800, cursor:'pointer' }}>Récupérée</button>}
-                    {c.client_tel && <a href={`tel:${c.client_tel}`} onClick={e=>e.stopPropagation()} style={{ height:38, padding:'0 14px', borderRadius:9, background:'#f5f5f5', color:'#111', fontSize:13, fontWeight:700, display:'flex', alignItems:'center', gap:6, textDecoration:'none' }}><Phone size={14} /> Appeler</a>}
+
+                {/* Bloc d'acceptation, à droite */}
+                <div style={{ width: isMobile ? '100%' : 210, flexShrink:0, display:'flex', flexDirection:'column', gap:10, justifyContent:'center', borderLeft: isMobile ? 'none' : '1px solid #f0f0f0', paddingLeft: isMobile ? 0 : 16 }}>
+                  <div>
+                    <label style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, display:'block', marginBottom:5 }}>Prête dans</label>
+                    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                      <button onClick={()=>setDelais(p=>({...p,[cmd.id]:Math.max(5, d - 5)}))} style={{ width:34, height:38, borderRadius:8, border:'1.5px solid #ddd', background:'#fff', fontSize:17, fontWeight:700, cursor:'pointer' }}>−</button>
+                      <div style={{ flex:1, height:38, border:'1.5px solid #ddd', borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, fontWeight:800, background:'#fafafa' }}>{d} min</div>
+                      <button onClick={()=>setDelais(p=>({...p,[cmd.id]:Math.min(180, d + 5)}))} style={{ width:34, height:38, borderRadius:8, border:'1.5px solid #ddd', background:'#fff', fontSize:17, fontWeight:700, cursor:'pointer' }}>+</button>
+                    </div>
                   </div>
-                )}
+
+                  <button onClick={()=>onAccepter(cmd, d)} style={{ width:'100%', minHeight:62, border:'none', borderRadius:14, background:'#16a34a', color:'#fff', fontSize:17, fontWeight:900, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:2, boxShadow:'0 4px 14px rgba(22,163,74,0.3)' }}>
+                    <span style={{ display:'flex', alignItems:'center', gap:8 }}><CheckCircle size={19} strokeWidth={2.4} /> Accepter</span>
+                    <span style={{ fontSize:11, fontWeight:600, opacity:0.9 }}>prête dans ~{d} min</span>
+                  </button>
+
+                  <button onClick={()=>onRefuser(cmd)} style={{ width:'100%', height:38, border:'1.5px solid #eee', borderRadius:10, background:'#fff', color:'#dc2626', fontSize:13, fontWeight:700, cursor:'pointer' }}>Refuser</button>
+                </div>
               </div>
             );
           })}
         </div>
-      )}
 
-      {detail && <CommandeDetail cmd={detail} onClose={()=>setDetail(null)} onStatut={changerStatut} />}
-      {showNouvelle && <NouvelleCommandeModal onClose={()=>setShowNouvelle(false)} onSaved={()=>{ setShowNouvelle(false); loadCommandes(true); }} showToast={showToast} />}
-    </div>
+        <div style={{ padding:'12px 24px calc(16px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #e8e8e8', background:'#fff', flexShrink:0 }}>
+          <button onClick={onClose} style={{ width:'100%', height:46, border:'1.5px solid #ddd', borderRadius:12, background:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', color:'#666' }}>Fermer</button>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -3233,7 +3458,7 @@ function CommandeDetail({ cmd, onClose, onStatut }) {
 }
 
 // ── Prise de commande au téléphone ───────────────────────────────────────────
-function NouvelleCommandeModal({ onClose, onSaved, showToast }) {
+function NouvelleCommandeModal({ onClose, onSaved, showToast, delaiDefaut }) {
   const [nom, setNom] = useState('');
   const [tel, setTel] = useState('');
   const [heureRetrait, setHeureRetrait] = useState('');
@@ -3290,6 +3515,9 @@ function NouvelleCommandeModal({ onClose, onSaved, showToast }) {
         total,
         statut: 'en_preparation',
         source: 'telephone',
+        delai_minutes: delaiDefaut || 30,
+        acceptee_at: new Date().toISOString(),
+        pret_estime_a: new Date(Date.now() + (delaiDefaut || 30) * 60000).toISOString(),
         heure_retrait: heureRetrait || null,
         note: note.trim().slice(0, 500) || null,
       }),
