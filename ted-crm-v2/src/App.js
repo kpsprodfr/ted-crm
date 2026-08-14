@@ -3235,8 +3235,8 @@ function CommandesPage({ showToast, user }) {
       </div>
 
       {/* ── 15 jours (même bande que la page Réservations) ── */}
-      <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', padding:14, boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
-        <div className="jours-strip" style={{ display:'flex', gap:8, overflowX:'scroll', WebkitOverflowScrolling:'touch', scrollSnapType:'x mandatory', userSelect:'none', WebkitUserSelect:'none' }}>
+      <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', padding:14, boxShadow:'0 1px 4px rgba(0,0,0,0.04)', display:'flex', alignItems:'stretch', gap:14 }}>
+        <div className="jours-strip" style={{ flex:1, minWidth:0, display:'flex', gap:8, overflowX:'scroll', WebkitOverflowScrolling:'touch', scrollSnapType:'x mandatory', userSelect:'none', WebkitUserSelect:'none' }}>
           {quinzeJoursCmd.map(j => {
             // Aujourd'hui renvoie sur l'onglet « Aujourd'hui » plutôt que de créer un filtre à part
             const isSelected = j.isAujourd
@@ -3261,12 +3261,15 @@ function CommandesPage({ showToast, user }) {
               </div>
             );
           })}
-          {/* Ouvrir le calendrier */}
-          <div onClick={()=>setShowCalendrier(true)}
-            style={{ borderRadius:12, padding:'10px 6px', textAlign:'center', cursor:'pointer', border:'2px solid #eee', background:'#fafafa', flexShrink:0, width:'calc((100% - 40px) / 6)', scrollSnapAlign:'start', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:6 }}>
+        </div>
+
+        {/* Ouvrir le calendrier — fixe en bout de frise, séparé par un filet */}
+        <div onClick={()=>setShowCalendrier(true)}
+          style={{ flexShrink:0, width:92, borderLeft:'1.5px solid #f0f0f0', paddingLeft:14, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:7, cursor:'pointer' }}>
+          <div style={{ width:44, height:44, borderRadius:12, border:'2px solid #eee', background:'#fafafa', display:'flex', alignItems:'center', justifyContent:'center' }}>
             <CalendarDays size={22} strokeWidth={1.8} color="#666" />
-            <div style={{ fontSize:10.5, fontWeight:700, color:'#666', lineHeight:1.25 }}>Ouvrir le<br/>calendrier</div>
           </div>
+          <div style={{ fontSize:10.5, fontWeight:700, color:'#666', lineHeight:1.25, textAlign:'center' }}>Ouvrir le<br/>calendrier</div>
         </div>
       </div>
 
