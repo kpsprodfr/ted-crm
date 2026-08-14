@@ -873,14 +873,30 @@ function CorbeilleModal({ onClose, showToast }) {
 }
 
 // ─── Mobile hook ──────────────────────────────────────────────────────────────
+// 900 px : au-dessous, la mise en page « mobile » (une colonne, navigation
+// basse) sert aussi les tablettes en portrait, où le gabarit bureau déborde.
 function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 900);
   useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 768);
+    const handler = () => setIsMobile(window.innerWidth < 900);
     window.addEventListener('resize', handler);
-    return () => window.removeEventListener('resize', handler);
+    window.addEventListener('orientationchange', handler);
+    return () => { window.removeEventListener('resize', handler); window.removeEventListener('orientationchange', handler); };
   }, []);
   return isMobile;
+}
+
+// Tablettes comprises : en dessous de 1180 px, les mises en page à deux colonnes
+// deviennent illisibles (calendrier écrasé, barres de filtres qui débordent).
+function useEcranEtroit(seuil = 1180) {
+  const [etroit, setEtroit] = useState(window.innerWidth < seuil);
+  useEffect(() => {
+    const handler = () => setEtroit(window.innerWidth < seuil);
+    window.addEventListener('resize', handler);
+    window.addEventListener('orientationchange', handler);
+    return () => { window.removeEventListener('resize', handler); window.removeEventListener('orientationchange', handler); };
+  }, [seuil]);
+  return etroit;
 }
 
 // ─── Réservations Page ────────────────────────────────────────────────────────
@@ -2128,6 +2144,7 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
 const [showDemandesAttente, setShowDemandesAttente] = useState(false);
   const [showFormDropdown, setShowFormDropdown] = useState(false);
   const isMobile = useIsMobile();
+  const etroit = useEcranEtroit();
   const qr = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(FORM_URL)}`;
 
   useEffect(() => {
@@ -2344,7 +2361,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
   }
 
   return (
-    <div style={{ fontFamily:"'Inter','Segoe UI',Arial,sans-serif", background:'#f8f8f8', minHeight: inline ? undefined : '100vh', overflow: !isMobile ? 'hidden' : undefined, height: (!isMobile && inline) ? '100vh' : undefined }}>
+    <div style={{ fontFamily:"'Inter','Segoe UI',Arial,sans-serif", background:'#f8f8f8', minHeight: inline ? undefined : '100vh', overflow: (!isMobile && !etroit) ? 'hidden' : undefined, height: (!isMobile && !etroit && inline) ? '100vh' : undefined }}>
       {/* Header — desktop full-page mode only */}
       {!inline && (
         <header style={{ background:'#111', color:'#fff', padding:'0 20px', height:56, display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:`3px solid ${G}`, flexShrink:0 }}>
@@ -2369,8 +2386,8 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
         </header>
       )}
 
-      <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? '1fr 380px' : undefined, gap: !isMobile ? 16 : undefined, padding: !isMobile ? '24px 32px' : undefined, maxWidth: !isMobile ? 1440 : undefined, margin: !isMobile ? '0 auto' : undefined, alignItems: !isMobile ? 'stretch' : 'start', height: !isMobile ? 'calc(100vh - 48px)' : undefined, boxSizing: !isMobile ? 'border-box' : undefined, background: !isMobile ? '#f5f5f5' : undefined }}>
-      <main style={{ maxWidth: isMobile ? 800 : 'none', margin: isMobile ? '0 auto' : 0, padding: isMobile ? '12px 16px 100px' : '0', display: !isMobile ? 'flex' : 'block', flexDirection: !isMobile ? 'column' : undefined, gap: !isMobile ? 12 : undefined, height: !isMobile ? '100%' : undefined, overflow: !isMobile ? 'hidden' : undefined }}>
+      <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? (etroit ? '1fr' : '1fr 380px') : undefined, gap: !isMobile ? 16 : undefined, padding: !isMobile ? (etroit ? '20px 20px 40px' : '24px 32px') : undefined, maxWidth: !isMobile ? 1440 : undefined, margin: !isMobile ? '0 auto' : undefined, alignItems: !isMobile ? 'stretch' : 'start', height: !isMobile ? (etroit ? 'auto' : 'calc(100vh - 48px)') : undefined, minHeight: !isMobile && etroit ? '100vh' : undefined, boxSizing: !isMobile ? 'border-box' : undefined, background: !isMobile ? '#f5f5f5' : undefined }}>
+      <main style={{ maxWidth: isMobile ? 800 : 'none', margin: isMobile ? '0 auto' : 0, padding: isMobile ? '12px 16px 100px' : '0', display: !isMobile ? 'flex' : 'block', flexDirection: !isMobile ? 'column' : undefined, gap: !isMobile ? 12 : undefined, height: !isMobile && !etroit ? '100%' : undefined, overflow: !isMobile && !etroit ? 'hidden' : undefined }}>
 
         {!isMobile && (
           <div style={{ display:'flex', alignItems:'center', gap:12, flexShrink:0, position:'relative' }}>
@@ -2460,7 +2477,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                   );
                 })}
               </div>
-              <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? '3fr 2fr' : undefined, gap: !isMobile ? 16 : 0, marginTop: !isMobile ? 16 : 0, flex: !isMobile ? 1 : undefined, minHeight: !isMobile ? 0 : undefined, overflow: !isMobile ? 'hidden' : undefined }}>
+              <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? (etroit ? '1fr' : '3fr 2fr') : undefined, gap: !isMobile ? 16 : 0, marginTop: !isMobile ? 16 : 0, flex: !isMobile && !etroit ? 1 : undefined, minHeight: !isMobile && !etroit ? 0 : undefined, overflow: !isMobile && !etroit ? 'hidden' : undefined }}>
                 {/* Colonne calendrier */}
                 <div style={!isMobile ? { background:'#f8f8f8', borderRadius:12, padding:12, overflow:'auto' } : {}}>
                   {/* 2. Bouton toggle (mobile only) */}
@@ -2967,7 +2984,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
 
 const CMD_STATUTS = [
   { id:'nouvelle',       label:'Nouvelle',       court:'Nouvelle',  bg:'#dc2626', fg:'#fff' },
-  { id:'en_preparation', label:'En préparation', court:'En prépa',  bg:'#c9490f', fg:'#fff' },
+  { id:'en_preparation', label:'En préparation', court:'En prépa',  bg:'#f0a020', fg:'#111' },
   { id:'prete',          label:'Prête',          court:'Prête',     bg:'#16a34a', fg:'#fff' },
   { id:'recuperee',      label:'Récupérée',      court:'Récupérée', bg:'#111111', fg:'#fff' },
   { id:'annulee',        label:'Annulée',        court:'Annulée',   bg:'#f5f5f5', fg:'#999' },
@@ -2998,6 +3015,7 @@ function CommandesPage({ showToast, user }) {
   const [tick, setTick] = useState(0); // rafraîchit les comptes à rebours
   const basculeesRef = useRef(new Set()); // commandes déjà passées en « Prête » automatiquement
   const isMobile = useIsMobile();
+  const etroit = useEcranEtroit();
   const LIEN_COMMANDE = 'https://ted-crm.pages.dev/commander.html';
 
   async function loadCommandes(silent = false) {
@@ -3269,7 +3287,7 @@ function CommandesPage({ showToast, user }) {
       )}
 
       {/* ── Stats du jour + accès statistiques et calendrier ── */}
-      <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr auto auto', gap:12 }}>
+      <div style={{ display:'grid', gridTemplateColumns: etroit ? '1fr 1fr' : '1fr 1fr auto auto', gap:12 }}>
         <div style={{ background:'#fff', borderRadius:14, padding:'14px 16px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', textAlign:'center' }}>
           <p style={{ fontSize:24, fontWeight:900, color:'#111', margin:'0 0 3px' }}>{nbJour}</p>
           <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0 }}>Commandes {labelJour(jourAffiche)}{service ? ` · ${service === 'midi' ? 'midi' : 'soir'}` : ''}</p>
@@ -3552,7 +3570,7 @@ function CommandeCarte({ cmd, onOpen, onStatut }) {
           {/* Le bouton porte la couleur du statut courant : orange tant que la
               commande se prépare, vert une fois qu'elle attend son client. */}
           {cmd.statut === 'en_preparation' && (
-            <button onClick={()=>onStatut(cmd, 'prete')} style={{ width:150, height:150, flexShrink:0, border:'none', borderRadius:16, background:'#c9490f', color:'#fff', fontSize:17, fontWeight:900, lineHeight:1.15, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8, boxShadow:'0 6px 20px rgba(201,73,15,0.30)' }}>
+            <button onClick={()=>onStatut(cmd, 'prete')} style={{ width:150, height:150, flexShrink:0, border:'none', borderRadius:16, background:'#f0a020', color:'#111', fontSize:17, fontWeight:900, lineHeight:1.15, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8, boxShadow:'0 6px 20px rgba(240,160,32,0.35)' }}>
               <CheckCircle size={34} strokeWidth={2.4} />
               Marquer prête
             </button>
@@ -9022,16 +9040,16 @@ function CRMApp({ user, onLogout }) {
           </div>
 
           {/* 2. BARRE STICKY */}
-          <div style={{position:'sticky', top:0, zIndex:100, background:'#f5f5f5', padding:'10px 32px 14px', borderBottom:'1px solid #eee', boxShadow:'0 2px 12px rgba(0,0,0,0.06)'}}>
-            <div style={{display:'flex', alignItems:'center', gap:12}}>
+          <div style={{position:'sticky', top:0, zIndex:100, background:'#f5f5f5', padding:'10px 20px 14px', borderBottom:'1px solid #eee', boxShadow:'0 2px 12px rgba(0,0,0,0.06)'}}>
+            <div style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap'}}>
               <div style={{position:'relative', flex:1}}>
                 <Search size={16} strokeWidth={2} color="#999" style={{position:'absolute', left:16, top:'50%', transform:'translateY(-50%)', pointerEvents:'none'}}/>
                 <input placeholder="Rechercher un client..." value={rechercheClients} onChange={e=>setRechercheClients(e.target.value)}
-                  style={{width:'100%', height:36, border:'1.5px solid #eee', borderRadius:10, padding:'0 16px 0 44px', fontSize:13, outline:'none', background:'#fff', boxSizing:'border-box'}}
+                  style={{width:'100%', height:36, minWidth:150, border:'1.5px solid #eee', borderRadius:10, padding:'0 16px 0 44px', fontSize:13, outline:'none', background:'#fff', boxSizing:'border-box'}}
                   onFocus={e=>e.target.style.borderColor='#E8C547'} onBlur={e=>e.target.style.borderColor='#eee'}/>
                 {rechercheClients && <button onClick={()=>setRechercheClients('')} style={{position:'absolute', right:14, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'#aaa', fontSize:16, padding:0}}>✕</button>}
               </div>
-              <div style={{display:'flex', gap:6, flexShrink:0}}>
+              <div style={{display:'flex', gap:6, flexWrap:'wrap'}}>
                 {[{id:'Tous',label:'Tous'},{id:'Homme',label:'Hommes'},{id:'Femme',label:'Femmes'},{id:'Entreprise',label:'Entreprises'}].map(f=>(
                   <button key={f.id} onClick={()=>setFiltreGenreClients(f.id)} style={{height:36, padding:'0 14px', borderRadius:10, cursor:'pointer', fontSize:13, fontWeight:700, border:'none', background: filtreGenreClients===f.id?'#111':'#fff', color: filtreGenreClients===f.id?'#fff':'#666', boxShadow: filtreGenreClients===f.id?'none':'0 1px 4px rgba(0,0,0,0.06)'}}>{f.label}</button>
                 ))}
