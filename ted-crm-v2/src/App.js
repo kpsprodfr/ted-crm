@@ -2979,7 +2979,7 @@ const fmtEuro   = (n) => (Number(n) || 0).toFixed(2).replace('.', ',') + ' €';
 function CommandesPage({ showToast, user }) {
   const [commandes, setCommandes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filtre, setFiltre] = useState('actives'); // actives | jour | avenir | toutes
+  const [filtre, setFiltre] = useState('actives'); // actives | recuperees
   const [jourSelectionne, setJourSelectionne] = useState(null); // AAAA-MM-JJ ou null
   const [detail, setDetail] = useState(null);
   const [editCmd, setEditCmd] = useState(null);
@@ -3123,13 +3123,18 @@ function CommandesPage({ showToast, user }) {
 
   // La liste principale ne montre PAS les commandes à traiter : elles passent
   // d'abord par le panneau dédié (bandeau rouge en haut).
+  // Jour affiché : aujourd'hui par défaut, sinon la date choisie au calendrier.
+  // Il pilote à la fois les deux filtres et les deux tuiles de tête.
+  const jourAffiche = jourSelectionne || aujourdhui;
+
+  // Les deux filtres portent sur ce jour affiché.
   const listeFiltree = commandes.filter(c => {
     if (c.statut === 'nouvelle') return false;
-    if (jourSelectionne) return jourDe(c) === jourSelectionne;
-    if (filtre === 'actives') return ['en_preparation', 'prete'].includes(c.statut) && jourDe(c) <= aujourdhui;
-    if (filtre === 'avenir')  return jourDe(c) > aujourdhui && !['recuperee','annulee'].includes(c.statut);
-    if (filtre === 'jour')    return jourDe(c) === aujourdhui;
-    return true;
+    if (filtre === 'recuperees') return c.statut === 'recuperee' && jourDe(c) === jourAffiche;
+    // En cours : sur la journée en cours, on remonte aussi les commandes des
+    // jours précédents jamais terminées, pour qu'aucune ne disparaisse.
+    return ['en_preparation', 'prete'].includes(c.statut)
+      && (jourAffiche === aujourdhui ? jourDe(c) <= aujourdhui : jourDe(c) === jourAffiche);
   }).sort((a, b) => {
     // Les commandes terminées passent après celles encore en cours…
     const ta = estTerminee(a), tb = estTerminee(b);
@@ -3150,15 +3155,15 @@ function CommandesPage({ showToast, user }) {
     return (b.created_at || '').localeCompare(a.created_at || '');
   });
 
-  const nbAVenir = commandes.filter(c => jourDe(c) > aujourdhui && !['recuperee','annulee'].includes(c.statut)).length;
+  // Compteur « En cours » : uniquement les commandes à préparer. Celles déjà
+  // prêtes attendent le client, elles ne demandent plus de travail.
+  const nbEnCours = commandes.filter(c => c.statut === 'en_preparation'
+    && (jourAffiche === aujourdhui ? jourDe(c) <= aujourdhui : jourDe(c) === jourAffiche)).length;
 
-  // Commandes réellement en cours de préparation : celles déjà prêtes attendent
-  // seulement d'être récupérées, elles ne demandent plus de travail.
-  const nbEnCours = commandes.filter(c => c.statut === 'en_preparation' && jourDe(c) <= aujourdhui).length;
+  // Compteur « Récupérées » du jour affiché.
+  const nbRecuperees = commandes.filter(c => c.statut === 'recuperee' && jourDe(c) === jourAffiche).length;
 
-  // Les deux tuiles suivent le jour affiché : aujourd'hui par défaut,
-  // ou la date choisie dans le calendrier.
-  const jourAffiche = jourSelectionne || aujourdhui;
+  // Les deux tuiles suivent le même jour affiché.
   const cmdDuJour = commandes.filter(c => jourDe(c) === jourAffiche && c.statut !== 'annulee');
   const caJour = cmdDuJour.reduce((s, c) => s + (Number(c.total) || 0), 0);
   const nbJour = cmdDuJour.length;
@@ -3258,8 +3263,8 @@ function CommandesPage({ showToast, user }) {
 
       {/* ── Filtres ── */}
       <div style={{ display:'flex', gap:8, overflowX:'auto', paddingBottom:2, alignItems:'center' }}>
-        {[{id:'actives',label:`En cours${nbEnCours ? ` (${nbEnCours})` : ''}`},{id:'avenir',label:`À venir${nbAVenir ? ' · ' + nbAVenir : ''}`},{id:'toutes',label:'Toutes'}].map(f => (
-          <button key={f.id} onClick={()=>{ setFiltre(f.id); setJourSelectionne(null); }} style={{ height:36, padding:'0 16px', borderRadius:10, fontSize:13, fontWeight:700, border:'none', flexShrink:0, cursor:'pointer', background: (!jourSelectionne && filtre===f.id) ? '#111' : '#fff', color: (!jourSelectionne && filtre===f.id) ? '#fff' : '#666' }}>
+        {[{id:'actives',label:`En cours${nbEnCours ? ` (${nbEnCours})` : ''}`},{id:'recuperees',label:`Récupérées${nbRecuperees ? ` (${nbRecuperees})` : ''}`}].map(f => (
+          <button key={f.id} onClick={()=>setFiltre(f.id)} style={{ height:36, padding:'0 16px', borderRadius:10, fontSize:13, fontWeight:700, border:'none', flexShrink:0, cursor:'pointer', background: filtre===f.id ? '#111' : '#fff', color: filtre===f.id ? '#fff' : '#666' }}>
             {f.label}
           </button>
         ))}
@@ -3268,9 +3273,7 @@ function CommandesPage({ showToast, user }) {
       {/* ── Liste des commandes acceptées ── */}
       {listeFiltree.length === 0 ? (
         <div style={{ background:'#fff', borderRadius:14, padding:'40px 20px', textAlign:'center', color:'#bbb', fontSize:14, boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
-          {jourSelectionne
-            ? `Aucune commande le ${new Date(jourSelectionne + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' })}`
-            : `Aucune commande ${filtre === 'actives' ? 'en cours' : filtre === 'jour' ? "aujourd'hui" : filtre === 'avenir' ? 'à venir' : ''}`}
+          {`Aucune commande ${filtre === 'recuperees' ? 'récupérée' : 'en cours'} ${jourSelectionne ? `le ${labelJour(jourAffiche)}` : "aujourd'hui"}`}
         </div>
       ) : (
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
@@ -3318,8 +3321,9 @@ function CommandesPage({ showToast, user }) {
           jourSelectionne={jourSelectionne}
           onChoisir={(iso)=>{
             setShowCalendrier(false);
-            if (iso === aujourdhui) { setJourSelectionne(null); setFiltre('jour'); }
-            else setJourSelectionne(iso);
+            // Choisir aujourd'hui revient à l'état par défaut ; le filtre
+            // En cours / Récupérées en cours est conservé.
+            setJourSelectionne(iso === aujourdhui ? null : iso);
           }}
           onClose={()=>setShowCalendrier(false)}
         />
