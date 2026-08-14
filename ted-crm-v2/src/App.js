@@ -2967,9 +2967,9 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
 
 const CMD_STATUTS = [
   { id:'nouvelle',       label:'Nouvelle',       court:'Nouvelle',  bg:'#dc2626', fg:'#fff' },
-  { id:'en_preparation', label:'En préparation', court:'En prépa',  bg:'#E8C547', fg:'#111' },
+  { id:'en_preparation', label:'En préparation', court:'En prépa',  bg:'#f97316', fg:'#111' },
   { id:'prete',          label:'Prête',          court:'Prête',     bg:'#16a34a', fg:'#fff' },
-  { id:'recuperee',      label:'Récupérée',      court:'Récupérée', bg:'#e8e8e8', fg:'#666' },
+  { id:'recuperee',      label:'Récupérée',      court:'Récupérée', bg:'#111111', fg:'#fff' },
   { id:'annulee',        label:'Annulée',        court:'Annulée',   bg:'#f5f5f5', fg:'#999' },
 ];
 const cmdStatut = (id) => CMD_STATUTS.find(s => s.id === id) || CMD_STATUTS[0];
@@ -3549,16 +3549,18 @@ function CommandeCarte({ cmd, onOpen, onStatut }) {
       {/* Gros bouton d'action, à droite */}
       {actionnable && (
         <div style={{ width: isMobile ? '100%' : 200, flexShrink:0, display:'flex', flexDirection:'column', gap:11, alignItems:'center', justifyContent:'center', borderLeft: isMobile ? 'none' : '1px solid #f0f0f0', paddingLeft: isMobile ? 0 : 20 }}>
+          {/* Le bouton porte la couleur du statut courant : orange tant que la
+              commande se prépare, vert une fois qu'elle attend son client. */}
           {cmd.statut === 'en_preparation' && (
-            <button onClick={()=>onStatut(cmd, 'prete')} style={{ width:150, height:150, flexShrink:0, border:'none', borderRadius:16, background:'#16a34a', color:'#fff', fontSize:17, fontWeight:900, lineHeight:1.15, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8, boxShadow:'0 6px 20px rgba(22,163,74,0.35)' }}>
+            <button onClick={()=>onStatut(cmd, 'prete')} style={{ width:150, height:150, flexShrink:0, border:'none', borderRadius:16, background:'#f97316', color:'#111', fontSize:17, fontWeight:900, lineHeight:1.15, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8, boxShadow:'0 6px 20px rgba(249,115,22,0.35)' }}>
               <CheckCircle size={34} strokeWidth={2.4} />
               Marquer prête
             </button>
           )}
           {cmd.statut === 'prete' && (
-            <button onClick={()=>onStatut(cmd, 'recuperee')} style={{ width:150, height:150, flexShrink:0, border:'none', borderRadius:16, background:'#111', color:'#fff', fontSize:17, fontWeight:900, lineHeight:1.15, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8, boxShadow:'0 6px 20px rgba(0,0,0,0.25)' }}>
+            <button onClick={()=>onStatut(cmd, 'recuperee')} style={{ width:150, height:150, flexShrink:0, border:'none', borderRadius:16, background:'#16a34a', color:'#fff', fontSize:17, fontWeight:900, lineHeight:1.15, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8, boxShadow:'0 6px 20px rgba(22,163,74,0.35)' }}>
               <BadgeCheck size={34} strokeWidth={2.2} />
-              Récupérée
+              À récupérer
             </button>
           )}
         </div>
@@ -4374,23 +4376,28 @@ function CommandeDetail({ cmd, onClose, onStatut, onEdit, onSupprimer }) {
             </div>
           </div>
 
-          <button onClick={onClose} style={{ width:'100%', height:48, border:'1.5px solid #eee', borderRadius:12, background:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', color:'#666' }}>Fermer</button>
+          <button onClick={onClose} style={{ width:'100%', height:48, flexShrink:0, border:'1.5px solid #eee', borderRadius:12, background:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', color:'#666' }}>Fermer</button>
 
           {/* Suppression définitive, en retrait du reste */}
           {onSupprimer && (
-            <div style={{ borderTop:'1px solid #f5f5f5', paddingTop:14, marginTop:2 }}>
+            <div style={{ borderTop:'1px solid #f5f5f5', paddingTop:14, marginTop:2, flexShrink:0 }}>
               {!confirmeSuppr ? (
-                <button onClick={()=>setConfirmeSuppr(true)} style={{ width:'100%', height:40, border:'none', borderRadius:10, background:'none', fontSize:13, fontWeight:700, cursor:'pointer', color:'#dc2626', display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}>
+                <button onClick={()=>setConfirmeSuppr(true)} style={{ width:'100%', height:40, flexShrink:0, border:'none', borderRadius:10, background:'none', fontSize:13, fontWeight:700, cursor:'pointer', color:'#dc2626', display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}>
                   <Trash2 size={14} strokeWidth={2} /> Supprimer la commande
                 </button>
               ) : (
                 <div style={{ background:'#fef2f2', border:'1.5px solid #fca5a5', borderRadius:12, padding:'12px 14px' }}>
-                  <p style={{ margin:'0 0 10px', fontSize:13, color:'#7f1d1d', lineHeight:1.5 }}>
-                    Supprimer définitivement la commande N° {cmd.numero || '—'} ? Elle disparaîtra aussi des statistiques.
+                  <p style={{ margin:'0 0 6px', fontSize:13.5, fontWeight:800, color:'#7f1d1d', lineHeight:1.45 }}>
+                    Supprimer la commande N° {cmd.numero || '—'} ?
+                  </p>
+                  <p style={{ margin:'0 0 12px', fontSize:12.5, color:'#7f1d1d', lineHeight:1.55 }}>
+                    <strong>Cette action est irréversible.</strong> La commande sera effacée partout :
+                    liste des commandes, calendrier, statistiques et exports. Aucune récupération
+                    n'est possible ensuite.
                   </p>
                   <div style={{ display:'flex', gap:8 }}>
-                    <button onClick={()=>setConfirmeSuppr(false)} style={{ flex:1, height:40, border:'1.5px solid #ddd', borderRadius:10, background:'#fff', fontSize:13.5, fontWeight:700, cursor:'pointer', color:'#666' }}>Annuler</button>
-                    <button onClick={()=>onSupprimer(cmd)} style={{ flex:1, height:40, border:'none', borderRadius:10, background:'#dc2626', color:'#fff', fontSize:13.5, fontWeight:800, cursor:'pointer' }}>Supprimer</button>
+                    <button onClick={()=>setConfirmeSuppr(false)} style={{ flex:1, height:42, border:'1.5px solid #ddd', borderRadius:10, background:'#fff', fontSize:13.5, fontWeight:700, cursor:'pointer', color:'#666' }}>Annuler</button>
+                    <button onClick={()=>onSupprimer(cmd)} style={{ flex:1, height:42, border:'none', borderRadius:10, background:'#dc2626', color:'#fff', fontSize:13.5, fontWeight:800, cursor:'pointer' }}>Supprimer définitivement</button>
                   </div>
                 </div>
               )}
