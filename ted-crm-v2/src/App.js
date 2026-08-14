@@ -6344,9 +6344,10 @@ function CRMApp({ user, onLogout }) {
         { id:'commandes', label:'Commandes', icon:<ShoppingBag size={24} strokeWidth={1.8} /> },
         { id:'clients', label:'Clients', icon:<Users size={24} strokeWidth={1.8} /> },
         { id:'communications', label:'Communications', icon:<Megaphone size={24} strokeWidth={1.8} /> },
-        { id:'roue', label:'Jeux', icon:<Dices size={24} strokeWidth={1.8} /> },
+        // Onglets masqués — décommenter pour les réafficher (les pages existent toujours)
+        // { id:'roue', label:'Jeux', icon:<Dices size={24} strokeWidth={1.8} /> },
         { id:'menu', label:'Menu', icon:<UtensilsCrossed size={24} strokeWidth={1.8} /> },
-        { id:'systeme', label:'Système', icon:<Settings size={24} strokeWidth={1.8} /> },
+        // { id:'systeme', label:'Système', icon:<Settings size={24} strokeWidth={1.8} /> },
       ].map(item => {
         const nbAttenteSidebar = item.id === 'reservations' ? resaAttenteCount : 0;
         return (
@@ -6371,10 +6372,10 @@ function CRMApp({ user, onLogout }) {
       })}
       <div style={{ flex:1 }} />
       {healthStatus && (
-        <button onClick={()=>setActiveView('systeme')} title={healthDetail} style={{ border:'none', background:'none', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:5, padding:'10px 8px', marginBottom:2 }}>
+        <div title={healthDetail} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:5, padding:'10px 8px', marginBottom:2 }}>
           <span style={{ width:10, height:10, borderRadius:'50%', background: healthStatus==='ok' ? '#22c55e' : healthStatus==='degraded' ? '#f59e0b' : '#dc2626', boxShadow:`0 0 8px ${healthStatus==='ok' ? 'rgba(34,197,94,0.8)' : healthStatus==='degraded' ? 'rgba(245,158,11,0.8)' : 'rgba(220,38,38,0.9)'}` }} />
           <span style={{ fontSize:9, fontWeight:600, color:'#555' }}>{healthStatus==='ok' ? 'Système OK' : healthStatus==='degraded' ? 'Dégradé' : 'Panne'}</span>
-        </button>
+        </div>
       )}
       <button onClick={()=>setShowConfirmDeconnexion(true)} style={{ width:'100%', padding:'12px 8px', border:'none', background:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer', color:'#555' }}>
         <LogOut size={22} strokeWidth={1.8} />
