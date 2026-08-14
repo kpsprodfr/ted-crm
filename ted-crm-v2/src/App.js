@@ -3294,22 +3294,22 @@ function CommandesPage({ showToast, user }) {
 
       {/* ── Stats du jour + accès statistiques et calendrier ── */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr auto auto', gap: etroit ? 8 : 12 }}>
-        <div style={{ background:'#fff', borderRadius:12, padding:'8px 14px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', display:'flex', alignItems:'center', justifyContent:'center', gap:9, minHeight:52 }}>
-          <span style={{ fontSize:20, fontWeight:900, color:'#111', lineHeight:1 }}>{nbJour}</span>
-          <span style={{ fontSize:10.5, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.4, textAlign:'left', lineHeight:1.25 }}>Commandes<br/>{labelJour(jourAffiche)}{service ? ` · ${service}` : ''}</span>
+        <div style={{ background:'#fff', borderRadius:12, padding:'6px 12px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', display:'flex', alignItems:'center', justifyContent:'center', gap:8, minHeight: etroit ? 42 : 52 }}>
+          <span style={{ fontSize: etroit ? 16 : 20, fontWeight:900, color:'#111', lineHeight:1 }}>{nbJour}</span>
+          <span style={{ fontSize: etroit ? 9 : 10.5, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.3, textAlign:'left', lineHeight:1.2 }}>Commandes<br/>{labelJour(jourAffiche)}{service ? ` · ${service}` : ''}</span>
         </div>
-        <div style={{ background:'#fff', borderRadius:12, padding:'8px 14px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', display:'flex', alignItems:'center', justifyContent:'center', gap:9, minHeight:52 }}>
-          <span style={{ fontSize:20, fontWeight:900, color:'#111', lineHeight:1 }}>{fmtEuro(caJour)}</span>
-          <span style={{ fontSize:10.5, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.4, textAlign:'left', lineHeight:1.25 }}>Total<br/>{jourSelectionne ? labelJour(jourAffiche) : 'du jour'}{service ? ` · ${service}` : ''}</span>
+        <div style={{ background:'#fff', borderRadius:12, padding:'6px 12px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', display:'flex', alignItems:'center', justifyContent:'center', gap:8, minHeight: etroit ? 42 : 52 }}>
+          <span style={{ fontSize: etroit ? 16 : 20, fontWeight:900, color:'#111', lineHeight:1 }}>{fmtEuro(caJour)}</span>
+          <span style={{ fontSize: etroit ? 9 : 10.5, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.3, textAlign:'left', lineHeight:1.2 }}>Total<br/>{jourSelectionne ? labelJour(jourAffiche) : 'du jour'}{service ? ` · ${service}` : ''}</span>
         </div>
-        <button onClick={()=>setShowStats(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:12, padding:'0 16px', minHeight:52, boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', alignItems:'center', gap:8 }}>
-          <BarChart3 size={19} strokeWidth={1.8} color="#666" />
-          <span style={{ fontSize:12.5, fontWeight:700, color:'#666' }}>Statistiques</span>
+        <button onClick={()=>setShowStats(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:12, padding: etroit ? '0 12px' : '0 16px', minHeight: etroit ? 42 : 52, boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', alignItems:'center', gap:7 }}>
+          <BarChart3 size={etroit ? 16 : 19} strokeWidth={1.8} color="#666" />
+          <span style={{ fontSize: etroit ? 11 : 12.5, fontWeight:700, color:'#666' }}>Statistiques</span>
         </button>
-        <button onClick={()=>setShowCalendrier(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:12, padding:'0 14px', minHeight:52, boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', alignItems:'center', gap:8 }}>
-          <CalendarDays size={19} strokeWidth={1.8} color="#666" />
+        <button onClick={()=>setShowCalendrier(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:12, padding: etroit ? '0 11px' : '0 14px', minHeight: etroit ? 42 : 52, boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', alignItems:'center', gap:7 }}>
+          <CalendarDays size={etroit ? 16 : 19} strokeWidth={1.8} color="#666" />
           {/* Jour actuellement affiché — remplacé par la date choisie dans le calendrier */}
-          <span style={{ padding:'5px 11px', borderRadius:20, fontSize:11.5, fontWeight:800, whiteSpace:'nowrap',
+          <span style={{ padding: etroit ? '4px 9px' : '5px 11px', borderRadius:20, fontSize: etroit ? 10 : 11.5, fontWeight:800, whiteSpace:'nowrap',
             background: (jourSelectionne || service) ? '#111' : '#f5f5f5', color: (jourSelectionne || service) ? '#fff' : '#444' }}>
             {jourSelectionne ? labelJour(jourSelectionne) : "Aujourd'hui"}
             {service && ` · ${service === 'midi' ? 'Midi' : 'Soir'}`}
@@ -3331,7 +3331,7 @@ function CommandesPage({ showToast, user }) {
             // « En cours » ramène toujours à la journée de travail en cours,
             // toute la journée, même si le calendrier affichait autre chose.
             if (f.id === 'actives') { setJourSelectionne(null); setService(null); }
-          }} style={{ height:36, padding:'0 16px', borderRadius:10, fontSize:13, fontWeight:700, border:'none', flexShrink:0, cursor:'pointer', background: filtre===f.id ? '#111' : '#fff', color: filtre===f.id ? '#fff' : '#666' }}>
+          }} style={{ height: etroit ? 31 : 36, padding: etroit ? '0 12px' : '0 16px', borderRadius:9, fontSize: etroit ? 11.5 : 13, fontWeight:700, border:'none', flexShrink:0, cursor:'pointer', background: filtre===f.id ? '#111' : '#fff', color: filtre===f.id ? '#fff' : '#666' }}>
             {f.label}
           </button>
         ))}
@@ -3507,7 +3507,7 @@ function CommandeCarte({ cmd, onOpen, onStatut }) {
       {/* Informations + détail de la commande */}
       <div style={{ flex:1, minWidth:0, cursor:'pointer' }} onClick={onOpen}>
         <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-          <span style={{ fontSize: etroit ? 15 : 17, fontWeight:800, color:'#111' }}>{cmd.client_nom || 'Client'}</span>
+          <span style={{ fontSize: etroit ? 13.5 : 17, fontWeight:800, color:'#111' }}>{cmd.client_nom || 'Client'}</span>
           <span style={{ background:st.bg, color:st.fg, borderRadius:20, padding:'3px 10px', fontSize:11, fontWeight:700, whiteSpace:'nowrap' }}>{st.court}</span>
           {cmd.acceptee_auto && <span style={{ background:'#f0fdf4', color:'#16a34a', borderRadius:20, padding:'3px 9px', fontSize:11, fontWeight:700 }}>Auto</span>}
           {cmd.source === 'en_ligne'
@@ -3515,19 +3515,19 @@ function CommandeCarte({ cmd, onOpen, onStatut }) {
             : <span style={{ background:'#f5f5f5', color:'#666', borderRadius:20, padding:'3px 9px', fontSize:11, fontWeight:700, display:'inline-flex', alignItems:'center', gap:4 }}><Phone size={11} /> Téléphone</span>}
         </div>
 
-        <div style={{ fontSize: etroit ? 11.5 : 13, color:'#888', marginTop: etroit ? 2 : 4 }}>
+        <div style={{ fontSize: etroit ? 10.5 : 13, color:'#888', marginTop: etroit ? 2 : 4 }}>
           N° {cmd.numero || '—'} · reçue à {heure}
           {cmd.client_tel ? ` · ${cmd.client_tel}` : ''}
         </div>
 
         {/* Jour et heure de retrait — remplacés par l'horodatage réel une fois récupérée */}
         {cmd.statut === 'recuperee' && recupereeA(cmd) ? (
-          <div style={{ display:'inline-flex', alignItems:'center', gap:6, marginTop: etroit ? 5 : 7, padding: etroit ? '4px 9px' : '6px 12px', borderRadius:9, background:'#f0fdf4', color:'#15803d', fontSize: etroit ? 12 : 13.5, fontWeight:700 }}>
+          <div style={{ display:'inline-flex', alignItems:'center', gap:6, marginTop: etroit ? 5 : 7, padding: etroit ? '4px 9px' : '6px 12px', borderRadius:9, background:'#f0fdf4', color:'#15803d', fontSize: etroit ? 11 : 13.5, fontWeight:700 }}>
             <CircleCheck size={14} strokeWidth={2} />
             {fmtRecuperee(recupereeA(cmd))}
           </div>
         ) : (
-          <div style={{ display:'inline-flex', alignItems:'center', gap:6, marginTop: etroit ? 5 : 7, padding: etroit ? '4px 9px' : '6px 12px', borderRadius:9, background: futur ? '#eff6ff' : '#f5f5f5', color: futur ? '#1d4ed8' : '#444', fontSize: etroit ? 12 : 13.5, fontWeight:700 }}>
+          <div style={{ display:'inline-flex', alignItems:'center', gap:6, marginTop: etroit ? 5 : 7, padding: etroit ? '4px 9px' : '6px 12px', borderRadius:9, background: futur ? '#eff6ff' : '#f5f5f5', color: futur ? '#1d4ed8' : '#444', fontSize: etroit ? 11 : 13.5, fontWeight:700 }}>
             <CalendarDays size={14} strokeWidth={2} />
             {labelJour(jourRetrait)}{cmd.heure_retrait ? ` · ${cmd.heure_retrait}` : ''}
           </div>
@@ -3544,16 +3544,16 @@ function CommandeCarte({ cmd, onOpen, onStatut }) {
         <div style={{ marginTop: etroit ? 8 : 12, background:'#fafafa', borderRadius:10, padding: etroit ? '8px 11px' : '12px 14px' }}>
           {(cmd.items || []).map((it, i) => (
             <div key={i} style={{ display:'flex', justifyContent:'space-between', gap:14, alignItems:'baseline', padding: etroit ? '5px 0' : '8px 0', borderBottom: i < (cmd.items.length - 1) ? '1px solid #efefef' : 'none' }}>
-              <span style={{ color:'#111', fontSize: etroit ? 13.5 : 15.5, lineHeight:1.4 }}>
+              <span style={{ color:'#111', fontSize: etroit ? 12.5 : 15.5, lineHeight:1.35 }}>
                 <span style={{ fontWeight:800, marginRight:5 }}>{it.quantite || 1}×</span>{it.nom}
                 {it.note ? <span style={{ display:'block', color:'#888', fontSize:13, fontStyle:'italic', marginTop:2 }}>{it.note}</span> : null}
               </span>
-              <span style={{ fontWeight:400, fontSize: etroit ? 13 : 15, color:'#555', whiteSpace:'nowrap' }}>{fmtEuro((Number(it.prix)||0) * (Number(it.quantite)||1))}</span>
+              <span style={{ fontWeight:400, fontSize: etroit ? 12 : 15, color:'#555', whiteSpace:'nowrap' }}>{fmtEuro((Number(it.prix)||0) * (Number(it.quantite)||1))}</span>
             </div>
           ))}
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginTop: etroit ? 7 : 10, paddingTop: etroit ? 7 : 10, borderTop:'2px solid #111' }}>
             <span style={{ fontSize: etroit ? 12 : 13, fontWeight:700, color:'#888' }}>{nbArticles} article{nbArticles > 1 ? 's' : ''}</span>
-            <span style={{ fontSize: etroit ? 17 : 19, fontWeight:900, color:'#111' }}>{fmtEuro(cmd.total)}</span>
+            <span style={{ fontSize: etroit ? 15.5 : 19, fontWeight:900, color:'#111' }}>{fmtEuro(cmd.total)}</span>
           </div>
         </div>
 
@@ -3572,18 +3572,18 @@ function CommandeCarte({ cmd, onOpen, onStatut }) {
 
       {/* Gros bouton d'action, à droite */}
       {actionnable && (
-        <div style={{ width: isMobile ? '100%' : (etroit ? 140 : 200), flexShrink:0, display:'flex', flexDirection:'column', gap:11, alignItems:'center', justifyContent:'center', borderLeft: isMobile ? 'none' : '1px solid #f0f0f0', paddingLeft: isMobile ? 0 : (etroit ? 12 : 20) }}>
+        <div style={{ width: isMobile ? '100%' : (etroit ? 118 : 200), flexShrink:0, display:'flex', flexDirection:'column', gap:11, alignItems:'center', justifyContent:'center', borderLeft: isMobile ? 'none' : '1px solid #f0f0f0', paddingLeft: isMobile ? 0 : (etroit ? 12 : 20) }}>
           {/* Le bouton porte la couleur du statut courant : orange tant que la
               commande se prépare, vert une fois qu'elle attend son client. */}
           {cmd.statut === 'en_preparation' && (
-            <button onClick={()=>onStatut(cmd, 'prete')} style={{ width: etroit ? 112 : 150, height: etroit ? 112 : 150, flexShrink:0, border:'none', borderRadius:16, background:'#f0a020', color:'#111', fontSize: etroit ? 14 : 17, fontWeight:900, lineHeight:1.15, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap: etroit ? 5 : 8, boxShadow:'0 6px 20px rgba(240,160,32,0.35)' }}>
-              <CheckCircle size={etroit ? 26 : 34} strokeWidth={2.4} />
+            <button onClick={()=>onStatut(cmd, 'prete')} style={{ width: etroit ? 96 : 150, height: etroit ? 96 : 150, flexShrink:0, border:'none', borderRadius:14, background:'#f0a020', color:'#111', fontSize: etroit ? 12.5 : 17, fontWeight:900, lineHeight:1.15, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap: etroit ? 5 : 8, boxShadow:'0 6px 20px rgba(240,160,32,0.35)' }}>
+              <CheckCircle size={etroit ? 22 : 34} strokeWidth={2.4} />
               Marquer prête
             </button>
           )}
           {cmd.statut === 'prete' && (
-            <button onClick={()=>onStatut(cmd, 'recuperee')} style={{ width: etroit ? 112 : 150, height: etroit ? 112 : 150, flexShrink:0, border:'none', borderRadius:16, background:'#16a34a', color:'#fff', fontSize: etroit ? 14 : 17, fontWeight:900, lineHeight:1.15, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap: etroit ? 5 : 8, boxShadow:'0 6px 20px rgba(22,163,74,0.35)' }}>
-              <BadgeCheck size={etroit ? 26 : 34} strokeWidth={2.2} />
+            <button onClick={()=>onStatut(cmd, 'recuperee')} style={{ width: etroit ? 96 : 150, height: etroit ? 96 : 150, flexShrink:0, border:'none', borderRadius:14, background:'#16a34a', color:'#fff', fontSize: etroit ? 12.5 : 17, fontWeight:900, lineHeight:1.15, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap: etroit ? 5 : 8, boxShadow:'0 6px 20px rgba(22,163,74,0.35)' }}>
+              <BadgeCheck size={etroit ? 22 : 34} strokeWidth={2.2} />
               À récupérer
             </button>
           )}
@@ -4524,25 +4524,21 @@ function CatalogueModal({ parCategorie, quantiteDe, onAjouter, onRetirer, nbArti
       <div onClick={()=>setConfirmeAbandon(true)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:5300 }} />
       <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:22, width:'min(1080px, calc(100vw - 20px))', height:'min(940px, calc(100vh - 20px))', display:'flex', flexDirection:'column', boxShadow:'0 40px 100px rgba(0,0,0,0.35)', zIndex:5301, overflow:'hidden' }}>
 
-        {/* En-tête */}
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:14, padding:'20px 26px 16px', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
-          <h2 style={{ margin:0, fontSize:21, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:10 }}>
-            <UtensilsCrossed size={22} strokeWidth={2} /> Ajouter des articles
-          </h2>
-          <button onClick={()=>setConfirmeAbandon(true)} style={{ width:46, height:46, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:22, color:'#666', flexShrink:0 }}>✕</button>
-        </div>
-
-        {/* Recherche + filtres de catégorie */}
-        <div style={{ padding:'14px 26px 0', flexShrink:0 }}>
-          <div style={{ position:'relative', marginBottom:12 }}>
-            <Search size={19} strokeWidth={2} color="#999" style={{ position:'absolute', left:16, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} />
-            <input value={recherche} onChange={e=>setRecherche(e.target.value)} placeholder="Rechercher dans la carte…"
-              style={{ width:'100%', height:56, border:'1.5px solid #eee', borderRadius:14, padding:'0 16px 0 48px', fontSize:16.5, outline:'none', boxSizing:'border-box' }} />
+        {/* Barre fixe : recherche et catégories restent accessibles au défilement.
+            Le titre a disparu au profit de la place à l'écran ; seule la croix reste. */}
+        <div style={{ padding:'12px 16px 0', flexShrink:0, borderBottom:'1px solid #f0f0f0' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
+            <div style={{ position:'relative', flex:1, minWidth:0 }}>
+              <Search size={16} strokeWidth={2} color="#999" style={{ position:'absolute', left:13, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} />
+              <input value={recherche} onChange={e=>setRecherche(e.target.value)} placeholder="Rechercher dans la carte…"
+                style={{ width:'100%', height:42, border:'1.5px solid #eee', borderRadius:11, padding:'0 14px 0 38px', fontSize:14, outline:'none', boxSizing:'border-box' }} />
+            </div>
+            <button onClick={()=>setConfirmeAbandon(true)} style={{ width:40, height:40, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:19, color:'#666', flexShrink:0 }}>✕</button>
           </div>
-          <div style={{ display:'flex', gap:9, overflowX:'auto', paddingBottom:10 }}>
+          <div style={{ display:'flex', gap:7, overflowX:'auto', paddingBottom:9 }}>
             {[{ id:'toutes', nom:'Toutes' }, ...parCategorie].map(c => (
               <button key={c.id} onClick={()=>setFiltreCat(c.id)}
-                style={{ height:46, padding:'0 20px', borderRadius:12, fontSize:14.5, fontWeight:700, border:'none', flexShrink:0, cursor:'pointer', whiteSpace:'nowrap',
+                style={{ height:34, padding:'0 14px', borderRadius:10, fontSize:12, fontWeight:700, border:'none', flexShrink:0, cursor:'pointer', whiteSpace:'nowrap',
                   background: filtreCat === c.id ? '#111' : '#f5f5f5',
                   color: filtreCat === c.id ? '#fff' : '#666' }}>
                 {c.nom}
@@ -4552,35 +4548,35 @@ function CatalogueModal({ parCategorie, quantiteDe, onAjouter, onRetirer, nbArti
         </div>
 
         {/* Grille de produits */}
-        <div style={{ padding:'6px 26px 22px', overflowY:'auto', flex:1, minHeight:0 }}>
+        <div style={{ padding:'4px 16px 16px', overflowY:'auto', flex:1, minHeight:0 }}>
           {categoriesAffichees.length === 0 ? (
             <p style={{ margin:0, padding:'60px 20px', textAlign:'center', fontSize:15, color:'#bbb' }}>
               {recherche.trim() ? `Aucun article ne correspond à « ${recherche.trim()} »` : 'Aucun produit disponible dans la carte.'}
             </p>
           ) : categoriesAffichees.map(c => (
-            <div key={c.id} style={{ marginBottom:22 }}>
-              <p style={{ margin:'12px 0 12px', fontSize:12.5, fontWeight:800, color:'#888', textTransform:'uppercase', letterSpacing:1 }}>{c.nom}</p>
-              <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(300px, 1fr))', gap:12 }}>
+            <div key={c.id} style={{ marginBottom:14 }}>
+              <p style={{ margin:'8px 0 8px', fontSize:11, fontWeight:800, color:'#888', textTransform:'uppercase', letterSpacing:0.8 }}>{c.nom}</p>
+              <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(250px, 1fr))', gap:9 }}>
                 {c.produits.map(p => {
                   const q = quantiteDe(p);
                   return (
                     <div key={p.id}
-                      style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 16px', borderRadius:16,
+                      style={{ display:'flex', alignItems:'center', gap:9, padding:'9px 11px', borderRadius:13,
                         border: q ? '2px solid #E8C547' : '1.5px solid #eee',
-                        background: q ? '#fffdf5' : '#fff', minHeight:78, boxSizing:'border-box' }}>
+                        background: q ? '#fffdf5' : '#fff', minHeight:58, boxSizing:'border-box' }}>
                       {/* Toute la zone texte ajoute l'article d'un simple appui */}
                       <button onClick={()=>onAjouter(p)}
                         style={{ flex:1, minWidth:0, border:'none', background:'none', textAlign:'left', cursor:'pointer', padding:0, alignSelf:'stretch' }}>
-                        <div style={{ fontSize:15.5, fontWeight: q ? 800 : 600, color:'#111', lineHeight:1.3, marginBottom:4 }}>{p.nom}</div>
-                        <div style={{ fontSize:14, fontWeight:700, color:'#888' }}>{fmtEuro(p.prix)}</div>
+                        <div style={{ fontSize:13, fontWeight: q ? 800 : 600, color:'#111', lineHeight:1.25, marginBottom:2 }}>{p.nom}</div>
+                        <div style={{ fontSize:12, fontWeight:700, color:'#888' }}>{fmtEuro(p.prix)}</div>
                       </button>
                       <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
                         <button onClick={()=>onRetirer(p)} disabled={!q}
-                          style={{ width:52, height:52, borderRadius:13, border:'1.5px solid #ddd', background:'#fff', fontSize:24, fontWeight:700,
+                          style={{ width:40, height:40, borderRadius:11, border:'1.5px solid #ddd', background:'#fff', fontSize:19, fontWeight:700,
                             cursor: q ? 'pointer' : 'not-allowed', color: q ? '#111' : '#ddd', touchAction:'manipulation' }}>−</button>
-                        <span style={{ minWidth:28, textAlign:'center', fontSize:19, fontWeight:900, color: q ? '#111' : '#ccc' }}>{q}</span>
+                        <span style={{ minWidth:22, textAlign:'center', fontSize:16, fontWeight:900, color: q ? '#111' : '#ccc' }}>{q}</span>
                         <button onClick={()=>onAjouter(p)}
-                          style={{ width:52, height:52, borderRadius:13, border:'none', background:'#111', color:'#E8C547', fontSize:24, fontWeight:700,
+                          style={{ width:40, height:40, borderRadius:11, border:'none', background:'#111', color:'#E8C547', fontSize:19, fontWeight:700,
                             cursor:'pointer', touchAction:'manipulation' }}>+</button>
                       </div>
                     </div>
@@ -4592,14 +4588,14 @@ function CatalogueModal({ parCategorie, quantiteDe, onAjouter, onRetirer, nbArti
         </div>
 
         {/* Pied : récapitulatif et retour à la commande */}
-        <div style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 26px calc(18px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #f0f0f0', flexShrink:0 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 16px calc(12px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #f0f0f0', flexShrink:0 }}>
           <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontSize:12.5, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.6 }}>Au panier</div>
-            <div style={{ fontSize:19, fontWeight:900, color:'#111' }}>
+            <div style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Au panier</div>
+            <div style={{ fontSize:15.5, fontWeight:900, color:'#111' }}>
               {nbArticles} article{nbArticles > 1 ? 's' : ''} · {fmtEuro(total)}
             </div>
           </div>
-          <button onClick={onEnregistrer} style={{ height:60, padding:'0 34px', border:'none', borderRadius:15, background:'#E8C547', color:'#111', fontSize:17, fontWeight:800, cursor:'pointer', flexShrink:0 }}>
+          <button onClick={onEnregistrer} style={{ height:46, padding:'0 26px', border:'none', borderRadius:12, background:'#E8C547', color:'#111', fontSize:14.5, fontWeight:800, cursor:'pointer', flexShrink:0 }}>
             Enregistrer
           </button>
         </div>
