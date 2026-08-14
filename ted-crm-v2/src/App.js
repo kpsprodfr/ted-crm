@@ -3759,7 +3759,7 @@ function ParametresCommandesModal({ autoAccept, delaiDefaut, commandesActives, m
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:14, marginBottom:12 }}>
               <div style={{ minWidth:0 }}>
                 <div style={{ fontSize:15, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:8 }}>
-                  <ShoppingBag size={17} strokeWidth={2} color={commandesActives ? '#16a34a' : '#dc2626'} /> Commande en ligne (du jour)
+                  <ShoppingBag size={17} strokeWidth={2} color={commandesActives ? '#16a34a' : '#dc2626'} /> Commande en ligne
                 </div>
                 <div style={{ fontSize:12.5, color:'#888', marginTop:4, lineHeight:1.5 }}>
                   {commandesActives
@@ -3780,10 +3780,21 @@ function ParametresCommandesModal({ autoAccept, delaiDefaut, commandesActives, m
                     </button>
                   ))}
                 </div>
+                {/* Durée personnalisée */}
+                <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:10 }}>
+                  <button onClick={()=>onMaj('horizon_jours', Math.max(0, (parseInt(horizonJours)||0) - 1))} style={{ width:52, height:48, borderRadius:11, border:'1.5px solid #ddd', background:'#fff', fontSize:23, fontWeight:700, cursor:'pointer', color:'#111', lineHeight:1 }}>−</button>
+                  <div style={{ flex:1, height:48, border:'1.5px solid #ddd', borderRadius:11, display:'flex', alignItems:'center', justifyContent:'center', gap:6, fontSize:16, fontWeight:800, background:'#fafafa' }}>
+                    {horizonJours === 0 ? "Aujourd'hui" : `${horizonJours} jour${horizonJours > 1 ? 's' : ''}`}
+                    {!HORIZONS.some(h => h.j === parseInt(horizonJours)) && (
+                      <span style={{ fontSize:10.5, fontWeight:700, color:'#16a34a', background:'#f0fdf4', borderRadius:20, padding:'2px 8px' }}>PERSO</span>
+                    )}
+                  </div>
+                  <button onClick={()=>onMaj('horizon_jours', Math.min(180, (parseInt(horizonJours)||0) + 1))} style={{ width:52, height:48, borderRadius:11, border:'1.5px solid #ddd', background:'#fff', fontSize:23, fontWeight:700, cursor:'pointer', color:'#111', lineHeight:1 }}>+</button>
+                </div>
                 <p style={{ margin:'8px 2px 0', fontSize:12, color:'#888', lineHeight:1.5 }}>
                   {horizonJours === 0
                     ? 'Les clients ne peuvent commander que pour le jour même.'
-                    : `Les clients peuvent choisir un retrait jusqu'à ${horizonJours} jours à l'avance.`}
+                    : `Les clients peuvent choisir un retrait jusqu'à ${horizonJours} jour${horizonJours > 1 ? 's' : ''} à l'avance.`}
                 </p>
               </div>
             )}
