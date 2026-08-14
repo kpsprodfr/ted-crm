@@ -3131,9 +3131,23 @@ function CommandesPage({ showToast, user }) {
     if (filtre === 'jour')    return jourDe(c) === aujourdhui;
     return true;
   }).sort((a, b) => {
+    // Les commandes terminées passent après celles encore en cours…
+    const ta = estTerminee(a), tb = estTerminee(b);
+    if (ta !== tb) return ta ? 1 : -1;
+
+    // …et se classent entre elles par heure de récupération, la dernière en haut.
+    if (ta && tb) {
+      const ra = recupereeA(a), rb = recupereeA(b);
+      if (ra && rb && ra !== rb) return ra < rb ? 1 : -1;
+      if (ra && !rb) return -1;
+      if (!ra && rb) return 1;
+    }
+
+    // Les commandes en cours restent groupées par jour de retrait,
+    // et à l'intérieur d'un jour dans leur ordre de réception.
     const ja = jourDe(a), jb = jourDe(b);
     if (ja !== jb) return ja < jb ? -1 : 1;
-    return (a.heure_retrait || '99:99').localeCompare(b.heure_retrait || '99:99');
+    return (b.created_at || '').localeCompare(a.created_at || '');
   });
 
   const nbAVenir = commandes.filter(c => jourDe(c) > aujourdhui && !['recuperee','annulee'].includes(c.statut)).length;
@@ -3319,6 +3333,25 @@ function labelJour(dateStr) {
   return new Date(dateStr + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
 }
 
+// Une commande récupérée ou annulée ne bouge plus : elle sort du flux en cours.
+const estTerminee = (c) => c.statut === 'recuperee' || c.statut === 'annulee';
+
+// Horodatage du passage en « Récupérée » (traited_at est posé à ce moment-là).
+const recupereeA = (c) => c.traited_at || c.updated_at || null;
+
+// « Récupérée aujourd'hui à 13:42 » / « Récupérée le mardi 12 août à 19:05 »
+function fmtRecuperee(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  const heure = d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+  const jour = dateLocale(d);
+  if (jour === dateLocale()) return `Récupérée aujourd'hui à ${heure}`;
+  const veille = new Date(); veille.setDate(veille.getDate() - 1);
+  if (jour === dateLocale(veille)) return `Récupérée hier à ${heure}`;
+  return `Récupérée le ${d.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' })} à ${heure}`;
+}
+
 // Date locale au format AAAA-MM-JJ (sans décalage UTC)
 function dateLocale(d = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -3397,11 +3430,18 @@ function CommandeCarte({ cmd, onOpen, onStatut }) {
           {cmd.client_tel ? ` · ${cmd.client_tel}` : ''}
         </div>
 
-        {/* Jour et heure de retrait */}
-        <div style={{ display:'inline-flex', alignItems:'center', gap:7, marginTop:7, padding:'6px 12px', borderRadius:9, background: futur ? '#eff6ff' : '#f5f5f5', color: futur ? '#1d4ed8' : '#444', fontSize:13.5, fontWeight:700 }}>
-          <CalendarDays size={14} strokeWidth={2} />
-          {labelJour(jourRetrait)}{cmd.heure_retrait ? ` · ${cmd.heure_retrait}` : ''}
-        </div>
+        {/* Jour et heure de retrait — remplacés par l'horodatage réel une fois récupérée */}
+        {cmd.statut === 'recuperee' && recupereeA(cmd) ? (
+          <div style={{ display:'inline-flex', alignItems:'center', gap:7, marginTop:7, padding:'6px 12px', borderRadius:9, background:'#f0fdf4', color:'#15803d', fontSize:13.5, fontWeight:700 }}>
+            <CircleCheck size={14} strokeWidth={2} />
+            {fmtRecuperee(recupereeA(cmd))}
+          </div>
+        ) : (
+          <div style={{ display:'inline-flex', alignItems:'center', gap:7, marginTop:7, padding:'6px 12px', borderRadius:9, background: futur ? '#eff6ff' : '#f5f5f5', color: futur ? '#1d4ed8' : '#444', fontSize:13.5, fontWeight:700 }}>
+            <CalendarDays size={14} strokeWidth={2} />
+            {labelJour(jourRetrait)}{cmd.heure_retrait ? ` · ${cmd.heure_retrait}` : ''}
+          </div>
+        )}
 
         {cmd.statut === 'en_preparation' && !futur && reste !== null && (
           <div style={{ fontSize:14, fontWeight:800, color: reste <= 5 ? '#dc2626' : '#b8860b', marginTop:6, display:'flex', alignItems:'center', gap:6 }}>
@@ -4163,6 +4203,12 @@ function CommandeDetail({ cmd, onClose, onStatut, onEdit }) {
             {cmd.client_email && <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, color:'#3b82f6' }}><Mail size={13} strokeWidth={2} /> {cmd.client_email}</div>}
             {cmd.heure_retrait && <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, color:'#666', marginTop:6 }}><Clock size={13} strokeWidth={2} /> Retrait à {cmd.heure_retrait}</div>}
           </div>
+
+          {cmd.statut === 'recuperee' && recupereeA(cmd) && (
+            <div style={{ display:'flex', alignItems:'center', gap:9, background:'#f0fdf4', border:'1.5px solid #bbf7d0', borderRadius:10, padding:'10px 14px', fontSize:13.5, fontWeight:700, color:'#15803d' }}>
+              <CircleCheck size={15} strokeWidth={2} /> {fmtRecuperee(recupereeA(cmd))}
+            </div>
+          )}
 
           {/* Articles */}
           <div>
