@@ -3216,7 +3216,7 @@ function CommandesPage({ showToast, user }) {
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
         <div>
           <h1 style={{ margin:0, fontSize: isMobile ? 22 : 26, fontWeight:900, color:'#111', display:'flex', alignItems:'center', gap:10 }}>
-            <ShoppingBag size={isMobile ? 22 : 26} strokeWidth={1.8} /> Commandes
+            Commandes
             {/* Service affiché : celui choisi au calendrier, sinon celui en cours */}
             {(() => {
               const sv = service || serviceActuel();
@@ -3294,23 +3294,22 @@ function CommandesPage({ showToast, user }) {
 
       {/* ── Stats du jour + accès statistiques et calendrier ── */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr auto auto', gap: etroit ? 8 : 12 }}>
-        <div style={{ background:'#fff', borderRadius:14, padding:'14px 16px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', textAlign:'center' }}>
-          <p style={{ fontSize:24, fontWeight:900, color:'#111', margin:'0 0 3px' }}>{nbJour}</p>
-          <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0 }}>Commandes {labelJour(jourAffiche)}{service ? ` · ${service === 'midi' ? 'midi' : 'soir'}` : ''}</p>
+        <div style={{ background:'#fff', borderRadius:12, padding:'8px 14px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', display:'flex', alignItems:'center', justifyContent:'center', gap:9, minHeight:52 }}>
+          <span style={{ fontSize:20, fontWeight:900, color:'#111', lineHeight:1 }}>{nbJour}</span>
+          <span style={{ fontSize:10.5, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.4, textAlign:'left', lineHeight:1.25 }}>Commandes<br/>{labelJour(jourAffiche)}{service ? ` · ${service}` : ''}</span>
         </div>
-        <div style={{ background:'#fff', borderRadius:14, padding:'14px 16px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', textAlign:'center' }}>
-          <p style={{ fontSize:24, fontWeight:900, color:'#111', margin:'0 0 3px' }}>{fmtEuro(caJour)}</p>
-          <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0 }}>{jourSelectionne ? `Total du ${labelJour(jourAffiche)}` : 'Total du jour'}{service ? ` · ${service}` : ''}</p>
+        <div style={{ background:'#fff', borderRadius:12, padding:'8px 14px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', display:'flex', alignItems:'center', justifyContent:'center', gap:9, minHeight:52 }}>
+          <span style={{ fontSize:20, fontWeight:900, color:'#111', lineHeight:1 }}>{fmtEuro(caJour)}</span>
+          <span style={{ fontSize:10.5, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.4, textAlign:'left', lineHeight:1.25 }}>Total<br/>{jourSelectionne ? labelJour(jourAffiche) : 'du jour'}{service ? ` · ${service}` : ''}</span>
         </div>
-        <button onClick={()=>setShowStats(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:14, padding: (isMobile || etroit) ? '12px 14px' : '14px 22px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:7 }}>
-          <BarChart3 size={22} strokeWidth={1.8} color="#666" />
-          <span style={{ fontSize:10.5, fontWeight:700, color:'#666', letterSpacing:0.3 }}>Statistiques</span>
+        <button onClick={()=>setShowStats(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:12, padding:'0 16px', minHeight:52, boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', alignItems:'center', gap:8 }}>
+          <BarChart3 size={19} strokeWidth={1.8} color="#666" />
+          <span style={{ fontSize:12.5, fontWeight:700, color:'#666' }}>Statistiques</span>
         </button>
-        <button onClick={()=>setShowCalendrier(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:14, padding: (isMobile || etroit) ? '10px 12px' : '12px 18px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:6 }}>
-          <CalendarDays size={22} strokeWidth={1.8} color="#666" />
-          <span style={{ fontSize:10.5, fontWeight:700, color:'#666', letterSpacing:0.3 }}>Calendrier</span>
+        <button onClick={()=>setShowCalendrier(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:12, padding:'0 14px', minHeight:52, boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', alignItems:'center', gap:8 }}>
+          <CalendarDays size={19} strokeWidth={1.8} color="#666" />
           {/* Jour actuellement affiché — remplacé par la date choisie dans le calendrier */}
-          <span style={{ marginTop:1, padding:'4px 11px', borderRadius:20, fontSize:11.5, fontWeight:800, whiteSpace:'nowrap',
+          <span style={{ padding:'5px 11px', borderRadius:20, fontSize:11.5, fontWeight:800, whiteSpace:'nowrap',
             background: (jourSelectionne || service) ? '#111' : '#f5f5f5', color: (jourSelectionne || service) ? '#fff' : '#444' }}>
             {jourSelectionne ? labelJour(jourSelectionne) : "Aujourd'hui"}
             {service && ` · ${service === 'midi' ? 'Midi' : 'Soir'}`}
@@ -4095,9 +4094,9 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
       <div style={{ position:'fixed', inset:0, display:'flex', alignItems:'center', justifyContent:'center', zIndex:5201, pointerEvents:'none' }}>
       <div onClick={e=>e.stopPropagation()} className={calFermeture ? 'cal-fermeture' : ''} style={{ background:'#fff', borderRadius:20, width:'min(880px, calc(100vw - 24px))', height:'min(760px, calc(100vh - 20px))', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.28)', overflow:'hidden', pointerEvents:'auto' }}>
 
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'22px 28px 18px', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
-          <h2 style={{ margin:0, fontSize:20, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:9 }}>
-            <CalendarDays size={20} strokeWidth={2} /> Calendrier des commandes
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 20px 12px', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
+          <h2 style={{ margin:0, fontSize:18, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:9 }}>
+            <CalendarDays size={19} strokeWidth={2} /> Calendrier des commandes
           </h2>
           <button onClick={onClose} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666' }}>✕</button>
         </div>
@@ -4118,7 +4117,7 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
               {[{ a:annee, m:mois, cs:cases, dx:dragX },
                 ...(moisAdjacent ? [{ a:moisAdjacent.getFullYear(), m:moisAdjacent.getMonth(), cs:casesAdjacentes, dx: dragX + (dragDir==='left' ? largeurGrille : -largeurGrille) }] : [])
               ].map((vue, vi) => (
-            <div key={vi} style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:5, position:'absolute', top:0, left:0, width:'100%', height:'100%',
+            <div key={vi} style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gridTemplateRows:`repeat(${Math.ceil(vue.cs.length/7)}, 1fr)`, gap:5, position:'absolute', top:0, left:0, width:'100%', height:'100%',
               transform:`translateX(${vue.dx}px)`, transition: (drag || sansTransition) ? 'none' : 'transform 0.28s cubic-bezier(0.4,0,0.2,1)', willChange:'transform', touchAction:'pan-y' }}>
               {vue.cs.map((d, i) => {
                 if (!d) return <div key={i} />;
@@ -4131,11 +4130,11 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
                 return (
                   <button key={i} className={dateFlash === iso ? 'date-flash' : ''} onPointerDown={()=>choisirJour(iso)}
                     style={{ textAlign:'center', minHeight:0, borderRadius:10, cursor:'pointer', position:'relative',
-                      display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4,
-                      border: isToday && !isSelected ? '2px solid #E8C547' : '2px solid transparent',
+                      display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:3,
+                      border: isToday && !isSelected ? '2px solid #E8C547' : '2px solid #f0f0f0',
                       background: isSelected ? '#111' : isToday ? '#fffbea' : '#fff',
                       color: isSelected ? '#fff' : '#111',
-                      fontWeight: isSelected ? 800 : isToday ? 900 : 500, fontSize:19,
+                      fontWeight: isSelected ? 800 : isToday ? 900 : 600, fontSize:21,
                       boxSizing:'border-box', opacity: estPasse ? 0.45 : 1,
                       touchAction:'manipulation', WebkitTapHighlightColor:'transparent',
                       transition:'background 0.15s' }}>
@@ -4189,7 +4188,7 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
           </div>
         </div>
 
-        <div style={{ padding:'14px 28px calc(18px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #f0f0f0', flexShrink:0 }}>
+        <div style={{ padding:'10px 20px calc(12px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #f0f0f0', flexShrink:0 }}>
           <button onClick={valider} style={{ width:'100%', height:52, border:'none', borderRadius:12, background:'#E8C547', fontSize:15.5, fontWeight:800, cursor:'pointer', color:'#111' }}>
             Valider — {labelJour(jourLocal)} · {svcChoisi === 'midi' ? 'Midi' : 'Soir'}
           </button>
@@ -8157,7 +8156,8 @@ function CRMApp({ user, onLogout }) {
         );
       })}
       <div style={{ flex:1 }} />
-      {healthStatus && (
+      {/* Pastille d'état système masquée — décommenter pour la réafficher */}
+      {false && healthStatus && (
         <div title={healthDetail} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:5, padding:'10px 8px', marginBottom:2 }}>
           <span style={{ width:10, height:10, borderRadius:'50%', background: healthStatus==='ok' ? '#22c55e' : healthStatus==='degraded' ? '#f59e0b' : '#dc2626', boxShadow:`0 0 8px ${healthStatus==='ok' ? 'rgba(34,197,94,0.8)' : healthStatus==='degraded' ? 'rgba(245,158,11,0.8)' : 'rgba(220,38,38,0.9)'}` }} />
           <span style={{ fontSize:9, fontWeight:600, color:'#555' }}>{healthStatus==='ok' ? 'Système OK' : healthStatus==='degraded' ? 'Dégradé' : 'Panne'}</span>
