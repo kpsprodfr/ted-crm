@@ -2989,8 +2989,11 @@ function CommandesPage({ showToast, user }) {
   const [delaiDefaut, setDelaiDefaut] = useState(30);
   const [commandesActives, setCommandesActives] = useState(true);
   const [motifFermeture, setMotifFermeture] = useState('');
+  const [horizonJours, setHorizonJours] = useState(15);
   const [showParams, setShowParams] = useState(false);
+  const [showCalendrier, setShowCalendrier] = useState(false);
   const [tick, setTick] = useState(0); // rafraîchit les comptes à rebours
+  const basculeesRef = useRef(new Set()); // commandes déjà passées en « Prête » automatiquement
   const isMobile = useIsMobile();
   const LIEN_COMMANDE = 'https://ted-crm.pages.dev/commander.html';
 
@@ -3014,6 +3017,7 @@ function CommandesPage({ showToast, user }) {
       if (r.cle === 'delai_minutes') setDelaiDefaut(parseInt(r.valeur) || 30);
       if (r.cle === 'commandes_actives') setCommandesActives(r.valeur !== 'false');
       if (r.cle === 'motif_fermeture') setMotifFermeture(r.valeur || '');
+      if (r.cle === 'horizon_jours') setHorizonJours(parseInt(r.valeur) ?? 15);
     });
   }
 
@@ -3036,9 +3040,14 @@ function CommandesPage({ showToast, user }) {
   useEffect(() => {
     const aBasculer = commandes.filter(c =>
       c.statut === 'en_preparation' && c.pret_estime_a && new Date(c.pret_estime_a) <= new Date()
+      && !basculeesRef.current.has(c.id)
     );
     if (!aBasculer.length) return;
-    aBasculer.forEach(c => changerStatut(c, 'prete', true));
+    // Verrou : si la mise à jour échoue, on ne réessaie pas en boucle
+    aBasculer.forEach(c => {
+      basculeesRef.current.add(c.id);
+      changerStatut(c, 'prete', true);
+    });
   }, [tick, commandes]);
 
   useEffect(() => {
@@ -3054,6 +3063,7 @@ function CommandesPage({ showToast, user }) {
     if (cle === 'delai_minutes') setDelaiDefaut(parseInt(valeur) || 30);
     if (cle === 'commandes_actives') setCommandesActives(valeur !== 'false');
     if (cle === 'motif_fermeture') setMotifFermeture(valeur || '');
+    if (cle === 'horizon_jours') setHorizonJours(parseInt(valeur) ?? 15);
     const { error } = await safeQuery(
       () => supabase.from('commandes_config').upsert({ cle, valeur: String(valeur), updated_at: new Date().toISOString() }, { onConflict: 'cle' }),
       { context: 'majCommandesConfig' }
@@ -3228,9 +3238,20 @@ function CommandesPage({ showToast, user }) {
       <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', padding:14, boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
         <div className="jours-strip" style={{ display:'flex', gap:8, overflowX:'scroll', WebkitOverflowScrolling:'touch', scrollSnapType:'x mandatory', userSelect:'none', WebkitUserSelect:'none' }}>
           {quinzeJoursCmd.map(j => {
-            const isSelected = jourSelectionne === j.date;
+            // Aujourd'hui renvoie sur l'onglet « Aujourd'hui » plutôt que de créer un filtre à part
+            const isSelected = j.isAujourd
+              ? (!jourSelectionne && filtre === 'jour')
+              : jourSelectionne === j.date;
+            const onJourClick = () => {
+              if (j.isAujourd) {
+                setJourSelectionne(null);
+                setFiltre('jour');
+              } else {
+                setJourSelectionne(jourSelectionne === j.date ? null : j.date);
+              }
+            };
             return (
-              <div key={j.date} onClick={()=>setJourSelectionne(isSelected ? null : j.date)}
+              <div key={j.date} onClick={onJourClick}
                 style={{ borderRadius:12, padding:'10px 6px', textAlign:'center', cursor:'pointer', border:'2px solid', borderColor: isSelected?'#E8C547':'#eee', background: isSelected?'#fffbea':'#fff', transition:'border-color 0.15s, background 0.15s', flexShrink:0, width:'calc((100% - 40px) / 6)', scrollSnapAlign:'start' }}>
                 <div style={{ fontSize:10, fontWeight:700, marginBottom:4, color: isSelected?'#E8C547': j.isAujourd?'#E8C547':'#999' }}>{j.isAujourd?'AUJ.':j.jour}</div>
                 <div style={{ fontSize:20, fontWeight:900, marginBottom:2, color:'#111' }}>{j.num}</div>
@@ -3240,6 +3261,12 @@ function CommandesPage({ showToast, user }) {
               </div>
             );
           })}
+          {/* Ouvrir le calendrier */}
+          <div onClick={()=>setShowCalendrier(true)}
+            style={{ borderRadius:12, padding:'10px 6px', textAlign:'center', cursor:'pointer', border:'2px solid #eee', background:'#fafafa', flexShrink:0, width:'calc((100% - 40px) / 6)', scrollSnapAlign:'start', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:6 }}>
+            <CalendarDays size={22} strokeWidth={1.8} color="#666" />
+            <div style={{ fontSize:10.5, fontWeight:700, color:'#666', lineHeight:1.25 }}>Ouvrir le<br/>calendrier</div>
+          </div>
         </div>
       </div>
 
@@ -3289,8 +3316,21 @@ function CommandesPage({ showToast, user }) {
           delaiDefaut={delaiDefaut}
           commandesActives={commandesActives}
           motifFermeture={motifFermeture}
+          horizonJours={horizonJours}
           onMaj={majConfig}
           onClose={()=>setShowParams(false)}
+        />
+      )}
+      {showCalendrier && (
+        <CalendrierCommandesModal
+          commandes={commandes}
+          jourSelectionne={jourSelectionne}
+          onChoisir={(iso)=>{
+            setShowCalendrier(false);
+            if (iso === aujourdhui) { setJourSelectionne(null); setFiltre('jour'); }
+            else setJourSelectionne(iso);
+          }}
+          onClose={()=>setShowCalendrier(false)}
         />
       )}
     </div>
@@ -3312,6 +3352,16 @@ function labelJour(dateStr) {
 function dateLocale(d = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
+
+// Jusqu'à quand un client peut commander à l'avance
+const HORIZONS = [
+  { j: 0,  label: "Aujourd'hui" },
+  { j: 7,  label: '7 jours' },
+  { j: 15, label: '15 jours' },
+  { j: 30, label: '1 mois' },
+  { j: 60, label: '2 mois' },
+  { j: 90, label: '3 mois' },
+];
 
 // Motifs de fermeture de la prise de commandes
 const MOTIFS_FERMETURE = [
@@ -3586,8 +3636,94 @@ function ATraiterPanel({ commandes, delaiDefaut, autoAccept, onAccepter, onRefus
   );
 }
 
+// ── Calendrier des commandes (même grille que la page Réservations) ─────────
+function CalendrierCommandesModal({ commandes, jourSelectionne, onChoisir, onClose }) {
+  const [calDate, setCalDate] = useState(new Date());
+  const JOURS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+  const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+  const annee = calDate.getFullYear();
+  const mois = calDate.getMonth();
+  const premierJour = new Date(annee, mois, 1);
+  const dernierJour = new Date(annee, mois + 1, 0);
+  const debutSemaine = (premierJour.getDay() + 6) % 7;
+
+  const parJour = {};
+  commandes.filter(c => c.statut !== 'annulee').forEach(c => {
+    const j = c.date_retrait || (c.created_at || '').split('T')[0];
+    if (!j) return;
+    parJour[j] = (parJour[j] || 0) + 1;
+  });
+
+  const cases = [];
+  for (let i = 0; i < debutSemaine; i++) cases.push(null);
+  for (let d = 1; d <= dernierJour.getDate(); d++) cases.push(d);
+  while (cases.length % 7 !== 0) cases.push(null);
+
+  const today = new Date();
+  const changerMois = (delta) => setCalDate(new Date(annee, mois + delta, 1));
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:5200 }} />
+      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:20, width:'min(520px, calc(100vw - 32px))', maxHeight:'90vh', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.28)', zIndex:5201, overflow:'hidden' }}>
+
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'20px 24px 16px', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
+          <h2 style={{ margin:0, fontSize:18, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:9 }}>
+            <CalendarDays size={18} strokeWidth={2} /> Calendrier des commandes
+          </h2>
+          <button onClick={onClose} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666' }}>✕</button>
+        </div>
+
+        <div style={{ padding:'16px 22px 20px', overflowY:'auto' }}>
+          <div style={{ background:'#f8f8f8', borderRadius:12, padding:14 }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+              <button onClick={()=>changerMois(-1)} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, fontSize:16, cursor:'pointer', fontWeight:700 }}>‹</button>
+              <span style={{ fontWeight:800, fontSize:18 }}>{MOIS[mois]} {annee}</span>
+              <button onClick={()=>changerMois(1)} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, fontSize:16, cursor:'pointer', fontWeight:700 }}>›</button>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2, marginBottom:4 }}>
+              {JOURS.map(j => <div key={j} style={{ textAlign:'center', fontSize:13, fontWeight:700, color:'#999', padding:'8px 0' }}>{j}</div>)}
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:3 }}>
+              {cases.map((d, i) => {
+                if (!d) return <div key={i} />;
+                const iso = `${annee}-${String(mois+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                const nb = parJour[iso] || 0;
+                const isToday = today.getFullYear()===annee && today.getMonth()===mois && today.getDate()===d;
+                const isSelected = jourSelectionne === iso;
+                const estPasse = new Date(iso) < new Date(new Date().setHours(0,0,0,0));
+                return (
+                  <button key={i} onClick={()=>onChoisir(iso)}
+                    style={{ textAlign:'center', height:48, borderRadius:6, cursor:'pointer', position:'relative',
+                      border: isToday && !isSelected ? '2px solid #E8C547' : '2px solid transparent',
+                      background: isSelected ? '#111' : isToday ? '#fffbea' : 'transparent',
+                      color: isSelected ? '#fff' : '#111',
+                      fontWeight: isSelected ? 800 : isToday ? 900 : 400, fontSize:16,
+                      boxSizing:'border-box', opacity: estPasse ? 0.4 : 1, transition:'background 0.15s' }}>
+                    {d}
+                    {nb > 0 && <span style={{ display:'block', width:4, height:4, borderRadius:'50%', background: isSelected ? '#E8C547' : '#E8C547', margin:'2px auto 0' }} />}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <p style={{ margin:'12px 2px 0', fontSize:12.5, color:'#888', display:'flex', alignItems:'center', gap:7 }}>
+            <span style={{ width:5, height:5, borderRadius:'50%', background:'#E8C547', display:'inline-block' }} />
+            Un point sous la date indique des commandes ce jour-là.
+          </p>
+        </div>
+
+        <div style={{ padding:'12px 24px calc(16px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #f0f0f0', flexShrink:0 }}>
+          <button onClick={onClose} style={{ width:'100%', height:46, border:'1.5px solid #ddd', borderRadius:12, background:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', color:'#666' }}>Fermer</button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ── Paramètres des commandes ─────────────────────────────────────────────────
-function ParametresCommandesModal({ autoAccept, delaiDefaut, commandesActives, motifFermeture, onMaj, onClose }) {
+function ParametresCommandesModal({ autoAccept, delaiDefaut, commandesActives, motifFermeture, horizonJours, onMaj, onClose }) {
   const [motif, setMotif] = useState(motifFermeture || '');
   const d = parseInt(delaiDefaut) || 30;
 
@@ -3630,6 +3766,24 @@ function ParametresCommandesModal({ autoAccept, delaiDefaut, commandesActives, m
               </div>
               <MenuToggle value={commandesActives} colorOn="#16a34a" onChange={()=>commandesActives ? fermerPrise(motif) : rouvrirPrise()} />
             </div>
+
+            {commandesActives && (
+              <div style={{ marginBottom:4 }}>
+                <label style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, display:'block', marginBottom:8 }}>Commander à l'avance jusqu'à</label>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:8 }}>
+                  {HORIZONS.map(h => (
+                    <button key={h.j} onClick={()=>onMaj('horizon_jours', h.j)} style={{ height:52, borderRadius:11, border: horizonJours===h.j ? '2px solid #16a34a' : '1.5px solid #ddd', background: horizonJours===h.j ? '#16a34a' : '#fff', color: horizonJours===h.j ? '#fff' : '#333', fontSize:14.5, fontWeight:800, cursor:'pointer', padding:0 }}>
+                      {h.label}
+                    </button>
+                  ))}
+                </div>
+                <p style={{ margin:'8px 2px 0', fontSize:12, color:'#888', lineHeight:1.5 }}>
+                  {horizonJours === 0
+                    ? 'Les clients ne peuvent commander que pour le jour même.'
+                    : `Les clients peuvent choisir un retrait jusqu'à ${horizonJours} jours à l'avance.`}
+                </p>
+              </div>
+            )}
 
             {!commandesActives && (
               <div style={{ background:'#fef2f2', border:'1.5px solid #fecaca', borderRadius:12, padding:'12px 14px' }}>

@@ -219,6 +219,7 @@ const state = {
   ouvert: true,
   motifFermeture: '',
   delaiAnnonce: null,
+  horizonJours: 15,
 };
 let step2Errors = {};
 
@@ -351,7 +352,8 @@ function dateLocaleStr(d) {
 }
 function joursRetrait() {
   const auj = dateLocaleStr(new Date());
-  return Array.from({ length: 7 }, (_, i) => {
+  const n = Math.max(1, Math.min(90, (state.horizonJours || 0) + 1));
+  return Array.from({ length: n }, (_, i) => {
     const d = new Date(); d.setDate(d.getDate() + i);
     const str = dateLocaleStr(d);
     return {
@@ -579,6 +581,7 @@ async function chargerConfig() {
       if (r.cle === 'commandes_actives') state.ouvert = r.valeur !== 'false';
       if (r.cle === 'motif_fermeture') state.motifFermeture = r.valeur || '';
       if (r.cle === 'delai_minutes') state.delaiAnnonce = parseInt(r.valeur) || null;
+      if (r.cle === 'horizon_jours') { const h = parseInt(r.valeur); if (!isNaN(h)) state.horizonJours = h; }
     });
   } catch(e) { /* en cas d'échec on laisse la commande ouverte */ }
   return state.ouvert;
