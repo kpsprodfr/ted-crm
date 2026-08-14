@@ -3853,6 +3853,18 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
 // ── Calendrier des commandes (même grille que la page Réservations) ─────────
 function CalendrierCommandesModal({ commandes, jourSelectionne, onChoisir, onClose }) {
   const [calDate, setCalDate] = useState(new Date());
+  // Jour sur lequel on vient de cliquer : on laisse l'effet visuel se jouer
+  // avant de refermer la modale, sinon le clic n'a aucun retour.
+  const [jourClique, setJourClique] = useState(null);
+  const timerRef = useRef(null);
+  useEffect(() => () => clearTimeout(timerRef.current), []);
+
+  function choisirJour(iso) {
+    if (jourClique) return; // un seul clic pris en compte
+    setJourClique(iso);
+    timerRef.current = setTimeout(() => onChoisir(iso), 240);
+  }
+
   const JOURS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
   const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 
@@ -3905,17 +3917,24 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, onChoisir, onClo
                 const iso = `${annee}-${String(mois+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                 const nb = parJour[iso] || 0;
                 const isToday = today.getFullYear()===annee && today.getMonth()===mois && today.getDate()===d;
-                const isSelected = jourSelectionne === iso;
+                const estClique = jourClique === iso;
+                const isSelected = jourSelectionne === iso || estClique;
                 const estPasse = new Date(iso) < new Date(new Date().setHours(0,0,0,0));
+                const estEstompe = jourClique && !estClique; // les autres jours s'effacent
                 return (
-                  <button key={i} onClick={()=>onChoisir(iso)}
+                  <button key={i} onClick={()=>choisirJour(iso)}
                     style={{ textAlign:'center', minHeight:72, borderRadius:10, cursor:'pointer', position:'relative',
                       display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4,
                       border: isToday && !isSelected ? '2px solid #E8C547' : '2px solid transparent',
                       background: isSelected ? '#111' : isToday ? '#fffbea' : '#fff',
                       color: isSelected ? '#fff' : '#111',
                       fontWeight: isSelected ? 800 : isToday ? 900 : 500, fontSize:19,
-                      boxSizing:'border-box', opacity: estPasse ? 0.45 : 1, transition:'background 0.15s' }}>
+                      boxSizing:'border-box',
+                      opacity: estEstompe ? 0.3 : estPasse ? 0.45 : 1,
+                      transform: estClique ? 'scale(1.06)' : 'scale(1)',
+                      boxShadow: estClique ? '0 8px 22px rgba(0,0,0,0.28)' : 'none',
+                      zIndex: estClique ? 2 : 1,
+                      transition:'background 0.15s, transform 0.16s cubic-bezier(0.34,1.4,0.64,1), box-shadow 0.16s, opacity 0.16s' }}>
                     {d}
                     {nb > 0
                       ? <span style={{ fontSize:10.5, fontWeight:800, letterSpacing:0.2, color: isSelected ? '#E8C547' : '#b8860b' }}>{nb} cmd</span>
