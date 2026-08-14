@@ -3492,6 +3492,7 @@ function minutesRestantes(cmd) {
 // ── Carte d'une commande déjà acceptée (même mise en page que « à traiter ») ──
 function CommandeCarte({ cmd, onOpen, onStatut }) {
   const isMobile = useIsMobile();
+  const etroit = useEcranEtroit();   // tablette : carte resserrée pour en voir plusieurs
   const st = cmdStatut(cmd.statut);
   const nbArticles = (cmd.items || []).reduce((s, it) => s + (Number(it.quantite) || 1), 0);
   const heure = cmd.created_at ? new Date(cmd.created_at).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }) : '';
@@ -3501,12 +3502,12 @@ function CommandeCarte({ cmd, onOpen, onStatut }) {
   const actionnable = ['en_preparation', 'prete'].includes(cmd.statut);
 
   return (
-    <div style={{ background:'#fff', borderRadius:16, padding:'16px 18px', boxShadow:'0 1px 4px rgba(0,0,0,0.05)', borderLeft:`4px solid ${st.bg}`, display:'flex', gap:16, alignItems:'stretch', flexDirection: isMobile ? 'column' : 'row' }}>
+    <div style={{ background:'#fff', borderRadius:16, padding: etroit ? '11px 13px' : '16px 18px', boxShadow:'0 1px 4px rgba(0,0,0,0.05)', borderLeft:`4px solid ${st.bg}`, display:'flex', gap: etroit ? 12 : 16, alignItems:'stretch', flexDirection: isMobile ? 'column' : 'row' }}>
 
       {/* Informations + détail de la commande */}
       <div style={{ flex:1, minWidth:0, cursor:'pointer' }} onClick={onOpen}>
         <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-          <span style={{ fontSize:17, fontWeight:800, color:'#111' }}>{cmd.client_nom || 'Client'}</span>
+          <span style={{ fontSize: etroit ? 15 : 17, fontWeight:800, color:'#111' }}>{cmd.client_nom || 'Client'}</span>
           <span style={{ background:st.bg, color:st.fg, borderRadius:20, padding:'3px 10px', fontSize:11, fontWeight:700, whiteSpace:'nowrap' }}>{st.court}</span>
           {cmd.acceptee_auto && <span style={{ background:'#f0fdf4', color:'#16a34a', borderRadius:20, padding:'3px 9px', fontSize:11, fontWeight:700 }}>Auto</span>}
           {cmd.source === 'en_ligne'
@@ -3514,45 +3515,45 @@ function CommandeCarte({ cmd, onOpen, onStatut }) {
             : <span style={{ background:'#f5f5f5', color:'#666', borderRadius:20, padding:'3px 9px', fontSize:11, fontWeight:700, display:'inline-flex', alignItems:'center', gap:4 }}><Phone size={11} /> Téléphone</span>}
         </div>
 
-        <div style={{ fontSize:13, color:'#888', marginTop:4 }}>
+        <div style={{ fontSize: etroit ? 11.5 : 13, color:'#888', marginTop: etroit ? 2 : 4 }}>
           N° {cmd.numero || '—'} · reçue à {heure}
           {cmd.client_tel ? ` · ${cmd.client_tel}` : ''}
         </div>
 
         {/* Jour et heure de retrait — remplacés par l'horodatage réel une fois récupérée */}
         {cmd.statut === 'recuperee' && recupereeA(cmd) ? (
-          <div style={{ display:'inline-flex', alignItems:'center', gap:7, marginTop:7, padding:'6px 12px', borderRadius:9, background:'#f0fdf4', color:'#15803d', fontSize:13.5, fontWeight:700 }}>
+          <div style={{ display:'inline-flex', alignItems:'center', gap:6, marginTop: etroit ? 5 : 7, padding: etroit ? '4px 9px' : '6px 12px', borderRadius:9, background:'#f0fdf4', color:'#15803d', fontSize: etroit ? 12 : 13.5, fontWeight:700 }}>
             <CircleCheck size={14} strokeWidth={2} />
             {fmtRecuperee(recupereeA(cmd))}
           </div>
         ) : (
-          <div style={{ display:'inline-flex', alignItems:'center', gap:7, marginTop:7, padding:'6px 12px', borderRadius:9, background: futur ? '#eff6ff' : '#f5f5f5', color: futur ? '#1d4ed8' : '#444', fontSize:13.5, fontWeight:700 }}>
+          <div style={{ display:'inline-flex', alignItems:'center', gap:6, marginTop: etroit ? 5 : 7, padding: etroit ? '4px 9px' : '6px 12px', borderRadius:9, background: futur ? '#eff6ff' : '#f5f5f5', color: futur ? '#1d4ed8' : '#444', fontSize: etroit ? 12 : 13.5, fontWeight:700 }}>
             <CalendarDays size={14} strokeWidth={2} />
             {labelJour(jourRetrait)}{cmd.heure_retrait ? ` · ${cmd.heure_retrait}` : ''}
           </div>
         )}
 
         {cmd.statut === 'en_preparation' && !futur && reste !== null && (
-          <div style={{ fontSize:14, fontWeight:800, color: reste <= 5 ? '#dc2626' : '#b8860b', marginTop:6, display:'flex', alignItems:'center', gap:6 }}>
+          <div style={{ fontSize: etroit ? 12.5 : 14, fontWeight:800, color: reste <= 5 ? '#dc2626' : '#b8860b', marginTop: etroit ? 4 : 6, display:'flex', alignItems:'center', gap:6 }}>
             <Clock size={14} strokeWidth={2.2} />
             {reste > 0 ? `Prête dans ${reste} min` : 'À sortir maintenant'}
           </div>
         )}
 
         {/* Détail des articles, directement visible */}
-        <div style={{ marginTop:12, background:'#fafafa', borderRadius:10, padding:'12px 14px' }}>
+        <div style={{ marginTop: etroit ? 8 : 12, background:'#fafafa', borderRadius:10, padding: etroit ? '8px 11px' : '12px 14px' }}>
           {(cmd.items || []).map((it, i) => (
-            <div key={i} style={{ display:'flex', justifyContent:'space-between', gap:14, alignItems:'baseline', padding:'8px 0', borderBottom: i < (cmd.items.length - 1) ? '1px solid #efefef' : 'none' }}>
-              <span style={{ color:'#111', fontSize:15.5, lineHeight:1.45 }}>
+            <div key={i} style={{ display:'flex', justifyContent:'space-between', gap:14, alignItems:'baseline', padding: etroit ? '5px 0' : '8px 0', borderBottom: i < (cmd.items.length - 1) ? '1px solid #efefef' : 'none' }}>
+              <span style={{ color:'#111', fontSize: etroit ? 13.5 : 15.5, lineHeight:1.4 }}>
                 <span style={{ fontWeight:800, marginRight:5 }}>{it.quantite || 1}×</span>{it.nom}
                 {it.note ? <span style={{ display:'block', color:'#888', fontSize:13, fontStyle:'italic', marginTop:2 }}>{it.note}</span> : null}
               </span>
-              <span style={{ fontWeight:400, fontSize:15, color:'#555', whiteSpace:'nowrap' }}>{fmtEuro((Number(it.prix)||0) * (Number(it.quantite)||1))}</span>
+              <span style={{ fontWeight:400, fontSize: etroit ? 13 : 15, color:'#555', whiteSpace:'nowrap' }}>{fmtEuro((Number(it.prix)||0) * (Number(it.quantite)||1))}</span>
             </div>
           ))}
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginTop:10, paddingTop:10, borderTop:'2px solid #111' }}>
-            <span style={{ fontSize:13, fontWeight:700, color:'#888' }}>{nbArticles} article{nbArticles > 1 ? 's' : ''}</span>
-            <span style={{ fontSize:19, fontWeight:900, color:'#111' }}>{fmtEuro(cmd.total)}</span>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginTop: etroit ? 7 : 10, paddingTop: etroit ? 7 : 10, borderTop:'2px solid #111' }}>
+            <span style={{ fontSize: etroit ? 12 : 13, fontWeight:700, color:'#888' }}>{nbArticles} article{nbArticles > 1 ? 's' : ''}</span>
+            <span style={{ fontSize: etroit ? 17 : 19, fontWeight:900, color:'#111' }}>{fmtEuro(cmd.total)}</span>
           </div>
         </div>
 
@@ -3571,18 +3572,18 @@ function CommandeCarte({ cmd, onOpen, onStatut }) {
 
       {/* Gros bouton d'action, à droite */}
       {actionnable && (
-        <div style={{ width: isMobile ? '100%' : 200, flexShrink:0, display:'flex', flexDirection:'column', gap:11, alignItems:'center', justifyContent:'center', borderLeft: isMobile ? 'none' : '1px solid #f0f0f0', paddingLeft: isMobile ? 0 : 20 }}>
+        <div style={{ width: isMobile ? '100%' : (etroit ? 140 : 200), flexShrink:0, display:'flex', flexDirection:'column', gap:11, alignItems:'center', justifyContent:'center', borderLeft: isMobile ? 'none' : '1px solid #f0f0f0', paddingLeft: isMobile ? 0 : (etroit ? 12 : 20) }}>
           {/* Le bouton porte la couleur du statut courant : orange tant que la
               commande se prépare, vert une fois qu'elle attend son client. */}
           {cmd.statut === 'en_preparation' && (
-            <button onClick={()=>onStatut(cmd, 'prete')} style={{ width:150, height:150, flexShrink:0, border:'none', borderRadius:16, background:'#f0a020', color:'#111', fontSize:17, fontWeight:900, lineHeight:1.15, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8, boxShadow:'0 6px 20px rgba(240,160,32,0.35)' }}>
-              <CheckCircle size={34} strokeWidth={2.4} />
+            <button onClick={()=>onStatut(cmd, 'prete')} style={{ width: etroit ? 112 : 150, height: etroit ? 112 : 150, flexShrink:0, border:'none', borderRadius:16, background:'#f0a020', color:'#111', fontSize: etroit ? 14 : 17, fontWeight:900, lineHeight:1.15, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap: etroit ? 5 : 8, boxShadow:'0 6px 20px rgba(240,160,32,0.35)' }}>
+              <CheckCircle size={etroit ? 26 : 34} strokeWidth={2.4} />
               Marquer prête
             </button>
           )}
           {cmd.statut === 'prete' && (
-            <button onClick={()=>onStatut(cmd, 'recuperee')} style={{ width:150, height:150, flexShrink:0, border:'none', borderRadius:16, background:'#16a34a', color:'#fff', fontSize:17, fontWeight:900, lineHeight:1.15, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8, boxShadow:'0 6px 20px rgba(22,163,74,0.35)' }}>
-              <BadgeCheck size={34} strokeWidth={2.2} />
+            <button onClick={()=>onStatut(cmd, 'recuperee')} style={{ width: etroit ? 112 : 150, height: etroit ? 112 : 150, flexShrink:0, border:'none', borderRadius:16, background:'#16a34a', color:'#fff', fontSize: etroit ? 14 : 17, fontWeight:900, lineHeight:1.15, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap: etroit ? 5 : 8, boxShadow:'0 6px 20px rgba(22,163,74,0.35)' }}>
+              <BadgeCheck size={etroit ? 26 : 34} strokeWidth={2.2} />
               À récupérer
             </button>
           )}
@@ -4092,7 +4093,7 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
       {/* Conteneur de centrage : la classe cal-fermeture anime `transform`,
           elle ne peut donc pas cohabiter avec un centrage par translate(-50%,-50%). */}
       <div style={{ position:'fixed', inset:0, display:'flex', alignItems:'center', justifyContent:'center', zIndex:5201, pointerEvents:'none' }}>
-      <div onClick={e=>e.stopPropagation()} className={calFermeture ? 'cal-fermeture' : ''} style={{ background:'#fff', borderRadius:20, width:'min(880px, calc(100vw - 24px))', height:'min(760px, calc(100vh - 20px))', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.28)', overflow:'hidden', pointerEvents:'auto' }}>
+      <div onClick={e=>e.stopPropagation()} className={calFermeture ? 'cal-fermeture' : ''} style={{ background:'#fff', borderRadius:20, width:'min(720px, calc(100vw - 24px))', height:'min(760px, calc(100vh - 20px))', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.28)', overflow:'hidden', pointerEvents:'auto' }}>
 
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 20px 12px', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
           <h2 style={{ margin:0, fontSize:18, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:9 }}>
