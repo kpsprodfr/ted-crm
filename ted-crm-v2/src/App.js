@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus, UserPlus, Trophy, ArrowUpDown, LayoutGrid, Settings, MapPin, Dices, Bell, X, Award, Gift, Image as ImageIcon, BadgeCheck } from 'lucide-react';
+import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus, UserPlus, Trophy, ArrowUpDown, LayoutGrid, Settings, MapPin, Dices, Bell, X, Award, Gift, Image as ImageIcon, BadgeCheck, ShoppingBag } from 'lucide-react';
 import { supabase } from "./supabase";
 import { safeQuery, resilientChannel, logError } from "./lib/db";
 
@@ -2960,6 +2960,422 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
         </div>
       )}
     </div>
+  );
+}
+
+// ─── Commandes à emporter ─────────────────────────────────────────────────────
+
+const CMD_STATUTS = [
+  { id:'nouvelle',       label:'Nouvelle',       court:'Nouvelle',  bg:'#dc2626', fg:'#fff' },
+  { id:'en_preparation', label:'En préparation', court:'En prépa',  bg:'#E8C547', fg:'#111' },
+  { id:'prete',          label:'Prête',          court:'Prête',     bg:'#16a34a', fg:'#fff' },
+  { id:'recuperee',      label:'Récupérée',      court:'Récupérée', bg:'#e8e8e8', fg:'#666' },
+  { id:'annulee',        label:'Annulée',        court:'Annulée',   bg:'#f5f5f5', fg:'#999' },
+];
+const cmdStatut = (id) => CMD_STATUTS.find(s => s.id === id) || CMD_STATUTS[0];
+const cmdTotal  = (items) => (items || []).reduce((s, it) => s + (Number(it.prix) || 0) * (Number(it.quantite) || 1), 0);
+const fmtEuro   = (n) => (Number(n) || 0).toFixed(2).replace('.', ',') + ' €';
+
+function CommandesPage({ showToast, user }) {
+  const [commandes, setCommandes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filtre, setFiltre] = useState('actives'); // actives | toutes | jour
+  const [detail, setDetail] = useState(null);
+  const [showNouvelle, setShowNouvelle] = useState(false);
+  const [showLienDropdown, setShowLienDropdown] = useState(false);
+  const isMobile = useIsMobile();
+  const LIEN_COMMANDE = 'https://ted-crm.pages.dev/commander.html';
+
+  async function loadCommandes(silent = false) {
+    if (!silent) setLoading(true);
+    const { data } = await safeQuery(
+      () => supabase.from('commandes').select('*').order('created_at', { ascending: false }).limit(500),
+      { fallback: [], context: 'loadCommandes' }
+    );
+    setCommandes(data || []);
+    if (!silent) setLoading(false);
+  }
+
+  useEffect(() => { loadCommandes(); }, []);
+
+  // Temps réel : nouvelle commande en ligne → apparaît immédiatement
+  useEffect(() => {
+    return resilientChannel(supabase, 'commandes-rt', (chan) => chan
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'commandes' }, () => loadCommandes(true))
+    );
+  }, []);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (!e.target.closest('#lien-commande-dropdown')) setShowLienDropdown(false);
+    }
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  async function changerStatut(cmd, statut) {
+    const patch = { statut, updated_at: new Date().toISOString() };
+    if (statut === 'recuperee' || statut === 'annulee') {
+      patch.traited_at = new Date().toISOString();
+      patch.traited_by = user?.email || null;
+    }
+    setCommandes(prev => prev.map(c => c.id === cmd.id ? { ...c, ...patch } : c));
+    setDetail(prev => prev && prev.id === cmd.id ? { ...prev, ...patch } : prev);
+    const { error } = await safeQuery(
+      () => supabase.from('commandes').update(patch).eq('id', cmd.id),
+      { context: 'changerStatutCommande' }
+    );
+    if (error) { showToast('Erreur de mise à jour', 'error'); loadCommandes(true); return; }
+    showToast(`Commande ${cmd.numero || ''} → ${cmdStatut(statut).label}`);
+  }
+
+  const aujourdhui = new Date().toISOString().split('T')[0];
+  const nouvelles = commandes.filter(c => c.statut === 'nouvelle');
+  const listeFiltree = commandes.filter(c => {
+    if (filtre === 'actives') return ['nouvelle', 'en_preparation', 'prete'].includes(c.statut);
+    if (filtre === 'jour') return (c.created_at || '').startsWith(aujourdhui);
+    return true;
+  });
+
+  const caJour = commandes
+    .filter(c => (c.created_at || '').startsWith(aujourdhui) && c.statut !== 'annulee')
+    .reduce((s, c) => s + (Number(c.total) || 0), 0);
+  const nbJour = commandes.filter(c => (c.created_at || '').startsWith(aujourdhui) && c.statut !== 'annulee').length;
+
+  if (loading) return <div style={{ textAlign:'center', paddingTop:80, fontSize:16, color:'#888' }}>Chargement des commandes…</div>;
+
+  return (
+    <div style={{ padding: isMobile ? '16px 14px 90px' : '24px 28px', minHeight:'100vh', background:'#f5f5f5', display:'flex', flexDirection:'column', gap:12 }}>
+
+      {/* ── En-tête ── */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
+        <div>
+          <h1 style={{ margin:0, fontSize: isMobile ? 22 : 26, fontWeight:900, color:'#111', display:'flex', alignItems:'center', gap:10 }}>
+            <ShoppingBag size={isMobile ? 22 : 26} strokeWidth={1.8} /> Commandes
+          </h1>
+          <p style={{ margin:'4px 0 0', fontSize:13, color:'#888' }}>Commandes à emporter — téléphone et en ligne</p>
+        </div>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <div style={{ position:'relative' }} id="lien-commande-dropdown">
+            <button onClick={()=>setShowLienDropdown(v=>!v)} style={{ ...btnSecondary, height:38, display:'flex', alignItems:'center', gap:6 }}>
+              <Link size={14} strokeWidth={2} /> Lien client
+            </button>
+            {showLienDropdown && (
+              <div style={{ position:'absolute', top:'calc(100% + 8px)', right:0, background:'#fff', borderRadius:10, boxShadow:'0 8px 32px rgba(0,0,0,0.15)', padding:6, minWidth:210, zIndex:300 }}>
+                <button type="button" onMouseDown={async(e)=>{ e.preventDefault(); e.stopPropagation(); try{ await navigator.clipboard.writeText(LIEN_COMMANDE); }catch{} showToast('✅ Lien copié !'); setShowLienDropdown(false); }} style={{ width:'100%', padding:'10px 14px', border:'none', background:'none', textAlign:'left', cursor:'pointer', fontSize:13, borderRadius:6, display:'flex', alignItems:'center', gap:10, color:'#111' }} onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'} onMouseLeave={e=>e.currentTarget.style.background='none'}><Copy size={15} strokeWidth={2} color="#666" /> Copier le lien</button>
+                <button type="button" onMouseDown={(e)=>{ e.preventDefault(); e.stopPropagation(); window.open(LIEN_COMMANDE,'_blank'); setShowLienDropdown(false); }} style={{ width:'100%', padding:'10px 14px', border:'none', background:'none', textAlign:'left', cursor:'pointer', fontSize:13, borderRadius:6, display:'flex', alignItems:'center', gap:10, color:'#111' }} onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'} onMouseLeave={e=>e.currentTarget.style.background='none'}><ExternalLink size={15} strokeWidth={2} color="#666" /> Ouvrir la page</button>
+              </div>
+            )}
+          </div>
+          <button onClick={()=>setShowNouvelle(true)} style={{ ...btnPrimary, height:38, display:'flex', alignItems:'center', gap:6 }}>
+            <Phone size={15} strokeWidth={2} /> Commande téléphone
+          </button>
+        </div>
+      </div>
+
+      {/* ── Bandeau nouvelles commandes ── */}
+      <div onClick={()=>setFiltre('actives')} className={nouvelles.length > 0 ? 'alarm-blink' : ''} style={{ background: nouvelles.length > 0 ? '#dc2626' : '#fff', border: nouvelles.length > 0 ? 'none' : '1.5px solid #f0f0f0', borderRadius:16, padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', flexShrink:0, boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
+        <span style={{ fontSize:15, fontWeight:800, color: nouvelles.length > 0 ? '#fff' : '#111', display:'flex', alignItems:'center', gap:8 }}>
+          <ClipboardList size={16} strokeWidth={2} color={nouvelles.length > 0 ? '#fff' : '#666'} /> Nouvelles commandes à traiter
+        </span>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          {nouvelles.length > 0
+            ? <span style={{ background:'#fff', color:'#dc2626', borderRadius:'50%', width:26, height:26, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800 }}>{nouvelles.length}</span>
+            : <span style={{ fontSize:13, color:'#999', fontWeight:600 }}>Aucune</span>}
+          <span style={{ color: nouvelles.length > 0 ? '#fff' : '#ccc', fontSize:18 }}>›</span>
+        </div>
+      </div>
+
+      {/* ── Stats du jour ── */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+        <div style={{ background:'#fff', borderRadius:14, padding:'14px 16px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', textAlign:'center' }}>
+          <p style={{ fontSize:24, fontWeight:900, color:'#111', margin:'0 0 3px' }}>{nbJour}</p>
+          <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0 }}>Commandes aujourd'hui</p>
+        </div>
+        <div style={{ background:'#fff', borderRadius:14, padding:'14px 16px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', textAlign:'center' }}>
+          <p style={{ fontSize:24, fontWeight:900, color:'#111', margin:'0 0 3px' }}>{fmtEuro(caJour)}</p>
+          <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0 }}>Total du jour</p>
+        </div>
+      </div>
+
+      {/* ── Filtres ── */}
+      <div style={{ display:'flex', gap:8, overflowX:'auto', paddingBottom:2 }}>
+        {[{id:'actives',label:'En cours'},{id:'jour',label:"Aujourd'hui"},{id:'toutes',label:'Toutes'}].map(f => (
+          <button key={f.id} onClick={()=>setFiltre(f.id)} style={{ height:36, padding:'0 16px', borderRadius:10, fontSize:13, fontWeight:700, border:'none', flexShrink:0, cursor:'pointer', background: filtre===f.id ? '#111' : '#fff', color: filtre===f.id ? '#fff' : '#666' }}>
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Liste des commandes ── */}
+      {listeFiltree.length === 0 ? (
+        <div style={{ background:'#fff', borderRadius:14, padding:'40px 20px', textAlign:'center', color:'#bbb', fontSize:14, boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
+          Aucune commande {filtre === 'actives' ? 'en cours' : filtre === 'jour' ? "aujourd'hui" : ''}
+        </div>
+      ) : (
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          {listeFiltree.map(c => {
+            const st = cmdStatut(c.statut);
+            const nbArticles = (c.items || []).reduce((s, it) => s + (Number(it.quantite) || 1), 0);
+            const heure = c.created_at ? new Date(c.created_at).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }) : '';
+            return (
+              <div key={c.id} onClick={()=>setDetail(c)} style={{ background:'#fff', borderRadius:14, padding:'14px 16px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', borderLeft:`4px solid ${st.bg}` }}>
+                <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12 }}>
+                  <div style={{ minWidth:0, flex:1 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                      <span style={{ fontSize:16, fontWeight:800, color:'#111' }}>{c.client_nom || 'Client'}</span>
+                      <span style={{ background:st.bg, color:st.fg, borderRadius:20, padding:'3px 10px', fontSize:11, fontWeight:700, whiteSpace:'nowrap' }}>{st.court}</span>
+                      {c.source === 'en_ligne' && <span style={{ background:'#eff6ff', color:'#2563eb', borderRadius:20, padding:'3px 9px', fontSize:11, fontWeight:700, display:'inline-flex', alignItems:'center', gap:4 }}><MonitorSmartphone size={11} /> En ligne</span>}
+                      {c.source === 'telephone' && <span style={{ background:'#f5f5f5', color:'#666', borderRadius:20, padding:'3px 9px', fontSize:11, fontWeight:700, display:'inline-flex', alignItems:'center', gap:4 }}><Phone size={11} /> Téléphone</span>}
+                    </div>
+                    <div style={{ fontSize:13, color:'#888', marginTop:4 }}>
+                      N° {c.numero || '—'} · {nbArticles} article{nbArticles > 1 ? 's' : ''} · reçue à {heure}
+                      {c.heure_retrait ? ` · retrait ${c.heure_retrait}` : ''}
+                    </div>
+                  </div>
+                  <div style={{ textAlign:'right', flexShrink:0 }}>
+                    <div style={{ fontSize:17, fontWeight:900, color:'#111' }}>{fmtEuro(c.total)}</div>
+                    <span style={{ color:'#ccc', fontSize:18 }}>›</span>
+                  </div>
+                </div>
+                {/* Actions rapides */}
+                {['nouvelle','en_preparation','prete'].includes(c.statut) && (
+                  <div style={{ display:'flex', gap:8, marginTop:12 }} onClick={e=>e.stopPropagation()}>
+                    {c.statut === 'nouvelle' && <button onClick={()=>changerStatut(c,'en_preparation')} style={{ flex:1, height:38, border:'none', borderRadius:9, background:'#E8C547', color:'#111', fontSize:13, fontWeight:800, cursor:'pointer' }}>Accepter</button>}
+                    {c.statut === 'en_preparation' && <button onClick={()=>changerStatut(c,'prete')} style={{ flex:1, height:38, border:'none', borderRadius:9, background:'#16a34a', color:'#fff', fontSize:13, fontWeight:800, cursor:'pointer' }}>Marquer prête</button>}
+                    {c.statut === 'prete' && <button onClick={()=>changerStatut(c,'recuperee')} style={{ flex:1, height:38, border:'none', borderRadius:9, background:'#111', color:'#fff', fontSize:13, fontWeight:800, cursor:'pointer' }}>Récupérée</button>}
+                    {c.client_tel && <a href={`tel:${c.client_tel}`} onClick={e=>e.stopPropagation()} style={{ height:38, padding:'0 14px', borderRadius:9, background:'#f5f5f5', color:'#111', fontSize:13, fontWeight:700, display:'flex', alignItems:'center', gap:6, textDecoration:'none' }}><Phone size={14} /> Appeler</a>}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {detail && <CommandeDetail cmd={detail} onClose={()=>setDetail(null)} onStatut={changerStatut} />}
+      {showNouvelle && <NouvelleCommandeModal onClose={()=>setShowNouvelle(false)} onSaved={()=>{ setShowNouvelle(false); loadCommandes(true); }} showToast={showToast} />}
+    </div>
+  );
+}
+
+// ── Fiche détail d'une commande ──────────────────────────────────────────────
+function CommandeDetail({ cmd, onClose, onStatut }) {
+  const st = cmdStatut(cmd.statut);
+  const dateLabel = cmd.created_at ? new Date(cmd.created_at).toLocaleString('fr-FR', { weekday:'long', day:'numeric', month:'long', hour:'2-digit', minute:'2-digit' }) : '';
+  return (
+    <>
+      <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:4999 }} />
+      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:20, width:'min(440px, calc(100vw - 40px))', maxHeight:'88vh', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.25)', zIndex:5000, overflow:'hidden' }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'20px 24px 16px', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
+          <div>
+            <h2 style={{ margin:0, fontSize:18, fontWeight:800, color:'#111' }}>Commande N° {cmd.numero || '—'}</h2>
+            <p style={{ margin:'3px 0 0', fontSize:12.5, color:'#888', textTransform:'capitalize' }}>{dateLabel}</p>
+          </div>
+          <button onClick={onClose} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666' }}>✕</button>
+        </div>
+
+        <div style={{ padding:'16px 24px 20px', overflowY:'auto', display:'flex', flexDirection:'column', gap:14 }}>
+          <span style={{ background:st.bg, color:st.fg, borderRadius:20, padding:'5px 14px', fontSize:12, fontWeight:800, alignSelf:'flex-start' }}>{st.label}</span>
+
+          {/* Client */}
+          <div style={{ background:'#f9f9f9', borderRadius:12, padding:'12px 14px' }}>
+            <div style={{ fontSize:15, fontWeight:800, color:'#111', marginBottom:6 }}>{cmd.client_nom || 'Client'}</div>
+            {cmd.client_tel && <a href={`tel:${cmd.client_tel}`} style={{ display:'flex', alignItems:'center', gap:8, fontSize:14, color:'#111', textDecoration:'none', fontWeight:600, marginBottom:4 }}><Phone size={14} strokeWidth={2} /> {cmd.client_tel}</a>}
+            {cmd.client_email && <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, color:'#3b82f6' }}><Mail size={13} strokeWidth={2} /> {cmd.client_email}</div>}
+            {cmd.heure_retrait && <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, color:'#666', marginTop:6 }}><Clock size={13} strokeWidth={2} /> Retrait à {cmd.heure_retrait}</div>}
+          </div>
+
+          {/* Articles */}
+          <div>
+            <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px' }}>Articles</p>
+            {(cmd.items || []).map((it, i) => (
+              <div key={i} style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, padding:'10px 0', borderBottom:'1px solid #f5f5f5' }}>
+                <div style={{ minWidth:0 }}>
+                  <div style={{ fontSize:14, fontWeight:600, color:'#111' }}>
+                    <span style={{ color:'#888', fontWeight:800 }}>{it.quantite || 1}×</span> {it.nom}
+                  </div>
+                  {it.note && <div style={{ fontSize:12, color:'#888', fontStyle:'italic', marginTop:2 }}>{it.note}</div>}
+                </div>
+                <div style={{ fontSize:14, fontWeight:700, color:'#111', whiteSpace:'nowrap' }}>{fmtEuro((Number(it.prix)||0) * (Number(it.quantite)||1))}</div>
+              </div>
+            ))}
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingTop:12, marginTop:4, borderTop:'2px solid #111' }}>
+              <span style={{ fontSize:14, fontWeight:800, color:'#111' }}>TOTAL</span>
+              <span style={{ fontSize:20, fontWeight:900, color:'#111' }}>{fmtEuro(cmd.total)}</span>
+            </div>
+          </div>
+
+          {cmd.note && (
+            <div style={{ background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:10, padding:'10px 14px' }}>
+              <p style={{ fontSize:11, fontWeight:700, color:'#92400e', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 4px' }}>Note</p>
+              <p style={{ fontSize:13.5, color:'#111', margin:0, lineHeight:1.5 }}>{cmd.note}</p>
+            </div>
+          )}
+
+          {/* Changement de statut */}
+          <div>
+            <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px' }}>Statut</p>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+              {CMD_STATUTS.map(s => (
+                <button key={s.id} onClick={()=>onStatut(cmd, s.id)} disabled={cmd.statut === s.id} style={{ height:38, padding:'0 14px', borderRadius:9, border: cmd.statut===s.id ? 'none' : '1.5px solid #eee', background: cmd.statut===s.id ? s.bg : '#fff', color: cmd.statut===s.id ? s.fg : '#666', fontSize:13, fontWeight:700, cursor: cmd.statut===s.id ? 'default' : 'pointer' }}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button onClick={onClose} style={{ width:'100%', height:48, border:'1.5px solid #eee', borderRadius:12, background:'#fff', fontSize:14, fontWeight:600, cursor:'pointer', color:'#666' }}>Fermer</button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ── Prise de commande au téléphone ───────────────────────────────────────────
+function NouvelleCommandeModal({ onClose, onSaved, showToast }) {
+  const [nom, setNom] = useState('');
+  const [tel, setTel] = useState('');
+  const [heureRetrait, setHeureRetrait] = useState('');
+  const [note, setNote] = useState('');
+  const [items, setItems] = useState([]);
+  const [produits, setProduits] = useState([]);
+  const [recherche, setRecherche] = useState('');
+  const [saving, setSaving] = useState(false);
+  const lockRef = useRef(false);
+
+  useEffect(() => {
+    safeQuery(
+      () => supabase.from('menu_produits').select('id,nom,prix,disponible').eq('disponible', true).order('nom').limit(2000),
+      { fallback: [], context: 'commande:produits' }
+    ).then(({ data }) => setProduits(data || []));
+  }, []);
+
+  function ajouter(p) {
+    setItems(prev => {
+      const i = prev.findIndex(x => x.nom === p.nom && !x.note);
+      if (i >= 0) { const n = [...prev]; n[i] = { ...n[i], quantite: (n[i].quantite || 1) + 1 }; return n; }
+      return [...prev, { nom: p.nom, prix: Number(p.prix) || 0, quantite: 1, note: '' }];
+    });
+    setRecherche('');
+  }
+  function ajouterLibre() {
+    const nomLibre = recherche.trim();
+    if (!nomLibre) return;
+    setItems(prev => [...prev, { nom: nomLibre, prix: 0, quantite: 1, note: '' }]);
+    setRecherche('');
+  }
+  const majItem = (i, patch) => setItems(prev => prev.map((it, idx) => idx === i ? { ...it, ...patch } : it));
+  const retirer  = (i) => setItems(prev => prev.filter((_, idx) => idx !== i));
+
+  const total = cmdTotal(items);
+  const formValide = nom.trim() && items.length > 0;
+
+  const suggestions = recherche.trim().length >= 1
+    ? produits.filter(p => normalizeStr(p.nom || '').includes(normalizeStr(recherche))).slice(0, 6)
+    : [];
+
+  async function enregistrer() {
+    if (!formValide || lockRef.current) return;
+    if (tel.trim() && !/^(\+33|0)[1-9]\d{8}$/.test(tel.replace(/[\s.\-()]/g, ''))) {
+      showToast('Numéro de téléphone invalide', 'error'); return;
+    }
+    lockRef.current = true;
+    setSaving(true);
+    const { error } = await safeQuery(
+      () => supabase.from('commandes').insert({
+        client_nom: nom.trim().slice(0, 80),
+        client_tel: tel.trim().slice(0, 20) || null,
+        items,
+        total,
+        statut: 'en_preparation',
+        source: 'telephone',
+        heure_retrait: heureRetrait || null,
+        note: note.trim().slice(0, 500) || null,
+      }),
+      { context: 'creerCommandeTelephone' }
+    );
+    setSaving(false);
+    lockRef.current = false;
+    if (error) { showToast('Erreur lors de l\'enregistrement', 'error'); return; }
+    showToast('✅ Commande enregistrée');
+    onSaved();
+  }
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:4999 }} />
+      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:20, width:'min(460px, calc(100vw - 32px))', maxHeight:'90vh', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.25)', zIndex:5000, overflow:'hidden' }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'20px 24px 16px', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
+          <h2 style={{ margin:0, fontSize:18, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:8 }}><Phone size={17} strokeWidth={2} /> Commande téléphone</h2>
+          <button onClick={onClose} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666' }}>✕</button>
+        </div>
+
+        <div style={{ padding:'16px 24px', overflowY:'auto', display:'flex', flexDirection:'column', gap:14, flex:1 }}>
+          {/* Client */}
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            <input value={nom} onChange={e=>setNom(e.target.value)} placeholder="Nom du client *" style={inp(false)} />
+            <div style={{ display:'flex', gap:10 }}>
+              <input value={tel} onChange={e=>setTel(e.target.value)} placeholder="Téléphone" inputMode="tel" style={{ ...inp(false), flex:1 }} />
+              <input value={heureRetrait} onChange={e=>setHeureRetrait(e.target.value)} placeholder="Retrait" type="time" style={{ ...inp(false), width:130 }} />
+            </div>
+          </div>
+
+          {/* Ajout d'articles */}
+          <div>
+            <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px' }}>Articles</p>
+            <div style={{ position:'relative' }}>
+              <input value={recherche} onChange={e=>setRecherche(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter'){ if(suggestions.length) ajouter(suggestions[0]); else ajouterLibre(); } }} placeholder="Rechercher un produit ou saisir librement…" style={inp(false)} />
+              {suggestions.length > 0 && (
+                <div style={{ position:'absolute', top:'calc(100% + 4px)', left:0, right:0, background:'#fff', borderRadius:10, boxShadow:'0 8px 32px rgba(0,0,0,0.15)', padding:6, zIndex:20, maxHeight:230, overflowY:'auto' }}>
+                  {suggestions.map(p => (
+                    <button key={p.id} onClick={()=>ajouter(p)} style={{ width:'100%', padding:'10px 12px', border:'none', background:'none', textAlign:'left', cursor:'pointer', fontSize:13.5, borderRadius:6, display:'flex', justifyContent:'space-between', gap:10, color:'#111' }} onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'} onMouseLeave={e=>e.currentTarget.style.background='none'}>
+                      <span>{p.nom}</span><span style={{ fontWeight:700, whiteSpace:'nowrap' }}>{fmtEuro(p.prix)}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {recherche.trim() && suggestions.length === 0 && (
+              <button onClick={ajouterLibre} style={{ ...btnSecondary, marginTop:8, height:34 }}>+ Ajouter « {recherche.trim()} »</button>
+            )}
+          </div>
+
+          {/* Panier */}
+          {items.length > 0 && (
+            <div style={{ background:'#f9f9f9', borderRadius:12, padding:'8px 12px' }}>
+              {items.map((it, i) => (
+                <div key={i} style={{ padding:'10px 0', borderBottom: i < items.length-1 ? '1px solid #eee' : 'none' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+                      <button onClick={()=> it.quantite > 1 ? majItem(i,{quantite:it.quantite-1}) : retirer(i)} style={{ width:28, height:28, borderRadius:7, border:'1.5px solid #ddd', background:'#fff', fontSize:15, fontWeight:700, cursor:'pointer', color:'#111' }}>−</button>
+                      <span style={{ minWidth:18, textAlign:'center', fontSize:14, fontWeight:800 }}>{it.quantite}</span>
+                      <button onClick={()=>majItem(i,{quantite:it.quantite+1})} style={{ width:28, height:28, borderRadius:7, border:'1.5px solid #ddd', background:'#fff', fontSize:15, fontWeight:700, cursor:'pointer', color:'#111' }}>+</button>
+                    </div>
+                    <span style={{ flex:1, fontSize:14, fontWeight:600, color:'#111', minWidth:0 }}>{it.nom}</span>
+                    <input value={it.prix} onChange={e=>majItem(i,{prix:e.target.value.replace(',','.')})} inputMode="decimal" style={{ width:66, height:32, border:'1.5px solid #ddd', borderRadius:7, padding:'0 8px', fontSize:13, textAlign:'right', outline:'none' }} />
+                    <button onClick={()=>retirer(i)} style={{ background:'none', border:'none', cursor:'pointer', color:'#e57373', display:'flex', padding:2 }}><Trash2 size={15}/></button>
+                  </div>
+                  <input value={it.note || ''} onChange={e=>majItem(i,{note:e.target.value})} placeholder="Précision (sans oignons, bien cuite…)" style={{ width:'100%', height:32, border:'none', background:'transparent', fontSize:12.5, color:'#666', outline:'none', marginTop:2, fontStyle:'italic' }} />
+                </div>
+              ))}
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingTop:10, marginTop:4, borderTop:'2px solid #111' }}>
+                <span style={{ fontSize:13, fontWeight:800, color:'#111' }}>TOTAL</span>
+                <span style={{ fontSize:19, fontWeight:900, color:'#111' }}>{fmtEuro(total)}</span>
+              </div>
+            </div>
+          )}
+
+          <textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Note générale (allergie, paiement…)" rows={2} style={{ width:'100%', border:'1.5px solid #ddd', borderRadius:7, padding:'10px 12px', fontSize:14, outline:'none', resize:'vertical', fontFamily:'inherit', boxSizing:'border-box' }} />
+        </div>
+
+        <div style={{ padding:'14px 24px calc(18px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #f0f0f0', flexShrink:0 }}>
+          <button onClick={enregistrer} disabled={!formValide || saving} style={{ width:'100%', height:52, background: formValide && !saving ? '#E8C547' : '#f0f0f0', color: formValide && !saving ? '#111' : '#bbb', border:'none', borderRadius:14, fontSize:16, fontWeight:800, cursor: formValide && !saving ? 'pointer' : 'not-allowed' }}>
+            {saving ? 'Enregistrement…' : `✓ Enregistrer la commande${items.length ? ' · ' + fmtEuro(total) : ''}`}
+          </button>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -5925,6 +6341,7 @@ function CRMApp({ user, onLogout }) {
       <span style={{ fontSize:10, fontWeight:800, color:'#E8C547', letterSpacing:2, marginTop:4, marginBottom:28 }}>LE TED</span>
       {[
         { id:'reservations', label:'Réservations', icon:<CalendarDays size={24} strokeWidth={1.8} /> },
+        { id:'commandes', label:'Commandes', icon:<ShoppingBag size={24} strokeWidth={1.8} /> },
         { id:'clients', label:'Clients', icon:<Users size={24} strokeWidth={1.8} /> },
         { id:'communications', label:'Communications', icon:<Megaphone size={24} strokeWidth={1.8} /> },
         { id:'roue', label:'Jeux', icon:<Dices size={24} strokeWidth={1.8} /> },
@@ -6042,6 +6459,17 @@ function CRMApp({ user, onLogout }) {
     </>
   );
 
+
+  if (!isMobile && activeView === 'commandes') return (
+    <>
+      {sidebarDesktop}
+      <div style={{ marginLeft:120, minHeight:'100vh', background:'#f5f5f5' }}>
+        <CommandesPage showToast={showToast} user={user} />
+      </div>
+      {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
+      {notifPrePromptModal}
+    </>
+  );
 
   if (!isMobile && activeView === 'menu') return (
     <>

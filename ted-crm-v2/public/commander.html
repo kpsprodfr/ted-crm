@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#111111" />
+  <title>Commander à emporter — Le TED</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{overflow-x:hidden;max-width:100vw;position:relative}
+    *{-webkit-tap-highlight-color:transparent;max-width:100%}
+    button{touch-action:manipulation}
+    body{font-family:'Inter','Segoe UI',Arial,sans-serif;background:#f8f8f8;color:#111;min-height:100vh}
+    :root{--g:#E8C547;--r:14px}
+
+    /* Header */
+    .header{background:#111;padding:20px 20px 18px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-bottom:3px solid var(--g);text-align:center}
+    .header-logo{height:42px;margin-bottom:8px}
+    .header-title{color:#fff;font-weight:800;font-size:18px;letter-spacing:1px}
+
+    /* Progress */
+    .progress-bar{background:#fff;border-bottom:1.5px solid #eee;padding:14px 20px}
+    .progress-steps{display:flex;align-items:center;gap:0;max-width:500px;margin:0 auto}
+    .step-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;transition:all 0.2s}
+    .step-dot.done{background:#111;color:var(--g)}
+    .step-dot.active{background:var(--g);color:#111;box-shadow:0 0 0 3px rgba(232,197,71,0.3)}
+    .step-dot.todo{background:#f0f0f0;color:#bbb}
+    .step-line{flex:1;height:2px;background:#eee}
+    .step-line.done{background:#111}
+    .step-labels{display:flex;justify-content:space-between;margin-top:6px;max-width:500px;margin-left:auto;margin-right:auto}
+    .step-label{font-size:10px;color:#bbb;text-align:center;width:28px;flex-shrink:0}
+    .step-label.active{color:#111;font-weight:700}
+
+    /* Container */
+    .container{max-width:540px;margin:0 auto;padding:24px 16px 120px}
+    .step-title{font-size:20px;font-weight:800;margin-bottom:6px}
+    .step-subtitle{font-size:13px;color:#888;margin-bottom:24px}
+    .section-label{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:20px}
+    .section-label:first-child{margin-top:0}
+
+    /* Catégories (pills) */
+    .cats{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px;scrollbar-width:none}
+    .cats::-webkit-scrollbar{display:none}
+    .cat-pill{flex-shrink:0;padding:9px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid #eee;background:#fff;color:#555;white-space:nowrap;min-height:38px}
+    .cat-pill.active{background:#111;color:var(--g);border-color:#111}
+
+    /* Produit */
+    .produit{display:flex;align-items:center;gap:12px;background:#fff;border:1.5px solid #eee;border-radius:12px;padding:12px 14px;margin-bottom:8px}
+    .produit-info{flex:1;min-width:0}
+    .produit-nom{font-size:14.5px;font-weight:700;color:#111;line-height:1.3}
+    .produit-desc{font-size:12px;color:#999;line-height:1.45;margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .produit-prix{font-size:14px;font-weight:800;color:#111;white-space:nowrap}
+    .add-btn{width:38px;height:38px;flex-shrink:0;border-radius:10px;border:none;background:var(--g);color:#111;font-size:21px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+    .add-btn:active{filter:brightness(0.94)}
+    .qty-ctrl{display:flex;align-items:center;gap:8px;flex-shrink:0}
+    .qty-btn{width:32px;height:32px;border-radius:8px;border:1.5px solid #ddd;background:#fff;font-size:17px;font-weight:700;cursor:pointer;color:#111;display:flex;align-items:center;justify-content:center;line-height:1}
+    .qty-num{min-width:20px;text-align:center;font-size:15px;font-weight:800}
+
+    /* Panier */
+    .panier-item{display:flex;align-items:flex-start;gap:10px;padding:12px 0;border-bottom:1px solid #f5f5f5}
+    .panier-item:last-of-type{border-bottom:none}
+    .panier-note{width:100%;border:none;background:transparent;font-size:12.5px;color:#666;outline:none;font-style:italic;font-family:inherit;margin-top:4px}
+    .total-row{display:flex;justify-content:space-between;align-items:center;padding-top:14px;margin-top:6px;border-top:2px solid #111}
+    .total-label{font-size:14px;font-weight:800}
+    .total-val{font-size:22px;font-weight:900}
+
+    /* Barre panier fixe */
+    .cart-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1.5px solid #eee;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));z-index:50;box-shadow:0 -4px 20px rgba(0,0,0,0.08)}
+    .cart-bar-inner{max-width:540px;margin:0 auto;display:flex;align-items:center;gap:12px}
+
+    /* Form fields */
+    .field{margin-bottom:16px}
+    .label{display:block;font-size:12px;font-weight:700;color:#444;margin-bottom:6px}
+    .label span{color:#dc2626}
+    .input{width:100%;height:48px;border:1.5px solid #ddd;border-radius:10px;padding:0 14px;font-size:16px;outline:none;font-family:inherit;transition:border-color 0.15s}
+    .input:focus{border-color:var(--g)}
+    .input.error{border-color:#dc2626}
+    textarea.input{height:90px;padding:12px 14px;resize:vertical}
+    .error-msg{font-size:12px;color:#dc2626;margin-top:4px}
+    select.input{background:#fff;cursor:pointer}
+
+    /* RGPD */
+    .rgpd-wrap{display:flex;align-items:flex-start;gap:10px;background:#f8f8f8;border:1.5px solid #eee;border-radius:10px;padding:14px}
+    .rgpd-wrap input{width:20px;height:20px;flex-shrink:0;cursor:pointer;accent-color:#111;margin-top:1px}
+    .rgpd-wrap label{font-size:13px;color:#555;line-height:1.5;cursor:pointer}
+
+    /* Récap */
+    .recap-card{background:#fff;border:1.5px solid #eee;border-radius:14px;padding:20px;margin-bottom:20px}
+    .recap-title{font-size:13px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px}
+    .recap-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f5f5f5;font-size:14px}
+    .recap-row:last-child{border-bottom:none}
+    .recap-label{color:#888}
+    .recap-val{font-weight:600;color:#111;text-align:right;max-width:60%}
+
+    /* Buttons navigation */
+    .btn-back{background:#fff;border:1.5px solid #ddd;border-radius:10px;padding:0 20px;height:48px;font-size:15px;font-weight:600;cursor:pointer;color:#555;display:flex;align-items:center;gap:8px}
+    .btn-next{background:var(--g);border:none;border-radius:10px;padding:0 24px;height:52px;font-size:16px;font-weight:800;cursor:pointer;color:#111;display:flex;align-items:center;gap:8px;flex:1;justify-content:center;box-shadow:0 4px 16px rgba(232,197,71,0.35);transition:all 0.15s}
+    .btn-next:hover{filter:brightness(1.05)}
+    .btn-next:disabled{background:#ddd;color:#999;box-shadow:none;cursor:not-allowed}
+    .nav-row{display:flex;gap:12px;align-items:center;margin-top:24px}
+
+    /* Success */
+    .success-wrap{text-align:center;padding:40px 20px}
+    .success-icon{width:80px;height:80px;border-radius:50%;background:#f0fdf4;border:4px solid #22c55e;display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 20px;animation:popIn 0.4s cubic-bezier(0.34,1.56,0.64,1)}
+    .success-title{font-size:22px;font-weight:800;margin-bottom:8px}
+    .success-sub{font-size:15px;color:#666;line-height:1.6;max-width:380px;margin:0 auto 24px}
+    .success-note{background:#fffbeb;border:1.5px solid var(--g);border-radius:12px;padding:14px 18px;font-size:13px;color:#92400e;line-height:1.6;max-width:380px;margin:0 auto}
+    .numero-cmd{display:inline-block;background:#111;color:var(--g);border-radius:12px;padding:12px 26px;font-size:26px;font-weight:900;letter-spacing:2px;margin-bottom:20px}
+
+    .empty{text-align:center;padding:40px 20px;color:#bbb;font-size:14px}
+
+    @keyframes popIn{0%{opacity:0;transform:scale(0.4)}70%{transform:scale(1.08)}100%{opacity:1;transform:scale(1)}}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+    .step-panel{animation:fadeIn 0.2s ease}
+
+    @media(max-width:480px){
+      .header{padding:16px 14px 14px}
+      .container{padding:16px 12px 120px}
+      .step-title{font-size:18px}
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <img src="/assets/logo-ours-or.png" alt="Le TED" class="header-logo" onerror="this.style.display='none'" />
+  <div class="header-title">Commander à emporter</div>
+</div>
+
+<div class="progress-bar">
+  <div class="progress-steps" id="progress-dots"></div>
+  <div class="step-labels" id="progress-labels"></div>
+</div>
+
+<div class="container">
+  <div id="step-1" class="step-panel"></div>
+  <div id="step-2" class="step-panel" style="display:none"></div>
+  <div id="step-3" class="step-panel" style="display:none"></div>
+  <div id="step-success" style="display:none"></div>
+</div>
+
+<div class="cart-bar" id="cart-bar" style="display:none">
+  <div class="cart-bar-inner">
+    <div style="flex:1;min-width:0">
+      <div style="font-size:11px;color:#888;font-weight:600" id="cart-count"></div>
+      <div style="font-size:19px;font-weight:900" id="cart-total"></div>
+    </div>
+    <button class="btn-next" style="flex:initial;padding:0 28px" onclick="goStep(2)">Continuer →</button>
+  </div>
+</div>
+
+<script>
+// Timeout global 10 s sur tous les fetch (résilience réseau)
+if (window.AbortSignal && AbortSignal.timeout) {
+  const _fetch = window.fetch.bind(window);
+  window.fetch = (url, opts = {}) => _fetch(url, { ...opts, signal: opts.signal || AbortSignal.timeout(10000) });
+}
+const SUPABASE_URL = 'https://mwpfaytccypvdrgapptk.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_4-uVtQtXd0jLGkNAFsx4yw_ni17DzN_';
+
+async function sbFetch(path, method = 'GET', body = null, prefer = null) {
+  const opts = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON,
+      'Authorization': 'Bearer ' + SUPABASE_ANON,
+      'Prefer': prefer !== null ? prefer : ((method === 'POST' || method === 'PATCH') ? 'return=representation' : '')
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, opts);
+  const text = await res.text();
+  let data = null;
+  try { data = JSON.parse(text); } catch(e) { data = text; }
+  if (!res.ok) throw new Error((data && data.message) || ('HTTP ' + res.status));
+  return data;
+}
+
+function esc(str) {
+  return String(str == null ? '' : str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+// Sanitisation : suppression de tout HTML + longueur bornée
+function sanitizeField(v, max) {
+  return (v || '').replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim().slice(0, max || 50);
+}
+function fmtEuro(n) { return (Number(n) || 0).toFixed(2).replace('.', ',') + ' €'; }
+function formatPrix(p) {
+  if (p == null || p === '') return 0;
+  const s = String(p).replace('€','').replace(',','.').trim();
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+// ─── État ─────────────────────────────────────────────────────────────────────
+const state = {
+  step: 1,
+  categories: [],
+  produits: [],
+  catActive: null,
+  panier: [],        // [{nom, prix, quantite, note}]
+  nom: '', tel: '', email: '',
+  heureRetrait: '',
+  note: '',
+  rgpd: false,
+  submitting: false,
+  numero: null,
+};
+let step2Errors = {};
+
+const STEPS = ['Panier', 'Vos infos', 'Confirmer'];
+
+function renderProgress() {
+  const dots = document.getElementById('progress-dots');
+  const labels = document.getElementById('progress-labels');
+  let dh = '', lh = '';
+  STEPS.forEach((s, i) => {
+    const n = i + 1;
+    const cls = state.step > n ? 'done' : state.step === n ? 'active' : 'todo';
+    dh += `<div class="step-dot ${cls}">${state.step > n ? '✓' : n}</div>`;
+    if (i < STEPS.length - 1) dh += `<div class="step-line ${state.step > n ? 'done' : ''}"></div>`;
+    lh += `<div class="step-label ${state.step === n ? 'active' : ''}">${s}</div>`;
+  });
+  dots.innerHTML = dh;
+  labels.innerHTML = lh;
+}
+
+function goStep(n) {
+  state.step = n;
+  [1,2,3].forEach(i => { document.getElementById('step-' + i).style.display = i === n ? 'block' : 'none'; });
+  document.getElementById('step-success').style.display = 'none';
+  renderProgress();
+  if (n === 1) renderStep1();
+  if (n === 2) renderStep2();
+  if (n === 3) renderStep3();
+  majCartBar();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─── Panier ───────────────────────────────────────────────────────────────────
+const totalPanier = () => state.panier.reduce((s, it) => s + it.prix * it.quantite, 0);
+const nbArticles  = () => state.panier.reduce((s, it) => s + it.quantite, 0);
+
+function ajouterProduit(nom, prix) {
+  const i = state.panier.findIndex(x => x.nom === nom && !x.note);
+  if (i >= 0) state.panier[i].quantite += 1;
+  else state.panier.push({ nom, prix: formatPrix(prix), quantite: 1, note: '' });
+  renderStep1();
+  majCartBar();
+}
+function changerQte(nom, delta) {
+  const i = state.panier.findIndex(x => x.nom === nom);
+  if (i < 0) return;
+  state.panier[i].quantite += delta;
+  if (state.panier[i].quantite <= 0) state.panier.splice(i, 1);
+  renderStep1();
+  majCartBar();
+}
+function qteDe(nom) {
+  const it = state.panier.find(x => x.nom === nom);
+  return it ? it.quantite : 0;
+}
+
+function majCartBar() {
+  const bar = document.getElementById('cart-bar');
+  if (state.step !== 1 || state.panier.length === 0) { bar.style.display = 'none'; return; }
+  bar.style.display = 'block';
+  document.getElementById('cart-count').textContent = nbArticles() + ' article' + (nbArticles() > 1 ? 's' : '');
+  document.getElementById('cart-total').textContent = fmtEuro(totalPanier());
+}
+
+// ─── Étape 1 : choix des produits ─────────────────────────────────────────────
+function renderStep1() {
+  const el = document.getElementById('step-1');
+  if (!state.produits.length) {
+    el.innerHTML = `<div class="step-title">Chargement de la carte…</div>`;
+    return;
+  }
+
+  const cats = state.categories.filter(c => state.produits.some(p => p.categorie_id === c.id));
+  if (!state.catActive && cats.length) state.catActive = cats[0].id;
+
+  const prodsCat = state.produits.filter(p => p.categorie_id === state.catActive);
+
+  el.innerHTML = `
+    <div class="step-title">Votre commande</div>
+    <div class="step-subtitle">Choisissez vos articles à emporter</div>
+
+    <div class="cats">
+      ${cats.map(c => `<button class="cat-pill ${c.id === state.catActive ? 'active' : ''}" onclick="state.catActive='${c.id}';renderStep1()">${esc(c.nom)}</button>`).join('')}
+    </div>
+
+    ${prodsCat.length === 0 ? '<div class="empty">Aucun article dans cette catégorie</div>' : prodsCat.map(p => {
+      const q = qteDe(p.nom);
+      return `<div class="produit">
+        <div class="produit-info">
+          <div class="produit-nom">${esc(p.nom)}</div>
+          ${p.description ? `<div class="produit-desc">${esc(p.description)}</div>` : ''}
+        </div>
+        <div class="produit-prix">${fmtEuro(formatPrix(p.prix))}</div>
+        ${q > 0
+          ? `<div class="qty-ctrl">
+               <button class="qty-btn" onclick="changerQte('${esc(p.nom).replace(/'/g,"\\'")}',-1)">−</button>
+               <span class="qty-num">${q}</span>
+               <button class="qty-btn" onclick="changerQte('${esc(p.nom).replace(/'/g,"\\'")}',1)">+</button>
+             </div>`
+          : `<button class="add-btn" onclick="ajouterProduit('${esc(p.nom).replace(/'/g,"\\'")}','${p.prix}')">+</button>`}
+      </div>`;
+    }).join('')}
+
+    ${state.panier.length > 0 ? `
+      <div class="section-label">Votre panier</div>
+      <div class="recap-card">
+        ${state.panier.map((it, i) => `
+          <div class="panier-item">
+            <div class="qty-ctrl">
+              <button class="qty-btn" onclick="changerQte('${esc(it.nom).replace(/'/g,"\\'")}',-1)">−</button>
+              <span class="qty-num">${it.quantite}</span>
+              <button class="qty-btn" onclick="changerQte('${esc(it.nom).replace(/'/g,"\\'")}',1)">+</button>
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:14px;font-weight:700">${esc(it.nom)}</div>
+              <input class="panier-note" placeholder="Précision (sans oignons…)" value="${esc(it.note)}" oninput="state.panier[${i}].note=this.value.slice(0,120)" />
+            </div>
+            <div style="font-size:14px;font-weight:700;white-space:nowrap">${fmtEuro(it.prix * it.quantite)}</div>
+          </div>
+        `).join('')}
+        <div class="total-row"><span class="total-label">TOTAL</span><span class="total-val">${fmtEuro(totalPanier())}</span></div>
+      </div>
+    ` : ''}
+  `;
+}
+
+// ─── Étape 2 : coordonnées ────────────────────────────────────────────────────
+function renderStep2() {
+  const e = step2Errors;
+  const el = document.getElementById('step-2');
+  el.innerHTML = `
+    <div class="step-title">Vos coordonnées</div>
+    <div class="step-subtitle">Pour vous prévenir quand la commande est prête</div>
+
+    <div class="field">
+      <label class="label">Nom <span>*</span></label>
+      <input class="input ${e.nom?'error':''}" value="${esc(state.nom)}" oninput="state.nom=this.value" placeholder="Jean Dupont" />
+      ${e.nom ? `<div class="error-msg">${e.nom}</div>` : ''}
+    </div>
+
+    <div class="field">
+      <label class="label">Téléphone <span>*</span></label>
+      <input class="input ${e.tel?'error':''}" type="tel" inputmode="tel" value="${esc(state.tel)}" oninput="state.tel=this.value" placeholder="06 12 34 56 78" />
+      ${e.tel ? `<div class="error-msg">${e.tel}</div>` : ''}
+    </div>
+
+    <div class="field">
+      <label class="label">Email (optionnel)</label>
+      <input class="input ${e.email?'error':''}" type="email" inputmode="email" value="${esc(state.email)}" oninput="state.email=this.value" placeholder="jean@exemple.fr" />
+      ${e.email ? `<div class="error-msg">${e.email}</div>` : ''}
+    </div>
+
+    <div class="field">
+      <label class="label">Heure de retrait souhaitée</label>
+      <input class="input" type="time" value="${esc(state.heureRetrait)}" oninput="state.heureRetrait=this.value" />
+    </div>
+
+    <div class="field">
+      <label class="label">Note (allergie, précision…)</label>
+      <textarea class="input" oninput="state.note=this.value" placeholder="Facultatif">${esc(state.note)}</textarea>
+    </div>
+
+    <div class="rgpd-wrap">
+      <input type="checkbox" id="rgpd" ${state.rgpd?'checked':''} onchange="state.rgpd=this.checked" />
+      <label for="rgpd">J'accepte que mes coordonnées soient utilisées pour le traitement de ma commande.</label>
+    </div>
+    ${e.rgpd ? `<div class="error-msg">${e.rgpd}</div>` : ''}
+
+    <div class="nav-row">
+      <button class="btn-back" onclick="goStep(1)">←</button>
+      <button class="btn-next" onclick="validerStep2()">Continuer →</button>
+    </div>
+  `;
+}
+
+function validerStep2() {
+  state.nom = sanitizeField(state.nom, 60);
+  state.email = sanitizeField(state.email, 254);
+  state.note = sanitizeField(state.note, 500);
+  const e = {};
+  if (!state.nom.trim()) e.nom = 'Nom obligatoire';
+  const tel = (state.tel || '').replace(/[\s.\-()]/g, '');
+  if (!/^(\+33|0)[1-9]\d{8}$/.test(tel)) e.tel = 'Numéro invalide (ex : 06 12 34 56 78)';
+  if (state.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(state.email)) e.email = 'Email invalide';
+  if (!state.rgpd) e.rgpd = 'Vous devez accepter pour continuer';
+  step2Errors = e;
+  if (Object.keys(e).length > 0) { renderStep2(); return; }
+  goStep(3);
+}
+
+// ─── Étape 3 : récapitulatif ──────────────────────────────────────────────────
+function renderStep3() {
+  const el = document.getElementById('step-3');
+  el.innerHTML = `
+    <div class="step-title">Vérifiez votre commande</div>
+    <div class="step-subtitle">Un dernier coup d'œil avant l'envoi</div>
+
+    <div class="recap-card">
+      <div class="recap-title">Articles</div>
+      ${state.panier.map(it => `
+        <div class="recap-row">
+          <span class="recap-label">${it.quantite}× ${esc(it.nom)}${it.note ? `<br><em style="font-size:12px">${esc(it.note)}</em>` : ''}</span>
+          <span class="recap-val">${fmtEuro(it.prix * it.quantite)}</span>
+        </div>
+      `).join('')}
+      <div class="total-row"><span class="total-label">TOTAL</span><span class="total-val">${fmtEuro(totalPanier())}</span></div>
+    </div>
+
+    <div class="recap-card">
+      <div class="recap-title">Vos informations</div>
+      <div class="recap-row"><span class="recap-label">Nom</span><span class="recap-val">${esc(state.nom)}</span></div>
+      <div class="recap-row"><span class="recap-label">Téléphone</span><span class="recap-val">${esc(state.tel)}</span></div>
+      ${state.email ? `<div class="recap-row"><span class="recap-label">Email</span><span class="recap-val">${esc(state.email)}</span></div>` : ''}
+      ${state.heureRetrait ? `<div class="recap-row"><span class="recap-label">Retrait</span><span class="recap-val">${esc(state.heureRetrait)}</span></div>` : ''}
+      ${state.note ? `<div class="recap-row"><span class="recap-label">Note</span><span class="recap-val">${esc(state.note)}</span></div>` : ''}
+    </div>
+
+    <div class="success-note" style="margin-bottom:20px">
+      ⚠️ <strong>Le paiement se fait au retrait</strong>, directement sur place. Votre commande sera confirmée par le restaurant.
+    </div>
+
+    <div class="nav-row">
+      <button class="btn-back" onclick="goStep(2)">←</button>
+      <button class="btn-next" id="btn-submit" onclick="envoyerCommande()" ${state.submitting?'disabled':''}>
+        ${state.submitting ? '⏳ Envoi…' : '📦 Envoyer ma commande'}
+      </button>
+    </div>
+  `;
+}
+
+// ─── Envoi ────────────────────────────────────────────────────────────────────
+async function envoyerCommande() {
+  if (state.submitting) return;
+  state.submitting = true;
+  renderStep3();
+
+  try {
+    const telNettoye = (state.tel || '').replace(/[\s.\-()]/g, '');
+    // return=minimal : la RLS n'autorise pas la lecture publique des commandes
+    await sbFetch('commandes', 'POST', {
+      client_nom: state.nom,
+      client_tel: telNettoye,
+      client_email: state.email || null,
+      items: state.panier.map(it => ({ nom: it.nom, prix: it.prix, quantite: it.quantite, note: sanitizeField(it.note, 120) })),
+      total: totalPanier(),
+      statut: 'nouvelle',
+      source: 'en_ligne',
+      heure_retrait: state.heureRetrait || null,
+      note: state.note || null,
+    }, 'return=minimal');
+
+    afficherSucces();
+  } catch (err) {
+    state.submitting = false;
+    renderStep3();
+    alert("Impossible d'envoyer la commande. Vérifiez votre connexion et réessayez.");
+  }
+}
+
+function afficherSucces() {
+  [1,2,3].forEach(i => { document.getElementById('step-' + i).style.display = 'none'; });
+  document.getElementById('cart-bar').style.display = 'none';
+  document.querySelector('.progress-bar').style.display = 'none';
+  const el = document.getElementById('step-success');
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div class="success-wrap">
+      <div class="success-icon">✓</div>
+      <div class="success-title">Commande envoyée !</div>
+      <div class="success-sub">
+        Merci ${esc(state.nom)}, le restaurant a bien reçu votre commande de <strong>${fmtEuro(totalPanier())}</strong>.
+        Vous serez contacté au <strong>${esc(state.tel)}</strong> dès qu'elle est prête.
+      </div>
+      <div class="success-note">
+        Le paiement se fait sur place au moment du retrait.${state.heureRetrait ? ` Retrait prévu vers <strong>${esc(state.heureRetrait)}</strong>.` : ''}
+      </div>
+      <div style="margin-top:26px">
+        <a href="/accueil.html" style="color:#888;font-size:14px;text-decoration:underline">Retour à l'accueil</a>
+      </div>
+    </div>
+  `;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─── Chargement de la carte ───────────────────────────────────────────────────
+async function chargerCarte() {
+  try {
+    const [cats, prods] = await Promise.all([
+      sbFetch('menu_categories?select=id,nom,ordre,carte,visible&order=ordre&limit=10000'),
+      sbFetch('menu_produits?select=id,nom,description,prix,categorie_id,disponible,carte&disponible=eq.true&order=ordre&limit=10000'),
+    ]);
+    // Carte restaurant uniquement (pas la carte Brasero, service sur place le mercredi)
+    state.categories = (cats || []).filter(c => c.visible !== false && (c.carte === 'restaurant' || c.carte === 'les-deux') && !/plat du jour|dessert du jour/i.test(c.nom || ''));
+    state.produits = (prods || []).filter(p => p.carte === 'restaurant' || p.carte === 'les-deux');
+  } catch (e) {
+    state.categories = []; state.produits = [];
+    document.getElementById('step-1').innerHTML = `<div class="empty">Impossible de charger la carte.<br>Vérifiez votre connexion et rechargez la page.</div>`;
+    return;
+  }
+  renderStep1();
+}
+
+renderProgress();
+chargerCarte();
+</script>
+</body>
+</html>
