@@ -2967,7 +2967,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
 
 const CMD_STATUTS = [
   { id:'nouvelle',       label:'Nouvelle',       court:'Nouvelle',  bg:'#dc2626', fg:'#fff' },
-  { id:'en_preparation', label:'En préparation', court:'En prépa',  bg:'#f97316', fg:'#111' },
+  { id:'en_preparation', label:'En préparation', court:'En prépa',  bg:'#c9490f', fg:'#fff' },
   { id:'prete',          label:'Prête',          court:'Prête',     bg:'#16a34a', fg:'#fff' },
   { id:'recuperee',      label:'Récupérée',      court:'Récupérée', bg:'#111111', fg:'#fff' },
   { id:'annulee',        label:'Annulée',        court:'Annulée',   bg:'#f5f5f5', fg:'#999' },
@@ -3552,7 +3552,7 @@ function CommandeCarte({ cmd, onOpen, onStatut }) {
           {/* Le bouton porte la couleur du statut courant : orange tant que la
               commande se prépare, vert une fois qu'elle attend son client. */}
           {cmd.statut === 'en_preparation' && (
-            <button onClick={()=>onStatut(cmd, 'prete')} style={{ width:150, height:150, flexShrink:0, border:'none', borderRadius:16, background:'#f97316', color:'#111', fontSize:17, fontWeight:900, lineHeight:1.15, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8, boxShadow:'0 6px 20px rgba(249,115,22,0.35)' }}>
+            <button onClick={()=>onStatut(cmd, 'prete')} style={{ width:150, height:150, flexShrink:0, border:'none', borderRadius:16, background:'#c9490f', color:'#fff', fontSize:17, fontWeight:900, lineHeight:1.15, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8, boxShadow:'0 6px 20px rgba(201,73,15,0.30)' }}>
               <CheckCircle size={34} strokeWidth={2.4} />
               Marquer prête
             </button>
@@ -4409,6 +4409,10 @@ function CommandeDetail({ cmd, onClose, onStatut, onEdit, onSupprimer }) {
   );
 }
 
+// ── Créneaux de retrait proposés en un clic (mêmes services que les résas) ────
+const CRENEAUX_MIDI = ['11:30','11:45','12:00','12:15','12:30','12:45','13:00','13:15','13:30','13:45','14:00','14:15'];
+const CRENEAUX_SOIR = ['18:00','18:30','19:00','19:15','19:30','19:45','20:00','20:15','20:30','20:45','21:00','21:30'];
+
 // ── Prise de commande au téléphone / modification d'une commande ─────────────
 // `cmd` absent → création. `cmd` présent → édition de cette commande.
 function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }) {
@@ -4422,18 +4426,44 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
     nom: it.nom || '', prix: Number(it.prix) || 0, quantite: Number(it.quantite) || 1, note: it.note || '',
   })));
   const [produits, setProduits] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [recherche, setRecherche] = useState('');
   const [saving, setSaving] = useState(false);
   const lockRef = useRef(false);
 
+  // Calendrier de retrait — même mécanique que « Nouvelle réservation »
+  const [showCalPicker, setShowCalPicker] = useState(false);
+  const [calPickerDate, setCalPickerDate] = useState(new Date((cmd?.date_retrait || dateLocale()) + 'T12:00:00'));
+  const [dateFlash, setDateFlash] = useState(null);
+  const [calFermeture, setCalFermeture] = useState(false);
+
+  // Service utilisé pour proposer les créneaux de retrait
+  const [svcRetrait, setSvcRetrait] = useState(() => {
+    if (cmd?.heure_retrait) return parseInt(String(cmd.heure_retrait).slice(0, 2), 10) < 15 ? 'midi' : 'soir';
+    return serviceActuel();
+  });
+
+  // Catalogue complet, ouvert par le bouton « + »
+  const [showCatalogue, setShowCatalogue] = useState(false);
+
+  // Garde-fou de fermeture : on ne perd pas une saisie en cours
+  const [toucheAuFormulaire, setToucheAuFormulaire] = useState(false);
+  const [confirmeFermeture, setConfirmeFermeture] = useState(false);
+  const marquerModifie = () => setToucheAuFormulaire(true);
+
   useEffect(() => {
     safeQuery(
-      () => supabase.from('menu_produits').select('id,nom,prix,disponible').eq('disponible', true).order('nom').limit(2000),
+      () => supabase.from('menu_produits').select('id,nom,prix,disponible,categorie_id,ordre').eq('disponible', true).order('ordre').limit(2000),
       { fallback: [], context: 'commande:produits' }
     ).then(({ data }) => setProduits(data || []));
+    safeQuery(
+      () => supabase.from('menu_categories').select('id,nom,ordre').order('ordre').limit(200),
+      { fallback: [], context: 'commande:categories' }
+    ).then(({ data }) => setCategories(data || []));
   }, []);
 
   function ajouter(p) {
+    marquerModifie();
     setItems(prev => {
       const i = prev.findIndex(x => x.nom === p.nom && !x.note);
       if (i >= 0) { const n = [...prev]; n[i] = { ...n[i], quantite: (n[i].quantite || 1) + 1 }; return n; }
@@ -4441,14 +4471,29 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
     });
     setRecherche('');
   }
+  function retirerUn(p) {
+    marquerModifie();
+    setItems(prev => {
+      const i = prev.findIndex(x => x.nom === p.nom && !x.note);
+      if (i < 0) return prev;
+      const n = [...prev];
+      if ((n[i].quantite || 1) <= 1) return n.filter((_, idx) => idx !== i);
+      n[i] = { ...n[i], quantite: n[i].quantite - 1 };
+      return n;
+    });
+  }
   function ajouterLibre() {
     const nomLibre = recherche.trim();
     if (!nomLibre) return;
+    marquerModifie();
     setItems(prev => [...prev, { nom: nomLibre, prix: 0, quantite: 1, note: '' }]);
     setRecherche('');
   }
-  const majItem = (i, patch) => setItems(prev => prev.map((it, idx) => idx === i ? { ...it, ...patch } : it));
-  const retirer  = (i) => setItems(prev => prev.filter((_, idx) => idx !== i));
+  const majItem = (i, patch) => { marquerModifie(); setItems(prev => prev.map((it, idx) => idx === i ? { ...it, ...patch } : it)); };
+  const retirer  = (i) => { marquerModifie(); setItems(prev => prev.filter((_, idx) => idx !== i)); };
+
+  // Quantité déjà au panier pour un produit du catalogue
+  const quantiteDe = (p) => items.filter(x => x.nom === p.nom && !x.note).reduce((s, x) => s + (Number(x.quantite) || 0), 0);
 
   const total = cmdTotal(items);
   const formValide = nom.trim() && items.length > 0;
@@ -4456,6 +4501,18 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
   const suggestions = recherche.trim().length >= 1
     ? produits.filter(p => normalizeStr(p.nom || '').includes(normalizeStr(recherche))).slice(0, 6)
     : [];
+
+  // Catalogue groupé par catégorie, dans l'ordre de la carte
+  const parCategorie = categories
+    .map(c => ({ ...c, produits: produits.filter(p => p.categorie_id === c.id) }))
+    .filter(c => c.produits.length > 0);
+  const sansCategorie = produits.filter(p => !categories.some(c => c.id === p.categorie_id));
+  if (sansCategorie.length) parCategorie.push({ id: '_autres', nom: 'Autres', produits: sansCategorie });
+
+  function demanderFermeture() {
+    if (toucheAuFormulaire) { setConfirmeFermeture(true); return; }
+    onClose();
+  }
 
   async function enregistrer() {
     if (!formValide || lockRef.current) return;
@@ -4520,50 +4577,164 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
     onSaved();
   }
 
+  // ── Calendrier de retrait, repris à l'identique de « Nouvelle réservation » ──
+  const calendarJSX = showCalPicker && (() => {
+    const anneeP = calPickerDate.getFullYear();
+    const moisP = calPickerDate.getMonth();
+    const premierJourSemaine = new Date(anneeP, moisP, 1).getDay() || 7;
+    const nbJours = new Date(anneeP, moisP + 1, 0).getDate();
+    const casesP = Array(premierJourSemaine - 1).fill(null).concat(Array.from({length: nbJours}, (_, i) => i + 1));
+    const todayIso = dateLocale();
+    return (
+      <div className={calFermeture ? 'cal-fermeture' : ''} style={{ marginTop:8, background:'#fff', borderRadius:12, border:'1.5px solid #eee', boxShadow:'0 4px 16px rgba(0,0,0,0.08)', overflow:'hidden' }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 12px', borderBottom:'1px solid #eee' }}>
+          <button onPointerDown={()=>setCalPickerDate(new Date(anneeP, moisP-1))} style={{ width:40, height:40, borderRadius:10, border:'1.5px solid #ddd', background:'#fff', fontSize:20, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', touchAction:'manipulation', WebkitTapHighlightColor:'transparent' }}>‹</button>
+          <span style={{ fontSize:15, fontWeight:800, color:'#111', textTransform:'capitalize' }}>{calPickerDate.toLocaleDateString('fr-FR', {month:'long', year:'numeric'})}</span>
+          <button onPointerDown={()=>setCalPickerDate(new Date(anneeP, moisP+1))} style={{ width:40, height:40, borderRadius:10, border:'1.5px solid #ddd', background:'#fff', fontSize:20, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', touchAction:'manipulation', WebkitTapHighlightColor:'transparent' }}>›</button>
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', padding:'6px 6px 2px' }}>
+          {['L','M','M','J','V','S','D'].map((j,i) => <div key={i} style={{ textAlign:'center', fontSize:11, fontWeight:700, color:'#aaa', padding:'3px 0' }}>{j}</div>)}
+        </div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', padding:'2px 6px 8px', gap:2 }}>
+          {casesP.map((jour, i) => {
+            if (!jour) return <div key={i}/>;
+            const iso = `${anneeP}-${String(moisP+1).padStart(2,'0')}-${String(jour).padStart(2,'0')}`;
+            const estAujourdhui = iso === todayIso;
+            const estSelectionne = dateRetrait === iso;
+            const aujourd2 = new Date(); aujourd2.setHours(0,0,0,0);
+            const estPasse = new Date(anneeP, moisP, jour) < aujourd2;
+            return (
+              <button key={i} disabled={estPasse} className={dateFlash === iso ? 'date-flash' : ''} onPointerDown={()=>{ if (estPasse) return; marquerModifie(); setDateFlash(iso); setDateRetrait(iso); setTimeout(()=>{ setCalFermeture(true); setTimeout(()=>{ setShowCalPicker(false); setCalFermeture(false); setDateFlash(null); }, 300); }, 200); }} style={{
+                height:44, borderRadius:10,
+                border: estAujourdhui && !estSelectionne ? '2px solid #E8C547' : '1.5px solid transparent',
+                background: estSelectionne ? '#E8C547' : 'transparent',
+                fontWeight: estAujourdhui || estSelectionne ? 800 : 400,
+                fontSize:15, cursor: estPasse ? 'not-allowed' : 'pointer',
+                color: estPasse ? '#ccc' : '#111', opacity: estPasse ? 0.4 : 1,
+                pointerEvents: estPasse ? 'none' : 'auto',
+                touchAction:'manipulation', WebkitTapHighlightColor:'transparent'
+              }}>{jour}</button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  })();
+
+  const creneaux = svcRetrait === 'midi' ? CRENEAUX_MIDI : CRENEAUX_SOIR;
+
   return (
     <>
-      <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:4999 }} />
-      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:20, width:'min(580px, calc(100vw - 32px))', maxHeight:'90vh', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.25)', zIndex:5000, overflow:'hidden' }}>
+      <div onClick={demanderFermeture} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:4999 }} />
+      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:20, width:'min(580px, calc(100vw - 32px))', height:'min(880px, calc(100vh - 32px))', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.25)', zIndex:5000, overflow:'hidden' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'20px 24px 16px', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
           <h2 style={{ margin:0, fontSize:18, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:8 }}>
             {edition
               ? <><Pencil size={17} strokeWidth={2} /> Modifier la commande N° {cmd.numero || '—'}</>
               : <><Phone size={17} strokeWidth={2} /> Commande téléphone</>}
           </h2>
-          <button onClick={onClose} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666' }}>✕</button>
+          <button onClick={demanderFermeture} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666' }}>✕</button>
         </div>
 
-        <div style={{ padding:'16px 24px', overflowY:'auto', display:'flex', flexDirection:'column', gap:14, flex:1 }}>
+        {/* minHeight:0 est indispensable : sans lui le contenu flex ne défile pas */}
+        <div style={{ padding:'16px 24px', overflowY:'auto', display:'flex', flexDirection:'column', gap:16, flex:1, minHeight:0 }}>
           {/* Client */}
           <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-            <input value={nom} onChange={e=>setNom(e.target.value)} placeholder="Nom du client *" style={inp(false)} />
-            <div style={{ display:'flex', gap:10 }}>
-              <input value={tel} onChange={e=>setTel(e.target.value)} placeholder="Téléphone" inputMode="tel" style={{ ...inp(false), flex:1 }} />
-              <input value={heureRetrait} onChange={e=>setHeureRetrait(e.target.value)} placeholder="Retrait" type="time" style={{ ...inp(false), width:130 }} />
+            <input value={nom} onChange={e=>{marquerModifie(); setNom(e.target.value);}} placeholder="Nom du client *" style={inp(false)} />
+            <input value={tel} onChange={e=>{marquerModifie(); setTel(e.target.value);}} placeholder="Téléphone" inputMode="tel" style={inp(false)} />
+          </div>
+
+          {/* Jour de retrait */}
+          <div>
+            <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px' }}>Jour de retrait</p>
+            <button onClick={()=>setShowCalPicker(v=>!v)} style={{ width:'100%', height:48, borderRadius:10, border:'1.5px solid #ddd', background:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 14px' }}>
+              <span style={{ display:'flex', alignItems:'center', gap:9, fontSize:14.5, fontWeight:700, color:'#111', textTransform:'capitalize' }}>
+                <CalendarDays size={16} strokeWidth={2} color="#999" />
+                {new Date(dateRetrait + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' })}
+              </span>
+              <ChevronDown size={16} color="#999" style={{ transform: showCalPicker ? 'rotate(180deg)' : 'none', transition:'transform 0.2s' }} />
+            </button>
+            {calendarJSX}
+          </div>
+
+          {/* Heure de retrait, en un clic */}
+          <div>
+            <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px' }}>Heure de retrait</p>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:10 }}>
+              <button onClick={()=>setSvcRetrait('midi')} style={{ height:46, borderRadius:12, cursor:'pointer', fontSize:14.5, fontWeight:700, border:`1.5px solid ${svcRetrait==='midi'?'#E8C547':'#eee'}`, background:svcRetrait==='midi'?'#fffbea':'#fff', color:'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                <Sun size={17} strokeWidth={2} color={svcRetrait==='midi'?'#E8C547':'#999'} /> Midi
+              </button>
+              <button onClick={()=>setSvcRetrait('soir')} style={{ height:46, borderRadius:12, cursor:'pointer', fontSize:14.5, fontWeight:700, border:svcRetrait==='soir'?'none':'1.5px solid #eee', background:svcRetrait==='soir'?'#111':'#fff', color:svcRetrait==='soir'?'#E8C547':'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                <Moon size={17} strokeWidth={2} color={svcRetrait==='soir'?'#E8C547':'#999'} /> Soir
+              </button>
             </div>
-            <div>
-              <label style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, display:'block', marginBottom:6 }}>Jour de retrait</label>
-              <input type="date" value={dateRetrait} min={dateLocale()} onChange={e=>setDateRetrait(e.target.value)} style={inp(false)} />
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8 }}>
+              {creneaux.map(h => (
+                <button key={h} onClick={()=>{ marquerModifie(); setHeureRetrait(heureRetrait===h ? '' : h); }} style={{ height:42, borderRadius:10, cursor:'pointer', fontSize:13.5, fontWeight:600, border:`1.5px solid ${heureRetrait===h?'#111':'#eee'}`, background:heureRetrait===h?'#111':'#fff', color:heureRetrait===h?'#E8C547':'#111' }}>{h}</button>
+              ))}
             </div>
+            {heureRetrait && !creneaux.includes(heureRetrait) && (
+              <p style={{ fontSize:12.5, color:'#666', margin:'8px 0 0' }}>
+                Heure enregistrée : <strong>{heureRetrait}</strong> — hors créneaux proposés.
+              </p>
+            )}
           </div>
 
           {/* Ajout d'articles */}
           <div>
             <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px' }}>Articles</p>
-            <div style={{ position:'relative' }}>
-              <input value={recherche} onChange={e=>setRecherche(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter'){ if(suggestions.length) ajouter(suggestions[0]); else ajouterLibre(); } }} placeholder="Rechercher un produit ou saisir un article hors carte…" style={inp(false)} />
-              {suggestions.length > 0 && (
-                <div style={{ position:'absolute', top:'calc(100% + 4px)', left:0, right:0, background:'#fff', borderRadius:10, boxShadow:'0 8px 32px rgba(0,0,0,0.15)', padding:6, zIndex:20, maxHeight:230, overflowY:'auto' }}>
-                  {suggestions.map(p => (
-                    <button key={p.id} onClick={()=>ajouter(p)} style={{ width:'100%', padding:'10px 12px', border:'none', background:'none', textAlign:'left', cursor:'pointer', fontSize:13.5, borderRadius:6, display:'flex', justifyContent:'space-between', gap:10, color:'#111' }} onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'} onMouseLeave={e=>e.currentTarget.style.background='none'}>
-                      <span>{p.nom}</span><span style={{ fontWeight:700, whiteSpace:'nowrap' }}>{fmtEuro(p.prix)}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+            <div style={{ display:'flex', gap:8, alignItems:'flex-start' }}>
+              <div style={{ position:'relative', flex:1 }}>
+                <input value={recherche} onChange={e=>setRecherche(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter'){ if(suggestions.length) ajouter(suggestions[0]); else ajouterLibre(); } }} placeholder="Rechercher un produit ou saisir un article hors carte…" style={inp(false)} />
+                {suggestions.length > 0 && (
+                  <div style={{ position:'absolute', top:'calc(100% + 4px)', left:0, right:0, background:'#fff', borderRadius:10, boxShadow:'0 8px 32px rgba(0,0,0,0.15)', padding:6, zIndex:20, maxHeight:230, overflowY:'auto' }}>
+                    {suggestions.map(p => (
+                      <button key={p.id} onClick={()=>ajouter(p)} style={{ width:'100%', padding:'10px 12px', border:'none', background:'none', textAlign:'left', cursor:'pointer', fontSize:13.5, borderRadius:6, display:'flex', justifyContent:'space-between', gap:10, color:'#111' }} onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'} onMouseLeave={e=>e.currentTarget.style.background='none'}>
+                        <span>{p.nom}</span><span style={{ fontWeight:700, whiteSpace:'nowrap' }}>{fmtEuro(p.prix)}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {/* Ouvre toute la carte */}
+              <button onClick={()=>setShowCatalogue(v=>!v)} title="Voir toute la carte"
+                style={{ width:48, height:48, flexShrink:0, borderRadius:10, cursor:'pointer', fontSize:24, fontWeight:400, lineHeight:1,
+                  border: showCatalogue ? 'none' : '1.5px solid #ddd',
+                  background: showCatalogue ? '#111' : '#fff',
+                  color: showCatalogue ? '#E8C547' : '#111',
+                  display:'flex', alignItems:'center', justifyContent:'center' }}>
+                {showCatalogue ? '×' : '+'}
+              </button>
             </div>
             {recherche.trim() && (
               <button onClick={ajouterLibre} style={{ ...btnSecondary, marginTop:8, height:34 }}>+ Ajouter « {recherche.trim()} » (hors carte)</button>
+            )}
+
+            {/* Catalogue complet */}
+            {showCatalogue && (
+              <div style={{ marginTop:10, border:'1.5px solid #eee', borderRadius:12, maxHeight:320, overflowY:'auto', background:'#fafafa' }}>
+                {parCategorie.length === 0 ? (
+                  <p style={{ margin:0, padding:'20px 14px', textAlign:'center', fontSize:13, color:'#999' }}>Aucun produit disponible dans la carte.</p>
+                ) : parCategorie.map(c => (
+                  <div key={c.id}>
+                    <p style={{ margin:0, padding:'9px 14px', fontSize:11, fontWeight:800, color:'#888', textTransform:'uppercase', letterSpacing:0.8, background:'#f0f0f0', position:'sticky', top:0 }}>{c.nom}</p>
+                    {c.produits.map(p => {
+                      const q = quantiteDe(p);
+                      return (
+                        <div key={p.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 14px', borderBottom:'1px solid #f0f0f0', background: q ? '#fffdf5' : '#fff' }}>
+                          <span style={{ flex:1, minWidth:0, fontSize:13.5, fontWeight: q ? 700 : 500, color:'#111' }}>{p.nom}</span>
+                          <span style={{ fontSize:13, color:'#888', whiteSpace:'nowrap' }}>{fmtEuro(p.prix)}</span>
+                          <div style={{ display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+                            <button onClick={()=>retirerUn(p)} disabled={!q} style={{ width:28, height:28, borderRadius:7, border:'1.5px solid #ddd', background:'#fff', fontSize:15, fontWeight:700, cursor: q ? 'pointer' : 'not-allowed', color: q ? '#111' : '#ddd' }}>−</button>
+                            <span style={{ minWidth:18, textAlign:'center', fontSize:14, fontWeight:800, color: q ? '#111' : '#ccc' }}>{q}</span>
+                            <button onClick={()=>ajouter(p)} style={{ width:28, height:28, borderRadius:7, border:'none', background:'#111', color:'#E8C547', fontSize:15, fontWeight:700, cursor:'pointer' }}>+</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 
@@ -4595,7 +4766,10 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
             </div>
           )}
 
-          <textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Note générale (allergie, paiement…)" rows={2} style={{ width:'100%', border:'1.5px solid #ddd', borderRadius:7, padding:'10px 12px', fontSize:14, outline:'none', resize:'vertical', fontFamily:'inherit', boxSizing:'border-box' }} />
+          <div>
+            <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px' }}>Note</p>
+            <textarea value={note} onChange={e=>{marquerModifie(); setNote(e.target.value);}} placeholder="Note générale (allergie, paiement…)" rows={3} style={{ width:'100%', border:'1.5px solid #ddd', borderRadius:7, padding:'10px 12px', fontSize:14, outline:'none', resize:'vertical', fontFamily:'inherit', boxSizing:'border-box' }} />
+          </div>
         </div>
 
         <div style={{ padding:'14px 24px calc(18px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #f0f0f0', flexShrink:0 }}>
@@ -4604,6 +4778,23 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
           </button>
         </div>
       </div>
+
+      {/* Fermeture avec des modifications non enregistrées */}
+      {confirmeFermeture && (
+        <>
+          <div onClick={()=>setConfirmeFermeture(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.4)', zIndex:5100 }} />
+          <div style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:18, width:'min(400px, calc(100vw - 40px))', padding:'22px 24px', boxShadow:'0 32px 80px rgba(0,0,0,0.3)', zIndex:5101 }}>
+            <h3 style={{ margin:'0 0 8px', fontSize:16.5, fontWeight:800, color:'#111' }}>Quitter sans enregistrer ?</h3>
+            <p style={{ margin:'0 0 18px', fontSize:13.5, color:'#666', lineHeight:1.55 }}>
+              {edition ? 'Les modifications apportées à cette commande' : 'La commande en cours de saisie'} seront perdues.
+            </p>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={()=>setConfirmeFermeture(false)} style={{ flex:1, height:46, border:'1.5px solid #ddd', borderRadius:12, background:'#fff', fontSize:14, fontWeight:700, cursor:'pointer', color:'#666' }}>Continuer la saisie</button>
+              <button onClick={onClose} style={{ flex:1, height:46, border:'none', borderRadius:12, background:'#dc2626', color:'#fff', fontSize:14, fontWeight:800, cursor:'pointer' }}>Quitter</button>
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 }
