@@ -2414,7 +2414,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
         {(() => {
           const nbAttente = resaList.filter(r => r.statut === 'attente').length;
           return (
-            <div onClick={()=>setShowDemandesAttente(true)} className={nbAttente > 0 ? 'alarm-blink' : ''} style={{ background: nbAttente > 0 ? '#dc2626' : '#fff', border: nbAttente > 0 ? 'none' : '1.5px solid #f0f0f0', borderRadius:16, padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', flexShrink:0, transition:'background 0.1s', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
+            <div onClick={()=>setShowDemandesAttente(true)} className={nbAttente > 0 ? 'alarm-blink' : ''} style={{ background: nbAttente > 0 ? '#dc2626' : '#fff', border: nbAttente > 0 ? 'none' : '1.5px solid #f0f0f0', borderRadius:16, padding: etroit ? '9px 16px' : '14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', flexShrink:0, transition:'background 0.1s', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
               <span style={{ fontSize:15, fontWeight:800, color: nbAttente > 0 ? '#fff' : '#111', display:'flex', alignItems:'center', gap:8 }}><ClipboardList size={16} strokeWidth={2} color={nbAttente > 0 ? '#fff' : '#666'} /> Demandes de réservation en attente</span>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                 {nbAttente > 0 ? (
@@ -2458,21 +2458,21 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           const couvertsMidi = calJourSelectionne ? resaList.filter(r => r.date === calJourSelectionne && r.service === 'midi' && r.statut === 'confirmee').reduce((sum, r) => sum + (r.nb_personnes || 0), 0) : 0;
           const couvertsSoir = calJourSelectionne ? resaList.filter(r => r.date === calJourSelectionne && r.service === 'soir' && r.statut === 'confirmee').reduce((sum, r) => sum + (r.nb_personnes || 0), 0) : 0;
           return (
-            <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', padding:14, flex:1, display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
+            <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', padding: etroit ? 10 : 14, flex:1, display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
               {/* 1. 15 jours scroll natif */}
               <div ref={joursScrollRef} className="jours-strip"
-                style={{ display:'flex', gap:8, overflowX:'scroll', marginBottom:16, flexShrink:0, WebkitOverflowScrolling:'touch', scrollSnapType:'x mandatory', userSelect:'none', WebkitUserSelect:'none' }}>
+                style={{ display:'flex', gap:8, overflowX:'scroll', marginBottom: etroit ? 8 : 16, flexShrink:0, WebkitOverflowScrolling:'touch', scrollSnapType:'x mandatory', userSelect:'none', WebkitUserSelect:'none' }}>
                 {quinzeJours.map(j => {
                   const totalCouverts = resaList.filter(r => r.date===j.date && r.statut==='confirmee').reduce((sum,r)=>sum+(r.nb_personnes||0),0);
                   const isSelected = calJourSelectionne === j.date;
                   return (
                     <div key={j.date} onClick={()=>setCalJourSelectionne(j.date)}
-                      style={{ borderRadius:12, padding:'10px 6px', textAlign:'center', cursor:'pointer', border:'2px solid', borderColor: isSelected?'#E8C547':'#eee', background: isSelected?'#fffbea':'#fff', transition:'border-color 0.15s, background 0.15s', flexShrink:0, width:'calc((100% - 40px) / 6)', scrollSnapAlign:'start' }}>
-                      <div style={{ fontSize:10, fontWeight:700, marginBottom:4, color: isSelected?'#E8C547': j.isAujourd?'#E8C547':'#999' }}>{j.isAujourd?'AUJ.':j.jour}</div>
-                      <div style={{ fontSize:20, fontWeight:900, marginBottom:2, color:'#111' }}>{j.num}</div>
-                      <div style={{ fontSize:10, color:'#999', marginBottom:4 }}>{j.mois}</div>
-                      <div style={{ fontSize:11, fontWeight:700, color: totalCouverts>0?'#111':'#ccc' }}>{totalCouverts>0?`${totalCouverts} p.`:'—'}</div>
-                      {j.isAujourd && <div style={{ width:5, height:5, borderRadius:'50%', background:'#E8C547', margin:'4px auto 0' }}/>}
+                      style={{ borderRadius:12, padding: etroit ? '6px 6px' : '10px 6px', textAlign:'center', cursor:'pointer', border:'2px solid', borderColor: isSelected?'#E8C547':'#eee', background: isSelected?'#fffbea':'#fff', transition:'border-color 0.15s, background 0.15s', flexShrink:0, width:'calc((100% - 40px) / 6)', scrollSnapAlign:'start' }}>
+                      <div style={{ fontSize:10, fontWeight:700, marginBottom: etroit ? 1 : 4, color: isSelected?'#E8C547': j.isAujourd?'#E8C547':'#999' }}>{j.isAujourd?'AUJ.':j.jour}</div>
+                      <div style={{ fontSize: etroit ? 17 : 20, fontWeight:900, marginBottom:1, color:'#111' }}>{j.num}</div>
+                      {!etroit && <div style={{ fontSize:10, color:'#999', marginBottom:4 }}>{j.mois}</div>}
+                      <div style={{ fontSize: etroit ? 10.5 : 11, fontWeight:700, color: totalCouverts>0?'#111':'#ccc' }}>{totalCouverts>0?`${totalCouverts} p.`:'—'}</div>
+                      {j.isAujourd && !etroit && <div style={{ width:5, height:5, borderRadius:'50%', background:'#E8C547', margin:'4px auto 0' }}/>}
                     </div>
                   );
                 })}
@@ -2524,7 +2524,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                           const estPasse2 = new Date(iso) < new Date(new Date().setHours(0,0,0,0));
                           return (
                             <button key={i} onClick={() => setCalJourSelectionne(iso)}
-                              style={{ textAlign:'center', height: etroit ? 44 : 48, borderRadius:6, cursor:'pointer', position:'relative',
+                              style={{ textAlign:'center', height: etroit ? 33 : 48, borderRadius:6, cursor:'pointer', position:'relative',
                                 border: isToday2 && !isSelected2 ? '2px solid #E8C547' : '2px solid transparent',
                                 background: isSelected2 ? '#111' : isToday2 ? '#fffbea' : 'transparent',
                                 color: isSelected2 ? '#fff' : '#111',
@@ -2579,19 +2579,19 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                     };
                     return (
                     <div style={{ marginBottom:4, userSelect:'none', WebkitUserSelect:'none' }}>
-                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: etroit ? 6 : 10 }}>
                         <button onClick={()=>changerMois(-1)} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, fontSize:16, cursor:'pointer', fontWeight:700 }}>‹</button>
-                        <span style={{ fontWeight:800, fontSize:18 }}>{MOIS[mois]} {annee}</span>
+                        <span style={{ fontWeight:800, fontSize: etroit ? 16 : 18 }}>{MOIS[mois]} {annee}</span>
                         <button onClick={()=>changerMois(1)} style={{ background:'#f0f0f0', border:'none', borderRadius:8, width:34, height:34, fontSize:16, cursor:'pointer', fontWeight:700 }}>›</button>
                       </div>
                       <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:2, marginBottom:4 }}>
-                        {JOURS.map(j => <div key={j} style={{ textAlign:'center', fontSize:13, fontWeight:700, color:'#999', padding:'8px 0' }}>{j}</div>)}
+                        {JOURS.map(j => <div key={j} style={{ textAlign:'center', fontSize: etroit ? 11.5 : 13, fontWeight:700, color:'#999', padding: etroit ? '3px 0' : '8px 0' }}>{j}</div>)}
                       </div>
                       <div ref={calContainerRef}
                         onTouchStart={handleCalTouchStart}
                         onTouchMove={handleCalTouchMove}
                         onTouchEnd={handleCalTouchEnd}
-                        style={{ overflow:'hidden', position:'relative', height: `${Math.ceil(cases.length/7)*51}px` }}
+                        style={{ overflow:'hidden', position:'relative', height: `${Math.ceil(cases.length/7)*(etroit ? 36 : 51)}px` }}
                       >
                         {renderCalGrid(cases, annee, mois, calDragX)}
                         {adjDate && renderCalGrid(adjCases, adjDate.getFullYear(), adjDate.getMonth(), calDragX + (calDragDir==='left' ? containerW : -containerW))}
@@ -3287,7 +3287,7 @@ function CommandesPage({ showToast, user }) {
       )}
 
       {/* ── Stats du jour + accès statistiques et calendrier ── */}
-      <div style={{ display:'grid', gridTemplateColumns: etroit ? '1fr 1fr' : '1fr 1fr auto auto', gap:12 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr auto auto', gap: etroit ? 8 : 12 }}>
         <div style={{ background:'#fff', borderRadius:14, padding:'14px 16px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', textAlign:'center' }}>
           <p style={{ fontSize:24, fontWeight:900, color:'#111', margin:'0 0 3px' }}>{nbJour}</p>
           <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0 }}>Commandes {labelJour(jourAffiche)}{service ? ` · ${service === 'midi' ? 'midi' : 'soir'}` : ''}</p>
@@ -3296,11 +3296,11 @@ function CommandesPage({ showToast, user }) {
           <p style={{ fontSize:24, fontWeight:900, color:'#111', margin:'0 0 3px' }}>{fmtEuro(caJour)}</p>
           <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0 }}>{jourSelectionne ? `Total du ${labelJour(jourAffiche)}` : 'Total du jour'}{service ? ` · ${service}` : ''}</p>
         </div>
-        <button onClick={()=>setShowStats(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:14, padding: isMobile ? '14px 16px' : '14px 22px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:7 }}>
+        <button onClick={()=>setShowStats(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:14, padding: (isMobile || etroit) ? '12px 14px' : '14px 22px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:7 }}>
           <BarChart3 size={22} strokeWidth={1.8} color="#666" />
           <span style={{ fontSize:10.5, fontWeight:700, color:'#666', letterSpacing:0.3 }}>Statistiques</span>
         </button>
-        <button onClick={()=>setShowCalendrier(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:14, padding: isMobile ? '12px 14px' : '12px 18px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:6 }}>
+        <button onClick={()=>setShowCalendrier(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:14, padding: (isMobile || etroit) ? '10px 12px' : '12px 18px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:6 }}>
           <CalendarDays size={22} strokeWidth={1.8} color="#666" />
           <span style={{ fontSize:10.5, fontWeight:700, color:'#666', letterSpacing:0.3 }}>Calendrier</span>
           {/* Jour actuellement affiché — remplacé par la date choisie dans le calendrier */}
@@ -3975,6 +3975,14 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
 function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChoisir, onClose }) {
   const isMobile = useIsMobile();
   const [calDate, setCalDate] = useState(new Date());
+  // Glissement horizontal d'un mois à l'autre, comme le calendrier des réservations
+  const grilleRef = useRef(null);
+  const swipeX0 = useRef(null);
+  const swipeY0 = useRef(null);
+  const [dragX, setDragX] = useState(0);
+  const [dragDir, setDragDir] = useState(null);
+  const [drag, setDrag] = useState(false);
+  const [sansTransition, setSansTransition] = useState(false);
   // Service consulté : celui déjà choisi, sinon celui en cours à cette heure-ci.
   const [svcChoisi, setSvcChoisi] = useState(service || serviceActuel());
   // Même enchaînement que le calendrier de « Nouvelle réservation » :
@@ -4024,13 +4032,56 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
   const today = new Date();
   const changerMois = (delta) => setCalDate(new Date(annee, mois + delta, 1));
 
+  // Mois voisin préparé pendant le glissement
+  const moisAdjacent = dragDir ? new Date(annee, mois + (dragDir === 'left' ? 1 : -1), 1) : null;
+  const casesAdjacentes = [];
+  if (moisAdjacent) {
+    const aA = moisAdjacent.getFullYear(), aM = moisAdjacent.getMonth();
+    const debut = (new Date(aA, aM, 1).getDay() + 6) % 7;
+    for (let i = 0; i < debut; i++) casesAdjacentes.push(null);
+    for (let d = 1; d <= new Date(aA, aM + 1, 0).getDate(); d++) casesAdjacentes.push(d);
+    while (casesAdjacentes.length % 7 !== 0) casesAdjacentes.push(null);
+  }
+  const largeurGrille = grilleRef.current?.offsetWidth || 320;
+
+  const debutSwipe = (e) => {
+    swipeX0.current = e.touches[0].clientX;
+    swipeY0.current = e.touches[0].clientY;
+    setDragDir(null); setDrag(false); setDragX(0);
+  };
+  const pendantSwipe = (e) => {
+    if (swipeX0.current === null) return;
+    const dx = e.touches[0].clientX - swipeX0.current;
+    const dy = e.touches[0].clientY - swipeY0.current;
+    if (!drag && Math.abs(dy) > Math.abs(dx)) return;
+    if (!dragDir && Math.abs(dx) > 8) setDragDir(dx < 0 ? 'left' : 'right');
+    setDrag(true); setDragX(dx);
+  };
+  const finSwipe = (e) => {
+    if (swipeX0.current === null) return;
+    const dx = e.changedTouches[0].clientX - swipeX0.current;
+    const dy = e.changedTouches[0].clientY - swipeY0.current;
+    setDrag(false);
+    if (Math.abs(dy) <= Math.abs(dx) && Math.abs(dx) > largeurGrille * 0.28) {
+      const sens = dx < 0 ? 1 : -1;
+      setDragX(dx < 0 ? -largeurGrille : largeurGrille);
+      setTimeout(() => {
+        setSansTransition(true);
+        setCalDate(new Date(annee, mois + sens, 1));
+        setDragDir(null); setDragX(0);
+        setTimeout(() => setSansTransition(false), 30);
+      }, 280);
+    } else { setDragX(0); setDragDir(null); }
+    swipeX0.current = null;
+  };
+
   return (
     <>
       <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:5200, opacity: calFermeture ? 0 : 1, transition:'opacity 0.3s' }} />
       {/* Conteneur de centrage : la classe cal-fermeture anime `transform`,
           elle ne peut donc pas cohabiter avec un centrage par translate(-50%,-50%). */}
       <div style={{ position:'fixed', inset:0, display:'flex', alignItems:'center', justifyContent:'center', zIndex:5201, pointerEvents:'none' }}>
-      <div onClick={e=>e.stopPropagation()} className={calFermeture ? 'cal-fermeture' : ''} style={{ background:'#fff', borderRadius:20, width:'min(880px, calc(100vw - 24px))', height:'min(820px, calc(100vh - 24px))', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.28)', overflow:'hidden', pointerEvents:'auto' }}>
+      <div onClick={e=>e.stopPropagation()} className={calFermeture ? 'cal-fermeture' : ''} style={{ background:'#fff', borderRadius:20, width:'min(880px, calc(100vw - 24px))', height:'min(760px, calc(100vh - 20px))', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.28)', overflow:'hidden', pointerEvents:'auto' }}>
 
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'22px 28px 18px', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
           <h2 style={{ margin:0, fontSize:20, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:9 }}>
@@ -4039,19 +4090,27 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
           <button onClick={onClose} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666' }}>✕</button>
         </div>
 
-        <div style={{ padding:'18px 28px 22px', overflowY:'auto', flex:1, minHeight:0, display:'flex', flexDirection: isMobile ? 'column' : 'row', gap:16 }}>
-          <div style={{ background:'#f8f8f8', borderRadius:14, padding:18, flex:1, display:'flex', flexDirection:'column', minWidth:0 }}>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
-              <button onClick={()=>changerMois(-1)} style={{ background:'#f0f0f0', border:'none', borderRadius:9, width:40, height:40, fontSize:18, cursor:'pointer', fontWeight:700 }}>‹</button>
-              <span style={{ fontWeight:800, fontSize:21 }}>{MOIS[mois]} {annee}</span>
+        <div style={{ padding:'14px 22px 18px', overflow:'hidden', flex:1, minHeight:0, display:'flex', flexDirection: isMobile ? 'column' : 'row', gap:14 }}>
+          <div style={{ background:'#f8f8f8', borderRadius:14, padding:14, flex:1, display:'flex', flexDirection:'column', minWidth:0, minHeight:0 }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10, flexShrink:0 }}>
+              <button onClick={()=>changerMois(-1)} style={{ background:'#f0f0f0', border:'none', borderRadius:9, width:38, height:38, fontSize:18, cursor:'pointer', fontWeight:700 }}>‹</button>
+              <span style={{ fontWeight:800, fontSize:19 }}>{MOIS[mois]} {annee}</span>
               <button onClick={()=>changerMois(1)} style={{ background:'#f0f0f0', border:'none', borderRadius:9, width:40, height:40, fontSize:18, cursor:'pointer', fontWeight:700 }}>›</button>
             </div>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:3, marginBottom:6 }}>
-              {JOURS.map(j => <div key={j} style={{ textAlign:'center', fontSize:14, fontWeight:700, color:'#999', padding:'8px 0' }}>{j}</div>)}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:3, marginBottom:6, flexShrink:0 }}>
+              {JOURS.map(j => <div key={j} style={{ textAlign:'center', fontSize:13, fontWeight:700, color:'#999', padding:'5px 0' }}>{j}</div>)}
             </div>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:5, flex:1 }}>
-              {cases.map((d, i) => {
+            <div ref={grilleRef}
+              onTouchStart={debutSwipe} onTouchMove={pendantSwipe} onTouchEnd={finSwipe}
+              style={{ position:'relative', overflow:'hidden', flex:1, minHeight:0 }}>
+              {[{ a:annee, m:mois, cs:cases, dx:dragX },
+                ...(moisAdjacent ? [{ a:moisAdjacent.getFullYear(), m:moisAdjacent.getMonth(), cs:casesAdjacentes, dx: dragX + (dragDir==='left' ? largeurGrille : -largeurGrille) }] : [])
+              ].map((vue, vi) => (
+            <div key={vi} style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:5, position:'absolute', top:0, left:0, width:'100%', height:'100%',
+              transform:`translateX(${vue.dx}px)`, transition: (drag || sansTransition) ? 'none' : 'transform 0.28s cubic-bezier(0.4,0,0.2,1)', willChange:'transform', touchAction:'pan-y' }}>
+              {vue.cs.map((d, i) => {
                 if (!d) return <div key={i} />;
+                const annee = vue.a, mois = vue.m;
                 const iso = `${annee}-${String(mois+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                 const svc = parJour[iso];
                 const isToday = today.getFullYear()===annee && today.getMonth()===mois && today.getDate()===d;
@@ -4059,7 +4118,7 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
                 const estPasse = new Date(iso) < new Date(new Date().setHours(0,0,0,0));
                 return (
                   <button key={i} className={dateFlash === iso ? 'date-flash' : ''} onPointerDown={()=>choisirJour(iso)}
-                    style={{ textAlign:'center', minHeight:58, borderRadius:10, cursor:'pointer', position:'relative',
+                    style={{ textAlign:'center', minHeight:0, borderRadius:10, cursor:'pointer', position:'relative',
                       display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4,
                       border: isToday && !isSelected ? '2px solid #E8C547' : '2px solid transparent',
                       background: isSelected ? '#111' : isToday ? '#fffbea' : '#fff',
@@ -4091,7 +4150,9 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
                 );
               })}
             </div>
-            <p style={{ margin:'12px 2px 0', fontSize:12.5, color:'#888' }}>
+              ))}
+            </div>
+            <p style={{ margin:'10px 2px 0', fontSize:12.5, color:'#888' }}>
               Sous chaque date : les commandes du midi (<Sun size={11} strokeWidth={2.6} style={{ display:'inline', verticalAlign:'-1px', color:'#b8860b' }} />)
               et du soir (<Moon size={11} strokeWidth={2.6} style={{ display:'inline', verticalAlign:'-1px', color:'#2563eb' }} />), le service choisi étant mis en avant.
             </p>
@@ -4854,8 +4915,9 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
     if (dateRetrait === dateLocale()) {
       const maintenant = new Date();
       const hhmm = `${String(maintenant.getHours()).padStart(2,'0')}:${String(maintenant.getMinutes()).padStart(2,'0')}`;
-      base = tous.filter(h => h > hhmm);
-      if (base.length < 5) base = tous.slice(-5);
+      base = creneaux.filter(h => h > hhmm);
+      if (base.length < 5) base = tous.filter(h => h > hhmm);
+      if (base.length < 5) base = creneaux.slice(-5);
     } else {
       base = creneaux;
     }
@@ -4968,38 +5030,26 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
             {calendarJSX}
           </div>
 
-          {/* Heure de retrait : 5 propositions, le reste à la demande */}
+          {/* Heure de retrait : service au-dessus, puis les créneaux */}
           <div>
             <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>4. Heure de retrait</p>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:10 }}>
+              <button onClick={()=>setSvcRetrait('midi')} style={{ height:46, borderRadius:12, cursor:'pointer', fontSize:14.5, fontWeight:700, border:`1.5px solid ${svcRetrait==='midi'?'#E8C547':'#eee'}`, background:svcRetrait==='midi'?'#fffbea':'#fff', color:'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                <Sun size={17} strokeWidth={2} color={svcRetrait==='midi'?'#E8C547':'#999'} /> Midi
+              </button>
+              <button onClick={()=>setSvcRetrait('soir')} style={{ height:46, borderRadius:12, cursor:'pointer', fontSize:14.5, fontWeight:700, border:svcRetrait==='soir'?'none':'1.5px solid #eee', background:svcRetrait==='soir'?'#111':'#fff', color:svcRetrait==='soir'?'#E8C547':'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                <Moon size={17} strokeWidth={2} color={svcRetrait==='soir'?'#E8C547':'#999'} /> Soir
+              </button>
+            </div>
+            {/* Les horaires supplémentaires s'ajoutent à la même grille */}
             <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
-              {creneauxProposes.map(h => (
+              {(tousLesHoraires ? creneaux : creneauxProposes).map(h => (
                 <button key={h} onClick={()=>{ marquerModifie(); setHeureRetrait(heureRetrait===h ? '' : h); }} style={{ height:46, borderRadius:10, cursor:'pointer', fontSize:14.5, fontWeight:700, border:`1.5px solid ${heureRetrait===h?'#111':'#eee'}`, background:heureRetrait===h?'#111':'#fff', color:heureRetrait===h?'#E8C547':'#111' }}>{h}</button>
               ))}
-              {!tousLesHoraires && (
-                <button onClick={()=>setTousLesHoraires(true)} style={{ height:46, borderRadius:10, cursor:'pointer', fontSize:13.5, fontWeight:700, border:'1.5px dashed #ccc', background:'#fafafa', color:'#666', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>
-                  Plus d'horaires <ChevronDown size={15} strokeWidth={2.2} />
-                </button>
-              )}
+              <button onClick={()=>setTousLesHoraires(v=>!v)} style={{ height:46, borderRadius:10, cursor:'pointer', fontSize:13.5, fontWeight:700, border:'1.5px dashed #ccc', background:'#fafafa', color:'#666', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>
+                {tousLesHoraires ? 'Moins' : "Plus d'horaires"} <ChevronDown size={15} strokeWidth={2.2} style={{ transform: tousLesHoraires ? 'rotate(180deg)' : 'none' }} />
+              </button>
             </div>
-
-            {tousLesHoraires && (
-              <div style={{ marginTop:12, border:'1.5px solid #eee', borderRadius:12, padding:12 }}>
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:10 }}>
-                  <button onClick={()=>setSvcRetrait('midi')} style={{ height:46, borderRadius:12, cursor:'pointer', fontSize:14.5, fontWeight:700, border:`1.5px solid ${svcRetrait==='midi'?'#E8C547':'#eee'}`, background:svcRetrait==='midi'?'#fffbea':'#fff', color:'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-                    <Sun size={17} strokeWidth={2} color={svcRetrait==='midi'?'#E8C547':'#999'} /> Midi
-                  </button>
-                  <button onClick={()=>setSvcRetrait('soir')} style={{ height:46, borderRadius:12, cursor:'pointer', fontSize:14.5, fontWeight:700, border:svcRetrait==='soir'?'none':'1.5px solid #eee', background:svcRetrait==='soir'?'#111':'#fff', color:svcRetrait==='soir'?'#E8C547':'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-                    <Moon size={17} strokeWidth={2} color={svcRetrait==='soir'?'#E8C547':'#999'} /> Soir
-                  </button>
-                </div>
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8 }}>
-                  {creneaux.map(h => (
-                    <button key={h} onClick={()=>{ marquerModifie(); setHeureRetrait(heureRetrait===h ? '' : h); }} style={{ height:42, borderRadius:10, cursor:'pointer', fontSize:13.5, fontWeight:600, border:`1.5px solid ${heureRetrait===h?'#111':'#eee'}`, background:heureRetrait===h?'#111':'#fff', color:heureRetrait===h?'#E8C547':'#111' }}>{h}</button>
-                  ))}
-                </div>
-                <button onClick={()=>setTousLesHoraires(false)} style={{ width:'100%', marginTop:10, height:36, border:'none', background:'none', fontSize:13, fontWeight:600, color:'#888', cursor:'pointer' }}>Masquer les horaires</button>
-              </div>
-            )}
           </div>
 
           {/* Ajout d'articles */}
