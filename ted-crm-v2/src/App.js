@@ -2601,21 +2601,27 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                   })()}
                 </div>
                 {/* Colonne Midi/Soir */}
-                <div style={!isMobile ? { background:'#f8f8f8', borderRadius:12 } : {}}>
+                <div style={!isMobile ? { background:'#f8f8f8', borderRadius:12, height:'100%', boxSizing:'border-box' } : {}}>
                   {!isMobile ? (
-                    <div style={{ display:'flex', flexDirection:'column', gap:16, padding:16 }}>
-                      <p style={{ fontSize:12, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0 }}>SERVICE</p>
-                      <p style={{ fontSize:14, color:'#666', margin:0 }}>{dateLabel || 'Sélectionner un jour'}</p>
-                      <button onClick={() => setCalServiceSelectionne('midi')} style={{ width:'100%', padding:'20px 16px', borderRadius:12, border: calServiceSelectionne==='midi' ? '2px solid #111' : '1.5px solid #eee', background: calServiceSelectionne==='midi' ? '#111' : '#fff', cursor:'pointer', textAlign:'center' }}>
-                        <div style={{ display:'flex', justifyContent:'center' }}><Sun size={22} /></div>
-                        <div style={{ fontSize:16, fontWeight:800, color: calServiceSelectionne==='midi' ? '#E8C547' : '#111', marginTop:6 }}>Midi</div>
-                        <div style={{ fontSize:13, color:'#999', marginTop:4 }}>{couvertsMidi} couvert{couvertsMidi > 1 ? 's' : ''}</div>
-                      </button>
-                      <button onClick={() => setCalServiceSelectionne('soir')} style={{ width:'100%', padding:'20px 16px', borderRadius:12, border: calServiceSelectionne==='soir' ? '2px solid #111' : '1.5px solid #eee', background: calServiceSelectionne==='soir' ? '#111' : '#fff', cursor:'pointer', textAlign:'center' }}>
-                        <div style={{ display:'flex', justifyContent:'center' }}><Moon size={22} /></div>
-                        <div style={{ fontSize:16, fontWeight:800, color: calServiceSelectionne==='soir' ? '#E8C547' : '#111', marginTop:6 }}>Soir</div>
-                        <div style={{ fontSize:13, color:'#999', marginTop:4 }}>{couvertsSoir} couvert{couvertsSoir > 1 ? 's' : ''}</div>
-                      </button>
+                    /* Service : le titre, puis deux boutons qui se partagent la hauteur */
+                    <div style={{ display:'flex', flexDirection:'column', gap:10, padding:12, height:'100%', boxSizing:'border-box' }}>
+                      <p style={{ fontSize:12, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0, flexShrink:0 }}>Service</p>
+                      {[{ id:'midi', label:'Midi', Icone:Sun, couverts:couvertsMidi },
+                        { id:'soir', label:'Soir', Icone:Moon, couverts:couvertsSoir }].map(sv => {
+                        const actif = calServiceSelectionne === sv.id;
+                        const Icone = sv.Icone;
+                        return (
+                          <button key={sv.id} onClick={() => setCalServiceSelectionne(sv.id)}
+                            style={{ width:'100%', flex:1, minHeight:76, padding:'10px 12px', borderRadius:12,
+                              border: actif ? '2px solid #111' : '1.5px solid #eee',
+                              background: actif ? '#111' : '#fff', cursor:'pointer', textAlign:'center',
+                              display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4 }}>
+                            <Icone size={20} color={actif ? '#E8C547' : '#999'} />
+                            <div style={{ fontSize:16, fontWeight:800, color: actif ? '#E8C547' : '#111' }}>{sv.label}</div>
+                            <div style={{ fontSize:13, color: actif ? '#bbb' : '#999' }}>{sv.couverts} couvert{sv.couverts > 1 ? 's' : ''}</div>
+                          </button>
+                        );
+                      })}
                     </div>
                   ) : (
                     /* Mobile Midi/Soir */
@@ -4158,39 +4164,28 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
             </div>
               ))}
             </div>
-            <p style={{ margin:'10px 2px 0', fontSize:12.5, color:'#888' }}>
-              Sous chaque date : les commandes du midi (<Sun size={11} strokeWidth={2.6} style={{ display:'inline', verticalAlign:'-1px', color:'#b8860b' }} />)
-              et du soir (<Moon size={11} strokeWidth={2.6} style={{ display:'inline', verticalAlign:'-1px', color:'#2563eb' }} />), le service choisi étant mis en avant.
-            </p>
           </div>
 
           {/* Colonne Service, à droite du calendrier comme sur la page Réservations */}
           <div style={{ width: isMobile ? '100%' : 230, flexShrink:0, display:'flex', flexDirection:'column', gap:10 }}>
-            <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'2px 0 0' }}>Service</p>
-            {[{id:'midi',label:'Midi',icone:Sun,horaire:'avant 15h'},
-              {id:'soir',label:'Soir',icone:Moon,horaire:'à partir de 15h'}].map(sv => {
+            <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'2px 0 0', flexShrink:0 }}>Service</p>
+            {[{id:'midi',label:'Midi',icone:Sun},
+              {id:'soir',label:'Soir',icone:Moon}].map(sv => {
               const actif = svcChoisi === sv.id;
               const Icone = sv.icone;
-              const nb = Object.entries(parJour)
-                .filter(([iso]) => iso.startsWith(`${annee}-${String(mois+1).padStart(2,'0')}`))
-                .reduce((n, [, v]) => n + v[sv.id], 0);
+              const nb = (parJour[jourLocal] && parJour[jourLocal][sv.id]) || 0;
               return (
                 <button key={sv.id} onClick={()=>setSvcChoisi(sv.id)}
-                  style={{ width:'100%', padding:'20px 16px', borderRadius:12, cursor:'pointer', textAlign:'center',
+                  style={{ width:'100%', flex:1, minHeight:76, padding:'10px 12px', borderRadius:12, cursor:'pointer', textAlign:'center',
                     border: actif ? '2px solid #111' : '1.5px solid #eee',
-                    background: actif ? '#111' : '#fff' }}>
-                  <Icone size={22} strokeWidth={2} color={actif ? '#E8C547' : '#999'} />
-                  <div style={{ fontSize:16, fontWeight:800, color: actif ? '#E8C547' : '#111', marginTop:6 }}>{sv.label}</div>
-                  <div style={{ fontSize:12.5, color: actif ? '#999' : '#aaa', marginTop:2 }}>{sv.horaire}</div>
-                  <div style={{ fontSize:13, color: actif ? '#bbb' : '#999', marginTop:6 }}>
-                    {nb} commande{nb > 1 ? 's' : ''} ce mois-ci
-                  </div>
+                    background: actif ? '#111' : '#fff',
+                    display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4 }}>
+                  <Icone size={20} strokeWidth={2} color={actif ? '#E8C547' : '#999'} />
+                  <div style={{ fontSize:16, fontWeight:800, color: actif ? '#E8C547' : '#111' }}>{sv.label}</div>
+                  <div style={{ fontSize:13, color: actif ? '#bbb' : '#999' }}>{nb} commande{nb > 1 ? 's' : ''}</div>
                 </button>
               );
             })}
-            <p style={{ fontSize:12.5, color:'#999', lineHeight:1.5, margin:'2px 0 0' }}>
-              Choisissez un jour, puis le service, et validez en bas.
-            </p>
           </div>
         </div>
 
