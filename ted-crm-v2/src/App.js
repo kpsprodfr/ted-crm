@@ -3158,17 +3158,15 @@ function CommandesPage({ showToast, user }) {
           </div>
           <div style={{ fontSize:12.5, color:'#888', marginTop:3 }}>
             {autoAccept
-              ? `Les commandes sont acceptées seules — prêtes en ~${delaiDefaut} min`
+              ? `Les commandes sont acceptées seules — prêtes en ~${fmtDelai(delaiDefaut)}`
               : 'Chaque commande doit être acceptée à la main'}
           </div>
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:12 }}>
           <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-            <input type="number" min="5" max="180" step="5" value={delaiDefaut}
-              onChange={e=>setDelaiDefaut(e.target.value)}
-              onBlur={e=>majConfig('delai_minutes', Math.max(5, Math.min(180, parseInt(e.target.value) || 30)))}
-              style={{ width:64, height:38, border:'1.5px solid #ddd', borderRadius:8, padding:'0 8px', fontSize:14, fontWeight:700, textAlign:'center', outline:'none' }} />
-            <span style={{ fontSize:13, color:'#888', fontWeight:600 }}>min</span>
+            <button onClick={()=>majConfig('delai_minutes', Math.max(5, (parseInt(delaiDefaut)||30) - 5))} style={{ width:38, height:38, borderRadius:9, border:'1.5px solid #ddd', background:'#fff', fontSize:19, fontWeight:700, cursor:'pointer', color:'#111', lineHeight:1 }}>−</button>
+            <div style={{ minWidth:74, height:38, border:'1.5px solid #ddd', borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14.5, fontWeight:800, background:'#fafafa' }}>{fmtDelai(delaiDefaut)}</div>
+            <button onClick={()=>majConfig('delai_minutes', Math.min(180, (parseInt(delaiDefaut)||30) + 5))} style={{ width:38, height:38, borderRadius:9, border:'1.5px solid #ddd', background:'#fff', fontSize:19, fontWeight:700, cursor:'pointer', color:'#111', lineHeight:1 }}>+</button>
           </div>
           <MenuToggle value={autoAccept} onChange={()=>majConfig('acceptation_auto', autoAccept ? 'false' : 'true')} />
         </div>
@@ -3221,6 +3219,15 @@ function CommandesPage({ showToast, user }) {
       {showNouvelle && <NouvelleCommandeModal onClose={()=>setShowNouvelle(false)} onSaved={()=>{ setShowNouvelle(false); loadCommandes(true); }} showToast={showToast} delaiDefaut={delaiDefaut} />}
     </div>
   );
+}
+
+// Délais proposés à l'acceptation (minutes)
+const DELAIS_RAPIDES = [10, 15, 20, 25, 30, 45, 60, 90];
+function fmtDelai(min) {
+  const m = parseInt(min) || 0;
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60), r = m % 60;
+  return r === 0 ? `${h}h` : `${h}h${String(r).padStart(2, '0')}`;
 }
 
 // ── Compte à rebours « prête dans X min » ────────────────────────────────────
@@ -3276,9 +3283,10 @@ function CommandeCarte({ cmd, onOpen, onStatut }) {
 
 // ── Panneau « Commandes à traiter » ──────────────────────────────────────────
 function ATraiterPanel({ commandes, delaiDefaut, autoAccept, onAccepter, onRefuser, onOuvrir, onClose }) {
-  const [delais, setDelais] = useState({}); // délai ajusté par commande
+  const [delais, setDelais] = useState({});       // délai choisi par commande
+  const [choixOuvert, setChoixOuvert] = useState(null); // id de la commande en cours de choix
   const isMobile = useIsMobile();
-  const getDelai = (id) => delais[id] != null ? delais[id] : delaiDefaut;
+  const getDelai = (id) => delais[id] != null ? parseInt(delais[id]) : (parseInt(delaiDefaut) || 30);
 
   return (
     <>
@@ -3330,19 +3338,19 @@ function ATraiterPanel({ commandes, delaiDefaut, autoAccept, onAccepter, onRefus
                   </div>
 
                   {/* Détail des articles */}
-                  <div style={{ marginTop:10, background:'#fafafa', borderRadius:10, padding:'10px 12px' }}>
+                  <div style={{ marginTop:12, background:'#fafafa', borderRadius:10, padding:'12px 14px' }}>
                     {(cmd.items || []).map((it, i) => (
-                      <div key={i} style={{ display:'flex', justifyContent:'space-between', gap:10, padding:'3px 0', fontSize:13.5 }}>
-                        <span style={{ color:'#111' }}>
-                          <strong style={{ color:'#888' }}>{it.quantite || 1}×</strong> {it.nom}
-                          {it.note ? <em style={{ color:'#888', fontSize:12 }}> — {it.note}</em> : ''}
+                      <div key={i} style={{ display:'flex', justifyContent:'space-between', gap:14, alignItems:'baseline', padding:'8px 0', borderBottom: i < (cmd.items.length - 1) ? '1px solid #efefef' : 'none' }}>
+                        <span style={{ color:'#111', fontSize:15.5, lineHeight:1.45 }}>
+                          <span style={{ fontWeight:800, marginRight:5 }}>{it.quantite || 1}×</span>{it.nom}
+                          {it.note ? <span style={{ display:'block', color:'#888', fontSize:13, fontStyle:'italic', marginTop:2 }}>{it.note}</span> : null}
                         </span>
-                        <span style={{ fontWeight:700, whiteSpace:'nowrap' }}>{fmtEuro((Number(it.prix)||0) * (Number(it.quantite)||1))}</span>
+                        <span style={{ fontWeight:400, fontSize:15, color:'#555', whiteSpace:'nowrap' }}>{fmtEuro((Number(it.prix)||0) * (Number(it.quantite)||1))}</span>
                       </div>
                     ))}
-                    <div style={{ display:'flex', justifyContent:'space-between', marginTop:8, paddingTop:8, borderTop:'1.5px solid #e8e8e8' }}>
-                      <span style={{ fontSize:12.5, fontWeight:800 }}>{nbArticles} article{nbArticles > 1 ? 's' : ''}</span>
-                      <span style={{ fontSize:16, fontWeight:900 }}>{fmtEuro(cmd.total)}</span>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginTop:10, paddingTop:10, borderTop:'2px solid #111' }}>
+                      <span style={{ fontSize:13, fontWeight:700, color:'#888' }}>{nbArticles} article{nbArticles > 1 ? 's' : ''}</span>
+                      <span style={{ fontSize:19, fontWeight:900, color:'#111' }}>{fmtEuro(cmd.total)}</span>
                     </div>
                   </div>
 
@@ -3354,22 +3362,39 @@ function ATraiterPanel({ commandes, delaiDefaut, autoAccept, onAccepter, onRefus
                 </div>
 
                 {/* Bloc d'acceptation, à droite */}
-                <div style={{ width: isMobile ? '100%' : 210, flexShrink:0, display:'flex', flexDirection:'column', gap:10, justifyContent:'center', borderLeft: isMobile ? 'none' : '1px solid #f0f0f0', paddingLeft: isMobile ? 0 : 16 }}>
-                  <div>
-                    <label style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, display:'block', marginBottom:5 }}>Prête dans</label>
-                    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                      <button onClick={()=>setDelais(p=>({...p,[cmd.id]:Math.max(5, d - 5)}))} style={{ width:34, height:38, borderRadius:8, border:'1.5px solid #ddd', background:'#fff', fontSize:17, fontWeight:700, cursor:'pointer' }}>−</button>
-                      <div style={{ flex:1, height:38, border:'1.5px solid #ddd', borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, fontWeight:800, background:'#fafafa' }}>{d} min</div>
-                      <button onClick={()=>setDelais(p=>({...p,[cmd.id]:Math.min(180, d + 5)}))} style={{ width:34, height:38, borderRadius:8, border:'1.5px solid #ddd', background:'#fff', fontSize:17, fontWeight:700, cursor:'pointer' }}>+</button>
-                    </div>
-                  </div>
-
-                  <button onClick={()=>onAccepter(cmd, d)} style={{ width:'100%', minHeight:62, border:'none', borderRadius:14, background:'#16a34a', color:'#fff', fontSize:17, fontWeight:900, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:2, boxShadow:'0 4px 14px rgba(22,163,74,0.3)' }}>
-                    <span style={{ display:'flex', alignItems:'center', gap:8 }}><CheckCircle size={19} strokeWidth={2.4} /> Accepter</span>
-                    <span style={{ fontSize:11, fontWeight:600, opacity:0.9 }}>prête dans ~{d} min</span>
-                  </button>
-
-                  <button onClick={()=>onRefuser(cmd)} style={{ width:'100%', height:38, border:'1.5px solid #eee', borderRadius:10, background:'#fff', color:'#dc2626', fontSize:13, fontWeight:700, cursor:'pointer' }}>Refuser</button>
+                <div style={{ width: isMobile ? '100%' : 246, flexShrink:0, display:'flex', flexDirection:'column', gap:10, justifyContent:'center', borderLeft: isMobile ? 'none' : '1px solid #f0f0f0', paddingLeft: isMobile ? 0 : 18 }}>
+                  {choixOuvert !== cmd.id ? (
+                    <>
+                      {/* Gros bouton d'acceptation */}
+                      <button onClick={()=>setChoixOuvert(cmd.id)} style={{ width:'100%', minHeight:104, border:'none', borderRadius:16, background:'#16a34a', color:'#fff', fontSize:23, fontWeight:900, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:5, boxShadow:'0 6px 20px rgba(22,163,74,0.35)' }}>
+                        <CheckCircle size={30} strokeWidth={2.4} />
+                        Accepter
+                      </button>
+                      <button onClick={()=>onRefuser(cmd)} style={{ width:'100%', height:40, border:'1.5px solid #eee', borderRadius:10, background:'#fff', color:'#dc2626', fontSize:13.5, fontWeight:700, cursor:'pointer' }}>Refuser</button>
+                    </>
+                  ) : (
+                    <>
+                      {/* Choix du délai puis confirmation */}
+                      <label style={{ fontSize:12, fontWeight:800, color:'#111', display:'block' }}>Prête dans :</label>
+                      <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:6 }}>
+                        {DELAIS_RAPIDES.map(m => (
+                          <button key={m} onClick={()=>setDelais(p=>({...p,[cmd.id]:m}))} style={{ height:40, borderRadius:9, border: d===m ? '2px solid #16a34a' : '1.5px solid #ddd', background: d===m ? '#16a34a' : '#fff', color: d===m ? '#fff' : '#333', fontSize:13, fontWeight:800, cursor:'pointer', padding:0 }}>
+                            {fmtDelai(m)}
+                          </button>
+                        ))}
+                      </div>
+                      <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                        <button onClick={()=>setDelais(p=>({...p,[cmd.id]:Math.max(5, d - 5)}))} style={{ width:38, height:38, borderRadius:9, border:'1.5px solid #ddd', background:'#fff', fontSize:19, fontWeight:700, cursor:'pointer', lineHeight:1 }}>−</button>
+                        <div style={{ flex:1, height:38, border:'1.5px solid #ddd', borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14.5, fontWeight:800, background:'#fafafa' }}>{fmtDelai(d)}</div>
+                        <button onClick={()=>setDelais(p=>({...p,[cmd.id]:Math.min(180, d + 5)}))} style={{ width:38, height:38, borderRadius:9, border:'1.5px solid #ddd', background:'#fff', fontSize:19, fontWeight:700, cursor:'pointer', lineHeight:1 }}>+</button>
+                      </div>
+                      <button onClick={()=>{ setChoixOuvert(null); onAccepter(cmd, d); }} style={{ width:'100%', minHeight:62, border:'none', borderRadius:14, background:'#16a34a', color:'#fff', fontSize:17, fontWeight:900, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:2, boxShadow:'0 4px 14px rgba(22,163,74,0.3)' }}>
+                        <span style={{ display:'flex', alignItems:'center', gap:8 }}><CheckCircle size={19} strokeWidth={2.4} /> Accepter</span>
+                        <span style={{ fontSize:11.5, fontWeight:600, opacity:0.9 }}>prête dans ~{fmtDelai(d)}</span>
+                      </button>
+                      <button onClick={()=>setChoixOuvert(null)} style={{ width:'100%', height:36, border:'none', background:'none', color:'#888', fontSize:13, fontWeight:600, cursor:'pointer' }}>Annuler</button>
+                    </>
+                  )}
                 </div>
               </div>
             );
