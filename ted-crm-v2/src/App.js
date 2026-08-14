@@ -3985,6 +3985,7 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
   const [sansTransition, setSansTransition] = useState(false);
   // Service consulté : celui déjà choisi, sinon celui en cours à cette heure-ci.
   const [svcChoisi, setSvcChoisi] = useState(service || serviceActuel());
+  const [jourLocal, setJourLocal] = useState(jourSelectionne || dateLocale());
   // Même enchaînement que le calendrier de « Nouvelle réservation » :
   // flash sur la date choisie (200 ms), puis fermeture animée (300 ms).
   const [dateFlash, setDateFlash] = useState(null);
@@ -3992,13 +3993,18 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
   const timersRef = useRef([]);
   useEffect(() => () => timersRef.current.forEach(clearTimeout), []);
 
+  // Un clic sélectionne le jour (avec le flash) sans refermer : la validation
+  // se fait avec le bouton du bas, une fois le service choisi.
   function choisirJour(iso) {
-    if (dateFlash) return; // un seul clic pris en compte
+    setJourLocal(iso);
     setDateFlash(iso);
-    timersRef.current.push(setTimeout(() => {
-      setCalFermeture(true);
-      timersRef.current.push(setTimeout(() => onChoisir(iso, svcChoisi), 300));
-    }, 200));
+    timersRef.current.push(setTimeout(() => setDateFlash(null), 220));
+  }
+
+  function valider() {
+    if (calFermeture) return;
+    setCalFermeture(true);
+    timersRef.current.push(setTimeout(() => onChoisir(jourLocal, svcChoisi), 300));
   }
 
   const JOURS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
@@ -4114,7 +4120,7 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
                 const iso = `${annee}-${String(mois+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                 const svc = parJour[iso];
                 const isToday = today.getFullYear()===annee && today.getMonth()===mois && today.getDate()===d;
-                const isSelected = jourSelectionne === iso || dateFlash === iso;
+                const isSelected = jourLocal === iso || dateFlash === iso;
                 const estPasse = new Date(iso) < new Date(new Date().setHours(0,0,0,0));
                 return (
                   <button key={i} className={dateFlash === iso ? 'date-flash' : ''} onPointerDown={()=>choisirJour(iso)}
@@ -4183,13 +4189,15 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
               );
             })}
             <p style={{ fontSize:12.5, color:'#999', lineHeight:1.5, margin:'2px 0 0' }}>
-              Cliquez sur un jour du calendrier pour afficher son service {svcChoisi === 'midi' ? 'du midi' : 'du soir'}.
+              Choisissez un jour, puis le service, et validez en bas.
             </p>
           </div>
         </div>
 
         <div style={{ padding:'14px 28px calc(18px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #f0f0f0', flexShrink:0 }}>
-          <button onClick={onClose} style={{ width:'100%', height:48, border:'1.5px solid #ddd', borderRadius:12, background:'#fff', fontSize:14.5, fontWeight:600, cursor:'pointer', color:'#666' }}>Fermer</button>
+          <button onClick={valider} style={{ width:'100%', height:52, border:'none', borderRadius:12, background:'#E8C547', fontSize:15.5, fontWeight:800, cursor:'pointer', color:'#111' }}>
+            Valider — {labelJour(jourLocal)} · {svcChoisi === 'midi' ? 'Midi' : 'Soir'}
+          </button>
         </div>
       </div>
       </div>
