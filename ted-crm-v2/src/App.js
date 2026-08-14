@@ -3059,7 +3059,7 @@ function CommandesPage({ showToast, user }) {
     );
     if (error) { showToast('Erreur d\'enregistrement du réglage', 'error'); loadConfig(); return; }
     if (cle === 'acceptation_auto') showToast(valeur === 'true' ? '✅ Acceptation automatique activée' : 'Acceptation automatique désactivée');
-    if (cle === 'commandes_actives') showToast(valeur !== 'false' ? '✅ Prise de commandes rouverte' : '⏸️ Prise de commandes désactivée');
+    if (cle === 'commandes_actives') showToast(valeur !== 'false' ? '✅ Commande en ligne rouverte' : '⏸️ Commande en ligne désactivée');
   }
 
   async function changerStatut(cmd, statut, silencieux = false, motifRefus = null) {
@@ -3166,7 +3166,7 @@ function CommandesPage({ showToast, user }) {
       {!commandesActives && (
         <div onClick={()=>setShowParams(true)} style={{ background:'#111', borderRadius:16, padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, cursor:'pointer', flexWrap:'wrap' }}>
           <span style={{ fontSize:14.5, fontWeight:800, color:'#fff', display:'flex', alignItems:'center', gap:9 }}>
-            <AlertCircle size={17} strokeWidth={2} color="#E8C547" /> Prise de commandes désactivée
+            <AlertCircle size={17} strokeWidth={2} color="#E8C547" /> Commande en ligne désactivée
             {motifFermeture ? <span style={{ fontWeight:500, color:'rgba(255,255,255,0.75)' }}>— {motifFermeture}</span> : null}
           </span>
           <span style={{ fontSize:12.5, color:'#E8C547', fontWeight:700 }}>Rouvrir ›</span>
@@ -3538,7 +3538,7 @@ function ParametresCommandesModal({ autoAccept, delaiDefaut, commandesActives, m
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:14, marginBottom:12 }}>
               <div style={{ minWidth:0 }}>
                 <div style={{ fontSize:15, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:8 }}>
-                  <ShoppingBag size={17} strokeWidth={2} color={commandesActives ? '#16a34a' : '#dc2626'} /> Commande en ligne
+                  <ShoppingBag size={17} strokeWidth={2} color={commandesActives ? '#16a34a' : '#dc2626'} /> Commande en ligne (du jour)
                 </div>
                 <div style={{ fontSize:12.5, color:'#888', marginTop:4, lineHeight:1.5 }}>
                   {commandesActives
@@ -3570,7 +3570,7 @@ function ParametresCommandesModal({ autoAccept, delaiDefaut, commandesActives, m
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:14, marginBottom:12 }}>
               <div style={{ minWidth:0 }}>
                 <div style={{ fontSize:15, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:8 }}>
-                  <CircleCheck size={17} strokeWidth={2} color={autoAccept ? '#16a34a' : '#bbb'} /> Acceptation automatique
+                  <CircleCheck size={17} strokeWidth={2} color={autoAccept ? '#16a34a' : '#bbb'} /> Acceptation automatique (du jour)
                 </div>
                 <div style={{ fontSize:12.5, color:'#888', marginTop:4, lineHeight:1.5 }}>
                   {autoAccept
