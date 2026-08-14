@@ -3193,6 +3193,23 @@ function CommandesPage({ showToast, user }) {
         <div>
           <h1 style={{ margin:0, fontSize: isMobile ? 22 : 26, fontWeight:900, color:'#111', display:'flex', alignItems:'center', gap:10 }}>
             <ShoppingBag size={isMobile ? 22 : 26} strokeWidth={1.8} /> Commandes
+            {/* Service affiché : celui choisi au calendrier, sinon celui en cours */}
+            {(() => {
+              const sv = service || serviceActuel();
+              const choisi = !!service;
+              const teinte = sv === 'midi' ? '#b8860b' : '#2563eb';
+              return (
+                <span title={choisi ? 'Service choisi dans le calendrier' : 'Service en cours à cette heure-ci'}
+                  style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'5px 12px', borderRadius:20,
+                    fontSize:12.5, fontWeight:800, letterSpacing:0.2,
+                    background: choisi ? teinte : (sv === 'midi' ? '#fffbea' : '#eff6ff'),
+                    color: choisi ? '#fff' : teinte,
+                    border: choisi ? 'none' : `1.5px solid ${sv === 'midi' ? '#f0e2b0' : '#c7dbfd'}` }}>
+                  {sv === 'midi' ? <Sun size={13} strokeWidth={2.4} /> : <Moon size={13} strokeWidth={2.4} />}
+                  Service du {sv}
+                </span>
+              );
+            })()}
           </h1>
           <p style={{ margin:'4px 0 0', fontSize:13, color:'#888' }}>Commandes à emporter — téléphone et en ligne</p>
         </div>
@@ -3259,7 +3276,7 @@ function CommandesPage({ showToast, user }) {
         </div>
         <div style={{ background:'#fff', borderRadius:14, padding:'14px 16px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', textAlign:'center' }}>
           <p style={{ fontSize:24, fontWeight:900, color:'#111', margin:'0 0 3px' }}>{fmtEuro(caJour)}</p>
-          <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0 }}>{jourSelectionne ? `Total du ${labelJour(jourAffiche)}` : 'Total du jour'}</p>
+          <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0 }}>{jourSelectionne ? `Total du ${labelJour(jourAffiche)}` : 'Total du jour'}{service ? ` · ${service}` : ''}</p>
         </div>
         <button onClick={()=>setShowStats(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:14, padding: isMobile ? '14px 16px' : '14px 22px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:7 }}>
           <BarChart3 size={22} strokeWidth={1.8} color="#666" />
