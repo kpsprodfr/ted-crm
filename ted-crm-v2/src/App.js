@@ -2982,6 +2982,7 @@ function CommandesPage({ showToast, user }) {
   const [filtre, setFiltre] = useState('actives'); // actives | jour | avenir | toutes
   const [jourSelectionne, setJourSelectionne] = useState(null); // AAAA-MM-JJ ou null
   const [detail, setDetail] = useState(null);
+  const [editCmd, setEditCmd] = useState(null);
   const [showNouvelle, setShowNouvelle] = useState(false);
   const [showATraiter, setShowATraiter] = useState(false);
   const [showLienDropdown, setShowLienDropdown] = useState(false);
@@ -3268,8 +3269,17 @@ function CommandesPage({ showToast, user }) {
           onClose={()=>setShowATraiter(false)}
         />
       )}
-      {detail && <CommandeDetail cmd={detail} onClose={()=>setDetail(null)} onStatut={changerStatut} />}
+      {detail && !editCmd && <CommandeDetail cmd={detail} onClose={()=>setDetail(null)} onStatut={changerStatut} onEdit={(c)=>setEditCmd(c)} />}
       {showNouvelle && <NouvelleCommandeModal onClose={()=>setShowNouvelle(false)} onSaved={()=>{ setShowNouvelle(false); loadCommandes(true); }} showToast={showToast} delaiDefaut={delaiDefaut} />}
+      {editCmd && (
+        <NouvelleCommandeModal
+          cmd={editCmd}
+          onClose={()=>setEditCmd(null)}
+          onSaved={()=>{ setEditCmd(null); setDetail(null); loadCommandes(true); }}
+          showToast={showToast}
+          delaiDefaut={delaiDefaut}
+        />
+      )}
       {showParams && (
         <ParametresCommandesModal
           autoAccept={autoAccept}
@@ -4109,7 +4119,7 @@ function RefusCommandeModal({ cmd, onClose, onConfirm }) {
 }
 
 // ── Fiche détail d'une commande ──────────────────────────────────────────────
-function CommandeDetail({ cmd, onClose, onStatut }) {
+function CommandeDetail({ cmd, onClose, onStatut, onEdit }) {
   const st = cmdStatut(cmd.statut);
   const dateLabel = cmd.created_at ? new Date(cmd.created_at).toLocaleString('fr-FR', { weekday:'long', day:'numeric', month:'long', hour:'2-digit', minute:'2-digit' }) : '';
   return (
@@ -4137,7 +4147,14 @@ function CommandeDetail({ cmd, onClose, onStatut }) {
 
           {/* Articles */}
           <div>
-            <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px' }}>Articles</p>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', margin:'0 0 8px' }}>
+              <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0 }}>Articles</p>
+              {onEdit && (
+                <button onClick={()=>onEdit(cmd)} style={{ display:'flex', alignItems:'center', gap:6, height:30, padding:'0 12px', borderRadius:8, border:'1.5px solid #ddd', background:'#fff', fontSize:12.5, fontWeight:700, color:'#111', cursor:'pointer' }}>
+                  <Pencil size={13} strokeWidth={2} /> Modifier
+                </button>
+              )}
+            </div>
             {(cmd.items || []).map((it, i) => (
               <div key={i} style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, padding:'10px 0', borderBottom:'1px solid #f5f5f5' }}>
                 <div style={{ minWidth:0 }}>
@@ -4188,14 +4205,18 @@ function CommandeDetail({ cmd, onClose, onStatut }) {
   );
 }
 
-// ── Prise de commande au téléphone ───────────────────────────────────────────
-function NouvelleCommandeModal({ onClose, onSaved, showToast, delaiDefaut }) {
-  const [nom, setNom] = useState('');
-  const [tel, setTel] = useState('');
-  const [heureRetrait, setHeureRetrait] = useState('');
-  const [dateRetrait, setDateRetrait] = useState(dateLocale());
-  const [note, setNote] = useState('');
-  const [items, setItems] = useState([]);
+// ── Prise de commande au téléphone / modification d'une commande ─────────────
+// `cmd` absent → création. `cmd` présent → édition de cette commande.
+function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }) {
+  const edition = !!cmd;
+  const [nom, setNom] = useState(cmd?.client_nom || '');
+  const [tel, setTel] = useState(cmd?.client_tel || '');
+  const [heureRetrait, setHeureRetrait] = useState(cmd?.heure_retrait || '');
+  const [dateRetrait, setDateRetrait] = useState(cmd?.date_retrait || dateLocale());
+  const [note, setNote] = useState(cmd?.note || '');
+  const [items, setItems] = useState(() => (cmd?.items || []).map(it => ({
+    nom: it.nom || '', prix: Number(it.prix) || 0, quantite: Number(it.quantite) || 1, note: it.note || '',
+  })));
   const [produits, setProduits] = useState([]);
   const [recherche, setRecherche] = useState('');
   const [saving, setSaving] = useState(false);
@@ -4239,12 +4260,43 @@ function NouvelleCommandeModal({ onClose, onSaved, showToast, delaiDefaut }) {
     }
     lockRef.current = true;
     setSaving(true);
+
+    const itemsPropres = items
+      .filter(it => (it.nom || '').trim())
+      .map(it => ({
+        nom: String(it.nom).trim().slice(0, 120),
+        prix: Number(String(it.prix).replace(',', '.')) || 0,
+        quantite: Math.max(1, Number(it.quantite) || 1),
+        note: (it.note || '').trim().slice(0, 200) || '',
+      }));
+
+    if (edition) {
+      const { error: errEdit } = await safeQuery(
+        () => supabase.from('commandes').update({
+          client_nom: nom.trim().slice(0, 80),
+          client_tel: tel.trim().slice(0, 20) || null,
+          items: itemsPropres,
+          total: cmdTotal(itemsPropres),
+          date_retrait: dateRetrait || cmd.date_retrait,
+          heure_retrait: heureRetrait || null,
+          note: note.trim().slice(0, 500) || null,
+        }).eq('id', cmd.id),
+        { context: 'modifierCommande' }
+      );
+      setSaving(false);
+      lockRef.current = false;
+      if (errEdit) { showToast('Erreur lors de la modification', 'error'); return; }
+      showToast('✅ Commande modifiée');
+      onSaved();
+      return;
+    }
+
     const { error } = await safeQuery(
       () => supabase.from('commandes').insert({
         client_nom: nom.trim().slice(0, 80),
         client_tel: tel.trim().slice(0, 20) || null,
-        items,
-        total,
+        items: itemsPropres,
+        total: cmdTotal(itemsPropres),
         statut: 'en_preparation',
         source: 'telephone',
         date_retrait: dateRetrait || dateLocale(),
@@ -4267,9 +4319,13 @@ function NouvelleCommandeModal({ onClose, onSaved, showToast, delaiDefaut }) {
   return (
     <>
       <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:4999 }} />
-      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:20, width:'min(460px, calc(100vw - 32px))', maxHeight:'90vh', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.25)', zIndex:5000, overflow:'hidden' }}>
+      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:20, width:'min(580px, calc(100vw - 32px))', maxHeight:'90vh', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.25)', zIndex:5000, overflow:'hidden' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'20px 24px 16px', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
-          <h2 style={{ margin:0, fontSize:18, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:8 }}><Phone size={17} strokeWidth={2} /> Commande téléphone</h2>
+          <h2 style={{ margin:0, fontSize:18, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:8 }}>
+            {edition
+              ? <><Pencil size={17} strokeWidth={2} /> Modifier la commande N° {cmd.numero || '—'}</>
+              : <><Phone size={17} strokeWidth={2} /> Commande téléphone</>}
+          </h2>
           <button onClick={onClose} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666' }}>✕</button>
         </div>
 
@@ -4291,7 +4347,7 @@ function NouvelleCommandeModal({ onClose, onSaved, showToast, delaiDefaut }) {
           <div>
             <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px' }}>Articles</p>
             <div style={{ position:'relative' }}>
-              <input value={recherche} onChange={e=>setRecherche(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter'){ if(suggestions.length) ajouter(suggestions[0]); else ajouterLibre(); } }} placeholder="Rechercher un produit ou saisir librement…" style={inp(false)} />
+              <input value={recherche} onChange={e=>setRecherche(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter'){ if(suggestions.length) ajouter(suggestions[0]); else ajouterLibre(); } }} placeholder="Rechercher un produit ou saisir un article hors carte…" style={inp(false)} />
               {suggestions.length > 0 && (
                 <div style={{ position:'absolute', top:'calc(100% + 4px)', left:0, right:0, background:'#fff', borderRadius:10, boxShadow:'0 8px 32px rgba(0,0,0,0.15)', padding:6, zIndex:20, maxHeight:230, overflowY:'auto' }}>
                   {suggestions.map(p => (
@@ -4302,8 +4358,8 @@ function NouvelleCommandeModal({ onClose, onSaved, showToast, delaiDefaut }) {
                 </div>
               )}
             </div>
-            {recherche.trim() && suggestions.length === 0 && (
-              <button onClick={ajouterLibre} style={{ ...btnSecondary, marginTop:8, height:34 }}>+ Ajouter « {recherche.trim()} »</button>
+            {recherche.trim() && (
+              <button onClick={ajouterLibre} style={{ ...btnSecondary, marginTop:8, height:34 }}>+ Ajouter « {recherche.trim()} » (hors carte)</button>
             )}
           </div>
 
@@ -4318,8 +4374,11 @@ function NouvelleCommandeModal({ onClose, onSaved, showToast, delaiDefaut }) {
                       <span style={{ minWidth:18, textAlign:'center', fontSize:14, fontWeight:800 }}>{it.quantite}</span>
                       <button onClick={()=>majItem(i,{quantite:it.quantite+1})} style={{ width:28, height:28, borderRadius:7, border:'1.5px solid #ddd', background:'#fff', fontSize:15, fontWeight:700, cursor:'pointer', color:'#111' }}>+</button>
                     </div>
-                    <span style={{ flex:1, fontSize:14, fontWeight:600, color:'#111', minWidth:0 }}>{it.nom}</span>
-                    <input value={it.prix} onChange={e=>majItem(i,{prix:e.target.value.replace(',','.')})} inputMode="decimal" style={{ width:66, height:32, border:'1.5px solid #ddd', borderRadius:7, padding:'0 8px', fontSize:13, textAlign:'right', outline:'none' }} />
+                    <input value={it.nom} onChange={e=>majItem(i,{nom:e.target.value})} placeholder="Nom de l'article" style={{ flex:1, minWidth:0, height:32, border:'1.5px solid transparent', borderRadius:7, padding:'0 8px', fontSize:14, fontWeight:600, color:'#111', background:'transparent', outline:'none' }} onFocus={e=>{ e.target.style.borderColor='#ddd'; e.target.style.background='#fff'; }} onBlur={e=>{ e.target.style.borderColor='transparent'; e.target.style.background='transparent'; }} />
+                    <div style={{ position:'relative', flexShrink:0 }}>
+                      <input value={it.prix} onChange={e=>majItem(i,{prix:e.target.value.replace(',','.')})} inputMode="decimal" style={{ width:76, height:32, border:'1.5px solid #ddd', borderRadius:7, padding:'0 20px 0 8px', fontSize:13, textAlign:'right', outline:'none', boxSizing:'border-box' }} />
+                      <span style={{ position:'absolute', right:8, top:'50%', transform:'translateY(-50%)', fontSize:12, color:'#999', pointerEvents:'none' }}>€</span>
+                    </div>
                     <button onClick={()=>retirer(i)} style={{ background:'none', border:'none', cursor:'pointer', color:'#e57373', display:'flex', padding:2 }}><Trash2 size={15}/></button>
                   </div>
                   <input value={it.note || ''} onChange={e=>majItem(i,{note:e.target.value})} placeholder="Précision (sans oignons, bien cuite…)" style={{ width:'100%', height:32, border:'none', background:'transparent', fontSize:12.5, color:'#666', outline:'none', marginTop:2, fontStyle:'italic' }} />
@@ -4337,7 +4396,7 @@ function NouvelleCommandeModal({ onClose, onSaved, showToast, delaiDefaut }) {
 
         <div style={{ padding:'14px 24px calc(18px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #f0f0f0', flexShrink:0 }}>
           <button onClick={enregistrer} disabled={!formValide || saving} style={{ width:'100%', height:52, background: formValide && !saving ? '#E8C547' : '#f0f0f0', color: formValide && !saving ? '#111' : '#bbb', border:'none', borderRadius:14, fontSize:16, fontWeight:800, cursor: formValide && !saving ? 'pointer' : 'not-allowed' }}>
-            {saving ? 'Enregistrement…' : `✓ Enregistrer la commande${items.length ? ' · ' + fmtEuro(total) : ''}`}
+            {saving ? 'Enregistrement…' : `✓ ${edition ? 'Enregistrer les modifications' : 'Enregistrer la commande'}${items.length ? ' · ' + fmtEuro(total) : ''}`}
           </button>
         </div>
       </div>
