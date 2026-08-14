@@ -3210,7 +3210,7 @@ function CommandesPage({ showToast, user }) {
   if (loading) return <div style={{ textAlign:'center', paddingTop:80, fontSize:16, color:'#888' }}>Chargement des commandes…</div>;
 
   return (
-    <div style={{ padding: isMobile ? '16px 14px 90px' : (etroit ? '14px 16px' : '24px 28px'), height: isMobile ? undefined : '100vh', minHeight: isMobile ? '100vh' : undefined, boxSizing:'border-box', overflow: isMobile ? undefined : 'hidden', background:'#f5f5f5', display:'flex', flexDirection:'column', gap: etroit ? 10 : 12 }}>
+    <div style={{ padding: isMobile ? '16px 14px 90px' : (etroit ? '14px 16px 28px' : '24px 28px'), minHeight:'100vh', boxSizing:'border-box', background:'#f5f5f5', display:'flex', flexDirection:'column', gap: etroit ? 10 : 12 }}>
 
       {/* ── En-tête ── */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
@@ -3343,7 +3343,7 @@ function CommandesPage({ showToast, user }) {
           {`Aucune commande ${filtre === 'terminees' ? 'terminée' : filtre === 'arecuperer' ? 'à récupérer' : 'en cours'} ${jourSelectionne ? `le ${labelJour(jourAffiche)}` : "aujourd'hui"}${service ? ` au service du ${service}` : ''}`}
         </div>
       ) : (
-        <div style={{ display:'flex', flexDirection:'column', gap:10, flex: isMobile ? undefined : 1, minHeight: isMobile ? undefined : 0, overflowY: isMobile ? undefined : 'auto', paddingRight: isMobile ? 0 : 2 }}>
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
           {listeFiltree.map(c => <CommandeCarte key={c.id} cmd={c} onOpen={()=>setDetail(c)} onStatut={changerStatut} />)}
         </div>
       )}
@@ -4130,33 +4130,31 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
                 return (
                   <button key={i} className={dateFlash === iso ? 'date-flash' : ''} onPointerDown={()=>choisirJour(iso)}
                     style={{ textAlign:'center', minHeight:0, borderRadius:10, cursor:'pointer', position:'relative',
-                      display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:3,
+                      display:'flex', alignItems:'center', justifyContent:'center',
                       border: isToday && !isSelected ? '2px solid #E8C547' : '2px solid #f0f0f0',
                       background: isSelected ? '#111' : isToday ? '#fffbea' : '#fff',
                       color: isSelected ? '#fff' : '#111',
-                      fontWeight: isSelected ? 800 : isToday ? 900 : 600, fontSize:21,
+                      fontWeight: isSelected ? 800 : isToday ? 900 : 600, fontSize:16,
                       boxSizing:'border-box', opacity: estPasse ? 0.45 : 1,
                       touchAction:'manipulation', WebkitTapHighlightColor:'transparent',
                       transition:'background 0.15s' }}>
                     {d}
-                    {svc ? (
-                      <span style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:7, fontSize:10.5, fontWeight:800, letterSpacing:0.2 }}>
-                        {['midi','soir'].map(sv => {
-                          const n = svc[sv];
-                          const enAvant = svcChoisi === sv;   // le service consulté ressort
+                    {/* Compteurs par service, discrets, ancrés en bas de la case */}
+                    {svc && (svc.midi || svc.soir) && (
+                      <span style={{ position:'absolute', left:0, right:0, bottom:3, display:'flex', alignItems:'center', justifyContent:'center', gap:5, fontSize:8.5, fontWeight:800, lineHeight:1, pointerEvents:'none' }}>
+                        {['midi','soir'].filter(sv => svc[sv]).map(sv => {
+                          const enAvant = svcChoisi === sv;
                           const teinte = sv === 'midi'
                             ? (isSelected ? '#E8C547' : '#b8860b')
                             : (isSelected ? '#93c5fd' : '#2563eb');
                           return (
-                            <span key={sv} style={{ display:'inline-flex', alignItems:'center', gap:2.5,
-                              color: n ? teinte : (isSelected ? '#555' : '#ccc'),
-                              opacity: enAvant ? 1 : 0.35 }}>
-                              {sv === 'midi' ? <Sun size={10} strokeWidth={2.6} /> : <Moon size={10} strokeWidth={2.6} />}{n}
+                            <span key={sv} style={{ display:'inline-flex', alignItems:'center', gap:1.5, color:teinte, opacity: enAvant ? 1 : 0.4 }}>
+                              {sv === 'midi' ? <Sun size={8} strokeWidth={3} /> : <Moon size={8} strokeWidth={3} />}{svc[sv]}
                             </span>
                           );
                         })}
                       </span>
-                    ) : <span style={{ fontSize:10.5, color:'transparent' }}>—</span>}
+                    )}
                   </button>
                 );
               })}
