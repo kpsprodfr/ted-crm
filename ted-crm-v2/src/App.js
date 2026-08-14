@@ -3267,9 +3267,11 @@ function CommandesPage({ showToast, user }) {
       {/* ── Filtres ── */}
       <div style={{ display:'flex', gap:8, overflowX:'auto', paddingBottom:2, alignItems:'center' }}>
         {[
-          {id:'actives',    label:`En cours${nbEnCours ? ` (${nbEnCours})` : ''}`},
-          {id:'arecuperer', label:`À récupérer${nbARecuperer ? ` (${nbARecuperer})` : ''}`},
-          {id:'terminees',  label:`Terminées${nbTerminees ? ` (${nbTerminees})` : ''}`},
+          // Le compteur reste affiché même à zéro : sur une autre date, le
+          // libellé ne doit pas changer de forme sous les yeux du commerçant.
+          {id:'actives',    label:`En cours (${nbEnCours})`},
+          {id:'arecuperer', label:`À récupérer (${nbARecuperer})`},
+          {id:'terminees',  label:`Terminées (${nbTerminees})`},
         ].map(f => (
           <button key={f.id} onClick={()=>{
             setFiltre(f.id);
