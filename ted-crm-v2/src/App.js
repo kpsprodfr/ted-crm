@@ -3275,45 +3275,92 @@ function minutesRestantes(cmd) {
   return Math.round((new Date(cmd.pret_estime_a) - new Date()) / 60000);
 }
 
-// ── Carte d'une commande déjà acceptée ───────────────────────────────────────
+// ── Carte d'une commande déjà acceptée (même mise en page que « à traiter ») ──
 function CommandeCarte({ cmd, onOpen, onStatut }) {
+  const isMobile = useIsMobile();
   const st = cmdStatut(cmd.statut);
   const nbArticles = (cmd.items || []).reduce((s, it) => s + (Number(it.quantite) || 1), 0);
   const heure = cmd.created_at ? new Date(cmd.created_at).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }) : '';
   const reste = minutesRestantes(cmd);
+  const actionnable = ['en_preparation', 'prete'].includes(cmd.statut);
 
   return (
-    <div onClick={onOpen} style={{ background:'#fff', borderRadius:14, padding:'14px 16px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', borderLeft:`4px solid ${st.bg}` }}>
-      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12 }}>
-        <div style={{ minWidth:0, flex:1 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-            <span style={{ fontSize:16, fontWeight:800, color:'#111' }}>{cmd.client_nom || 'Client'}</span>
-            <span style={{ background:st.bg, color:st.fg, borderRadius:20, padding:'3px 10px', fontSize:11, fontWeight:700, whiteSpace:'nowrap' }}>{st.court}</span>
-            {cmd.acceptee_auto && <span style={{ background:'#f0fdf4', color:'#16a34a', borderRadius:20, padding:'3px 9px', fontSize:11, fontWeight:700 }}>Auto</span>}
-            {cmd.source === 'en_ligne'
-              ? <span style={{ background:'#eff6ff', color:'#2563eb', borderRadius:20, padding:'3px 9px', fontSize:11, fontWeight:700, display:'inline-flex', alignItems:'center', gap:4 }}><MonitorSmartphone size={11} /> En ligne</span>
-              : <span style={{ background:'#f5f5f5', color:'#666', borderRadius:20, padding:'3px 9px', fontSize:11, fontWeight:700, display:'inline-flex', alignItems:'center', gap:4 }}><Phone size={11} /> Téléphone</span>}
+    <div style={{ background:'#fff', borderRadius:16, padding:'16px 18px', boxShadow:'0 1px 4px rgba(0,0,0,0.05)', borderLeft:`4px solid ${st.bg}`, display:'flex', gap:16, alignItems:'stretch', flexDirection: isMobile ? 'column' : 'row' }}>
+
+      {/* Informations + détail de la commande */}
+      <div style={{ flex:1, minWidth:0, cursor:'pointer' }} onClick={onOpen}>
+        <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+          <span style={{ fontSize:17, fontWeight:800, color:'#111' }}>{cmd.client_nom || 'Client'}</span>
+          <span style={{ background:st.bg, color:st.fg, borderRadius:20, padding:'3px 10px', fontSize:11, fontWeight:700, whiteSpace:'nowrap' }}>{st.court}</span>
+          {cmd.acceptee_auto && <span style={{ background:'#f0fdf4', color:'#16a34a', borderRadius:20, padding:'3px 9px', fontSize:11, fontWeight:700 }}>Auto</span>}
+          {cmd.source === 'en_ligne'
+            ? <span style={{ background:'#eff6ff', color:'#2563eb', borderRadius:20, padding:'3px 9px', fontSize:11, fontWeight:700, display:'inline-flex', alignItems:'center', gap:4 }}><MonitorSmartphone size={11} /> En ligne</span>
+            : <span style={{ background:'#f5f5f5', color:'#666', borderRadius:20, padding:'3px 9px', fontSize:11, fontWeight:700, display:'inline-flex', alignItems:'center', gap:4 }}><Phone size={11} /> Téléphone</span>}
+        </div>
+
+        <div style={{ fontSize:13, color:'#888', marginTop:4 }}>
+          N° {cmd.numero || '—'} · reçue à {heure}
+          {cmd.heure_retrait ? ` · souhaite ${cmd.heure_retrait}` : ''}
+          {cmd.client_tel ? ` · ${cmd.client_tel}` : ''}
+        </div>
+
+        {cmd.statut === 'en_preparation' && reste !== null && (
+          <div style={{ fontSize:14, fontWeight:800, color: reste <= 5 ? '#dc2626' : '#b8860b', marginTop:6, display:'flex', alignItems:'center', gap:6 }}>
+            <Clock size={14} strokeWidth={2.2} />
+            {reste > 0 ? `Prête dans ${reste} min` : 'À sortir maintenant'}
           </div>
-          <div style={{ fontSize:13, color:'#888', marginTop:4 }}>
-            N° {cmd.numero || '—'} · {nbArticles} article{nbArticles > 1 ? 's' : ''} · reçue à {heure}
-          </div>
-          {cmd.statut === 'en_preparation' && reste !== null && (
-            <div style={{ fontSize:13, fontWeight:800, color: reste <= 5 ? '#dc2626' : '#b8860b', marginTop:5, display:'flex', alignItems:'center', gap:6 }}>
-              <Clock size={13} strokeWidth={2.2} />
-              {reste > 0 ? `Prête dans ${reste} min` : 'À sortir maintenant'}
+        )}
+
+        {/* Détail des articles, directement visible */}
+        <div style={{ marginTop:12, background:'#fafafa', borderRadius:10, padding:'12px 14px' }}>
+          {(cmd.items || []).map((it, i) => (
+            <div key={i} style={{ display:'flex', justifyContent:'space-between', gap:14, alignItems:'baseline', padding:'8px 0', borderBottom: i < (cmd.items.length - 1) ? '1px solid #efefef' : 'none' }}>
+              <span style={{ color:'#111', fontSize:15.5, lineHeight:1.45 }}>
+                <span style={{ fontWeight:800, marginRight:5 }}>{it.quantite || 1}×</span>{it.nom}
+                {it.note ? <span style={{ display:'block', color:'#888', fontSize:13, fontStyle:'italic', marginTop:2 }}>{it.note}</span> : null}
+              </span>
+              <span style={{ fontWeight:400, fontSize:15, color:'#555', whiteSpace:'nowrap' }}>{fmtEuro((Number(it.prix)||0) * (Number(it.quantite)||1))}</span>
             </div>
-          )}
+          ))}
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginTop:10, paddingTop:10, borderTop:'2px solid #111' }}>
+            <span style={{ fontSize:13, fontWeight:700, color:'#888' }}>{nbArticles} article{nbArticles > 1 ? 's' : ''}</span>
+            <span style={{ fontSize:19, fontWeight:900, color:'#111' }}>{fmtEuro(cmd.total)}</span>
+          </div>
         </div>
-        <div style={{ textAlign:'right', flexShrink:0 }}>
-          <div style={{ fontSize:17, fontWeight:900, color:'#111' }}>{fmtEuro(cmd.total)}</div>
-          <span style={{ color:'#ccc', fontSize:18 }}>›</span>
-        </div>
+
+        {cmd.note && (
+          <div style={{ marginTop:8, background:'#fffbea', border:'1.5px solid #E8C547', borderRadius:9, padding:'8px 12px', fontSize:12.5, color:'#111' }}>
+            <strong>Note :</strong> {cmd.note}
+          </div>
+        )}
+
+        {cmd.motif_refus && (
+          <div style={{ marginTop:8, background:'#fef2f2', border:'1.5px solid #fca5a5', borderRadius:9, padding:'8px 12px', fontSize:12.5, color:'#111' }}>
+            <strong>Motif du refus :</strong> {cmd.motif_refus}
+          </div>
+        )}
       </div>
-      {['en_preparation','prete'].includes(cmd.statut) && (
-        <div style={{ display:'flex', gap:8, marginTop:12 }} onClick={e=>e.stopPropagation()}>
-          {cmd.statut === 'en_preparation' && <button onClick={()=>onStatut(cmd,'prete')} style={{ flex:1, height:38, border:'none', borderRadius:9, background:'#16a34a', color:'#fff', fontSize:13, fontWeight:800, cursor:'pointer' }}>Marquer prête</button>}
-          {cmd.statut === 'prete' && <button onClick={()=>onStatut(cmd,'recuperee')} style={{ flex:1, height:38, border:'none', borderRadius:9, background:'#111', color:'#fff', fontSize:13, fontWeight:800, cursor:'pointer' }}>Récupérée</button>}
-          {cmd.client_tel && <a href={`tel:${cmd.client_tel}`} onClick={e=>e.stopPropagation()} style={{ height:38, padding:'0 14px', borderRadius:9, background:'#f5f5f5', color:'#111', fontSize:13, fontWeight:700, display:'flex', alignItems:'center', gap:6, textDecoration:'none' }}><Phone size={14} /> Appeler</a>}
+
+      {/* Gros bouton d'action, à droite */}
+      {actionnable && (
+        <div style={{ width: isMobile ? '100%' : 340, flexShrink:0, display:'flex', flexDirection:'column', gap:11, justifyContent:'center', borderLeft: isMobile ? 'none' : '1px solid #f0f0f0', paddingLeft: isMobile ? 0 : 20 }}>
+          {cmd.statut === 'en_preparation' && (
+            <button onClick={()=>onStatut(cmd, 'prete')} style={{ width:'100%', minHeight:104, border:'none', borderRadius:16, background:'#16a34a', color:'#fff', fontSize:22, fontWeight:900, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:5, boxShadow:'0 6px 20px rgba(22,163,74,0.35)' }}>
+              <CheckCircle size={30} strokeWidth={2.4} />
+              Marquer prête
+            </button>
+          )}
+          {cmd.statut === 'prete' && (
+            <button onClick={()=>onStatut(cmd, 'recuperee')} style={{ width:'100%', minHeight:104, border:'none', borderRadius:16, background:'#111', color:'#fff', fontSize:22, fontWeight:900, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:5, boxShadow:'0 6px 20px rgba(0,0,0,0.25)' }}>
+              <BadgeCheck size={30} strokeWidth={2.2} />
+              Récupérée
+            </button>
+          )}
+          {cmd.client_tel && (
+            <a href={`tel:${cmd.client_tel}`} style={{ width:'100%', height:44, borderRadius:11, background:'#f5f5f5', color:'#111', fontSize:14.5, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center', gap:8, textDecoration:'none' }}>
+              <Phone size={16} strokeWidth={2} /> Appeler
+            </a>
+          )}
         </div>
       )}
     </div>
@@ -3486,45 +3533,12 @@ function ParametresCommandesModal({ autoAccept, delaiDefaut, commandesActives, m
 
         <div style={{ padding:'18px 24px 22px', overflowY:'auto', display:'flex', flexDirection:'column', gap:22 }}>
 
-          {/* ── Acceptation automatique ── */}
+          {/* ── Commande en ligne ── */}
           <div>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:14, marginBottom:12 }}>
               <div style={{ minWidth:0 }}>
                 <div style={{ fontSize:15, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:8 }}>
-                  <CircleCheck size={17} strokeWidth={2} color={autoAccept ? '#16a34a' : '#bbb'} /> Acceptation automatique
-                </div>
-                <div style={{ fontSize:12.5, color:'#888', marginTop:4, lineHeight:1.5 }}>
-                  {autoAccept
-                    ? 'Les commandes qui arrivent sont acceptées seules, avec le délai ci-dessous.'
-                    : 'Chaque commande doit être acceptée à la main dans « Commandes à traiter ».'}
-                </div>
-              </div>
-              <MenuToggle value={autoAccept} onChange={()=>onMaj('acceptation_auto', autoAccept ? 'false' : 'true')} />
-            </div>
-
-            <label style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, display:'block', marginBottom:8 }}>Délai annoncé au client</label>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8, marginBottom:10 }}>
-              {DELAIS_RAPIDES.map(m => (
-                <button key={m} onClick={()=>onMaj('delai_minutes', m)} style={{ height:52, borderRadius:11, border: d===m ? '2px solid #16a34a' : '1.5px solid #ddd', background: d===m ? '#16a34a' : '#fff', color: d===m ? '#fff' : '#333', fontSize:15, fontWeight:800, cursor:'pointer', padding:0 }}>
-                  {fmtDelai(m)}
-                </button>
-              ))}
-            </div>
-            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-              <button onClick={()=>onMaj('delai_minutes', Math.max(5, d - 5))} style={{ width:52, height:48, borderRadius:11, border:'1.5px solid #ddd', background:'#fff', fontSize:23, fontWeight:700, cursor:'pointer', color:'#111', lineHeight:1 }}>−</button>
-              <div style={{ flex:1, height:48, border:'1.5px solid #ddd', borderRadius:11, display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, fontWeight:800, background:'#fafafa' }}>{fmtDelai(d)}</div>
-              <button onClick={()=>onMaj('delai_minutes', Math.min(180, d + 5))} style={{ width:52, height:48, borderRadius:11, border:'1.5px solid #ddd', background:'#fff', fontSize:23, fontWeight:700, cursor:'pointer', color:'#111', lineHeight:1 }}>+</button>
-            </div>
-          </div>
-
-          <div style={{ height:1, background:'#f0f0f0' }} />
-
-          {/* ── Prise de commandes ── */}
-          <div>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:14, marginBottom:12 }}>
-              <div style={{ minWidth:0 }}>
-                <div style={{ fontSize:15, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:8 }}>
-                  <ShoppingBag size={17} strokeWidth={2} color={commandesActives ? '#16a34a' : '#dc2626'} /> Prise de commandes
+                  <ShoppingBag size={17} strokeWidth={2} color={commandesActives ? '#16a34a' : '#dc2626'} /> Commande en ligne
                 </div>
                 <div style={{ fontSize:12.5, color:'#888', marginTop:4, lineHeight:1.5 }}>
                   {commandesActives
@@ -3532,7 +3546,7 @@ function ParametresCommandesModal({ autoAccept, delaiDefaut, commandesActives, m
                     : 'La page de commande est fermée : les clients voient le motif ci-dessous.'}
                 </div>
               </div>
-              <MenuToggle value={commandesActives} onChange={()=>commandesActives ? fermerPrise(motif) : rouvrirPrise()} />
+              <MenuToggle value={commandesActives} colorOn="#16a34a" onChange={()=>commandesActives ? fermerPrise(motif) : rouvrirPrise()} />
             </div>
 
             {!commandesActives && (
@@ -3549,6 +3563,41 @@ function ParametresCommandesModal({ autoAccept, delaiDefaut, commandesActives, m
               </div>
             )}
           </div>
+          <div style={{ height:1, background:'#f0f0f0' }} />
+
+          {/* ── Acceptation automatique ── */}
+          <div>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:14, marginBottom:12 }}>
+              <div style={{ minWidth:0 }}>
+                <div style={{ fontSize:15, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:8 }}>
+                  <CircleCheck size={17} strokeWidth={2} color={autoAccept ? '#16a34a' : '#bbb'} /> Acceptation automatique
+                </div>
+                <div style={{ fontSize:12.5, color:'#888', marginTop:4, lineHeight:1.5 }}>
+                  {autoAccept
+                    ? 'Les commandes qui arrivent sont acceptées seules, avec le délai ci-dessous.'
+                    : 'Chaque commande doit être acceptée à la main dans « Commandes à traiter ».'}
+                </div>
+              </div>
+              <MenuToggle value={autoAccept} colorOn="#16a34a" onChange={()=>onMaj('acceptation_auto', autoAccept ? 'false' : 'true')} />
+            </div>
+
+            {autoAccept && (<>
+            <label style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, display:'block', marginBottom:8 }}>Délai annoncé au client</label>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8, marginBottom:10 }}>
+              {DELAIS_RAPIDES.map(m => (
+                <button key={m} onClick={()=>onMaj('delai_minutes', m)} style={{ height:52, borderRadius:11, border: d===m ? '2px solid #16a34a' : '1.5px solid #ddd', background: d===m ? '#16a34a' : '#fff', color: d===m ? '#fff' : '#333', fontSize:15, fontWeight:800, cursor:'pointer', padding:0 }}>
+                  {fmtDelai(m)}
+                </button>
+              ))}
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <button onClick={()=>onMaj('delai_minutes', Math.max(5, d - 5))} style={{ width:52, height:48, borderRadius:11, border:'1.5px solid #ddd', background:'#fff', fontSize:23, fontWeight:700, cursor:'pointer', color:'#111', lineHeight:1 }}>−</button>
+              <div style={{ flex:1, height:48, border:'1.5px solid #ddd', borderRadius:11, display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, fontWeight:800, background:'#fafafa' }}>{fmtDelai(d)}</div>
+              <button onClick={()=>onMaj('delai_minutes', Math.min(180, d + 5))} style={{ width:52, height:48, borderRadius:11, border:'1.5px solid #ddd', background:'#fff', fontSize:23, fontWeight:700, cursor:'pointer', color:'#111', lineHeight:1 }}>+</button>
+            </div>
+            </>)}
+          </div>
+
         </div>
 
         <div style={{ padding:'14px 24px calc(18px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #f0f0f0', flexShrink:0 }}>
@@ -3930,9 +3979,9 @@ function slugify(str) {
   return str.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 }
 
-function MenuToggle({ value, onChange }) {
+function MenuToggle({ value, onChange, colorOn = '#E8C547' }) {
   return (
-    <div onClick={onChange} style={{ width:44, height:24, borderRadius:12, background: value ? '#E8C547' : '#ddd', cursor:'pointer', position:'relative', transition:'background 0.2s', flexShrink:0 }}>
+    <div onClick={onChange} style={{ width:44, height:24, borderRadius:12, background: value ? colorOn : '#ddd', cursor:'pointer', position:'relative', transition:'background 0.2s', flexShrink:0 }}>
       <div style={{ position:'absolute', top:2, left: value ? 22 : 2, width:20, height:20, borderRadius:10, background:'#fff', transition:'left 0.2s', boxShadow:'0 1px 4px rgba(0,0,0,0.2)' }} />
     </div>
   );
