@@ -4427,6 +4427,9 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
   })));
   const [produits, setProduits] = useState([]);
   const [categories, setCategories] = useState([]);
+  // Reconnaissance du client à partir du numéro, comme sur une réservation
+  const [clientTrouve, setClientTrouve] = useState(null);
+  const [rechercheClient, setRechercheClient] = useState(false);
   const [recherche, setRecherche] = useState('');
   const [saving, setSaving] = useState(false);
   const lockRef = useRef(false);
@@ -4461,6 +4464,27 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
       { fallback: [], context: 'commande:categories' }
     ).then(({ data }) => setCategories(data || []));
   }, []);
+
+  async function saisirTel(val) {
+    marquerModifie();
+    setTel(val);
+    setClientTrouve(null);
+    const digits = val.replace(/\D/g, '');
+    if (digits.length < 10) return;
+    setRechercheClient(true);
+    const telNorm = val.replace(/[\s.\-()]/g, '').replace(/^0/, '+33');
+    const { data } = await safeQuery(
+      () => supabase.from('clients').select('id,prenom,nom,mail,entreprise,tel_normalise')
+        .or(`tel_normalise.eq.${telNorm},tel.eq.${val.trim()}`).maybeSingle(),
+      { fallback: null, context: 'commande:rechercheClient' }
+    );
+    setRechercheClient(false);
+    if (!data) return;
+    setClientTrouve(data);
+    // On ne remplace pas un nom déjà saisi à la main
+    const nomComplet = data.entreprise || [data.prenom, data.nom].filter(Boolean).join(' ');
+    if (nomComplet && !nom.trim()) setNom(nomComplet);
+  }
 
   function ajouter(p) {
     marquerModifie();
@@ -4638,15 +4662,39 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
 
         {/* minHeight:0 est indispensable : sans lui le contenu flex ne défile pas */}
         <div style={{ padding:'16px 24px', overflowY:'auto', display:'flex', flexDirection:'column', gap:16, flex:1, minHeight:0 }}>
-          {/* Client */}
-          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-            <input value={nom} onChange={e=>{marquerModifie(); setNom(e.target.value);}} placeholder="Nom du client *" style={inp(false)} />
-            <input value={tel} onChange={e=>{marquerModifie(); setTel(e.target.value);}} placeholder="Téléphone" inputMode="tel" style={inp(false)} />
+          {/* 1. Téléphone — reconnaît le client comme sur une réservation */}
+          <div>
+            <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>1. Téléphone du client</p>
+            <div style={{ position:'relative' }}>
+              <Phone size={18} strokeWidth={2} color="#999" style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} />
+              <input type="tel" inputMode="numeric" value={tel} onChange={e=>saisirTel(e.target.value)} placeholder="06 43 00 49 87"
+                style={{ width:'100%', height:52, border:'1.5px solid #eee', borderRadius:12, padding:'0 46px', fontSize:16, outline:'none', boxSizing:'border-box' }} />
+              {clientTrouve && <CircleCheck size={20} color="#22c55e" style={{ position:'absolute', right:14, top:'50%', transform:'translateY(-50%)' }} />}
+              {rechercheClient && <span style={{ position:'absolute', right:14, top:'50%', transform:'translateY(-50%)', fontSize:12, color:'#888' }}>Recherche…</span>}
+            </div>
+            {clientTrouve && (
+              <div style={{ marginTop:8, background:'#f0fdf4', border:'1.5px solid #22c55e', borderRadius:10, padding:'10px 14px', display:'flex', alignItems:'center', gap:10 }}>
+                <User size={18} strokeWidth={2} color="#16a34a" />
+                <div style={{ minWidth:0 }}>
+                  <span style={{ fontWeight:800, fontSize:14, color:'#111' }}>
+                    {clientTrouve.entreprise || `${clientTrouve.prenom || ''} ${clientTrouve.nom || ''}`.trim() || 'Client'}
+                  </span>
+                  <div style={{ fontSize:12, color:'#666', marginTop:2 }}>Client déjà connu{clientTrouve.mail ? ` · ${clientTrouve.mail}` : ''}</div>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Jour de retrait */}
+          {/* 2. Nom */}
           <div>
-            <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px' }}>Jour de retrait</p>
+            <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>2. Nom du client <span style={{ color:'#dc2626' }}>*</span></p>
+            <input value={nom} onChange={e=>{marquerModifie(); setNom(e.target.value);}} placeholder="Nom au comptoir"
+              style={{ width:'100%', height:52, border:'1.5px solid', borderColor: nom.trim() ? '#22c55e' : '#eee', borderRadius:12, padding:'0 14px', fontSize:16, outline:'none', boxSizing:'border-box' }} />
+          </div>
+
+          {/* 3. Jour de retrait */}
+          <div>
+            <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>3. Jour de retrait</p>
             <button onClick={()=>setShowCalPicker(v=>!v)} style={{ width:'100%', height:48, borderRadius:10, border:'1.5px solid #ddd', background:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 14px' }}>
               <span style={{ display:'flex', alignItems:'center', gap:9, fontSize:14.5, fontWeight:700, color:'#111', textTransform:'capitalize' }}>
                 <CalendarDays size={16} strokeWidth={2} color="#999" />
@@ -4659,7 +4707,7 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
 
           {/* Heure de retrait, en un clic */}
           <div>
-            <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px' }}>Heure de retrait</p>
+            <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>4. Heure de retrait</p>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:10 }}>
               <button onClick={()=>setSvcRetrait('midi')} style={{ height:46, borderRadius:12, cursor:'pointer', fontSize:14.5, fontWeight:700, border:`1.5px solid ${svcRetrait==='midi'?'#E8C547':'#eee'}`, background:svcRetrait==='midi'?'#fffbea':'#fff', color:'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
                 <Sun size={17} strokeWidth={2} color={svcRetrait==='midi'?'#E8C547':'#999'} /> Midi
@@ -4682,7 +4730,7 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
 
           {/* Ajout d'articles */}
           <div>
-            <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px' }}>Articles</p>
+            <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>5. Articles <span style={{ color:'#dc2626' }}>*</span></p>
             <div style={{ display:'flex', gap:8, alignItems:'flex-start' }}>
               <div style={{ position:'relative', flex:1 }}>
                 <input value={recherche} onChange={e=>setRecherche(e.target.value)} onKeyDown={e=>{ if(e.key==='Enter'){ if(suggestions.length) ajouter(suggestions[0]); else ajouterLibre(); } }} placeholder="Rechercher un produit ou saisir un article hors carte…" style={inp(false)} />
@@ -4767,7 +4815,7 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
           )}
 
           <div>
-            <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px' }}>Note</p>
+            <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>6. Note <span style={{ fontSize:12, fontWeight:400, color:'#999' }}>(optionnel)</span></p>
             <textarea value={note} onChange={e=>{marquerModifie(); setNote(e.target.value);}} placeholder="Note générale (allergie, paiement…)" rows={3} style={{ width:'100%', border:'1.5px solid #ddd', borderRadius:7, padding:'10px 12px', fontSize:14, outline:'none', resize:'vertical', fontFamily:'inherit', boxSizing:'border-box' }} />
           </div>
         </div>
