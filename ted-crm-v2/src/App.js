@@ -3229,7 +3229,7 @@ function CommandesPage({ showToast, user }) {
             <Settings size={15} strokeWidth={2} /> Paramètres
           </button>
           <button onClick={()=>setShowNouvelle(true)} style={{ ...btnPrimary, height:38, display:'flex', alignItems:'center', gap:6 }}>
-            <Phone size={15} strokeWidth={2} /> Commande téléphone
+            <Plus size={16} strokeWidth={2.4} /> Nouvelle commande
           </button>
         </div>
       </div>
@@ -3955,6 +3955,7 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
 
 // ── Calendrier des commandes (même grille que la page Réservations) ─────────
 function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChoisir, onClose }) {
+  const isMobile = useIsMobile();
   const [calDate, setCalDate] = useState(new Date());
   // Service consulté : celui déjà choisi, sinon celui en cours à cette heure-ci.
   const [svcChoisi, setSvcChoisi] = useState(service || serviceActuel());
@@ -4020,27 +4021,8 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
           <button onClick={onClose} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666' }}>✕</button>
         </div>
 
-        {/* Choix du service, comme sur la page Réservations */}
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, padding:'16px 28px 0', flexShrink:0 }}>
-          {[{id:'midi',label:'Midi',icone:<Sun size={17} strokeWidth={2} />,horaire:'avant 15h'},
-            {id:'soir',label:'Soir',icone:<Moon size={17} strokeWidth={2} />,horaire:'à partir de 15h'}].map(sv => {
-            const actif = svcChoisi === sv.id;
-            return (
-              <button key={sv.id} onClick={()=>setSvcChoisi(sv.id)}
-                style={{ padding:'10px 16px', borderRadius:12, cursor:'pointer', textAlign:'center',
-                  border: actif ? '2px solid #111' : '1.5px solid #eee',
-                  background: actif ? '#111' : '#fff', color: actif ? '#E8C547' : '#111',
-                  display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
-                {sv.icone}
-                <span style={{ fontSize:15, fontWeight:800 }}>{sv.label}</span>
-                <span style={{ fontSize:11.5, color: actif ? '#999' : '#aaa', fontWeight:600 }}>{sv.horaire}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div style={{ padding:'14px 28px 22px', overflowY:'auto', flex:1, minHeight:0, display:'flex', flexDirection:'column' }}>
-          <div style={{ background:'#f8f8f8', borderRadius:14, padding:18, flex:1, display:'flex', flexDirection:'column' }}>
+        <div style={{ padding:'18px 28px 22px', overflowY:'auto', flex:1, minHeight:0, display:'flex', flexDirection: isMobile ? 'column' : 'row', gap:16 }}>
+          <div style={{ background:'#f8f8f8', borderRadius:14, padding:18, flex:1, display:'flex', flexDirection:'column', minWidth:0 }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
               <button onClick={()=>changerMois(-1)} style={{ background:'#f0f0f0', border:'none', borderRadius:9, width:40, height:40, fontSize:18, cursor:'pointer', fontWeight:700 }}>‹</button>
               <span style={{ fontWeight:800, fontSize:21 }}>{MOIS[mois]} {annee}</span>
@@ -4091,12 +4073,40 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
                 );
               })}
             </div>
+            <p style={{ margin:'12px 2px 0', fontSize:12.5, color:'#888' }}>
+              Sous chaque date : les commandes du midi (<Sun size={11} strokeWidth={2.6} style={{ display:'inline', verticalAlign:'-1px', color:'#b8860b' }} />)
+              et du soir (<Moon size={11} strokeWidth={2.6} style={{ display:'inline', verticalAlign:'-1px', color:'#2563eb' }} />), le service choisi étant mis en avant.
+            </p>
           </div>
-          <p style={{ margin:'14px 2px 0', fontSize:13, color:'#888' }}>
-            Sous chaque date : le nombre de commandes du midi (<Sun size={11} strokeWidth={2.6} style={{ display:'inline', verticalAlign:'-1px', color:'#b8860b' }} />)
-            et du soir (<Moon size={11} strokeWidth={2.6} style={{ display:'inline', verticalAlign:'-1px', color:'#2563eb' }} />), le service choisi ci-dessus étant mis en avant.
-            Cliquez sur un jour pour afficher son service {svcChoisi === 'midi' ? 'du midi' : 'du soir'}.
-          </p>
+
+          {/* Colonne Service, à droite du calendrier comme sur la page Réservations */}
+          <div style={{ width: isMobile ? '100%' : 230, flexShrink:0, display:'flex', flexDirection:'column', gap:10 }}>
+            <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'2px 0 0' }}>Service</p>
+            {[{id:'midi',label:'Midi',icone:Sun,horaire:'avant 15h'},
+              {id:'soir',label:'Soir',icone:Moon,horaire:'à partir de 15h'}].map(sv => {
+              const actif = svcChoisi === sv.id;
+              const Icone = sv.icone;
+              const nb = Object.entries(parJour)
+                .filter(([iso]) => iso.startsWith(`${annee}-${String(mois+1).padStart(2,'0')}`))
+                .reduce((n, [, v]) => n + v[sv.id], 0);
+              return (
+                <button key={sv.id} onClick={()=>setSvcChoisi(sv.id)}
+                  style={{ width:'100%', padding:'20px 16px', borderRadius:12, cursor:'pointer', textAlign:'center',
+                    border: actif ? '2px solid #111' : '1.5px solid #eee',
+                    background: actif ? '#111' : '#fff' }}>
+                  <Icone size={22} strokeWidth={2} color={actif ? '#E8C547' : '#999'} />
+                  <div style={{ fontSize:16, fontWeight:800, color: actif ? '#E8C547' : '#111', marginTop:6 }}>{sv.label}</div>
+                  <div style={{ fontSize:12.5, color: actif ? '#999' : '#aaa', marginTop:2 }}>{sv.horaire}</div>
+                  <div style={{ fontSize:13, color: actif ? '#bbb' : '#999', marginTop:6 }}>
+                    {nb} commande{nb > 1 ? 's' : ''} ce mois-ci
+                  </div>
+                </button>
+              );
+            })}
+            <p style={{ fontSize:12.5, color:'#999', lineHeight:1.5, margin:'2px 0 0' }}>
+              Cliquez sur un jour du calendrier pour afficher son service {svcChoisi === 'midi' ? 'du midi' : 'du soir'}.
+            </p>
+          </div>
         </div>
 
         <div style={{ padding:'14px 28px calc(18px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #f0f0f0', flexShrink:0 }}>
@@ -4297,7 +4307,7 @@ function CommandeDetail({ cmd, onClose, onStatut, onEdit, onSupprimer }) {
   return (
     <>
       <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:4999 }} />
-      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:20, width:'min(440px, calc(100vw - 40px))', maxHeight:'88vh', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.25)', zIndex:5000, overflow:'hidden' }}>
+      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:20, width:'min(680px, calc(100vw - 32px))', maxHeight:'90vh', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.25)', zIndex:5000, overflow:'hidden' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'20px 24px 16px', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
           <div>
             <h2 style={{ margin:0, fontSize:18, fontWeight:800, color:'#111' }}>Commande N° {cmd.numero || '—'}</h2>
@@ -4412,10 +4422,12 @@ function CommandeDetail({ cmd, onClose, onStatut, onEdit, onSupprimer }) {
 // ── Toute la carte, en grand — pensée pour la prise de commande sur tablette ──
 // Cibles tactiles larges : chaque produit est une carte, les boutons − / + font
 // 52 px de côté, bien au-delà des 44 px recommandés pour le doigt.
-function CatalogueModal({ parCategorie, quantiteDe, onAjouter, onRetirer, nbArticles, total, onClose }) {
+function CatalogueModal({ parCategorie, quantiteDe, onAjouter, onRetirer, nbArticles, total, onEnregistrer, onAbandonner }) {
   const isMobile = useIsMobile();
   const [filtreCat, setFiltreCat] = useState('toutes');
   const [recherche, setRecherche] = useState('');
+  // Quitter par la croix abandonne les articles ajoutés pendant cette ouverture
+  const [confirmeAbandon, setConfirmeAbandon] = useState(false);
 
   const categoriesAffichees = parCategorie
     .filter(c => filtreCat === 'toutes' || c.id === filtreCat)
@@ -4429,7 +4441,7 @@ function CatalogueModal({ parCategorie, quantiteDe, onAjouter, onRetirer, nbArti
 
   return (
     <>
-      <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:5300 }} />
+      <div onClick={()=>setConfirmeAbandon(true)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:5300 }} />
       <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:22, width:'min(1080px, calc(100vw - 20px))', height:'min(940px, calc(100vh - 20px))', display:'flex', flexDirection:'column', boxShadow:'0 40px 100px rgba(0,0,0,0.35)', zIndex:5301, overflow:'hidden' }}>
 
         {/* En-tête */}
@@ -4437,7 +4449,7 @@ function CatalogueModal({ parCategorie, quantiteDe, onAjouter, onRetirer, nbArti
           <h2 style={{ margin:0, fontSize:21, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:10 }}>
             <UtensilsCrossed size={22} strokeWidth={2} /> Ajouter des articles
           </h2>
-          <button onClick={onClose} style={{ width:46, height:46, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:22, color:'#666', flexShrink:0 }}>✕</button>
+          <button onClick={()=>setConfirmeAbandon(true)} style={{ width:46, height:46, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:22, color:'#666', flexShrink:0 }}>✕</button>
         </div>
 
         {/* Recherche + filtres de catégorie */}
@@ -4507,11 +4519,27 @@ function CatalogueModal({ parCategorie, quantiteDe, onAjouter, onRetirer, nbArti
               {nbArticles} article{nbArticles > 1 ? 's' : ''} · {fmtEuro(total)}
             </div>
           </div>
-          <button onClick={onClose} style={{ height:60, padding:'0 34px', border:'none', borderRadius:15, background:'#E8C547', color:'#111', fontSize:17, fontWeight:800, cursor:'pointer', flexShrink:0 }}>
-            Terminer
+          <button onClick={onEnregistrer} style={{ height:60, padding:'0 34px', border:'none', borderRadius:15, background:'#E8C547', color:'#111', fontSize:17, fontWeight:800, cursor:'pointer', flexShrink:0 }}>
+            Enregistrer
           </button>
         </div>
       </div>
+
+      {confirmeAbandon && (
+        <>
+          <div onClick={()=>setConfirmeAbandon(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:5400 }} />
+          <div style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:18, width:'min(420px, calc(100vw - 40px))', padding:'24px 26px', boxShadow:'0 32px 80px rgba(0,0,0,0.3)', zIndex:5401 }}>
+            <h3 style={{ margin:'0 0 8px', fontSize:17, fontWeight:800, color:'#111' }}>Fermer sans enregistrer ?</h3>
+            <p style={{ margin:'0 0 20px', fontSize:13.5, color:'#666', lineHeight:1.55 }}>
+              Les articles sélectionnés ici ne seront pas ajoutés à la commande.
+            </p>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={()=>setConfirmeAbandon(false)} style={{ flex:1, height:48, border:'1.5px solid #ddd', borderRadius:12, background:'#fff', fontSize:14, fontWeight:700, cursor:'pointer', color:'#666' }}>Continuer</button>
+              <button onClick={onAbandonner} style={{ flex:1, height:48, border:'none', borderRadius:12, background:'#dc2626', color:'#fff', fontSize:14, fontWeight:800, cursor:'pointer' }}>Fermer sans enregistrer</button>
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 }
@@ -4537,6 +4565,12 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
   // Reconnaissance du client à partir du numéro, comme sur une réservation
   const [clientTrouve, setClientTrouve] = useState(null);
   const [rechercheClient, setRechercheClient] = useState(false);
+  // Fiche à créer quand le numéro n'est pas connu, comme en réservation
+  const [genre, setGenre] = useState('');
+  const [prenom, setPrenom] = useState('');
+  const [nomFamille, setNomFamille] = useState('');
+  const [entreprise, setEntreprise] = useState('');
+  const [email, setEmail] = useState('');
   const [recherche, setRecherche] = useState('');
   const [saving, setSaving] = useState(false);
   const lockRef = useRef(false);
@@ -4553,8 +4587,12 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
     return serviceActuel();
   });
 
-  // Catalogue complet, ouvert par le bouton « + »
+  const [tousLesHoraires, setTousLesHoraires] = useState(false);
+
+  // Catalogue complet, ouvert par le bouton « + ». On mémorise le panier à
+  // l'ouverture pour pouvoir revenir en arrière si l'utilisateur abandonne.
   const [showCatalogue, setShowCatalogue] = useState(false);
+  const panierAvantCatalogue = useRef([]);
 
   // Garde-fou de fermeture : on ne perd pas une saisie en cours
   const [toucheAuFormulaire, setToucheAuFormulaire] = useState(false);
@@ -4576,6 +4614,7 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
     marquerModifie();
     setTel(val);
     setClientTrouve(null);
+    setGenre(''); setPrenom(''); setNomFamille(''); setEntreprise(''); setEmail('');
     const digits = val.replace(/\D/g, '');
     if (digits.length < 10) return;
     setRechercheClient(true);
@@ -4588,10 +4627,18 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
     setRechercheClient(false);
     if (!data) return;
     setClientTrouve(data);
-    // On ne remplace pas un nom déjà saisi à la main
     const nomComplet = data.entreprise || [data.prenom, data.nom].filter(Boolean).join(' ');
-    if (nomComplet && !nom.trim()) setNom(nomComplet);
+    if (nomComplet) setNom(nomComplet);
   }
+
+  // Le numéro est complet mais inconnu du fichier : on demande la fiche
+  const telComplet = tel.replace(/\D/g, '').length >= 10;
+  const nouveauClient = telComplet && !clientTrouve && !rechercheClient;
+
+  // Nom retenu pour la commande
+  const nomPourCommande = nouveauClient
+    ? (genre === 'Entreprise' ? entreprise.trim() : `${prenom.trim()} ${nomFamille.trim()}`.trim())
+    : nom.trim();
 
   function ajouter(p) {
     marquerModifie();
@@ -4627,7 +4674,10 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
   const quantiteDe = (p) => items.filter(x => x.nom === p.nom && !x.note).reduce((s, x) => s + (Number(x.quantite) || 0), 0);
 
   const total = cmdTotal(items);
-  const formValide = nom.trim() && items.length > 0;
+  const ficheComplete = !nouveauClient || (genre === 'Entreprise'
+    ? !!entreprise.trim()
+    : (!!genre && !!prenom.trim() && !!nomFamille.trim()));
+  const formValide = nomPourCommande && items.length > 0 && ficheComplete;
 
   const suggestions = recherche.trim().length >= 1
     ? produits.filter(p => normalizeStr(p.nom || '').includes(normalizeStr(recherche))).slice(0, 6)
@@ -4650,8 +4700,30 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
     if (tel.trim() && !/^(\+33|0)[1-9]\d{8}$/.test(tel.replace(/[\s.\-()]/g, ''))) {
       showToast('Numéro de téléphone invalide', 'error'); return;
     }
+    if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) {
+      showToast('Email invalide', 'error'); return;
+    }
     lockRef.current = true;
     setSaving(true);
+
+    // Numéro inconnu : on crée la fiche client, comme depuis une réservation
+    let clientId = clientTrouve?.id || null;
+    if (nouveauClient) {
+      const telNorm = tel.replace(/[\s.\-()]/g, '').replace(/^0/, '+33');
+      const { data: cree } = await safeQuery(
+        () => supabase.from('clients').insert({
+          genre,
+          prenom: genre === 'Entreprise' ? null : capitalize(prenom.trim()),
+          nom: genre === 'Entreprise' ? null : capitalize(nomFamille.trim()),
+          entreprise: genre === 'Entreprise' ? entreprise.trim() : null,
+          mail: email.trim().toLowerCase() || null,
+          tel: tel.trim(),
+          tel_normalise: telNorm,
+        }).select('id').single(),
+        { fallback: null, context: 'commande:creerClient' }
+      );
+      if (cree) clientId = cree.id;
+    }
 
     const itemsPropres = items
       .filter(it => (it.nom || '').trim())
@@ -4665,7 +4737,7 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
     if (edition) {
       const { error: errEdit } = await safeQuery(
         () => supabase.from('commandes').update({
-          client_nom: nom.trim().slice(0, 80),
+          client_nom: nomPourCommande.slice(0, 80),
           client_tel: tel.trim().slice(0, 20) || null,
           items: itemsPropres,
           total: cmdTotal(itemsPropres),
@@ -4685,8 +4757,10 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
 
     const { error } = await safeQuery(
       () => supabase.from('commandes').insert({
-        client_nom: nom.trim().slice(0, 80),
+        client_nom: nomPourCommande.slice(0, 80),
         client_tel: tel.trim().slice(0, 20) || null,
+        client_id: clientId,
+        client_email: email.trim().toLowerCase() || clientTrouve?.mail || null,
         items: itemsPropres,
         total: cmdTotal(itemsPropres),
         statut: 'en_preparation',
@@ -4754,6 +4828,24 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
 
   const creneaux = svcRetrait === 'midi' ? CRENEAUX_MIDI : CRENEAUX_SOIR;
 
+  // Cinq propositions : les prochains créneaux du jour, sinon le début du service.
+  // L'heure déjà choisie reste toujours visible, même hors des cinq.
+  const creneauxProposes = (() => {
+    const tous = [...CRENEAUX_MIDI, ...CRENEAUX_SOIR];
+    let base;
+    if (dateRetrait === dateLocale()) {
+      const maintenant = new Date();
+      const hhmm = `${String(maintenant.getHours()).padStart(2,'0')}:${String(maintenant.getMinutes()).padStart(2,'0')}`;
+      base = tous.filter(h => h > hhmm);
+      if (base.length < 5) base = tous.slice(-5);
+    } else {
+      base = creneaux;
+    }
+    const cinq = base.slice(0, 5);
+    if (heureRetrait && !cinq.includes(heureRetrait)) return [heureRetrait, ...cinq.slice(0, 4)].sort();
+    return cinq;
+  })();
+
   return (
     <>
       <div onClick={demanderFermeture} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:4999 }} />
@@ -4762,7 +4854,7 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
           <h2 style={{ margin:0, fontSize:18, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:8 }}>
             {edition
               ? <><Pencil size={17} strokeWidth={2} /> Modifier la commande N° {cmd.numero || '—'}</>
-              : <><Phone size={17} strokeWidth={2} /> Commande téléphone</>}
+              : <><Plus size={18} strokeWidth={2.4} /> Nouvelle commande</>}
           </h2>
           <button onClick={demanderFermeture} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666' }}>✕</button>
         </div>
@@ -4792,11 +4884,57 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
             )}
           </div>
 
-          {/* 2. Nom */}
+          {/* 2. Client : nom simple si connu, fiche complète si inconnu */}
           <div>
             <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>2. Nom du client <span style={{ color:'#dc2626' }}>*</span></p>
-            <input value={nom} onChange={e=>{marquerModifie(); setNom(e.target.value);}} placeholder="Nom au comptoir"
-              style={{ width:'100%', height:52, border:'1.5px solid', borderColor: nom.trim() ? '#22c55e' : '#eee', borderRadius:12, padding:'0 14px', fontSize:16, outline:'none', boxSizing:'border-box' }} />
+
+            {!nouveauClient && (
+              <input value={nom} onChange={e=>{marquerModifie(); setNom(e.target.value);}} placeholder="Nom au comptoir"
+                style={{ width:'100%', height:52, border:'1.5px solid', borderColor: nom.trim() ? '#22c55e' : '#eee', borderRadius:12, padding:'0 14px', fontSize:16, outline:'none', boxSizing:'border-box' }} />
+            )}
+
+            {nouveauClient && (
+              <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+                <p style={{ margin:0, fontSize:13, color:'#92400e', background:'#fffbea', border:'1.5px solid #fde68a', borderRadius:10, padding:'10px 13px', lineHeight:1.5 }}>
+                  Numéro inconnu — la fiche client sera créée avec la commande.
+                </p>
+                <div>
+                  <p style={{ fontSize:13, fontWeight:700, color:'#111', margin:'0 0 8px' }}>Genre <span style={{ color:'#dc2626' }}>*</span></p>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8 }}>
+                    {[
+                      {id:'Homme', label:'M. Monsieur', activeColor:'#1d4ed8', activeBg:'#dbeafe'},
+                      {id:'Femme', label:'Mme Madame', activeColor:'#be185d', activeBg:'#fce7f3'},
+                      {id:'Entreprise', label:'Entreprise', activeColor:'#15803d', activeBg:'#dcfce7'},
+                    ].map(g => (
+                      <button key={g.id} onClick={()=>{ marquerModifie(); setGenre(g.id); setPrenom(''); setNomFamille(''); setEntreprise(''); }}
+                        style={{ height:46, borderRadius:10, cursor:'pointer', fontSize:13, fontWeight:700, border:'1.5px solid',
+                          borderColor: genre===g.id ? g.activeBg : '#eee',
+                          background: genre===g.id ? g.activeBg : '#fff',
+                          color: genre===g.id ? g.activeColor : '#666', transition:'all 0.15s' }}>{g.label}</button>
+                    ))}
+                  </div>
+                </div>
+
+                {genre === 'Entreprise' && (
+                  <input value={entreprise} onChange={e=>{marquerModifie(); setEntreprise(e.target.value);}} placeholder="Nom de l'entreprise *"
+                    style={{ width:'100%', height:50, border:'1.5px solid', borderColor: entreprise.trim() ? '#22c55e' : '#eee', borderRadius:10, padding:'0 14px', fontSize:15, outline:'none', boxSizing:'border-box' }} />
+                )}
+
+                {genre && genre !== 'Entreprise' && (
+                  <div style={{ display:'flex', gap:10 }}>
+                    <input value={prenom} onChange={e=>{marquerModifie(); setPrenom(e.target.value);}} placeholder="Prénom *"
+                      style={{ flex:1, minWidth:0, height:50, border:'1.5px solid', borderColor: prenom.trim() ? '#22c55e' : '#eee', borderRadius:10, padding:'0 14px', fontSize:15, outline:'none' }} />
+                    <input value={nomFamille} onChange={e=>{marquerModifie(); setNomFamille(e.target.value);}} placeholder="Nom *"
+                      style={{ flex:1, minWidth:0, height:50, border:'1.5px solid', borderColor: nomFamille.trim() ? '#22c55e' : '#eee', borderRadius:10, padding:'0 14px', fontSize:15, outline:'none' }} />
+                  </div>
+                )}
+
+                {genre && (
+                  <input value={email} onChange={e=>{marquerModifie(); setEmail(e.target.value);}} type="email" placeholder="Email (optionnel)"
+                    style={{ width:'100%', height:50, border:'1.5px solid #eee', borderRadius:10, padding:'0 14px', fontSize:15, outline:'none', boxSizing:'border-box' }} />
+                )}
+              </div>
+            )}
           </div>
 
           {/* 3. Jour de retrait */}
@@ -4812,26 +4950,37 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
             {calendarJSX}
           </div>
 
-          {/* Heure de retrait, en un clic */}
+          {/* Heure de retrait : 5 propositions, le reste à la demande */}
           <div>
             <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>4. Heure de retrait</p>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:10 }}>
-              <button onClick={()=>setSvcRetrait('midi')} style={{ height:46, borderRadius:12, cursor:'pointer', fontSize:14.5, fontWeight:700, border:`1.5px solid ${svcRetrait==='midi'?'#E8C547':'#eee'}`, background:svcRetrait==='midi'?'#fffbea':'#fff', color:'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-                <Sun size={17} strokeWidth={2} color={svcRetrait==='midi'?'#E8C547':'#999'} /> Midi
-              </button>
-              <button onClick={()=>setSvcRetrait('soir')} style={{ height:46, borderRadius:12, cursor:'pointer', fontSize:14.5, fontWeight:700, border:svcRetrait==='soir'?'none':'1.5px solid #eee', background:svcRetrait==='soir'?'#111':'#fff', color:svcRetrait==='soir'?'#E8C547':'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-                <Moon size={17} strokeWidth={2} color={svcRetrait==='soir'?'#E8C547':'#999'} /> Soir
-              </button>
-            </div>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8 }}>
-              {creneaux.map(h => (
-                <button key={h} onClick={()=>{ marquerModifie(); setHeureRetrait(heureRetrait===h ? '' : h); }} style={{ height:42, borderRadius:10, cursor:'pointer', fontSize:13.5, fontWeight:600, border:`1.5px solid ${heureRetrait===h?'#111':'#eee'}`, background:heureRetrait===h?'#111':'#fff', color:heureRetrait===h?'#E8C547':'#111' }}>{h}</button>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
+              {creneauxProposes.map(h => (
+                <button key={h} onClick={()=>{ marquerModifie(); setHeureRetrait(heureRetrait===h ? '' : h); }} style={{ height:46, borderRadius:10, cursor:'pointer', fontSize:14.5, fontWeight:700, border:`1.5px solid ${heureRetrait===h?'#111':'#eee'}`, background:heureRetrait===h?'#111':'#fff', color:heureRetrait===h?'#E8C547':'#111' }}>{h}</button>
               ))}
+              {!tousLesHoraires && (
+                <button onClick={()=>setTousLesHoraires(true)} style={{ height:46, borderRadius:10, cursor:'pointer', fontSize:13.5, fontWeight:700, border:'1.5px dashed #ccc', background:'#fafafa', color:'#666', display:'flex', alignItems:'center', justifyContent:'center', gap:5 }}>
+                  Plus d'horaires <ChevronDown size={15} strokeWidth={2.2} />
+                </button>
+              )}
             </div>
-            {heureRetrait && !creneaux.includes(heureRetrait) && (
-              <p style={{ fontSize:12.5, color:'#666', margin:'8px 0 0' }}>
-                Heure enregistrée : <strong>{heureRetrait}</strong> — hors créneaux proposés.
-              </p>
+
+            {tousLesHoraires && (
+              <div style={{ marginTop:12, border:'1.5px solid #eee', borderRadius:12, padding:12 }}>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:10 }}>
+                  <button onClick={()=>setSvcRetrait('midi')} style={{ height:46, borderRadius:12, cursor:'pointer', fontSize:14.5, fontWeight:700, border:`1.5px solid ${svcRetrait==='midi'?'#E8C547':'#eee'}`, background:svcRetrait==='midi'?'#fffbea':'#fff', color:'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                    <Sun size={17} strokeWidth={2} color={svcRetrait==='midi'?'#E8C547':'#999'} /> Midi
+                  </button>
+                  <button onClick={()=>setSvcRetrait('soir')} style={{ height:46, borderRadius:12, cursor:'pointer', fontSize:14.5, fontWeight:700, border:svcRetrait==='soir'?'none':'1.5px solid #eee', background:svcRetrait==='soir'?'#111':'#fff', color:svcRetrait==='soir'?'#E8C547':'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                    <Moon size={17} strokeWidth={2} color={svcRetrait==='soir'?'#E8C547':'#999'} /> Soir
+                  </button>
+                </div>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8 }}>
+                  {creneaux.map(h => (
+                    <button key={h} onClick={()=>{ marquerModifie(); setHeureRetrait(heureRetrait===h ? '' : h); }} style={{ height:42, borderRadius:10, cursor:'pointer', fontSize:13.5, fontWeight:600, border:`1.5px solid ${heureRetrait===h?'#111':'#eee'}`, background:heureRetrait===h?'#111':'#fff', color:heureRetrait===h?'#E8C547':'#111' }}>{h}</button>
+                  ))}
+                </div>
+                <button onClick={()=>setTousLesHoraires(false)} style={{ width:'100%', marginTop:10, height:36, border:'none', background:'none', fontSize:13, fontWeight:600, color:'#888', cursor:'pointer' }}>Masquer les horaires</button>
+              </div>
             )}
           </div>
 
@@ -4852,7 +5001,7 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
                 )}
               </div>
               {/* Ouvre toute la carte dans une modale pensée pour la tablette */}
-              <button onClick={()=>setShowCatalogue(true)} title="Voir toute la carte"
+              <button onClick={()=>{ panierAvantCatalogue.current = items; setShowCatalogue(true); }} title="Voir toute la carte"
                 style={{ width:52, height:52, flexShrink:0, borderRadius:12, cursor:'pointer', fontSize:28, fontWeight:400, lineHeight:1,
                   border:'none', background:'#111', color:'#E8C547',
                   display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -4915,7 +5064,8 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
           onRetirer={retirerUn}
           nbArticles={items.reduce((n, it) => n + (Number(it.quantite) || 0), 0)}
           total={total}
-          onClose={()=>setShowCatalogue(false)}
+          onEnregistrer={()=>setShowCatalogue(false)}
+          onAbandonner={()=>{ setItems(panierAvantCatalogue.current); setShowCatalogue(false); }}
         />
       )}
 
@@ -4926,7 +5076,7 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
           <div style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:18, width:'min(400px, calc(100vw - 40px))', padding:'22px 24px', boxShadow:'0 32px 80px rgba(0,0,0,0.3)', zIndex:5101 }}>
             <h3 style={{ margin:'0 0 8px', fontSize:16.5, fontWeight:800, color:'#111' }}>Quitter sans enregistrer ?</h3>
             <p style={{ margin:'0 0 18px', fontSize:13.5, color:'#666', lineHeight:1.55 }}>
-              {edition ? 'Les modifications apportées à cette commande' : 'La commande en cours de saisie'} seront perdues.
+              {edition ? 'Les modifications apportées à cette commande seront perdues.' : 'La commande en cours de saisie sera perdue.'}
             </p>
             <div style={{ display:'flex', gap:10 }}>
               <button onClick={()=>setConfirmeFermeture(false)} style={{ flex:1, height:46, border:'1.5px solid #ddd', borderRadius:12, background:'#fff', fontSize:14, fontWeight:700, cursor:'pointer', color:'#666' }}>Continuer la saisie</button>
