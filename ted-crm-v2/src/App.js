@@ -2386,8 +2386,8 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
         </header>
       )}
 
-      <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? (etroit ? '1fr' : '1fr 380px') : undefined, gap: !isMobile ? 16 : undefined, padding: !isMobile ? (etroit ? '20px 20px 40px' : '24px 32px') : undefined, maxWidth: !isMobile ? 1440 : undefined, margin: !isMobile ? '0 auto' : undefined, alignItems: !isMobile ? 'stretch' : 'start', height: !isMobile ? (etroit ? 'auto' : 'calc(100vh - 48px)') : undefined, minHeight: !isMobile && etroit ? '100vh' : undefined, boxSizing: !isMobile ? 'border-box' : undefined, background: !isMobile ? '#f5f5f5' : undefined }}>
-      <main style={{ maxWidth: isMobile ? 800 : 'none', margin: isMobile ? '0 auto' : 0, padding: isMobile ? '12px 16px 100px' : '0', display: !isMobile ? 'flex' : 'block', flexDirection: !isMobile ? 'column' : undefined, gap: !isMobile ? 12 : undefined, height: !isMobile && !etroit ? '100%' : undefined, overflow: !isMobile && !etroit ? 'hidden' : undefined }}>
+      <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? (etroit ? '1fr 268px' : '1fr 380px') : undefined, gap: !isMobile ? (etroit ? 12 : 16) : undefined, padding: !isMobile ? (etroit ? '14px 16px' : '24px 32px') : undefined, maxWidth: !isMobile ? 1440 : undefined, margin: !isMobile ? '0 auto' : undefined, alignItems: !isMobile ? 'stretch' : 'start', height: !isMobile ? (etroit ? 'calc(100vh - 28px)' : 'calc(100vh - 48px)') : undefined, boxSizing: !isMobile ? 'border-box' : undefined, background: !isMobile ? '#f5f5f5' : undefined }}>
+      <main style={{ maxWidth: isMobile ? 800 : 'none', margin: isMobile ? '0 auto' : 0, padding: isMobile ? '12px 16px 100px' : '0', display: !isMobile ? 'flex' : 'block', flexDirection: !isMobile ? 'column' : undefined, gap: !isMobile ? (etroit ? 10 : 12) : undefined, height: !isMobile ? '100%' : undefined, overflow: !isMobile ? 'hidden' : undefined }}>
 
         {!isMobile && (
           <div style={{ display:'flex', alignItems:'center', gap:12, flexShrink:0, position:'relative' }}>
@@ -2477,7 +2477,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                   );
                 })}
               </div>
-              <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? (etroit ? '1fr' : '3fr 2fr') : undefined, gap: !isMobile ? 16 : 0, marginTop: !isMobile ? 16 : 0, flex: !isMobile && !etroit ? 1 : undefined, minHeight: !isMobile && !etroit ? 0 : undefined, overflow: !isMobile && !etroit ? 'hidden' : undefined }}>
+              <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? (etroit ? '2fr 1fr' : '3fr 2fr') : undefined, gap: !isMobile ? (etroit ? 12 : 16) : 0, marginTop: !isMobile ? (etroit ? 10 : 16) : 0, flex: !isMobile ? 1 : undefined, minHeight: !isMobile ? 0 : undefined, overflow: !isMobile ? 'hidden' : undefined }}>
                 {/* Colonne calendrier */}
                 <div style={!isMobile ? { background:'#f8f8f8', borderRadius:12, padding:12, overflow:'auto' } : {}}>
                   {/* 2. Bouton toggle (mobile only) */}
@@ -2524,7 +2524,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                           const estPasse2 = new Date(iso) < new Date(new Date().setHours(0,0,0,0));
                           return (
                             <button key={i} onClick={() => setCalJourSelectionne(iso)}
-                              style={{ textAlign:'center', height:48, borderRadius:6, cursor:'pointer', position:'relative',
+                              style={{ textAlign:'center', height: etroit ? 44 : 48, borderRadius:6, cursor:'pointer', position:'relative',
                                 border: isToday2 && !isSelected2 ? '2px solid #E8C547' : '2px solid transparent',
                                 background: isSelected2 ? '#111' : isToday2 ? '#fffbea' : 'transparent',
                                 color: isSelected2 ? '#fff' : '#111',
@@ -3204,7 +3204,7 @@ function CommandesPage({ showToast, user }) {
   if (loading) return <div style={{ textAlign:'center', paddingTop:80, fontSize:16, color:'#888' }}>Chargement des commandes…</div>;
 
   return (
-    <div style={{ padding: isMobile ? '16px 14px 90px' : '24px 28px', minHeight:'100vh', background:'#f5f5f5', display:'flex', flexDirection:'column', gap:12 }}>
+    <div style={{ padding: isMobile ? '16px 14px 90px' : (etroit ? '14px 16px' : '24px 28px'), height: isMobile ? undefined : '100vh', minHeight: isMobile ? '100vh' : undefined, boxSizing:'border-box', overflow: isMobile ? undefined : 'hidden', background:'#f5f5f5', display:'flex', flexDirection:'column', gap: etroit ? 10 : 12 }}>
 
       {/* ── En-tête ── */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
@@ -3338,7 +3338,7 @@ function CommandesPage({ showToast, user }) {
           {`Aucune commande ${filtre === 'terminees' ? 'terminée' : filtre === 'arecuperer' ? 'à récupérer' : 'en cours'} ${jourSelectionne ? `le ${labelJour(jourAffiche)}` : "aujourd'hui"}${service ? ` au service du ${service}` : ''}`}
         </div>
       ) : (
-        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+        <div style={{ display:'flex', flexDirection:'column', gap:10, flex: isMobile ? undefined : 1, minHeight: isMobile ? undefined : 0, overflowY: isMobile ? undefined : 'auto', paddingRight: isMobile ? 0 : 2 }}>
           {listeFiltree.map(c => <CommandeCarte key={c.id} cmd={c} onOpen={()=>setDetail(c)} onStatut={changerStatut} />)}
         </div>
       )}
@@ -6884,8 +6884,8 @@ function MenuPage({ showToast }) {
   if (loading) return <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'60vh', color:'#888', fontSize:15 }}>Chargement du menu...</div>;
 
   return (
-    <div style={{ minHeight:'100vh', background:'#f5f5f5' }}>
-      <div style={{ maxWidth:900, margin:'0 auto', padding: isMobile ? '0 16px' : '0 32px' }}>
+    <div style={{ height: isMobile ? undefined : '100vh', minHeight: isMobile ? '100vh' : undefined, boxSizing:'border-box', overflow: isMobile ? undefined : 'hidden', background:'#f5f5f5', display:'flex', flexDirection:'column' }}>
+      <div style={{ maxWidth:900, width:'100%', margin:'0 auto', padding: isMobile ? '0 16px' : '0 20px', display:'flex', flexDirection:'column', flex: isMobile ? undefined : 1, minHeight: isMobile ? undefined : 0, overflow: isMobile ? undefined : 'hidden', boxSizing:'border-box' }}>
 
       {/* Header */}
       <div style={{ padding: isMobile ? '16px 0 12px' : '24px 0 16px', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10 }}>
@@ -6917,6 +6917,9 @@ function MenuPage({ showToast }) {
           </button>
         </div>
       </div>
+
+      {/* Zone défilante : tout sauf l'en-tête, qui reste visible */}
+      <div style={{ flex: isMobile ? undefined : 1, minHeight: isMobile ? undefined : 0, overflowY: isMobile ? undefined : 'auto', paddingRight: isMobile ? 0 : 2 }}>
 
       {/* Onglets + lien carte client */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20, gap:8 }}>
@@ -7182,6 +7185,8 @@ function MenuPage({ showToast }) {
           </div>
         );
       })}
+
+      </div>{/* fin zone défilante */}
 
       {/* Context menu ••• */}
       {ctxMenu && (
@@ -9010,10 +9015,10 @@ function CRMApp({ user, onLogout }) {
         const pctEvol = nbMoisDernier>0 ? Math.round((nbCeMois-nbMoisDernier)/nbMoisDernier*100) : 0;
 
         return (
-        <div style={{minHeight:'100vh', background:'#f5f5f5'}}>
+        <div style={{ height:'100vh', boxSizing:'border-box', overflow:'hidden', background:'#f5f5f5', display:'flex', flexDirection:'column' }}>
 
-          {/* 1. HEADER — scrolle et disparaît */}
-          <div style={{padding:'24px 32px 16px'}}>
+          {/* 1. HEADER */}
+          <div style={{padding:'16px 20px 10px', flexShrink:0}}>
             <div style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
               <h1 style={{fontSize:28, fontWeight:900, color:'#111', margin:0}}>Clients</h1>
               <div style={{display:'flex', gap:8}}>
@@ -9040,7 +9045,7 @@ function CRMApp({ user, onLogout }) {
           </div>
 
           {/* 2. BARRE STICKY */}
-          <div style={{position:'sticky', top:0, zIndex:100, background:'#f5f5f5', padding:'10px 20px 14px', borderBottom:'1px solid #eee', boxShadow:'0 2px 12px rgba(0,0,0,0.06)'}}>
+          <div style={{ zIndex:100, background:'#f5f5f5', padding:'10px 20px 14px', borderBottom:'1px solid #eee', boxShadow:'0 2px 12px rgba(0,0,0,0.06)', flexShrink:0 }}>
             <div style={{display:'flex', alignItems:'center', gap:10, flexWrap:'wrap'}}>
               <div style={{position:'relative', flex:1}}>
                 <Search size={16} strokeWidth={2} color="#999" style={{position:'absolute', left:16, top:'50%', transform:'translateY(-50%)', pointerEvents:'none'}}/>
@@ -9073,8 +9078,8 @@ function CRMApp({ user, onLogout }) {
             </div>
           </div>
 
-          {/* 3. STATS + LISTE */}
-          <div style={{padding:'20px 32px 32px'}}>
+          {/* 3. STATS + LISTE — seule zone qui défile */}
+          <div style={{ padding:'16px 20px 20px', flex:1, minHeight:0, overflowY:'auto' }}>
 
             {/* Blocs stats */}
             <div style={{display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:16, marginBottom:20}}>
