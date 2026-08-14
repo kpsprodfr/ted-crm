@@ -2986,6 +2986,9 @@ function CommandesPage({ showToast, user }) {
   const [showLienDropdown, setShowLienDropdown] = useState(false);
   const [autoAccept, setAutoAccept] = useState(false);
   const [delaiDefaut, setDelaiDefaut] = useState(30);
+  const [commandesActives, setCommandesActives] = useState(true);
+  const [motifFermeture, setMotifFermeture] = useState('');
+  const [showParams, setShowParams] = useState(false);
   const [tick, setTick] = useState(0); // rafraîchit les comptes à rebours
   const isMobile = useIsMobile();
   const LIEN_COMMANDE = 'https://ted-crm.pages.dev/commander.html';
@@ -3008,6 +3011,8 @@ function CommandesPage({ showToast, user }) {
     (data || []).forEach(r => {
       if (r.cle === 'acceptation_auto') setAutoAccept(r.valeur === 'true');
       if (r.cle === 'delai_minutes') setDelaiDefaut(parseInt(r.valeur) || 30);
+      if (r.cle === 'commandes_actives') setCommandesActives(r.valeur !== 'false');
+      if (r.cle === 'motif_fermeture') setMotifFermeture(r.valeur || '');
     });
   }
 
@@ -3046,12 +3051,15 @@ function CommandesPage({ showToast, user }) {
   async function majConfig(cle, valeur) {
     if (cle === 'acceptation_auto') setAutoAccept(valeur === 'true');
     if (cle === 'delai_minutes') setDelaiDefaut(parseInt(valeur) || 30);
+    if (cle === 'commandes_actives') setCommandesActives(valeur !== 'false');
+    if (cle === 'motif_fermeture') setMotifFermeture(valeur || '');
     const { error } = await safeQuery(
       () => supabase.from('commandes_config').upsert({ cle, valeur: String(valeur), updated_at: new Date().toISOString() }, { onConflict: 'cle' }),
       { context: 'majCommandesConfig' }
     );
     if (error) { showToast('Erreur d\'enregistrement du réglage', 'error'); loadConfig(); return; }
     if (cle === 'acceptation_auto') showToast(valeur === 'true' ? '✅ Acceptation automatique activée' : 'Acceptation automatique désactivée');
+    if (cle === 'commandes_actives') showToast(valeur !== 'false' ? '✅ Prise de commandes rouverte' : '⏸️ Prise de commandes désactivée');
   }
 
   async function changerStatut(cmd, statut, silencieux = false, motifRefus = null) {
@@ -3132,6 +3140,9 @@ function CommandesPage({ showToast, user }) {
               </div>
             )}
           </div>
+          <button onClick={()=>setShowParams(true)} style={{ ...btnSecondary, height:38, display:'flex', alignItems:'center', gap:6 }}>
+            <Settings size={15} strokeWidth={2} /> Paramètres
+          </button>
           <button onClick={()=>setShowNouvelle(true)} style={{ ...btnPrimary, height:38, display:'flex', alignItems:'center', gap:6 }}>
             <Phone size={15} strokeWidth={2} /> Commande téléphone
           </button>
@@ -3151,27 +3162,26 @@ function CommandesPage({ showToast, user }) {
         </div>
       </div>
 
-      {/* ── Réglage acceptation automatique ── */}
-      <div style={{ background:'#fff', borderRadius:16, padding:'14px 18px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', display:'flex', alignItems:'center', justifyContent:'space-between', gap:14, flexWrap:'wrap' }}>
-        <div style={{ minWidth:0 }}>
-          <div style={{ fontSize:14.5, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:8 }}>
-            <CircleCheck size={16} strokeWidth={2} color={autoAccept ? '#16a34a' : '#bbb'} /> Acceptation automatique
-          </div>
-          <div style={{ fontSize:12.5, color:'#888', marginTop:3 }}>
-            {autoAccept
-              ? `Les commandes sont acceptées seules — prêtes en ~${fmtDelai(delaiDefaut)}`
-              : 'Chaque commande doit être acceptée à la main'}
-          </div>
+      {/* ── Bandeau : prise de commandes fermée ── */}
+      {!commandesActives && (
+        <div onClick={()=>setShowParams(true)} style={{ background:'#111', borderRadius:16, padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, cursor:'pointer', flexWrap:'wrap' }}>
+          <span style={{ fontSize:14.5, fontWeight:800, color:'#fff', display:'flex', alignItems:'center', gap:9 }}>
+            <AlertCircle size={17} strokeWidth={2} color="#E8C547" /> Prise de commandes désactivée
+            {motifFermeture ? <span style={{ fontWeight:500, color:'rgba(255,255,255,0.75)' }}>— {motifFermeture}</span> : null}
+          </span>
+          <span style={{ fontSize:12.5, color:'#E8C547', fontWeight:700 }}>Rouvrir ›</span>
         </div>
-        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-          <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-            <button onClick={()=>majConfig('delai_minutes', Math.max(5, (parseInt(delaiDefaut)||30) - 5))} style={{ width:38, height:38, borderRadius:9, border:'1.5px solid #ddd', background:'#fff', fontSize:19, fontWeight:700, cursor:'pointer', color:'#111', lineHeight:1 }}>−</button>
-            <div style={{ minWidth:74, height:38, border:'1.5px solid #ddd', borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14.5, fontWeight:800, background:'#fafafa' }}>{fmtDelai(delaiDefaut)}</div>
-            <button onClick={()=>majConfig('delai_minutes', Math.min(180, (parseInt(delaiDefaut)||30) + 5))} style={{ width:38, height:38, borderRadius:9, border:'1.5px solid #ddd', background:'#fff', fontSize:19, fontWeight:700, cursor:'pointer', color:'#111', lineHeight:1 }}>+</button>
-          </div>
-          <MenuToggle value={autoAccept} onChange={()=>majConfig('acceptation_auto', autoAccept ? 'false' : 'true')} />
+      )}
+
+      {/* ── Bandeau : acceptation automatique active ── */}
+      {commandesActives && autoAccept && (
+        <div onClick={()=>setShowParams(true)} style={{ background:'#f0fdf4', border:'1.5px solid #86efac', borderRadius:16, padding:'12px 18px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, cursor:'pointer', flexWrap:'wrap' }}>
+          <span style={{ fontSize:13.5, fontWeight:700, color:'#15803d', display:'flex', alignItems:'center', gap:8 }}>
+            <CircleCheck size={16} strokeWidth={2} /> Acceptation automatique — prêtes en ~{fmtDelai(delaiDefaut)}
+          </span>
+          <span style={{ fontSize:12.5, color:'#15803d', fontWeight:700 }}>Modifier ›</span>
         </div>
-      </div>
+      )}
 
       {/* ── Stats du jour ── */}
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
@@ -3218,9 +3228,28 @@ function CommandesPage({ showToast, user }) {
       )}
       {detail && <CommandeDetail cmd={detail} onClose={()=>setDetail(null)} onStatut={changerStatut} />}
       {showNouvelle && <NouvelleCommandeModal onClose={()=>setShowNouvelle(false)} onSaved={()=>{ setShowNouvelle(false); loadCommandes(true); }} showToast={showToast} delaiDefaut={delaiDefaut} />}
+      {showParams && (
+        <ParametresCommandesModal
+          autoAccept={autoAccept}
+          delaiDefaut={delaiDefaut}
+          commandesActives={commandesActives}
+          motifFermeture={motifFermeture}
+          onMaj={majConfig}
+          onClose={()=>setShowParams(false)}
+        />
+      )}
     </div>
   );
 }
+
+// Motifs de fermeture de la prise de commandes
+const MOTIFS_FERMETURE = [
+  'Établissement fermé',
+  'Service complet',
+  'Trop de commandes en cours',
+  'Fermeture exceptionnelle',
+  'Rupture de stock',
+];
 
 // Motifs de refus proposés au commerçant (commandes)
 const MOTIFS_REFUS_CMD = [
@@ -3424,6 +3453,108 @@ function ATraiterPanel({ commandes, delaiDefaut, autoAccept, onAccepter, onRefus
           onConfirm={(motif)=>{ const c = refusCmd; setRefusCmd(null); onRefuser(c, motif); }}
         />
       )}
+    </>
+  );
+}
+
+// ── Paramètres des commandes ─────────────────────────────────────────────────
+function ParametresCommandesModal({ autoAccept, delaiDefaut, commandesActives, motifFermeture, onMaj, onClose }) {
+  const [motif, setMotif] = useState(motifFermeture || '');
+  const d = parseInt(delaiDefaut) || 30;
+
+  function fermerPrise(m) {
+    onMaj('motif_fermeture', m || '');
+    onMaj('commandes_actives', 'false');
+  }
+  function rouvrirPrise() {
+    onMaj('commandes_actives', 'true');
+    onMaj('motif_fermeture', '');
+    setMotif('');
+  }
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:5200 }} />
+      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:20, width:'min(560px, calc(100vw - 32px))', maxHeight:'90vh', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.28)', zIndex:5201, overflow:'hidden' }}>
+
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'20px 24px 16px', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
+          <h2 style={{ margin:0, fontSize:18, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:9 }}>
+            <Settings size={18} strokeWidth={2} /> Paramètres des commandes
+          </h2>
+          <button onClick={onClose} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666' }}>✕</button>
+        </div>
+
+        <div style={{ padding:'18px 24px 22px', overflowY:'auto', display:'flex', flexDirection:'column', gap:22 }}>
+
+          {/* ── Acceptation automatique ── */}
+          <div>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:14, marginBottom:12 }}>
+              <div style={{ minWidth:0 }}>
+                <div style={{ fontSize:15, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:8 }}>
+                  <CircleCheck size={17} strokeWidth={2} color={autoAccept ? '#16a34a' : '#bbb'} /> Acceptation automatique
+                </div>
+                <div style={{ fontSize:12.5, color:'#888', marginTop:4, lineHeight:1.5 }}>
+                  {autoAccept
+                    ? 'Les commandes qui arrivent sont acceptées seules, avec le délai ci-dessous.'
+                    : 'Chaque commande doit être acceptée à la main dans « Commandes à traiter ».'}
+                </div>
+              </div>
+              <MenuToggle value={autoAccept} onChange={()=>onMaj('acceptation_auto', autoAccept ? 'false' : 'true')} />
+            </div>
+
+            <label style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, display:'block', marginBottom:8 }}>Délai annoncé au client</label>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8, marginBottom:10 }}>
+              {DELAIS_RAPIDES.map(m => (
+                <button key={m} onClick={()=>onMaj('delai_minutes', m)} style={{ height:52, borderRadius:11, border: d===m ? '2px solid #16a34a' : '1.5px solid #ddd', background: d===m ? '#16a34a' : '#fff', color: d===m ? '#fff' : '#333', fontSize:15, fontWeight:800, cursor:'pointer', padding:0 }}>
+                  {fmtDelai(m)}
+                </button>
+              ))}
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <button onClick={()=>onMaj('delai_minutes', Math.max(5, d - 5))} style={{ width:52, height:48, borderRadius:11, border:'1.5px solid #ddd', background:'#fff', fontSize:23, fontWeight:700, cursor:'pointer', color:'#111', lineHeight:1 }}>−</button>
+              <div style={{ flex:1, height:48, border:'1.5px solid #ddd', borderRadius:11, display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, fontWeight:800, background:'#fafafa' }}>{fmtDelai(d)}</div>
+              <button onClick={()=>onMaj('delai_minutes', Math.min(180, d + 5))} style={{ width:52, height:48, borderRadius:11, border:'1.5px solid #ddd', background:'#fff', fontSize:23, fontWeight:700, cursor:'pointer', color:'#111', lineHeight:1 }}>+</button>
+            </div>
+          </div>
+
+          <div style={{ height:1, background:'#f0f0f0' }} />
+
+          {/* ── Prise de commandes ── */}
+          <div>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:14, marginBottom:12 }}>
+              <div style={{ minWidth:0 }}>
+                <div style={{ fontSize:15, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:8 }}>
+                  <ShoppingBag size={17} strokeWidth={2} color={commandesActives ? '#16a34a' : '#dc2626'} /> Prise de commandes
+                </div>
+                <div style={{ fontSize:12.5, color:'#888', marginTop:4, lineHeight:1.5 }}>
+                  {commandesActives
+                    ? 'Les clients peuvent commander en ligne.'
+                    : 'La page de commande est fermée : les clients voient le motif ci-dessous.'}
+                </div>
+              </div>
+              <MenuToggle value={commandesActives} onChange={()=>commandesActives ? fermerPrise(motif) : rouvrirPrise()} />
+            </div>
+
+            {!commandesActives && (
+              <div style={{ background:'#fef2f2', border:'1.5px solid #fecaca', borderRadius:12, padding:'12px 14px' }}>
+                <label style={{ fontSize:11, fontWeight:700, color:'#b91c1c', textTransform:'uppercase', letterSpacing:0.5, display:'block', marginBottom:8 }}>Motif affiché au client</label>
+                <div style={{ display:'flex', flexDirection:'column', gap:7, marginBottom:10 }}>
+                  {MOTIFS_FERMETURE.map(m => (
+                    <button key={m} onClick={()=>{ setMotif(m); onMaj('motif_fermeture', m); }} style={{ width:'100%', minHeight:44, padding:'0 14px', borderRadius:10, border: motif===m ? '2px solid #dc2626' : '1.5px solid #eee', background: motif===m ? '#fff' : '#fff', color: motif===m ? '#b91c1c' : '#333', fontSize:14, fontWeight:700, cursor:'pointer', textAlign:'left' }}>
+                      {m}
+                    </button>
+                  ))}
+                </div>
+                <input value={motif} onChange={e=>setMotif(e.target.value.slice(0, 120))} onBlur={()=>onMaj('motif_fermeture', motif)} placeholder="Autre motif…" style={{ width:'100%', height:44, border:'1.5px solid #ddd', borderRadius:10, padding:'0 12px', fontSize:14, outline:'none', boxSizing:'border-box' }} />
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div style={{ padding:'14px 24px calc(18px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #f0f0f0', flexShrink:0 }}>
+          <button onClick={onClose} style={{ ...btnPrimary, width:'100%', height:48 }}>Terminé</button>
+        </div>
+      </div>
     </>
   );
 }

@@ -205,6 +205,9 @@ const state = {
   rgpd: false,
   submitting: false,
   numero: null,
+  ouvert: true,
+  motifFermeture: '',
+  delaiAnnonce: null,
 };
 let step2Errors = {};
 
@@ -479,6 +482,7 @@ function afficherSucces() {
         Vous serez contacté au <strong>${esc(state.tel)}</strong> dès qu'elle est prête.
       </div>
       <div class="success-note">
+        ${state.delaiAnnonce ? `Votre commande sera prête dans <strong>environ ${state.delaiAnnonce} minutes</strong>.<br>` : ''}
         Le paiement se fait sur place au moment du retrait.${state.heureRetrait ? ` Retrait prévu vers <strong>${esc(state.heureRetrait)}</strong>.` : ''}
       </div>
       <div style="margin-top:26px">
@@ -487,6 +491,40 @@ function afficherSucces() {
     </div>
   `;
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ─── Prise de commandes ouverte ou fermée ? ───────────────────────────────────
+function afficherFerme() {
+  document.querySelector('.progress-bar').style.display = 'none';
+  document.getElementById('cart-bar').style.display = 'none';
+  [1,2,3].forEach(i => { document.getElementById('step-' + i).style.display = 'none'; });
+  const el = document.getElementById('step-success');
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div class="success-wrap">
+      <div class="success-icon" style="background:#fef2f2;border-color:#dc2626;font-size:34px">⏸</div>
+      <div class="success-title">Commandes momentanément fermées</div>
+      <div class="success-sub">
+        ${state.motifFermeture ? esc(state.motifFermeture) : "Nous ne prenons pas de commande à emporter pour le moment."}
+        <br>Merci de réessayer un peu plus tard.
+      </div>
+      <div style="margin-top:22px">
+        <a href="/accueil.html" style="color:#888;font-size:14px;text-decoration:underline">Retour à l'accueil</a>
+      </div>
+    </div>
+  `;
+}
+
+async function chargerConfig() {
+  try {
+    const rows = await sbFetch('commandes_config?select=cle,valeur');
+    (rows || []).forEach(r => {
+      if (r.cle === 'commandes_actives') state.ouvert = r.valeur !== 'false';
+      if (r.cle === 'motif_fermeture') state.motifFermeture = r.valeur || '';
+      if (r.cle === 'delai_minutes') state.delaiAnnonce = parseInt(r.valeur) || null;
+    });
+  } catch(e) { /* en cas d'échec on laisse la commande ouverte */ }
+  return state.ouvert;
 }
 
 // ─── Chargement de la carte ───────────────────────────────────────────────────
@@ -508,7 +546,10 @@ async function chargerCarte() {
 }
 
 renderProgress();
-chargerCarte();
+chargerConfig().then(ouvert => {
+  if (!ouvert) { afficherFerme(); return; }
+  chargerCarte();
+});
 </script>
 </body>
 </html>
