@@ -2979,7 +2979,8 @@ const fmtEuro   = (n) => (Number(n) || 0).toFixed(2).replace('.', ',') + ' €';
 function CommandesPage({ showToast, user }) {
   const [commandes, setCommandes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filtre, setFiltre] = useState('actives'); // actives | jour | toutes
+  const [filtre, setFiltre] = useState('actives'); // actives | jour | avenir | toutes
+  const [jourSelectionne, setJourSelectionne] = useState(null); // AAAA-MM-JJ ou null
   const [detail, setDetail] = useState(null);
   const [showNouvelle, setShowNouvelle] = useState(false);
   const [showATraiter, setShowATraiter] = useState(false);
@@ -3082,13 +3083,16 @@ function CommandesPage({ showToast, user }) {
   // Acceptation manuelle : démarre le chrono, la suite s'enchaîne toute seule
   async function accepter(cmd, minutes) {
     const delai = parseInt(minutes) || delaiDefaut;
+    const jourRetrait = cmd.date_retrait || (cmd.created_at || '').split('T')[0];
+    const pourPlusTard = jourRetrait > dateLocale();
     const patch = {
       statut: 'en_preparation',
-      delai_minutes: delai,
       acceptee_at: new Date().toISOString(),
       acceptee_auto: false,
-      pret_estime_a: new Date(Date.now() + delai * 60000).toISOString(),
       updated_at: new Date().toISOString(),
+      // Le compte à rebours ne vaut que pour une commande du jour
+      delai_minutes: pourPlusTard ? null : delai,
+      pret_estime_a: pourPlusTard ? null : new Date(Date.now() + delai * 60000).toISOString(),
     };
     setCommandes(prev => prev.map(c => c.id === cmd.id ? { ...c, ...patch } : c));
     const { error } = await safeQuery(
@@ -3096,19 +3100,44 @@ function CommandesPage({ showToast, user }) {
       { context: 'accepterCommande' }
     );
     if (error) { showToast('Erreur lors de l\'acceptation', 'error'); loadCommandes(true); return; }
-    showToast(`✅ Commande ${cmd.numero || ''} acceptée — prête dans ~${delai} min`);
+    showToast(pourPlusTard
+      ? `✅ Commande ${cmd.numero || ''} acceptée — ${labelJour(jourRetrait)}${cmd.heure_retrait ? ' à ' + cmd.heure_retrait : ''}`
+      : `✅ Commande ${cmd.numero || ''} acceptée — prête dans ~${delai} min`);
   }
 
-  const aujourdhui = new Date().toISOString().split('T')[0];
+  const aujourdhui = dateLocale();
   const aTraiter = commandes.filter(c => c.statut === 'nouvelle');
+  const jourDe = (c) => c.date_retrait || (c.created_at || '').split('T')[0];
+
   // La liste principale ne montre PAS les commandes à traiter : elles passent
   // d'abord par le panneau dédié (bandeau rouge en haut).
   const listeFiltree = commandes.filter(c => {
     if (c.statut === 'nouvelle') return false;
-    if (filtre === 'actives') return ['en_preparation', 'prete'].includes(c.statut);
-    if (filtre === 'jour') return (c.created_at || '').startsWith(aujourdhui);
+    if (jourSelectionne) return jourDe(c) === jourSelectionne;
+    if (filtre === 'actives') return ['en_preparation', 'prete'].includes(c.statut) && jourDe(c) <= aujourdhui;
+    if (filtre === 'avenir')  return jourDe(c) > aujourdhui && !['recuperee','annulee'].includes(c.statut);
+    if (filtre === 'jour')    return jourDe(c) === aujourdhui;
     return true;
+  }).sort((a, b) => {
+    const ja = jourDe(a), jb = jourDe(b);
+    if (ja !== jb) return ja < jb ? -1 : 1;
+    return (a.heure_retrait || '99:99').localeCompare(b.heure_retrait || '99:99');
   });
+
+  // 15 jours à venir, avec le nombre de commandes par jour
+  const quinzeJoursCmd = Array.from({ length: 15 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() + i);
+    const str = dateLocale(d);
+    return {
+      date: str,
+      jour: d.toLocaleDateString('fr-FR', { weekday:'short' }).toUpperCase().replace('.', ''),
+      num: d.getDate(),
+      mois: d.toLocaleDateString('fr-FR', { month:'short' }),
+      isAujourd: str === aujourdhui,
+      nb: commandes.filter(c => jourDe(c) === str && !['annulee'].includes(c.statut)).length,
+    };
+  });
+  const nbAVenir = commandes.filter(c => jourDe(c) > aujourdhui && !['recuperee','annulee'].includes(c.statut)).length;
 
   const caJour = commandes
     .filter(c => (c.created_at || '').startsWith(aujourdhui) && c.statut !== 'annulee')
@@ -3195,19 +3224,45 @@ function CommandesPage({ showToast, user }) {
         </div>
       </div>
 
+      {/* ── 15 jours (même bande que la page Réservations) ── */}
+      <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', padding:14, boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
+        <div className="jours-strip" style={{ display:'flex', gap:8, overflowX:'scroll', WebkitOverflowScrolling:'touch', scrollSnapType:'x mandatory', userSelect:'none', WebkitUserSelect:'none' }}>
+          {quinzeJoursCmd.map(j => {
+            const isSelected = jourSelectionne === j.date;
+            return (
+              <div key={j.date} onClick={()=>setJourSelectionne(isSelected ? null : j.date)}
+                style={{ borderRadius:12, padding:'10px 6px', textAlign:'center', cursor:'pointer', border:'2px solid', borderColor: isSelected?'#E8C547':'#eee', background: isSelected?'#fffbea':'#fff', transition:'border-color 0.15s, background 0.15s', flexShrink:0, width:'calc((100% - 40px) / 6)', scrollSnapAlign:'start' }}>
+                <div style={{ fontSize:10, fontWeight:700, marginBottom:4, color: isSelected?'#E8C547': j.isAujourd?'#E8C547':'#999' }}>{j.isAujourd?'AUJ.':j.jour}</div>
+                <div style={{ fontSize:20, fontWeight:900, marginBottom:2, color:'#111' }}>{j.num}</div>
+                <div style={{ fontSize:10, color:'#999', marginBottom:4 }}>{j.mois}</div>
+                <div style={{ fontSize:11, fontWeight:700, color: j.nb>0?'#111':'#ccc' }}>{j.nb>0?`${j.nb} cmd`:'—'}</div>
+                {j.isAujourd && <div style={{ width:5, height:5, borderRadius:'50%', background:'#E8C547', margin:'4px auto 0' }}/>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* ── Filtres ── */}
-      <div style={{ display:'flex', gap:8, overflowX:'auto', paddingBottom:2 }}>
-        {[{id:'actives',label:'En cours'},{id:'jour',label:"Aujourd'hui"},{id:'toutes',label:'Toutes'}].map(f => (
-          <button key={f.id} onClick={()=>setFiltre(f.id)} style={{ height:36, padding:'0 16px', borderRadius:10, fontSize:13, fontWeight:700, border:'none', flexShrink:0, cursor:'pointer', background: filtre===f.id ? '#111' : '#fff', color: filtre===f.id ? '#fff' : '#666' }}>
+      <div style={{ display:'flex', gap:8, overflowX:'auto', paddingBottom:2, alignItems:'center' }}>
+        {[{id:'actives',label:'En cours'},{id:'jour',label:"Aujourd'hui"},{id:'avenir',label:`À venir${nbAVenir ? ' · ' + nbAVenir : ''}`},{id:'toutes',label:'Toutes'}].map(f => (
+          <button key={f.id} onClick={()=>{ setFiltre(f.id); setJourSelectionne(null); }} style={{ height:36, padding:'0 16px', borderRadius:10, fontSize:13, fontWeight:700, border:'none', flexShrink:0, cursor:'pointer', background: (!jourSelectionne && filtre===f.id) ? '#111' : '#fff', color: (!jourSelectionne && filtre===f.id) ? '#fff' : '#666' }}>
             {f.label}
           </button>
         ))}
+        {jourSelectionne && (
+          <button onClick={()=>setJourSelectionne(null)} style={{ height:36, padding:'0 14px', borderRadius:10, fontSize:13, fontWeight:700, border:'none', flexShrink:0, cursor:'pointer', background:'#E8C547', color:'#111', display:'flex', alignItems:'center', gap:7 }}>
+            {new Date(jourSelectionne + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' })} ✕
+          </button>
+        )}
       </div>
 
       {/* ── Liste des commandes acceptées ── */}
       {listeFiltree.length === 0 ? (
         <div style={{ background:'#fff', borderRadius:14, padding:'40px 20px', textAlign:'center', color:'#bbb', fontSize:14, boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
-          Aucune commande {filtre === 'actives' ? 'en cours' : filtre === 'jour' ? "aujourd'hui" : ''}
+          {jourSelectionne
+            ? `Aucune commande le ${new Date(jourSelectionne + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' })}`
+            : `Aucune commande ${filtre === 'actives' ? 'en cours' : filtre === 'jour' ? "aujourd'hui" : filtre === 'avenir' ? 'à venir' : ''}`}
         </div>
       ) : (
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
@@ -3240,6 +3295,22 @@ function CommandesPage({ showToast, user }) {
       )}
     </div>
   );
+}
+
+// Libellé lisible d'un jour de retrait
+function labelJour(dateStr) {
+  if (!dateStr) return '';
+  const auj = dateLocale();
+  const d = new Date(); d.setDate(d.getDate() + 1);
+  const demain = dateLocale(d);
+  if (dateStr === auj) return "Aujourd'hui";
+  if (dateStr === demain) return 'Demain';
+  return new Date(dateStr + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
+}
+
+// Date locale au format AAAA-MM-JJ (sans décalage UTC)
+function dateLocale(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
 // Motifs de fermeture de la prise de commandes
@@ -3282,6 +3353,8 @@ function CommandeCarte({ cmd, onOpen, onStatut }) {
   const nbArticles = (cmd.items || []).reduce((s, it) => s + (Number(it.quantite) || 1), 0);
   const heure = cmd.created_at ? new Date(cmd.created_at).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }) : '';
   const reste = minutesRestantes(cmd);
+  const jourRetrait = cmd.date_retrait || (cmd.created_at || '').split('T')[0];
+  const futur = jourRetrait > dateLocale();
   const actionnable = ['en_preparation', 'prete'].includes(cmd.statut);
 
   return (
@@ -3300,11 +3373,16 @@ function CommandeCarte({ cmd, onOpen, onStatut }) {
 
         <div style={{ fontSize:13, color:'#888', marginTop:4 }}>
           N° {cmd.numero || '—'} · reçue à {heure}
-          {cmd.heure_retrait ? ` · souhaite ${cmd.heure_retrait}` : ''}
           {cmd.client_tel ? ` · ${cmd.client_tel}` : ''}
         </div>
 
-        {cmd.statut === 'en_preparation' && reste !== null && (
+        {/* Jour et heure de retrait */}
+        <div style={{ display:'inline-flex', alignItems:'center', gap:7, marginTop:7, padding:'6px 12px', borderRadius:9, background: futur ? '#eff6ff' : '#f5f5f5', color: futur ? '#1d4ed8' : '#444', fontSize:13.5, fontWeight:700 }}>
+          <CalendarDays size={14} strokeWidth={2} />
+          {labelJour(jourRetrait)}{cmd.heure_retrait ? ` · ${cmd.heure_retrait}` : ''}
+        </div>
+
+        {cmd.statut === 'en_preparation' && !futur && reste !== null && (
           <div style={{ fontSize:14, fontWeight:800, color: reste <= 5 ? '#dc2626' : '#b8860b', marginTop:6, display:'flex', alignItems:'center', gap:6 }}>
             <Clock size={14} strokeWidth={2.2} />
             {reste > 0 ? `Prête dans ${reste} min` : 'À sortir maintenant'}
@@ -3420,8 +3498,12 @@ function ATraiterPanel({ commandes, delaiDefaut, autoAccept, onAccepter, onRefus
                   </div>
                   <div style={{ fontSize:13, color:'#888', marginTop:4 }}>
                     N° {cmd.numero || '—'} · reçue à {heure}
-                    {cmd.heure_retrait ? ` · souhaite ${cmd.heure_retrait}` : ''}
                     {cmd.client_tel ? ` · ${cmd.client_tel}` : ''}
+                  </div>
+
+                  <div style={{ display:'inline-flex', alignItems:'center', gap:7, marginTop:7, padding:'6px 12px', borderRadius:9, background: (cmd.date_retrait && cmd.date_retrait > dateLocale()) ? '#eff6ff' : '#f5f5f5', color: (cmd.date_retrait && cmd.date_retrait > dateLocale()) ? '#1d4ed8' : '#444', fontSize:13.5, fontWeight:700 }}>
+                    <CalendarDays size={14} strokeWidth={2} />
+                    {labelJour(cmd.date_retrait)}{cmd.heure_retrait ? ` · ${cmd.heure_retrait}` : ''}
                   </div>
 
                   {/* Détail des articles */}
@@ -3740,6 +3822,7 @@ function NouvelleCommandeModal({ onClose, onSaved, showToast, delaiDefaut }) {
   const [nom, setNom] = useState('');
   const [tel, setTel] = useState('');
   const [heureRetrait, setHeureRetrait] = useState('');
+  const [dateRetrait, setDateRetrait] = useState(dateLocale());
   const [note, setNote] = useState('');
   const [items, setItems] = useState([]);
   const [produits, setProduits] = useState([]);
@@ -3793,9 +3876,11 @@ function NouvelleCommandeModal({ onClose, onSaved, showToast, delaiDefaut }) {
         total,
         statut: 'en_preparation',
         source: 'telephone',
-        delai_minutes: delaiDefaut || 30,
+        date_retrait: dateRetrait || dateLocale(),
         acceptee_at: new Date().toISOString(),
-        pret_estime_a: new Date(Date.now() + (delaiDefaut || 30) * 60000).toISOString(),
+        // Chrono uniquement si la commande est pour aujourd'hui
+        delai_minutes: (dateRetrait > dateLocale()) ? null : (delaiDefaut || 30),
+        pret_estime_a: (dateRetrait > dateLocale()) ? null : new Date(Date.now() + (delaiDefaut || 30) * 60000).toISOString(),
         heure_retrait: heureRetrait || null,
         note: note.trim().slice(0, 500) || null,
       }),
@@ -3824,6 +3909,10 @@ function NouvelleCommandeModal({ onClose, onSaved, showToast, delaiDefaut }) {
             <div style={{ display:'flex', gap:10 }}>
               <input value={tel} onChange={e=>setTel(e.target.value)} placeholder="Téléphone" inputMode="tel" style={{ ...inp(false), flex:1 }} />
               <input value={heureRetrait} onChange={e=>setHeureRetrait(e.target.value)} placeholder="Retrait" type="time" style={{ ...inp(false), width:130 }} />
+            </div>
+            <div>
+              <label style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, display:'block', marginBottom:6 }}>Jour de retrait</label>
+              <input type="date" value={dateRetrait} min={dateLocale()} onChange={e=>setDateRetrait(e.target.value)} style={inp(false)} />
             </div>
           </div>
 

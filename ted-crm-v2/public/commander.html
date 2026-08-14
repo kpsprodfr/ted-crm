@@ -38,6 +38,16 @@
     .section-label{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;margin-top:20px}
     .section-label:first-child{margin-top:0}
 
+    /* Jours de retrait */
+    .jours-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+    .jours-strip::-webkit-scrollbar{display:none}
+    .jour-card{border-radius:12px;padding:10px 6px;text-align:center;cursor:pointer;border:2px solid #eee;background:#fff;flex-shrink:0;min-width:74px;transition:border-color 0.15s,background 0.15s}
+    .jour-card.selected{border-color:var(--g);background:#fffbea}
+    .jour-card .j-nom{font-size:10px;font-weight:700;margin-bottom:4px;color:#999;text-transform:uppercase}
+    .jour-card.selected .j-nom,.jour-card.today .j-nom{color:#b8860b}
+    .jour-card .j-num{font-size:20px;font-weight:900;margin-bottom:2px;color:#111}
+    .jour-card .j-mois{font-size:10px;color:#999}
+
     /* Catégories (pills) */
     .cats{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:14px;scrollbar-width:none}
     .cats::-webkit-scrollbar{display:none}
@@ -200,6 +210,7 @@ const state = {
   catActive: null,
   panier: [],        // [{nom, prix, quantite, note}]
   nom: '', tel: '', email: '',
+  dateRetrait: null,
   heureRetrait: '',
   note: '',
   rgpd: false,
@@ -334,6 +345,25 @@ function renderStep1() {
   `;
 }
 
+// 7 prochains jours proposés au client
+function dateLocaleStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function joursRetrait() {
+  const auj = dateLocaleStr(new Date());
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() + i);
+    const str = dateLocaleStr(d);
+    return {
+      date: str,
+      jour: d.toLocaleDateString('fr-FR', { weekday:'short' }).replace('.', ''),
+      num: d.getDate(),
+      mois: d.toLocaleDateString('fr-FR', { month:'short' }),
+      isAujourd: str === auj,
+    };
+  });
+}
+
 // ─── Étape 2 : coordonnées ────────────────────────────────────────────────────
 function renderStep2() {
   const e = step2Errors;
@@ -358,6 +388,20 @@ function renderStep2() {
       <label class="label">Email (optionnel)</label>
       <input class="input ${e.email?'error':''}" type="email" inputmode="email" value="${esc(state.email)}" oninput="state.email=this.value" placeholder="jean@exemple.fr" />
       ${e.email ? `<div class="error-msg">${e.email}</div>` : ''}
+    </div>
+
+    <div class="field">
+      <label class="label">Jour de retrait <span>*</span></label>
+      <div class="jours-strip">
+        ${joursRetrait().map(j => `
+          <div class="jour-card ${state.dateRetrait === j.date ? 'selected' : ''} ${j.isAujourd ? 'today' : ''}" onclick="state.dateRetrait='${j.date}';renderStep2()">
+            <div class="j-nom">${j.isAujourd ? "AUJ." : j.jour}</div>
+            <div class="j-num">${j.num}</div>
+            <div class="j-mois">${j.mois}</div>
+          </div>
+        `).join('')}
+      </div>
+      ${e.date ? `<div class="error-msg">${e.date}</div>` : ''}
     </div>
 
     <div class="field">
@@ -392,6 +436,7 @@ function validerStep2() {
   const tel = (state.tel || '').replace(/[\s.\-()]/g, '');
   if (!/^(\+33|0)[1-9]\d{8}$/.test(tel)) e.tel = 'Numéro invalide (ex : 06 12 34 56 78)';
   if (state.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(state.email)) e.email = 'Email invalide';
+  if (!state.dateRetrait) e.date = 'Choisissez un jour de retrait';
   if (!state.rgpd) e.rgpd = 'Vous devez accepter pour continuer';
   step2Errors = e;
   if (Object.keys(e).length > 0) { renderStep2(); return; }
@@ -421,7 +466,7 @@ function renderStep3() {
       <div class="recap-row"><span class="recap-label">Nom</span><span class="recap-val">${esc(state.nom)}</span></div>
       <div class="recap-row"><span class="recap-label">Téléphone</span><span class="recap-val">${esc(state.tel)}</span></div>
       ${state.email ? `<div class="recap-row"><span class="recap-label">Email</span><span class="recap-val">${esc(state.email)}</span></div>` : ''}
-      ${state.heureRetrait ? `<div class="recap-row"><span class="recap-label">Retrait</span><span class="recap-val">${esc(state.heureRetrait)}</span></div>` : ''}
+      <div class="recap-row"><span class="recap-label">Retrait</span><span class="recap-val">${esc(labelJourClient(state.dateRetrait))}${state.heureRetrait ? ' · ' + esc(state.heureRetrait) : ''}</span></div>
       ${state.note ? `<div class="recap-row"><span class="recap-label">Note</span><span class="recap-val">${esc(state.note)}</span></div>` : ''}
     </div>
 
@@ -436,6 +481,15 @@ function renderStep3() {
       </button>
     </div>
   `;
+}
+
+function labelJourClient(dateStr) {
+  if (!dateStr) return '';
+  const auj = dateLocaleStr(new Date());
+  const d = new Date(); d.setDate(d.getDate() + 1);
+  if (dateStr === auj) return "Aujourd'hui";
+  if (dateStr === dateLocaleStr(d)) return 'Demain';
+  return new Date(dateStr + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
 }
 
 // ─── Envoi ────────────────────────────────────────────────────────────────────
@@ -455,6 +509,7 @@ async function envoyerCommande() {
       total: totalPanier(),
       statut: 'nouvelle',
       source: 'en_ligne',
+      date_retrait: state.dateRetrait,
       heure_retrait: state.heureRetrait || null,
       note: state.note || null,
     }, 'return=minimal');
@@ -482,8 +537,10 @@ function afficherSucces() {
         Vous serez contacté au <strong>${esc(state.tel)}</strong> dès qu'elle est prête.
       </div>
       <div class="success-note">
-        ${state.delaiAnnonce ? `Votre commande sera prête dans <strong>environ ${state.delaiAnnonce} minutes</strong>.<br>` : ''}
-        Le paiement se fait sur place au moment du retrait.${state.heureRetrait ? ` Retrait prévu vers <strong>${esc(state.heureRetrait)}</strong>.` : ''}
+        ${state.dateRetrait === dateLocaleStr(new Date())
+          ? (state.delaiAnnonce ? `Votre commande sera prête dans <strong>environ ${state.delaiAnnonce} minutes</strong>.<br>` : '')
+          : `Retrait <strong>${esc(labelJourClient(state.dateRetrait))}</strong>${state.heureRetrait ? ` vers <strong>${esc(state.heureRetrait)}</strong>` : ''}.<br>`}
+        Le paiement se fait sur place au moment du retrait.${(state.dateRetrait === dateLocaleStr(new Date()) && state.heureRetrait) ? ` Retrait prévu vers <strong>${esc(state.heureRetrait)}</strong>.` : ''}
       </div>
       <div style="margin-top:26px">
         <a href="/accueil.html" style="color:#888;font-size:14px;text-decoration:underline">Retour à l'accueil</a>
@@ -545,6 +602,7 @@ async function chargerCarte() {
   renderStep1();
 }
 
+state.dateRetrait = dateLocaleStr(new Date());
 renderProgress();
 chargerConfig().then(ouvert => {
   if (!ouvert) { afficherFerme(); return; }
