@@ -3323,7 +3323,7 @@ function CommandesPage({ showToast, user }) {
         {[
           // Le compteur reste affiché même à zéro : sur une autre date, le
           // libellé ne doit pas changer de forme sous les yeux du commerçant.
-          {id:'actives',    label:`En cours (${nbEnCours})`},
+          {id:'actives',    label:`En préparation (${nbEnCours})`},
           {id:'arecuperer', label:`À récupérer (${nbARecuperer})`},
           {id:'terminees',  label:`Terminées (${nbTerminees})`},
         ].map(f => (
@@ -3341,7 +3341,7 @@ function CommandesPage({ showToast, user }) {
       {/* ── Liste des commandes acceptées ── */}
       {listeFiltree.length === 0 ? (
         <div style={{ background:'#fff', borderRadius:14, padding:'40px 20px', textAlign:'center', color:'#bbb', fontSize:14, boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
-          {`Aucune commande ${filtre === 'terminees' ? 'terminée' : filtre === 'arecuperer' ? 'à récupérer' : 'en cours'} ${jourSelectionne ? `le ${labelJour(jourAffiche)}` : "aujourd'hui"}${service ? ` au service du ${service}` : ''}`}
+          {`Aucune commande ${filtre === 'terminees' ? 'terminée' : filtre === 'arecuperer' ? 'à récupérer' : 'en préparation'} ${jourSelectionne ? `le ${labelJour(jourAffiche)}` : "aujourd'hui"}${service ? ` au service du ${service}` : ''}`}
         </div>
       ) : (
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
