@@ -9142,19 +9142,6 @@ function CRMApp({ user, onLogout }) {
                   <button key={f.id} onClick={()=>setFiltreGenreClients(f.id)} style={{height:36, padding:'0 14px', borderRadius:10, cursor:'pointer', fontSize:13, fontWeight:700, border:'none', background: filtreGenreClients===f.id?'#111':'#fff', color: filtreGenreClients===f.id?'#fff':'#666', boxShadow: filtreGenreClients===f.id?'none':'0 1px 4px rgba(0,0,0,0.06)'}}>{f.label}</button>
                 ))}
               </div>
-              <select value={filtreServiceClients} onChange={e=>setFiltreServiceClients(e.target.value)}
-                style={{height:36, padding:'0 10px', borderRadius:10, border:'1.5px solid #eee', background:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', color: filtreServiceClients!=='Tous'?'#111':'#666', flexShrink:0, outline:'none'}}>
-                <option value="Tous">Service</option>
-                <option value="midi">Midi</option>
-                <option value="soir">Soir</option>
-              </select>
-              <select value={filtreSourceClients} onChange={e=>setFiltreSourceClients(e.target.value)}
-                style={{height:36, padding:'0 10px', borderRadius:10, border:'1.5px solid #eee', background:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', color: filtreSourceClients!=='Tous'?'#111':'#666', flexShrink:0, outline:'none'}}>
-                <option value="Tous">Source</option>
-                <option value="Grand Jeux du TED">Roue du jeu</option>
-                <option value="Réservation">Réservation</option>
-                <option value="Manuel">Manuel</option>
-              </select>
               <button onClick={()=>setModalAdd(true)} style={{height:36, padding:'0 16px', borderRadius:10, border:'none', background:'#E8C547', color:'#111', fontSize:13, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', gap:8, flexShrink:0, boxShadow:'0 2px 8px rgba(232,197,71,0.3)'}}>
                 <Plus size={16} strokeWidth={2}/> Nouveau client
               </button>
