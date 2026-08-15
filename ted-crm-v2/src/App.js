@@ -3572,8 +3572,8 @@ function CommandeCarte({ cmd, onOpen, onStatut }) {
           {/* Le bouton porte la couleur du statut courant : orange tant que la
               commande se prépare, vert une fois qu'elle attend son client. */}
           {cmd.statut === 'en_preparation' && (
-            <button onClick={()=>onStatut(cmd, 'prete')} style={{ width: etroit ? 96 : 150, height: etroit ? 96 : 150, flexShrink:0, border:'none', borderRadius:14, background:'#E8C547', color:'#111', fontSize: etroit ? 12.5 : 17, fontWeight:900, lineHeight:1.15, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap: etroit ? 5 : 8, boxShadow:'0 6px 20px rgba(232,197,71,0.4)' }}>
-              <CheckCircle size={etroit ? 22 : 34} strokeWidth={2.4} />
+            <button onClick={()=>onStatut(cmd, 'prete')} style={{ width: etroit ? 82 : 128, height: etroit ? 82 : 128, flexShrink:0, border:'none', borderRadius:14, background:'#E8C547', color:'#fff', fontSize: etroit ? 11.5 : 15, fontWeight:900, lineHeight:1.15, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap: etroit ? 5 : 8, boxShadow:'0 6px 20px rgba(232,197,71,0.4)' }}>
+              <CheckCircle size={etroit ? 19 : 28} strokeWidth={2.4} />
               Marquer prête
             </button>
           )}
