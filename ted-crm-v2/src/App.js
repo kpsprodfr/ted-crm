@@ -3017,6 +3017,7 @@ function CommandesPage({ showToast, user }) {
   const [horizonJours, setHorizonJours] = useState(15);
   const [showParams, setShowParams] = useState(false);
   const [showCalendrier, setShowCalendrier] = useState(false);
+  const [detailCalendrier, setDetailCalendrier] = useState(null);
   const [showStats, setShowStats] = useState(false);
   const [tick, setTick] = useState(0); // rafraîchit les comptes à rebours
   const basculeesRef = useRef(new Set()); // commandes déjà passées en « Prête » automatiquement
@@ -3179,18 +3180,19 @@ function CommandesPage({ showToast, user }) {
   // d'abord par le panneau dédié (bandeau rouge en haut).
   // Jour affiché : aujourd'hui par défaut, sinon la date choisie au calendrier.
   // Il pilote à la fois les deux filtres et les deux tuiles de tête.
-  const jourAffiche = jourSelectionne || aujourdhui;
+  // La page ne montre que la journée en cours : la consultation des autres
+  // jours se fait dans le calendrier, sans influencer cet écran de service.
+  const jourAffiche = aujourdhui;
 
   // Les deux filtres portent sur ce jour affiché.
   // Sur la journée en cours, les deux filtres actifs remontent aussi les
   // commandes des jours précédents jamais terminées, pour qu'aucune ne disparaisse.
-  // …et sur le service choisi au calendrier (null = toute la journée).
-  const duService = (c) => !service || serviceDe(c) === service;
-  const duJour = (c) => (jourAffiche === aujourdhui ? jourDe(c) <= aujourdhui : jourDe(c) === jourAffiche) && duService(c);
+  // Les commandes des jours précédents jamais terminées restent visibles.
+  const duJour = (c) => jourDe(c) <= aujourdhui;
 
   const listeFiltree = commandes.filter(c => {
     if (c.statut === 'nouvelle') return false;
-    if (filtre === 'terminees')   return c.statut === 'recuperee' && jourDe(c) === jourAffiche && duService(c);
+    if (filtre === 'terminees')   return c.statut === 'recuperee' && jourDe(c) === aujourdhui;
     if (filtre === 'arecuperer')  return c.statut === 'prete' && duJour(c);
     return c.statut === 'en_preparation' && duJour(c);
   }).sort((a, b) => {
@@ -3216,10 +3218,10 @@ function CommandesPage({ showToast, user }) {
   // Compteurs des trois filtres.
   const nbEnCours    = commandes.filter(c => c.statut === 'en_preparation' && duJour(c)).length;
   const nbARecuperer = commandes.filter(c => c.statut === 'prete' && duJour(c)).length;
-  const nbTerminees  = commandes.filter(c => c.statut === 'recuperee' && jourDe(c) === jourAffiche && duService(c)).length;
+  const nbTerminees  = commandes.filter(c => c.statut === 'recuperee' && jourDe(c) === aujourdhui).length;
 
   // Les deux tuiles suivent le même jour et le même service.
-  const cmdDuJour = commandes.filter(c => jourDe(c) === jourAffiche && c.statut !== 'annulee' && duService(c));
+  const cmdDuJour = commandes.filter(c => jourDe(c) === aujourdhui && c.statut !== 'annulee');
   const caJour = cmdDuJour.reduce((s, c) => s + (Number(c.total) || 0), 0);
   const nbJour = cmdDuJour.length;
 
@@ -3312,42 +3314,10 @@ function CommandesPage({ showToast, user }) {
           <span style={{ fontSize: etroit ? 9.5 : 11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.4 }}>Total</span>
         </div>
 
-        {/* Largeur figée : la ligne ne doit pas bouger quand la date ou le service change */}
-        <button onClick={()=>setShowCalendrier(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:12, padding: etroit ? '0 11px' : '0 14px', minHeight: etroit ? 42 : 52, width: etroit ? 176 : 200, flexShrink:0, boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:7 }}>
+        <button onClick={()=>setShowCalendrier(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:12, padding: etroit ? '0 16px' : '0 20px', minHeight: etroit ? 42 : 52, flexShrink:0, boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
           <CalendarDays size={etroit ? 16 : 19} strokeWidth={1.8} color="#666" />
-          {/* Jour actuellement affiché — remplacé par la date choisie dans le calendrier */}
-          <span style={{ padding: etroit ? '4px 9px' : '5px 11px', borderRadius:20, fontSize: etroit ? 10 : 11.5, fontWeight:800, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', maxWidth:'100%',
-            background: jourSelectionne ? '#111' : '#f5f5f5', color: jourSelectionne ? '#fff' : '#444' }}>
-            {jourSelectionne ? labelJour(jourSelectionne) : "Aujourd'hui"}
-          </span>
+          <span style={{ fontSize: etroit ? 12 : 13.5, fontWeight:700, color:'#444' }}>Calendrier</span>
         </button>
-        {/* Service consulté — interrupteur à deux positions */}
-        {(() => {
-          const sv = service || serviceActuel();
-          const curseurAGauche = sv === 'midi';
-          const L = etroit ? 74 : 86;   // largeur d'une position
-          const H = etroit ? 34 : 40;   // hauteur du rail
-          return (
-            <div style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:12, padding: etroit ? '0 12px' : '0 14px', minHeight: etroit ? 42 : 52, boxShadow:'0 1px 4px rgba(0,0,0,0.04)', display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
-              <span style={{ fontSize: etroit ? 9 : 10, fontWeight:700, color:'#bbb', textTransform:'uppercase', letterSpacing:0.4 }}>Service</span>
-              <div onClick={()=>setService(curseurAGauche ? 'soir' : 'midi')}
-                style={{ position:'relative', display:'flex', width:L*2, height:H, borderRadius:H/2, background:'#f0f0f0', cursor:'pointer', userSelect:'none', flexShrink:0 }}>
-                {/* Curseur qui glisse d'une position à l'autre */}
-                <span style={{ position:'absolute', top:3, left: curseurAGauche ? 3 : L, width:L-3, height:H-6, borderRadius:(H-6)/2, background:'#111', transition:'left 0.22s cubic-bezier(0.4,0,0.2,1)' }} />
-                {[{id:'midi',label:'Midi',Icone:Sun},{id:'soir',label:'Soir',Icone:Moon}].map(o => {
-                  const actif = sv === o.id;
-                  const Icone = o.Icone;
-                  return (
-                    <span key={o.id} style={{ position:'relative', width:L, height:H, display:'flex', alignItems:'center', justifyContent:'center', gap:5,
-                      fontSize: etroit ? 12 : 13.5, fontWeight:800, color: actif ? '#E8C547' : '#888', transition:'color 0.22s' }}>
-                      <Icone size={etroit ? 13 : 15} strokeWidth={2.2} />{o.label}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })()}
       </div>
 
       {/* ── Filtres ── */}
@@ -3363,7 +3333,7 @@ function CommandesPage({ showToast, user }) {
             setFiltre(f.id);
             // « En cours » ramène toujours à la journée de travail en cours,
             // toute la journée, même si le calendrier affichait autre chose.
-            if (f.id === 'actives') { setJourSelectionne(null); setService(null); }
+
           }} style={{ height: etroit ? 31 : 36, padding: etroit ? '0 12px' : '0 16px', borderRadius:9, fontSize: etroit ? 11.5 : 13, fontWeight:700, border:'none', flexShrink:0, cursor:'pointer', background: filtre===f.id ? '#111' : '#fff', color: filtre===f.id ? '#fff' : '#666' }}>
             {f.label}
           </button>
@@ -3373,7 +3343,7 @@ function CommandesPage({ showToast, user }) {
       {/* ── Liste des commandes acceptées ── */}
       {listeFiltree.length === 0 ? (
         <div style={{ background:'#fff', borderRadius:14, padding:'40px 20px', textAlign:'center', color:'#bbb', fontSize:14, boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
-          {`Aucune commande ${filtre === 'terminees' ? 'terminée' : filtre === 'arecuperer' ? 'à récupérer' : 'en préparation'} ${jourSelectionne ? `le ${labelJour(jourAffiche)}` : "aujourd'hui"}${service ? ` au service du ${service}` : ''}`}
+          {`Aucune commande ${filtre === 'terminees' ? 'terminée' : filtre === 'arecuperer' ? 'à récupérer' : 'en préparation'} aujourd'hui`}
         </div>
       ) : (
         <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
@@ -3392,6 +3362,7 @@ function CommandesPage({ showToast, user }) {
           onClose={()=>setShowATraiter(false)}
         />
       )}
+      {detailCalendrier && <CommandeDetail cmd={detailCalendrier} auDessus onClose={()=>setDetailCalendrier(null)} onStatut={(c,st)=>{ changerStatut(c, st); setDetailCalendrier(prev => prev ? { ...prev, statut: st } : prev); }} />}
       {detail && !editCmd && <CommandeDetail cmd={detail} onClose={()=>setDetail(null)} onStatut={changerStatut} onEdit={(c)=>setEditCmd(c)} onSupprimer={supprimerCommande} />}
       {showNouvelle && <NouvelleCommandeModal onClose={()=>setShowNouvelle(false)} onSaved={()=>{ setShowNouvelle(false); loadCommandes(true); }} showToast={showToast} delaiDefaut={delaiDefaut} />}
       {editCmd && (
@@ -3418,12 +3389,7 @@ function CommandesPage({ showToast, user }) {
       {showCalendrier && (
         <CalendrierCommandesModal
           commandes={commandes}
-          jourSelectionne={jourSelectionne}
-          service={service}
-          onChoisir={(iso)=>{
-            setShowCalendrier(false);
-            setJourSelectionne(iso === aujourdhui ? null : iso);
-          }}
+          onOuvrirCommande={(c)=>setDetailCalendrier(c)}
           onClose={()=>setShowCalendrier(false)}
         />
       )}
@@ -4017,7 +3983,7 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
 }
 
 // ── Calendrier des commandes (même grille que la page Réservations) ─────────
-function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChoisir, onClose }) {
+function CalendrierCommandesModal({ commandes, onOuvrirCommande, onClose }) {
   const isMobile = useIsMobile();
   const [calDate, setCalDate] = useState(new Date());
   // Glissement horizontal d'un mois à l'autre. Trois mois sont montés en
@@ -4030,8 +3996,8 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
   const glisseRef = useRef(false);
   const animeRef = useRef(false);
   // Service consulté : celui déjà choisi, sinon celui en cours à cette heure-ci.
-  const [svcChoisi, setSvcChoisi] = useState(service || serviceActuel());
-  const [jourLocal, setJourLocal] = useState(jourSelectionne || dateLocale());
+  const [svcChoisi, setSvcChoisi] = useState(serviceActuel());
+  const [jourLocal, setJourLocal] = useState(dateLocale());
   // Même enchaînement que le calendrier de « Nouvelle réservation » :
   // flash sur la date choisie (200 ms), puis fermeture animée (300 ms).
   const [dateFlash, setDateFlash] = useState(null);
@@ -4045,12 +4011,6 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
     setJourLocal(iso);
     setDateFlash(iso);
     timersRef.current.push(setTimeout(() => setDateFlash(null), 220));
-  }
-
-  function valider() {
-    if (calFermeture) return;
-    setCalFermeture(true);
-    timersRef.current.push(setTimeout(() => onChoisir(jourLocal), 300));
   }
 
   const JOURS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
@@ -4158,7 +4118,7 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
       {/* Conteneur de centrage : la classe cal-fermeture anime `transform`,
           elle ne peut donc pas cohabiter avec un centrage par translate(-50%,-50%). */}
       <div style={{ position:'fixed', inset:0, display:'flex', alignItems:'center', justifyContent:'center', zIndex:5201, pointerEvents:'none' }}>
-      <div onClick={e=>e.stopPropagation()} className={calFermeture ? 'cal-fermeture' : ''} style={{ background:'#fff', borderRadius:20, width:'min(560px, calc(100vw - 24px))', height:'min(700px, calc(100vh - 20px))', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.28)', overflow:'hidden', pointerEvents:'auto' }}>
+      <div onClick={e=>e.stopPropagation()} className={calFermeture ? 'cal-fermeture' : ''} style={{ background:'#fff', borderRadius:20, width:'min(1120px, calc(100vw - 20px))', height:'min(760px, calc(100vh - 20px))', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.28)', overflow:'hidden', pointerEvents:'auto' }}>
 
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 20px 12px', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
           <h2 style={{ margin:0, fontSize:18, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:9 }}>
@@ -4232,11 +4192,83 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
             </div>
           </div>
 
+          {/* Panneau de droite : service, puis les commandes du jour choisi */}
+          <div style={{ width: isMobile ? '100%' : 380, flexShrink:0, display:'flex', flexDirection:'column', gap:10, minHeight:0 }}>
+
+            {/* Service */}
+            <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
+              <span style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1 }}>Service</span>
+              <div onClick={()=>setSvcChoisi(svcChoisi === 'midi' ? 'soir' : 'midi')}
+                style={{ position:'relative', display:'flex', width:172, height:38, borderRadius:19, background:'#f0f0f0', cursor:'pointer', userSelect:'none', flexShrink:0 }}>
+                <span style={{ position:'absolute', top:3, left: svcChoisi === 'midi' ? 3 : 86, width:83, height:32, borderRadius:16, background:'#111', transition:'left 0.22s cubic-bezier(0.4,0,0.2,1)' }} />
+                {[{id:'midi',label:'Midi',Icone:Sun},{id:'soir',label:'Soir',Icone:Moon}].map(o => {
+                  const actif = svcChoisi === o.id;
+                  const Icone = o.Icone;
+                  return (
+                    <span key={o.id} style={{ position:'relative', width:86, height:38, display:'flex', alignItems:'center', justifyContent:'center', gap:5,
+                      fontSize:13.5, fontWeight:800, color: actif ? '#E8C547' : '#888', transition:'color 0.22s' }}>
+                      <Icone size={15} strokeWidth={2.2} />{o.label}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Jour consulté */}
+            <div style={{ fontSize:14.5, fontWeight:800, color:'#111', textTransform:'capitalize', flexShrink:0 }}>
+              {new Date(jourLocal + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' })}
+            </div>
+
+            {/* Commandes du jour et du service */}
+            {(() => {
+              const liste = commandes
+                .filter(c => (c.date_retrait || (c.created_at || '').split('T')[0]) === jourLocal)
+                .filter(c => c.statut !== 'annulee' && serviceDe(c) === svcChoisi)
+                .sort((a, b) => (a.heure_retrait || '99:99').localeCompare(b.heure_retrait || '99:99'));
+              const total = liste.reduce((s2, c) => s2 + (Number(c.total) || 0), 0);
+              return (
+                <>
+                  <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', flexShrink:0 }}>
+                    <span style={{ fontSize:12.5, color:'#888', fontWeight:600 }}>{liste.length} commande{liste.length > 1 ? 's' : ''}</span>
+                    <span style={{ fontSize:15.5, fontWeight:900, color:'#111' }}>{fmtEuro(total)}</span>
+                  </div>
+                  <div style={{ flex:1, minHeight:0, overflowY:'auto', display:'flex', flexDirection:'column', gap:8 }}>
+                    {liste.length === 0 ? (
+                      <p style={{ margin:0, padding:'28px 10px', textAlign:'center', fontSize:13.5, color:'#bbb' }}>
+                        Aucune commande le {labelJour(jourLocal).toLowerCase()} au service du {svcChoisi}
+                      </p>
+                    ) : liste.map(c => {
+                      const st = cmdStatut(c.statut);
+                      const nomC = c.client ? (c.client.entreprise || `${c.client.prenom || ''} ${c.client.nom || ''}`.trim()) : '';
+                      return (
+                        <button key={c.id} onClick={()=>onOuvrirCommande(c)}
+                          style={{ textAlign:'left', border:'1.5px solid #eee', borderLeft:`4px solid ${st.bg}`, borderRadius:11, background:'#fff', padding:'10px 12px', cursor:'pointer', display:'flex', alignItems:'center', gap:10 }}>
+                          <span style={{ flex:1, minWidth:0 }}>
+                            <span style={{ display:'flex', alignItems:'center', gap:7 }}>
+                              <span style={{ fontSize:14, fontWeight:800, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{nomC || c.client_nom || 'Client'}</span>
+                              <span style={{ background:st.bg, color:st.fg, borderRadius:20, padding:'2px 8px', fontSize:10, fontWeight:700, whiteSpace:'nowrap' }}>{st.court}</span>
+                            </span>
+                            <span style={{ display:'block', fontSize:12, color:'#888', marginTop:2 }}>
+                              N° {c.numero || '—'}{c.heure_retrait ? ` · ${c.heure_retrait}` : ''}
+                            </span>
+                          </span>
+                          <span style={{ fontSize:14, fontWeight:800, color:'#111', whiteSpace:'nowrap' }}>{fmtEuro(c.total)}</span>
+                          <ChevronRight size={15} color="#ccc" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+
+
         </div>
 
         <div style={{ padding:'10px 20px calc(12px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #f0f0f0', flexShrink:0 }}>
-          <button onClick={valider} style={{ width:'100%', height:52, border:'none', borderRadius:12, background:'#E8C547', fontSize:15.5, fontWeight:800, cursor:'pointer', color:'#111' }}>
-            Valider — {labelJour(jourLocal)}
+          <button onClick={onClose} style={{ width:'100%', height:48, border:'1.5px solid #ddd', borderRadius:12, background:'#fff', fontSize:14.5, fontWeight:600, cursor:'pointer', color:'#666' }}>
+            Fermer
           </button>
         </div>
       </div>
@@ -4426,15 +4458,17 @@ function RefusCommandeModal({ cmd, onClose, onConfirm }) {
 }
 
 // ── Fiche détail d'une commande ──────────────────────────────────────────────
-function CommandeDetail({ cmd, onClose, onStatut, onEdit, onSupprimer }) {
+function CommandeDetail({ cmd, onClose, onStatut, onEdit, onSupprimer, auDessus = false }) {
+  const zVoile = auDessus ? 5400 : 4999;
+  const zBoite = auDessus ? 5401 : 5000;
   // Confirmation en deux temps : la suppression est definitive.
   const [confirmeSuppr, setConfirmeSuppr] = useState(false);
   const st = cmdStatut(cmd.statut);
   const dateLabel = cmd.created_at ? new Date(cmd.created_at).toLocaleString('fr-FR', { weekday:'long', day:'numeric', month:'long', hour:'2-digit', minute:'2-digit' }) : '';
   return (
     <>
-      <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:4999 }} />
-      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:20, width:'min(680px, calc(100vw - 32px))', maxHeight:'90vh', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.25)', zIndex:5000, overflow:'hidden' }}>
+      <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:zVoile }} />
+      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:20, width:'min(680px, calc(100vw - 32px))', maxHeight:'90vh', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.25)', zIndex:zBoite, overflow:'hidden' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'20px 24px 16px', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
           <div>
             <h2 style={{ margin:0, fontSize:18, fontWeight:800, color:'#111' }}>Commande N° {cmd.numero || '—'}</h2>
