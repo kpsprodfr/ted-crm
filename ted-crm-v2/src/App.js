@@ -4020,14 +4020,15 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
 function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChoisir, onClose }) {
   const isMobile = useIsMobile();
   const [calDate, setCalDate] = useState(new Date());
-  // Glissement horizontal d'un mois à l'autre, comme le calendrier des réservations
+  // Glissement horizontal d'un mois à l'autre. Trois mois sont montés en
+  // permanence sur une piste, déplacée directement dans le DOM : aucun rendu
+  // React pendant le geste, donc aucun scintillement.
   const grilleRef = useRef(null);
+  const pisteRef = useRef(null);
   const swipeX0 = useRef(null);
   const swipeY0 = useRef(null);
-  const [dragX, setDragX] = useState(0);
-  const [dragDir, setDragDir] = useState(null);
-  const [drag, setDrag] = useState(false);
-  const [sansTransition, setSansTransition] = useState(false);
+  const glisseRef = useRef(false);
+  const animeRef = useRef(false);
   // Service consulté : celui déjà choisi, sinon celui en cours à cette heure-ci.
   const [svcChoisi, setSvcChoisi] = useState(service || serviceActuel());
   const [jourLocal, setJourLocal] = useState(jourSelectionne || dateLocale());
@@ -4063,69 +4064,93 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
 
   // Répartition midi / soir par jour. Même bascule que les réservations : 15h.
   // Sans heure de retrait, on se rabat sur l'heure de réception de la commande.
-  const parJour = {};
-  commandes.filter(c => c.statut !== 'annulee').forEach(c => {
-    const j = c.date_retrait || (c.created_at || '').split('T')[0];
-    if (!j) return;
-    const h = c.heure_retrait
-      ? parseInt(String(c.heure_retrait).slice(0, 2), 10)
-      : (c.created_at ? new Date(c.created_at).getHours() : 12);
-    if (!parJour[j]) parJour[j] = { midi: 0, soir: 0, total: 0 };
-    parJour[j][h < 15 ? 'midi' : 'soir'] += 1;
-    parJour[j].total += 1;
-  });
+  // Mémorisé : ce calcul parcourt toutes les commandes, il ne doit pas se
+  // refaire à chaque image du glissement.
+  const parJour = useMemo(() => {
+    const acc = {};
+    commandes.filter(c => c.statut !== 'annulee').forEach(c => {
+      const j = c.date_retrait || (c.created_at || '').split('T')[0];
+      if (!j) return;
+      const h = c.heure_retrait
+        ? parseInt(String(c.heure_retrait).slice(0, 2), 10)
+        : (c.created_at ? new Date(c.created_at).getHours() : 12);
+      if (!acc[j]) acc[j] = { midi: 0, soir: 0, total: 0 };
+      acc[j][h < 15 ? 'midi' : 'soir'] += 1;
+      acc[j].total += 1;
+    });
+    return acc;
+  }, [commandes]);
 
-  const cases = [];
-  for (let i = 0; i < debutSemaine; i++) cases.push(null);
-  for (let d = 1; d <= dernierJour.getDate(); d++) cases.push(d);
-  while (cases.length % 7 !== 0) cases.push(null);
+  const grilleDuMois = (a, m) => {
+    const debut = (new Date(a, m, 1).getDay() + 6) % 7;
+    const out = [];
+    for (let i = 0; i < debut; i++) out.push(null);
+    for (let d = 1; d <= new Date(a, m + 1, 0).getDate(); d++) out.push(d);
+    while (out.length % 7 !== 0) out.push(null);
+    return out;
+  };
+  const cases = useMemo(() => grilleDuMois(annee, mois), [annee, mois]);
 
   const today = new Date();
   const changerMois = (delta) => setCalDate(new Date(annee, mois + delta, 1));
 
-  // Mois voisin préparé pendant le glissement
-  const moisAdjacent = dragDir ? new Date(annee, mois + (dragDir === 'left' ? 1 : -1), 1) : null;
-  const casesAdjacentes = [];
-  if (moisAdjacent) {
-    const aA = moisAdjacent.getFullYear(), aM = moisAdjacent.getMonth();
-    const debut = (new Date(aA, aM, 1).getDay() + 6) % 7;
-    for (let i = 0; i < debut; i++) casesAdjacentes.push(null);
-    for (let d = 1; d <= new Date(aA, aM + 1, 0).getDate(); d++) casesAdjacentes.push(d);
-    while (casesAdjacentes.length % 7 !== 0) casesAdjacentes.push(null);
-  }
-  const largeurGrille = grilleRef.current?.offsetWidth || 320;
+  // Les deux mois voisins sont montés en permanence : plus rien n'apparaît
+  // ni ne disparaît pendant le glissement.
+  const casesPrecedent = useMemo(() => grilleDuMois(annee, mois - 1), [annee, mois]);
+  const casesSuivant = useMemo(() => grilleDuMois(annee, mois + 1), [annee, mois]);
+  const moisPrecedent = new Date(annee, mois - 1, 1);
+  const moisSuivant = new Date(annee, mois + 1, 1);
+
+  // Le glissement écrit directement dans le DOM : aucun rendu React tant que
+  // le doigt bouge, donc pas de recalcul ni de scintillement.
+  const largeurGrille = () => grilleRef.current?.offsetWidth || 320;
+  const glisserA = (x, avecTransition) => {
+    const p = pisteRef.current;
+    if (!p) return;
+    p.style.transition = avecTransition ? 'transform 0.26s cubic-bezier(0.33,1,0.68,1)' : 'none';
+    p.style.transform = `translate3d(${x - largeurGrille()}px,0,0)`;
+  };
 
   const debutSwipe = (e) => {
+    if (animeRef.current) return;
     swipeX0.current = e.touches[0].clientX;
     swipeY0.current = e.touches[0].clientY;
-    setDragDir(null); setDrag(false); setDragX(0);
+    glisseRef.current = false;
   };
   const pendantSwipe = (e) => {
-    if (swipeX0.current === null) return;
+    if (swipeX0.current === null || animeRef.current) return;
     const dx = e.touches[0].clientX - swipeX0.current;
     const dy = e.touches[0].clientY - swipeY0.current;
-    if (!drag && Math.abs(dy) > Math.abs(dx)) return;
+    if (!glisseRef.current && Math.abs(dy) > Math.abs(dx)) return;
     e.preventDefault();
-    if (!dragDir && Math.abs(dx) > 8) setDragDir(dx < 0 ? 'left' : 'right');
-    setDrag(true); setDragX(dx);
+    glisseRef.current = true;
+    glisserA(dx, false);
   };
   const finSwipe = (e) => {
     if (swipeX0.current === null) return;
     const dx = e.changedTouches[0].clientX - swipeX0.current;
     const dy = e.changedTouches[0].clientY - swipeY0.current;
-    setDrag(false);
-    if (Math.abs(dy) <= Math.abs(dx) && Math.abs(dx) > largeurGrille * 0.28) {
-      const sens = dx < 0 ? 1 : -1;
-      setDragX(dx < 0 ? -largeurGrille : largeurGrille);
-      setTimeout(() => {
-        setSansTransition(true);
-        setCalDate(new Date(annee, mois + sens, 1));
-        setDragDir(null); setDragX(0);
-        setTimeout(() => setSansTransition(false), 30);
-      }, 280);
-    } else { setDragX(0); setDragDir(null); }
     swipeX0.current = null;
+    if (!glisseRef.current) return;
+    glisseRef.current = false;
+
+    const L = largeurGrille();
+    if (Math.abs(dy) <= Math.abs(dx) && Math.abs(dx) > L * 0.28) {
+      const sens = dx < 0 ? 1 : -1;
+      animeRef.current = true;
+      glisserA(sens > 0 ? -L : L, true);
+      timersRef.current.push(setTimeout(() => {
+        // Le nouveau mois est déjà monté : on recentre sans transition
+        setCalDate(new Date(annee, mois + sens, 1));
+        animeRef.current = false;
+      }, 260));
+    } else {
+      glisserA(0, true);
+    }
   };
+
+  // À chaque changement de mois, la piste revient au centre sans animation
+  useEffect(() => { glisserA(0, false); }, [annee, mois]);
 
   return (
     <>
@@ -4154,12 +4179,14 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
             </div>
             <div ref={grilleRef}
               onTouchStart={debutSwipe} onTouchMove={pendantSwipe} onTouchEnd={finSwipe}
-              style={{ position:'relative', overflow:'hidden', flex:1, minHeight:0 }}>
-              {[{ a:annee, m:mois, cs:cases, dx:dragX },
-                ...(moisAdjacent ? [{ a:moisAdjacent.getFullYear(), m:moisAdjacent.getMonth(), cs:casesAdjacentes, dx: dragX + (dragDir==='left' ? largeurGrille : -largeurGrille) }] : [])
+              style={{ position:'relative', overflow:'hidden', flex:1, minHeight:0, touchAction:'pan-y' }}>
+              {/* Piste large de trois mois, centrée sur le mois courant */}
+              <div ref={pisteRef} style={{ position:'absolute', top:0, left:0, height:'100%', width:'300%', display:'flex', willChange:'transform' }}>
+              {[{ a:moisPrecedent.getFullYear(), m:moisPrecedent.getMonth(), cs:casesPrecedent },
+                { a:annee, m:mois, cs:cases },
+                { a:moisSuivant.getFullYear(), m:moisSuivant.getMonth(), cs:casesSuivant },
               ].map((vue, vi) => (
-            <div key={vi} style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gridTemplateRows:`repeat(${Math.ceil(vue.cs.length/7)}, 1fr)`, gap:5, position:'absolute', top:0, left:0, width:'100%', height:'100%',
-              transform:`translateX(${vue.dx}px)`, transition: (drag || sansTransition) ? 'none' : 'transform 0.28s cubic-bezier(0.4,0,0.2,1)', willChange:'transform', touchAction:'pan-y' }}>
+            <div key={vi} style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gridTemplateRows:`repeat(${Math.ceil(vue.cs.length/7)}, 1fr)`, gap:5, width:'33.3333%', height:'100%', flexShrink:0 }}>
               {vue.cs.map((d, i) => {
                 if (!d) return <div key={i} />;
                 const annee = vue.a, mois = vue.m;
@@ -4169,7 +4196,7 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
                 const isSelected = jourLocal === iso || dateFlash === iso;
                 const estPasse = new Date(iso) < new Date(new Date().setHours(0,0,0,0));
                 return (
-                  <button key={i} className={dateFlash === iso ? 'date-flash' : ''} onClick={()=>choisirJour(iso)}
+                  <button key={i} className={dateFlash === iso ? 'date-flash' : ''} onClick={()=>{ if (vi !== 1) { setCalDate(new Date(vue.a, vue.m, 1)); return; } choisirJour(iso); }}
                     style={{ textAlign:'center', minHeight:0, borderRadius:10, cursor:'pointer', position:'relative',
                       display:'flex', alignItems:'center', justifyContent:'center',
                       border: isToday && !isSelected ? '2px solid #E8C547' : '2px solid #f0f0f0',
@@ -4201,6 +4228,7 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
               })}
             </div>
               ))}
+              </div>
             </div>
           </div>
 
