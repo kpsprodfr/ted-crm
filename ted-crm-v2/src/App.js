@@ -3039,13 +3039,17 @@ function CommandesPage({ showToast, user }) {
       () => supabase.from('commandes_config').select('cle,valeur'),
       { fallback: [], context: 'loadCommandesConfig' }
     );
-    (data || []).forEach(r => {
-      if (r.cle === 'acceptation_auto') setAutoAccept(r.valeur === 'true');
-      if (r.cle === 'delai_minutes') setDelaiDefaut(parseInt(r.valeur) || 30);
-      if (r.cle === 'commandes_actives') setCommandesActives(r.valeur !== 'false');
-      if (r.cle === 'motif_fermeture') setMotifFermeture(r.valeur || '');
-      if (r.cle === 'horizon_jours') setHorizonJours(parseInt(r.valeur) ?? 15);
-    });
+    const conf = {};
+    (data || []).forEach(r => { conf[r.cle] = r.valeur; });
+
+    // Un réglage posé un autre jour est périmé : on revient au comportement normal
+    const duJour = (cle) => conf[`${cle}_jour`] === dateLocale();
+
+    setDelaiDefaut(parseInt(conf.delai_minutes) || 30);
+    setMotifFermeture(conf.motif_fermeture || '');
+    setHorizonJours(parseInt(conf.horizon_jours) ?? 15);
+    setAutoAccept(duJour('acceptation_auto') ? conf.acceptation_auto === 'true' : true);
+    setCommandesActives(duJour('commandes_actives') ? conf.commandes_actives !== 'false' : true);
   }
 
   useEffect(() => { loadCommandes(); loadConfig(); }, []);
@@ -3085,7 +3089,19 @@ function CommandesPage({ showToast, user }) {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
+  // Les deux réglages ne valent que pour la journée : on note le jour où ils
+  // ont été posés, et ils reprennent leur valeur par défaut le lendemain.
   async function majConfig(cle, valeur) {
+    if (cle === 'commandes_actives' || cle === 'acceptation_auto') {
+      await safeQuery(
+        () => supabase.from('commandes_config').upsert({ cle: `${cle}_jour`, valeur: dateLocale(), updated_at: new Date().toISOString() }, { onConflict: 'cle' }),
+        { context: 'majConfigJour' }
+      );
+    }
+    return majConfigBrut(cle, valeur);
+  }
+
+  async function majConfigBrut(cle, valeur) {
     if (cle === 'acceptation_auto') setAutoAccept(valeur === 'true');
     if (cle === 'delai_minutes') setDelaiDefaut(parseInt(valeur) || 30);
     if (cle === 'commandes_actives') setCommandesActives(valeur !== 'false');
@@ -3249,8 +3265,10 @@ function CommandesPage({ showToast, user }) {
               </div>
             )}
           </div>
-          <button onClick={()=>setShowParams(true)} style={{ ...btnSecondary, height:38, display:'flex', alignItems:'center', gap:6 }}>
-            <Settings size={15} strokeWidth={2} /> Paramètres
+          <button onClick={()=>setShowParams(true)} style={{ ...btnSecondary, height:38, display:'flex', alignItems:'center', gap:8 }}>
+            <span className={commandesActives ? 'pastille-active' : 'pastille-fermee'}
+              style={{ width:9, height:9, borderRadius:'50%', background: commandesActives ? '#16a34a' : '#dc2626', flexShrink:0 }} />
+            Statut
           </button>
           <button onClick={()=>setShowStats(true)} style={{ ...btnSecondary, height:38, display:'flex', alignItems:'center', gap:6 }}>
             <BarChart3 size={15} strokeWidth={2} /> Statistiques
@@ -4256,7 +4274,7 @@ function ParametresCommandesModal({ autoAccept, delaiDefaut, commandesActives, m
 
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'20px 24px 16px', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
           <h2 style={{ margin:0, fontSize:18, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:9 }}>
-            <Settings size={18} strokeWidth={2} /> Paramètres des commandes
+            <Settings size={18} strokeWidth={2} /> Statut du jour
           </h2>
           <button onClick={onClose} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666' }}>✕</button>
         </div>
@@ -4268,7 +4286,7 @@ function ParametresCommandesModal({ autoAccept, delaiDefaut, commandesActives, m
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:14, marginBottom:12 }}>
               <div style={{ minWidth:0 }}>
                 <div style={{ fontSize:15, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:8 }}>
-                  <ShoppingBag size={17} strokeWidth={2} color={commandesActives ? '#16a34a' : '#dc2626'} /> Commande en ligne
+                  <ShoppingBag size={17} strokeWidth={2} color={commandesActives ? '#16a34a' : '#dc2626'} /> Commande en ligne <span style={{ fontSize:12.5, fontWeight:600, color:'#999' }}>(du jour)</span>
                 </div>
                 <div style={{ fontSize:12.5, color:'#888', marginTop:4, lineHeight:1.5 }}>
                   {commandesActives

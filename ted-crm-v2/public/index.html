@@ -70,6 +70,17 @@
       .notif-badge-alarm {
         animation: alarm-pulse 0.35s infinite;
       }
+      /* Pastille d'état de la prise de commandes */
+      @keyframes pastille-vert {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(22,163,74,0.55); }
+        60% { box-shadow: 0 0 0 7px rgba(22,163,74,0); }
+      }
+      @keyframes pastille-rouge {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.6); }
+        60% { box-shadow: 0 0 0 7px rgba(220,38,38,0); }
+      }
+      .pastille-active { animation: pastille-vert 1.8s infinite; }
+      .pastille-fermee { animation: pastille-rouge 1.2s infinite; }
       @keyframes calClose {
         0% { opacity: 1; transform: translateY(0) scale(1); }
         30% { opacity: 1; transform: translateY(-2px) scale(1.01); }
