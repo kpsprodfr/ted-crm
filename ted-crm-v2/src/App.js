@@ -3252,6 +3252,9 @@ function CommandesPage({ showToast, user }) {
           <button onClick={()=>setShowParams(true)} style={{ ...btnSecondary, height:38, display:'flex', alignItems:'center', gap:6 }}>
             <Settings size={15} strokeWidth={2} /> Paramètres
           </button>
+          <button onClick={()=>setShowStats(true)} style={{ ...btnSecondary, height:38, display:'flex', alignItems:'center', gap:6 }}>
+            <BarChart3 size={15} strokeWidth={2} /> Statistiques
+          </button>
           <button onClick={()=>setShowNouvelle(true)} style={{ ...btnPrimary, height:38, display:'flex', alignItems:'center', gap:6 }}>
             <Plus size={16} strokeWidth={2.4} /> Nouvelle commande
           </button>
@@ -3294,19 +3297,15 @@ function CommandesPage({ showToast, user }) {
       )}
 
       {/* ── Stats du jour + accès statistiques et calendrier ── */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr auto auto', gap: etroit ? 8 : 12 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr auto', gap: etroit ? 8 : 12 }}>
         <div style={{ background:'#fff', borderRadius:12, padding:'6px 12px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', display:'flex', alignItems:'center', justifyContent:'center', gap:8, minHeight: etroit ? 42 : 52 }}>
           <span style={{ fontSize: etroit ? 16 : 20, fontWeight:900, color:'#111', lineHeight:1 }}>{nbJour}</span>
-          <span style={{ fontSize: etroit ? 9 : 10.5, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.3, textAlign:'left', lineHeight:1.2 }}>Commandes<br/>{labelJour(jourAffiche)}{service ? ` · ${service}` : ''}</span>
+          <span style={{ fontSize: etroit ? 9.5 : 11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.4 }}>Commandes</span>
         </div>
         <div style={{ background:'#fff', borderRadius:12, padding:'6px 12px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', display:'flex', alignItems:'center', justifyContent:'center', gap:8, minHeight: etroit ? 42 : 52 }}>
           <span style={{ fontSize: etroit ? 16 : 20, fontWeight:900, color:'#111', lineHeight:1 }}>{fmtEuro(caJour)}</span>
-          <span style={{ fontSize: etroit ? 9 : 10.5, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.3, textAlign:'left', lineHeight:1.2 }}>Total<br/>{jourSelectionne ? labelJour(jourAffiche) : 'du jour'}{service ? ` · ${service}` : ''}</span>
+          <span style={{ fontSize: etroit ? 9.5 : 11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.4 }}>Total</span>
         </div>
-        <button onClick={()=>setShowStats(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:12, padding: etroit ? '0 12px' : '0 16px', minHeight: etroit ? 42 : 52, boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', alignItems:'center', gap:7 }}>
-          <BarChart3 size={etroit ? 16 : 19} strokeWidth={1.8} color="#666" />
-          <span style={{ fontSize: etroit ? 11 : 12.5, fontWeight:700, color:'#666' }}>Statistiques</span>
-        </button>
         <button onClick={()=>setShowCalendrier(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:12, padding: etroit ? '0 11px' : '0 14px', minHeight: etroit ? 42 : 52, boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', alignItems:'center', gap:7 }}>
           <CalendarDays size={etroit ? 16 : 19} strokeWidth={1.8} color="#666" />
           {/* Jour actuellement affiché — remplacé par la date choisie dans le calendrier */}
