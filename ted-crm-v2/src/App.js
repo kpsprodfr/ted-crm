@@ -3297,15 +3297,43 @@ function CommandesPage({ showToast, user }) {
       )}
 
       {/* ── Stats du jour + accès statistiques et calendrier ── */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr auto', gap: etroit ? 8 : 12 }}>
-        <div style={{ background:'#fff', borderRadius:12, padding:'6px 12px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', display:'flex', alignItems:'center', justifyContent:'center', gap:8, minHeight: etroit ? 42 : 52 }}>
+      <div style={{ display:'flex', flexWrap:'wrap', alignItems:'stretch', gap: etroit ? 8 : 10 }}>
+        <div style={{ background:'#fff', borderRadius:12, padding: etroit ? '6px 14px' : '6px 18px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', display:'flex', alignItems:'center', gap:8, minHeight: etroit ? 42 : 52, flexShrink:0 }}>
           <span style={{ fontSize: etroit ? 16 : 20, fontWeight:900, color:'#111', lineHeight:1 }}>{nbJour}</span>
           <span style={{ fontSize: etroit ? 9.5 : 11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.4 }}>Commandes</span>
         </div>
-        <div style={{ background:'#fff', borderRadius:12, padding:'6px 12px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', display:'flex', alignItems:'center', justifyContent:'center', gap:8, minHeight: etroit ? 42 : 52 }}>
+        <div style={{ background:'#fff', borderRadius:12, padding: etroit ? '6px 14px' : '6px 18px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', display:'flex', alignItems:'center', gap:8, minHeight: etroit ? 42 : 52, flexShrink:0 }}>
           <span style={{ fontSize: etroit ? 16 : 20, fontWeight:900, color:'#111', lineHeight:1 }}>{fmtEuro(caJour)}</span>
           <span style={{ fontSize: etroit ? 9.5 : 11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.4 }}>Total</span>
         </div>
+
+        {/* Service consulté — interrupteur à deux positions */}
+        {(() => {
+          const sv = service || serviceActuel();
+          const curseurAGauche = sv === 'midi';
+          const L = etroit ? 74 : 86;   // largeur d'une position
+          const H = etroit ? 34 : 40;   // hauteur du rail
+          return (
+            <div style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:12, padding: etroit ? '0 12px' : '0 14px', minHeight: etroit ? 42 : 52, boxShadow:'0 1px 4px rgba(0,0,0,0.04)', display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
+              <span style={{ fontSize: etroit ? 9 : 10, fontWeight:700, color:'#bbb', textTransform:'uppercase', letterSpacing:0.4 }}>Service</span>
+              <div onClick={()=>setService(curseurAGauche ? 'soir' : 'midi')}
+                style={{ position:'relative', display:'flex', width:L*2, height:H, borderRadius:H/2, background:'#f0f0f0', cursor:'pointer', userSelect:'none', flexShrink:0 }}>
+                {/* Curseur qui glisse d'une position à l'autre */}
+                <span style={{ position:'absolute', top:3, left: curseurAGauche ? 3 : L, width:L-3, height:H-6, borderRadius:(H-6)/2, background:'#111', transition:'left 0.22s cubic-bezier(0.4,0,0.2,1)' }} />
+                {[{id:'midi',label:'Midi',Icone:Sun},{id:'soir',label:'Soir',Icone:Moon}].map(o => {
+                  const actif = sv === o.id;
+                  const Icone = o.Icone;
+                  return (
+                    <span key={o.id} style={{ position:'relative', width:L, height:H, display:'flex', alignItems:'center', justifyContent:'center', gap:5,
+                      fontSize: etroit ? 12 : 13.5, fontWeight:800, color: actif ? '#E8C547' : '#888', transition:'color 0.22s' }}>
+                      <Icone size={etroit ? 13 : 15} strokeWidth={2.2} />{o.label}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
         <button onClick={()=>setShowCalendrier(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:12, padding: etroit ? '0 11px' : '0 14px', minHeight: etroit ? 42 : 52, boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', alignItems:'center', gap:7 }}>
           <CalendarDays size={etroit ? 16 : 19} strokeWidth={1.8} color="#666" />
           {/* Jour actuellement affiché — remplacé par la date choisie dans le calendrier */}
