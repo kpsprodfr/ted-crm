@@ -4718,12 +4718,13 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
 
   // Le numéro est complet mais inconnu du fichier : on demande la fiche
   const telComplet = tel.replace(/\D/g, '').length >= 10;
-  const nouveauClient = telComplet && !clientTrouve && !rechercheClient;
+  const nouveauClient = !edition && telComplet && !clientTrouve && !rechercheClient;
 
   // Nom retenu pour la commande
   const nomPourCommande = nouveauClient
     ? (genre === 'Entreprise' ? entreprise.trim() : `${prenom.trim()} ${nomFamille.trim()}`.trim())
     : nom.trim();
+
 
   function ajouter(p) {
     marquerModifie();
@@ -4762,6 +4763,7 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
   const ficheComplete = !nouveauClient || (genre === 'Entreprise'
     ? !!entreprise.trim()
     : (!!genre && !!prenom.trim() && !!nomFamille.trim()));
+  // Le nom vient du client : il faut donc un numéro complet, reconnu ou saisi
   const formValide = nomPourCommande && items.length > 0 && ficheComplete;
 
   const suggestions = recherche.trim().length >= 1
@@ -4972,14 +4974,6 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
 
           {/* Le nom fait partie du bloc client : simple si connu, fiche complète sinon */}
           <div style={{ marginTop:-4 }}>
-            {!nouveauClient && (
-              <p style={{ fontSize:12.5, fontWeight:700, color:'#999', margin:'0 0 7px', textTransform:'uppercase', letterSpacing:0.5 }}>Nom du client <span style={{ color:'#dc2626' }}>*</span></p>
-            )}
-            {!nouveauClient && (
-              <input value={nom} onChange={e=>{marquerModifie(); setNom(e.target.value);}} placeholder="Nom au comptoir"
-                style={{ width:'100%', height:52, border:'1.5px solid', borderColor: nom.trim() ? '#22c55e' : '#eee', borderRadius:12, padding:'0 14px', fontSize:16, outline:'none', boxSizing:'border-box' }} />
-            )}
-
             {nouveauClient && (
               <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
                 <p style={{ margin:0, fontSize:13, color:'#92400e', background:'#fffbea', border:'1.5px solid #fde68a', borderRadius:10, padding:'10px 13px', lineHeight:1.5 }}>
