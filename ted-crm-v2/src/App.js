@@ -4066,6 +4066,7 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
     const dx = e.touches[0].clientX - swipeX0.current;
     const dy = e.touches[0].clientY - swipeY0.current;
     if (!drag && Math.abs(dy) > Math.abs(dx)) return;
+    e.preventDefault();
     if (!dragDir && Math.abs(dx) > 8) setDragDir(dx < 0 ? 'left' : 'right');
     setDrag(true); setDragX(dx);
   };
@@ -4129,7 +4130,7 @@ function CalendrierCommandesModal({ commandes, jourSelectionne, service, onChois
                 const isSelected = jourLocal === iso || dateFlash === iso;
                 const estPasse = new Date(iso) < new Date(new Date().setHours(0,0,0,0));
                 return (
-                  <button key={i} className={dateFlash === iso ? 'date-flash' : ''} onPointerDown={()=>choisirJour(iso)}
+                  <button key={i} className={dateFlash === iso ? 'date-flash' : ''} onClick={()=>choisirJour(iso)}
                     style={{ textAlign:'center', minHeight:0, borderRadius:10, cursor:'pointer', position:'relative',
                       display:'flex', alignItems:'center', justifyContent:'center',
                       border: isToday && !isSelected ? '2px solid #E8C547' : '2px solid #f0f0f0',
