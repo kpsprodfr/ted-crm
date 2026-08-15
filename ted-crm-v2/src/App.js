@@ -3362,14 +3362,24 @@ function CommandesPage({ showToast, user }) {
           onClose={()=>setShowATraiter(false)}
         />
       )}
-      {detailCalendrier && <CommandeDetail cmd={detailCalendrier} auDessus onClose={()=>setDetailCalendrier(null)} onStatut={(c,st)=>{ changerStatut(c, st); setDetailCalendrier(prev => prev ? { ...prev, statut: st } : prev); }} />}
+      {detailCalendrier && !editCmd && (
+        <CommandeDetail
+          cmd={detailCalendrier}
+          auDessus
+          onClose={()=>setDetailCalendrier(null)}
+          onStatut={(c, st)=>{ changerStatut(c, st); setDetailCalendrier(prev => prev ? { ...prev, statut: st } : prev); }}
+          onEdit={(c)=>setEditCmd(c)}
+          onSupprimer={(c)=>{ supprimerCommande(c); setDetailCalendrier(null); }}
+        />
+      )}
       {detail && !editCmd && <CommandeDetail cmd={detail} onClose={()=>setDetail(null)} onStatut={changerStatut} onEdit={(c)=>setEditCmd(c)} onSupprimer={supprimerCommande} />}
       {showNouvelle && <NouvelleCommandeModal onClose={()=>setShowNouvelle(false)} onSaved={()=>{ setShowNouvelle(false); loadCommandes(true); }} showToast={showToast} delaiDefaut={delaiDefaut} />}
       {editCmd && (
         <NouvelleCommandeModal
           cmd={editCmd}
+          auDessus={!!detailCalendrier}
           onClose={()=>setEditCmd(null)}
-          onSaved={()=>{ setEditCmd(null); setDetail(null); loadCommandes(true); }}
+          onSaved={()=>{ setEditCmd(null); setDetail(null); setDetailCalendrier(null); loadCommandes(true); }}
           showToast={showToast}
           delaiDefaut={delaiDefaut}
         />
@@ -4464,6 +4474,18 @@ function CommandeDetail({ cmd, onClose, onStatut, onEdit, onSupprimer, auDessus 
   // Confirmation en deux temps : la suppression est definitive.
   const [confirmeSuppr, setConfirmeSuppr] = useState(false);
   const st = cmdStatut(cmd.statut);
+
+  // Les étapes proposées dépendent du jour : on ne prépare pas une commande
+  // de la semaine prochaine, et on ne remet pas en préparation une commande passée.
+  const jourCmd = cmd.date_retrait || (cmd.created_at || '').split('T')[0];
+  const auj = dateLocale();
+  const etiquette = { nouvelle:'Nouvelle', en_preparation:'Acceptée', prete:'Prête', recuperee:'Récupérée', annulee:'Annulée' };
+  const statutsProposes = (
+    jourCmd > auj ? ['nouvelle', 'en_preparation', 'annulee']
+    : jourCmd < auj ? ['prete', 'recuperee', 'annulee']
+    : CMD_STATUTS.map(x => x.id)
+  ).map(id => ({ ...cmdStatut(id), label: jourCmd === auj ? cmdStatut(id).label : etiquette[id] }));
+
   const dateLabel = cmd.created_at ? new Date(cmd.created_at).toLocaleString('fr-FR', { weekday:'long', day:'numeric', month:'long', hour:'2-digit', minute:'2-digit' }) : '';
   return (
     <>
@@ -4539,7 +4561,7 @@ function CommandeDetail({ cmd, onClose, onStatut, onEdit, onSupprimer, auDessus 
           <div>
             <p style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:'0 0 8px' }}>Statut</p>
             <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-              {CMD_STATUTS.map(s => (
+              {statutsProposes.map(s => (
                 <button key={s.id} onClick={()=>onStatut(cmd, s.id)} disabled={cmd.statut === s.id} style={{ height:38, padding:'0 14px', borderRadius:9, border: cmd.statut===s.id ? 'none' : '1.5px solid #eee', background: cmd.statut===s.id ? s.bg : '#fff', color: cmd.statut===s.id ? s.fg : '#666', fontSize:13, fontWeight:700, cursor: cmd.statut===s.id ? 'default' : 'pointer' }}>
                   {s.label}
                 </button>
@@ -4602,8 +4624,8 @@ function CatalogueModal({ parCategorie, quantiteDe, onAjouter, onRetirer, nbArti
 
   return (
     <>
-      <div onClick={()=>setConfirmeAbandon(true)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:5300 }} />
-      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:22, width:'min(1080px, calc(100vw - 20px))', height:'min(940px, calc(100vh - 20px))', display:'flex', flexDirection:'column', boxShadow:'0 40px 100px rgba(0,0,0,0.35)', zIndex:5301, overflow:'hidden' }}>
+      <div onClick={()=>setConfirmeAbandon(true)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:5500 }} />
+      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:22, width:'min(1080px, calc(100vw - 20px))', height:'min(940px, calc(100vh - 20px))', display:'flex', flexDirection:'column', boxShadow:'0 40px 100px rgba(0,0,0,0.35)', zIndex:5501, overflow:'hidden' }}>
 
         {/* Barre fixe : recherche et catégories restent accessibles au défilement.
             Le titre a disparu au profit de la place à l'écran ; seule la croix reste. */}
@@ -4684,8 +4706,8 @@ function CatalogueModal({ parCategorie, quantiteDe, onAjouter, onRetirer, nbArti
 
       {confirmeAbandon && (
         <>
-          <div onClick={()=>setConfirmeAbandon(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:5400 }} />
-          <div style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:18, width:'min(420px, calc(100vw - 40px))', padding:'24px 26px', boxShadow:'0 32px 80px rgba(0,0,0,0.3)', zIndex:5401 }}>
+          <div onClick={()=>setConfirmeAbandon(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:5600 }} />
+          <div style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:18, width:'min(420px, calc(100vw - 40px))', padding:'24px 26px', boxShadow:'0 32px 80px rgba(0,0,0,0.3)', zIndex:5601 }}>
             <h3 style={{ margin:'0 0 8px', fontSize:17, fontWeight:800, color:'#111' }}>Fermer sans enregistrer ?</h3>
             <p style={{ margin:'0 0 20px', fontSize:13.5, color:'#666', lineHeight:1.55 }}>
               Les articles sélectionnés ici ne seront pas ajoutés à la commande.
@@ -4707,7 +4729,9 @@ const CRENEAUX_SOIR = ['18:00','18:30','19:00','19:15','19:30','19:45','20:00','
 
 // ── Prise de commande au téléphone / modification d'une commande ─────────────
 // `cmd` absent → création. `cmd` présent → édition de cette commande.
-function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }) {
+function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut, auDessus = false }) {
+  const zVoile = auDessus ? 5400 : 4999;
+  const zBoite = auDessus ? 5401 : 5000;
   const edition = !!cmd;
   const [nom, setNom] = useState(cmd?.client_nom || '');
   const [tel, setTel] = useState(cmd?.client_tel || '');
@@ -5008,8 +5032,8 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
 
   return (
     <>
-      <div onClick={demanderFermeture} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:4999 }} />
-      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:20, width:'min(580px, calc(100vw - 32px))', height:'min(880px, calc(100vh - 32px))', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.25)', zIndex:5000, overflow:'hidden' }}>
+      <div onClick={demanderFermeture} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:zVoile }} />
+      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:20, width:'min(580px, calc(100vw - 32px))', height:'min(880px, calc(100vh - 32px))', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.25)', zIndex:zBoite, overflow:'hidden' }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'20px 24px 16px', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
           <h2 style={{ margin:0, fontSize:18, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:8 }}>
             {edition
@@ -5218,8 +5242,8 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
       {/* Fermeture avec des modifications non enregistrées */}
       {confirmeFermeture && (
         <>
-          <div onClick={()=>setConfirmeFermeture(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.4)', zIndex:5100 }} />
-          <div style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:18, width:'min(400px, calc(100vw - 40px))', padding:'22px 24px', boxShadow:'0 32px 80px rgba(0,0,0,0.3)', zIndex:5101 }}>
+          <div onClick={()=>setConfirmeFermeture(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.4)', zIndex:5700 }} />
+          <div style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:18, width:'min(400px, calc(100vw - 40px))', padding:'22px 24px', boxShadow:'0 32px 80px rgba(0,0,0,0.3)', zIndex:5701 }}>
             <h3 style={{ margin:'0 0 8px', fontSize:16.5, fontWeight:800, color:'#111' }}>Quitter sans enregistrer ?</h3>
             <p style={{ margin:'0 0 18px', fontSize:13.5, color:'#666', lineHeight:1.55 }}>
               {edition ? 'Les modifications apportées à cette commande seront perdues.' : 'La commande en cours de saisie sera perdue.'}
