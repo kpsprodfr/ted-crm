@@ -3027,7 +3027,7 @@ function CommandesPage({ showToast, user }) {
   async function loadCommandes(silent = false) {
     if (!silent) setLoading(true);
     const { data } = await safeQuery(
-      () => supabase.from('commandes').select('*').order('created_at', { ascending: false }).limit(500),
+      () => supabase.from('commandes').select('*, client:clients(prenom,nom,entreprise)').order('created_at', { ascending: false }).limit(500),
       { fallback: [], context: 'loadCommandes' }
     );
     setCommandes(data || []);
@@ -3216,7 +3216,7 @@ function CommandesPage({ showToast, user }) {
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, flexWrap:'wrap' }}>
         <div>
           <h1 style={{ margin:0, fontSize: isMobile ? 22 : 26, fontWeight:900, color:'#111', display:'flex', alignItems:'center', gap:10 }}>
-            Commandes
+            Click and Collect
             {/* Service affiché : celui choisi au calendrier, sinon celui en cours */}
             {(() => {
               const sv = service || serviceActuel();
@@ -3259,7 +3259,8 @@ function CommandesPage({ showToast, user }) {
       </div>
 
       {/* ── Bandeau : porte d'entrée vers les commandes à traiter ── */}
-      <div onClick={()=>setShowATraiter(true)} className={aTraiter.length > 0 ? 'alarm-blink' : ''} style={{ background: aTraiter.length > 0 ? '#dc2626' : '#fff', border: aTraiter.length > 0 ? 'none' : '1.5px solid #f0f0f0', borderRadius:16, padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', flexShrink:0, boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
+      {/* Reste collé en haut dès qu'il l'atteint au défilement, puis reprend sa place */}
+      <div onClick={()=>setShowATraiter(true)} className={aTraiter.length > 0 ? 'alarm-blink' : ''} style={{ background: aTraiter.length > 0 ? '#dc2626' : '#fff', border: aTraiter.length > 0 ? 'none' : '1.5px solid #f0f0f0', borderRadius:16, padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', flexShrink:0, position:'sticky', top: isMobile ? 8 : 10, zIndex:40, boxShadow: aTraiter.length > 0 ? '0 4px 16px rgba(220,38,38,0.3)' : '0 2px 10px rgba(0,0,0,0.08)' }}>
         <span style={{ fontSize:15, fontWeight:800, color: aTraiter.length > 0 ? '#fff' : '#111', display:'flex', alignItems:'center', gap:8 }}>
           <ClipboardList size={16} strokeWidth={2} color={aTraiter.length > 0 ? '#fff' : '#666'} /> Nouvelles commandes à traiter
         </span>
@@ -3495,6 +3496,11 @@ function CommandeCarte({ cmd, onOpen, onStatut }) {
   const etroit = useEcranEtroit();   // tablette : carte resserrée pour en voir plusieurs
   const st = cmdStatut(cmd.statut);
   const nbArticles = (cmd.items || []).reduce((s, it) => s + (Number(it.quantite) || 1), 0);
+  // Prénom + nom depuis la fiche client si la commande y est rattachée
+  const nomComplet = cmd.client
+    ? (cmd.client.entreprise || `${cmd.client.prenom || ''} ${cmd.client.nom || ''}`.trim())
+    : '';
+  const nomAffiche = nomComplet || cmd.client_nom || 'Client';
   const heure = cmd.created_at ? new Date(cmd.created_at).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }) : '';
   const reste = minutesRestantes(cmd);
   const jourRetrait = cmd.date_retrait || (cmd.created_at || '').split('T')[0];
@@ -3507,38 +3513,40 @@ function CommandeCarte({ cmd, onOpen, onStatut }) {
       {/* Informations + détail de la commande */}
       <div style={{ flex:1, minWidth:0, cursor:'pointer' }} onClick={onOpen}>
         <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-          <span style={{ fontSize: etroit ? 13.5 : 17, fontWeight:800, color:'#111' }}>{cmd.client_nom || 'Client'}</span>
+          <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', flex:1, minWidth:0 }}>
+          <span style={{ fontSize: etroit ? 13.5 : 17, fontWeight:800, color:'#111' }}>{nomAffiche}</span>
           <span style={{ background:st.bg, color:st.fg, borderRadius:20, padding:'3px 10px', fontSize:11, fontWeight:700, whiteSpace:'nowrap' }}>{st.court}</span>
           {cmd.acceptee_auto && <span style={{ background:'#f0fdf4', color:'#16a34a', borderRadius:20, padding:'3px 9px', fontSize:11, fontWeight:700 }}>Auto</span>}
           {cmd.source === 'en_ligne'
             ? <span style={{ background:'#eff6ff', color:'#2563eb', borderRadius:20, padding:'3px 9px', fontSize:11, fontWeight:700, display:'inline-flex', alignItems:'center', gap:4 }}><MonitorSmartphone size={11} /> En ligne</span>
             : <span style={{ background:'#f5f5f5', color:'#666', borderRadius:20, padding:'3px 9px', fontSize:11, fontWeight:700, display:'inline-flex', alignItems:'center', gap:4 }}><Phone size={11} /> Téléphone</span>}
+          </div>
+          {/* Compte à rebours en bout de première ligne */}
+          {cmd.statut === 'en_preparation' && !futur && reste !== null && (
+            <span style={{ fontSize: etroit ? 12.5 : 14, fontWeight:800, color: reste <= 5 ? '#dc2626' : '#b8860b', display:'inline-flex', alignItems:'center', gap:5, whiteSpace:'nowrap', flexShrink:0 }}>
+              <Clock size={etroit ? 13 : 14} strokeWidth={2.2} />
+              {reste > 0 ? `Prête dans ${fmtDelai(reste)}` : 'À sortir'}
+            </span>
+          )}
         </div>
 
-        <div style={{ fontSize: etroit ? 10.5 : 13, color:'#888', marginTop: etroit ? 2 : 4 }}>
-          N° {cmd.numero || '—'} · reçue à {heure}
-          {cmd.client_tel ? ` · ${cmd.client_tel}` : ''}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, marginTop: etroit ? 3 : 5 }}>
+          <span style={{ fontSize: etroit ? 10.5 : 13, color:'#888', minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+            N° {cmd.numero || '—'} · reçue à {heure}
+            {cmd.client_tel ? ` · ${cmd.client_tel}` : ''}
+          </span>
+          {/* Jour et heure de retrait, alignés à droite sous le compte à rebours */}
+          {cmd.statut === 'recuperee' && recupereeA(cmd) ? (
+            <span style={{ display:'inline-flex', alignItems:'center', gap:6, padding: etroit ? '3px 8px' : '5px 11px', borderRadius:8, background:'#f0fdf4', color:'#15803d', fontSize: etroit ? 11 : 13, fontWeight:700, whiteSpace:'nowrap', flexShrink:0 }}>
+              <CircleCheck size={etroit ? 12 : 13} strokeWidth={2} /> {fmtRecuperee(recupereeA(cmd))}
+            </span>
+          ) : (
+            <span style={{ display:'inline-flex', alignItems:'center', gap:6, padding: etroit ? '3px 8px' : '5px 11px', borderRadius:8, background: futur ? '#eff6ff' : '#f5f5f5', color: futur ? '#1d4ed8' : '#444', fontSize: etroit ? 11 : 13, fontWeight:700, whiteSpace:'nowrap', flexShrink:0 }}>
+              <CalendarDays size={etroit ? 12 : 13} strokeWidth={2} />
+              {labelJour(jourRetrait)}{cmd.heure_retrait ? ` · ${cmd.heure_retrait}` : ''}
+            </span>
+          )}
         </div>
-
-        {/* Jour et heure de retrait — remplacés par l'horodatage réel une fois récupérée */}
-        {cmd.statut === 'recuperee' && recupereeA(cmd) ? (
-          <div style={{ display:'inline-flex', alignItems:'center', gap:6, marginTop: etroit ? 5 : 7, padding: etroit ? '4px 9px' : '6px 12px', borderRadius:9, background:'#f0fdf4', color:'#15803d', fontSize: etroit ? 11 : 13.5, fontWeight:700 }}>
-            <CircleCheck size={14} strokeWidth={2} />
-            {fmtRecuperee(recupereeA(cmd))}
-          </div>
-        ) : (
-          <div style={{ display:'inline-flex', alignItems:'center', gap:6, marginTop: etroit ? 5 : 7, padding: etroit ? '4px 9px' : '6px 12px', borderRadius:9, background: futur ? '#eff6ff' : '#f5f5f5', color: futur ? '#1d4ed8' : '#444', fontSize: etroit ? 11 : 13.5, fontWeight:700 }}>
-            <CalendarDays size={14} strokeWidth={2} />
-            {labelJour(jourRetrait)}{cmd.heure_retrait ? ` · ${cmd.heure_retrait}` : ''}
-          </div>
-        )}
-
-        {cmd.statut === 'en_preparation' && !futur && reste !== null && (
-          <div style={{ fontSize: etroit ? 12.5 : 14, fontWeight:800, color: reste <= 5 ? '#dc2626' : '#b8860b', marginTop: etroit ? 4 : 6, display:'flex', alignItems:'center', gap:6 }}>
-            <Clock size={14} strokeWidth={2.2} />
-            {reste > 0 ? `Prête dans ${reste} min` : 'À sortir maintenant'}
-          </div>
-        )}
 
         {/* Détail des articles, directement visible */}
         <div style={{ marginTop: etroit ? 8 : 12, background:'#fafafa', borderRadius:10, padding: etroit ? '8px 11px' : '12px 14px' }}>
@@ -4962,10 +4970,11 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
             )}
           </div>
 
-          {/* 2. Client : nom simple si connu, fiche complète si inconnu */}
-          <div>
-            <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>2. Nom du client <span style={{ color:'#dc2626' }}>*</span></p>
-
+          {/* Le nom fait partie du bloc client : simple si connu, fiche complète sinon */}
+          <div style={{ marginTop:-4 }}>
+            {!nouveauClient && (
+              <p style={{ fontSize:12.5, fontWeight:700, color:'#999', margin:'0 0 7px', textTransform:'uppercase', letterSpacing:0.5 }}>Nom du client <span style={{ color:'#dc2626' }}>*</span></p>
+            )}
             {!nouveauClient && (
               <input value={nom} onChange={e=>{marquerModifie(); setNom(e.target.value);}} placeholder="Nom au comptoir"
                 style={{ width:'100%', height:52, border:'1.5px solid', borderColor: nom.trim() ? '#22c55e' : '#eee', borderRadius:12, padding:'0 14px', fontSize:16, outline:'none', boxSizing:'border-box' }} />
@@ -5015,9 +5024,9 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
             )}
           </div>
 
-          {/* 3. Jour de retrait */}
+          {/* 2. Date de retrait */}
           <div>
-            <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>3. Jour de retrait</p>
+            <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>2. Date de retrait</p>
             <button onClick={()=>setShowCalPicker(v=>!v)} style={{ width:'100%', height:48, borderRadius:10, border:'1.5px solid #ddd', background:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 14px' }}>
               <span style={{ display:'flex', alignItems:'center', gap:9, fontSize:14.5, fontWeight:700, color:'#111', textTransform:'capitalize' }}>
                 <CalendarDays size={16} strokeWidth={2} color="#999" />
@@ -5028,10 +5037,10 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
             {calendarJSX}
           </div>
 
-          {/* Heure de retrait : service au-dessus, puis les créneaux */}
+          {/* 3. Service */}
           <div>
-            <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>4. Heure de retrait</p>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:10 }}>
+            <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>3. Service</p>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
               <button onClick={()=>setSvcRetrait('midi')} style={{ height:46, borderRadius:12, cursor:'pointer', fontSize:14.5, fontWeight:700, border:`1.5px solid ${svcRetrait==='midi'?'#E8C547':'#eee'}`, background:svcRetrait==='midi'?'#fffbea':'#fff', color:'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
                 <Sun size={17} strokeWidth={2} color={svcRetrait==='midi'?'#E8C547':'#999'} /> Midi
               </button>
@@ -5039,6 +5048,11 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
                 <Moon size={17} strokeWidth={2} color={svcRetrait==='soir'?'#E8C547':'#999'} /> Soir
               </button>
             </div>
+          </div>
+
+          {/* 4. Heure */}
+          <div>
+            <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>4. Heure</p>
             {/* Les horaires supplémentaires s'ajoutent à la même grille */}
             <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}>
               {(tousLesHoraires ? creneaux : creneauxProposes).map(h => (
@@ -5109,7 +5123,7 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut }
           )}
 
           <div>
-            <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>6. Note <span style={{ fontSize:12, fontWeight:400, color:'#999' }}>(optionnel)</span></p>
+            <p style={{ fontSize:14, fontWeight:800, color:'#111', margin:'0 0 10px' }}>6. Notes <span style={{ fontSize:12, fontWeight:400, color:'#999' }}>(optionnel)</span></p>
             <textarea value={note} onChange={e=>{marquerModifie(); setNote(e.target.value);}} placeholder="Note générale (allergie, paiement…)" rows={3} style={{ width:'100%', border:'1.5px solid #ddd', borderRadius:7, padding:'10px 12px', fontSize:14, outline:'none', resize:'vertical', fontFamily:'inherit', boxSizing:'border-box' }} />
           </div>
         </div>
@@ -7754,6 +7768,7 @@ function CRMApp({ user, onLogout }) {
   const [mobileAction, setMobileAction] = useState(null);
   const [showResaPage, setShowResaPage] = useState(false);
   const [resaAttenteCount, setResaAttenteCount] = useState(0);
+  const [cmdNouvellesCount, setCmdNouvellesCount] = useState(0);
   const [showPlusSheet, setShowPlusSheet] = useState(false);
   const [mobileTab, setMobileTab] = useState(window.innerWidth < 768 ? 'reservations' : 'clients'); // 'clients' | 'reservations'
   const [showAddResa, setShowAddResa] = useState(false);
@@ -7909,6 +7924,14 @@ function CRMApp({ user, onLogout }) {
   useEffect(() => { if (user) initOneSignal(); }, [user]);
 
   useEffect(() => {
+    if (!user) return;
+    loadCmdCount();
+    return resilientChannel(supabase, 'sidebar-commandes', (chan) => chan
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'commandes' }, () => loadCmdCount())
+    );
+  }, [user]);
+
+  useEffect(() => {
     return resilientChannel(supabase, 'nouvelles-reservations', (chan) => chan
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reservations', filter: 'statut=eq.attente' }, async (payload) => {
         if (notifEnCoursRef.current) return;
@@ -7950,6 +7973,16 @@ function CRMApp({ user, onLogout }) {
     const n = count || 0;
     setResaAttenteCount(n);
     updateBadge(n);
+  }
+
+  // Commandes à traiter : compté dans le shell pour que la pastille de la
+  // barre latérale reste juste, quel que soit l'onglet ouvert.
+  async function loadCmdCount() {
+    const { count } = await safeQuery(
+      () => supabase.from('commandes').select('id', { count:'exact', head:true }).eq('statut','nouvelle'),
+      { fallback: { count: 0 }, context: 'sidebar:commandesNouvelles' }
+    );
+    setCmdNouvellesCount(count || 0);
   }
 
   async function loadClients(silent = false) {
@@ -8122,7 +8155,7 @@ function CRMApp({ user, onLogout }) {
       <span style={{ fontSize:10, fontWeight:800, color:'#E8C547', letterSpacing:2, marginTop:4, marginBottom:28 }}>LE TED</span>
       {[
         { id:'reservations', label:'Réservations', icon:<CalendarDays size={24} strokeWidth={1.8} /> },
-        { id:'commandes', label:'Commandes', icon:<ShoppingBag size={24} strokeWidth={1.8} /> },
+        { id:'commandes', label:'Click and Collect', icon:<ShoppingBag size={24} strokeWidth={1.8} /> },
         { id:'clients', label:'Clients', icon:<Users size={24} strokeWidth={1.8} /> },
         { id:'communications', label:'Communications', icon:<Megaphone size={24} strokeWidth={1.8} /> },
         // Onglets masqués — décommenter pour les réafficher (les pages existent toujours)
@@ -8130,7 +8163,8 @@ function CRMApp({ user, onLogout }) {
         { id:'menu', label:'Menu', icon:<UtensilsCrossed size={24} strokeWidth={1.8} /> },
         // { id:'systeme', label:'Système', icon:<Settings size={24} strokeWidth={1.8} /> },
       ].map(item => {
-        const nbAttenteSidebar = item.id === 'reservations' ? resaAttenteCount : 0;
+        const nbAttenteSidebar = item.id === 'reservations' ? resaAttenteCount
+          : item.id === 'commandes' ? cmdNouvellesCount : 0;
         return (
           <button key={item.id} onClick={()=>setActiveView(item.id)} style={{ width:'100%', padding:'12px 8px', border:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer', marginBottom:4, borderLeft: activeView===item.id ? '3px solid #E8C547' : '3px solid transparent', background: activeView===item.id ? 'rgba(232,197,71,0.1)' : 'transparent', color: activeView===item.id ? '#E8C547' : '#555', position:'relative' }}>
             {item.icon}
