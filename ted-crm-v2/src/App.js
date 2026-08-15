@@ -3267,55 +3267,35 @@ function CommandesPage({ showToast, user }) {
       </div>
 
       {/* ── Bandeau : porte d'entrée vers les commandes à traiter ── */}
-      {/* Reste collé en haut dès qu'il l'atteint au défilement, puis reprend sa place */}
-      <div onClick={()=>setShowATraiter(true)} className={aTraiter.length > 0 ? 'alarm-blink' : ''} style={{ background: aTraiter.length > 0 ? '#dc2626' : '#fff', border: aTraiter.length > 0 ? 'none' : '1.5px solid #f0f0f0', borderRadius:16, padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', flexShrink:0, position:'sticky', top: isMobile ? 8 : 10, zIndex:40, boxShadow: aTraiter.length > 0 ? '0 4px 16px rgba(220,38,38,0.3)' : '0 2px 10px rgba(0,0,0,0.08)' }}>
-        <span style={{ fontSize:15, fontWeight:800, color: aTraiter.length > 0 ? '#fff' : '#111', display:'flex', alignItems:'center', gap:8 }}>
-          <ClipboardList size={16} strokeWidth={2} color={aTraiter.length > 0 ? '#fff' : '#666'} /> Nouvelles commandes à traiter
-        </span>
-        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          {aTraiter.length > 0
-            ? <span style={{ background:'#fff', color:'#dc2626', borderRadius:'50%', width:26, height:26, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800 }}>{aTraiter.length}</span>
-            : <span style={{ fontSize:13, color:'#999', fontWeight:600 }}>Aucune</span>}
-          <span style={{ color: aTraiter.length > 0 ? '#fff' : '#ccc', fontSize:18 }}>›</span>
-        </div>
-      </div>
-
-      {/* ── Bandeau : prise de commandes fermée ── */}
-      {!commandesActives && (
-        <div onClick={()=>setShowParams(true)} style={{ background:'#111', borderRadius:16, padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, cursor:'pointer', flexWrap:'wrap' }}>
-          <span style={{ fontSize:14.5, fontWeight:800, color:'#fff', display:'flex', alignItems:'center', gap:9 }}>
-            <AlertCircle size={17} strokeWidth={2} color="#E8C547" /> Commande en ligne désactivée
-            {motifFermeture ? <span style={{ fontWeight:500, color:'rgba(255,255,255,0.75)' }}>— {motifFermeture}</span> : null}
+      {/* ── Bandeau à traiter + compteurs à gauche, calendrier à droite ── */}
+      <div style={{ display:'flex', alignItems:'stretch', gap: etroit ? 8 : 10, position:'sticky', top: isMobile ? 8 : 10, zIndex:40 }}>
+        <div style={{ flex:1, minWidth:0, display:'flex', flexDirection:'column', gap: etroit ? 8 : 10 }}>
+        <div onClick={()=>setShowATraiter(true)} className={aTraiter.length > 0 ? 'alarm-blink' : ''} style={{ background: aTraiter.length > 0 ? '#dc2626' : '#fff', border: aTraiter.length > 0 ? 'none' : '1.5px solid #f0f0f0', borderRadius:16, padding:'14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', boxShadow: aTraiter.length > 0 ? '0 4px 16px rgba(220,38,38,0.3)' : '0 2px 10px rgba(0,0,0,0.08)' }}>
+          <span style={{ fontSize:15, fontWeight:800, color: aTraiter.length > 0 ? '#fff' : '#111', display:'flex', alignItems:'center', gap:8 }}>
+            <ClipboardList size={16} strokeWidth={2} color={aTraiter.length > 0 ? '#fff' : '#666'} /> Nouvelles commandes à traiter
           </span>
-          <span style={{ fontSize:12.5, color:'#E8C547', fontWeight:700 }}>Rouvrir ›</span>
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            {aTraiter.length > 0
+              ? <span style={{ background:'#fff', color:'#dc2626', borderRadius:'50%', width:26, height:26, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800 }}>{aTraiter.length}</span>
+              : <span style={{ fontSize:13, color:'#999', fontWeight:600 }}>Aucune</span>}
+            <span style={{ color: aTraiter.length > 0 ? '#fff' : '#ccc', fontSize:18 }}>›</span>
+          </div>
         </div>
-      )}
-
-      {/* ── Bandeau : acceptation automatique active ── */}
-      {commandesActives && autoAccept && (
-        <div onClick={()=>setShowParams(true)} style={{ background:'#f0fdf4', border:'1.5px solid #86efac', borderRadius:16, padding:'12px 18px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, cursor:'pointer', flexWrap:'wrap' }}>
-          <span style={{ fontSize:13.5, fontWeight:700, color:'#15803d', display:'flex', alignItems:'center', gap:8 }}>
-            <CircleCheck size={16} strokeWidth={2} /> Acceptation automatique — prêtes en ~{fmtDelai(delaiDefaut)}
-          </span>
-          <span style={{ fontSize:12.5, color:'#15803d', fontWeight:700 }}>Modifier ›</span>
-        </div>
-      )}
-
-      {/* ── Stats du jour + accès statistiques et calendrier ── */}
-      <div style={{ display:'flex', flexWrap:'wrap', alignItems:'stretch', gap: etroit ? 8 : 10 }}>
-        {/* Les deux compteurs se partagent la place restante : leur largeur ne
-            dépend pas des chiffres, la ligne ne bouge donc pas d'un service à l'autre. */}
-        <div style={{ background:'#fff', borderRadius:12, padding: etroit ? '6px 14px' : '6px 18px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', display:'flex', alignItems:'center', justifyContent:'center', gap:8, minHeight: etroit ? 42 : 52, flex:1, minWidth:0 }}>
-          <span style={{ fontSize: etroit ? 16 : 20, fontWeight:900, color:'#111', lineHeight:1 }}>{nbJour}</span>
-          <span style={{ fontSize: etroit ? 9.5 : 11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.4 }}>Commandes</span>
-        </div>
-        <div style={{ background:'#fff', borderRadius:12, padding: etroit ? '6px 14px' : '6px 18px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', display:'flex', alignItems:'center', justifyContent:'center', gap:8, minHeight: etroit ? 42 : 52, flex:1, minWidth:0 }}>
-          <span style={{ fontSize: etroit ? 16 : 20, fontWeight:900, color:'#111', lineHeight:1 }}>{fmtEuro(caJour)}</span>
-          <span style={{ fontSize: etroit ? 9.5 : 11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.4 }}>Total</span>
+          <div style={{ display:'flex', alignItems:'stretch', gap: etroit ? 8 : 10 }}>
+          <div style={{ background:'#fff', borderRadius:12, padding: etroit ? '6px 14px' : '6px 18px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', display:'flex', alignItems:'center', justifyContent:'center', gap:8, minHeight: etroit ? 42 : 52, flex:1, minWidth:0 }}>
+            <span style={{ fontSize: etroit ? 16 : 20, fontWeight:900, color:'#111', lineHeight:1 }}>{nbJour}</span>
+            <span style={{ fontSize: etroit ? 9.5 : 11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.4 }}>Commandes</span>
+          </div>
+          <div style={{ background:'#fff', borderRadius:12, padding: etroit ? '6px 14px' : '6px 18px', boxShadow:'0 1px 4px rgba(0,0,0,0.04)', display:'flex', alignItems:'center', justifyContent:'center', gap:8, minHeight: etroit ? 42 : 52, flex:1, minWidth:0 }}>
+            <span style={{ fontSize: etroit ? 16 : 20, fontWeight:900, color:'#111', lineHeight:1 }}>{fmtEuro(caJour)}</span>
+            <span style={{ fontSize: etroit ? 9.5 : 11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.4 }}>Total</span>
+          </div>
+          </div>
         </div>
 
-        <button onClick={()=>setShowCalendrier(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:12, padding: etroit ? '0 16px' : '0 20px', minHeight: etroit ? 42 : 52, flexShrink:0, boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-          <CalendarDays size={etroit ? 16 : 19} strokeWidth={1.8} color="#666" />
+        {/* Calendrier : colonne de droite, sur toute la hauteur du bloc */}
+        <button onClick={()=>setShowCalendrier(true)} style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:16, width: etroit ? 108 : 132, flexShrink:0, boxShadow:'0 1px 4px rgba(0,0,0,0.04)', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8 }}>
+          <CalendarDays size={etroit ? 24 : 28} strokeWidth={1.7} color="#666" />
           <span style={{ fontSize: etroit ? 12 : 13.5, fontWeight:700, color:'#444' }}>Calendrier</span>
         </button>
       </div>
@@ -3366,6 +3346,7 @@ function CommandesPage({ showToast, user }) {
         <CommandeDetail
           cmd={detailCalendrier}
           auDessus
+          statutsSelonDate
           onClose={()=>setDetailCalendrier(null)}
           onStatut={(c, st)=>{ changerStatut(c, st); setDetailCalendrier(prev => prev ? { ...prev, statut: st } : prev); }}
           onEdit={(c)=>setEditCmd(c)}
@@ -4323,43 +4304,14 @@ function ParametresCommandesModal({ autoAccept, delaiDefaut, commandesActives, m
                 <div style={{ fontSize:15, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:8 }}>
                   <ShoppingBag size={17} strokeWidth={2} color={commandesActives ? '#16a34a' : '#dc2626'} /> Commande en ligne <span style={{ fontSize:12.5, fontWeight:600, color:'#999' }}>(du jour)</span>
                 </div>
-                <div style={{ fontSize:12.5, color:'#888', marginTop:4, lineHeight:1.5 }}>
-                  {commandesActives
-                    ? 'Les clients peuvent commander en ligne.'
-                    : 'La page de commande est fermée : les clients voient le motif ci-dessous.'}
-                </div>
+                {!commandesActives && (
+                  <div style={{ fontSize:12.5, color:'#b91c1c', marginTop:4, lineHeight:1.5, fontWeight:600 }}>
+                    Désactivée temporairement — les clients voient le motif ci-dessous.
+                  </div>
+                )}
               </div>
               <MenuToggle value={commandesActives} colorOn="#16a34a" onChange={()=>commandesActives ? fermerPrise(motif) : rouvrirPrise()} />
             </div>
-
-            {commandesActives && (
-              <div style={{ marginBottom:4 }}>
-                <label style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, display:'block', marginBottom:8 }}>Commander à l'avance jusqu'à</label>
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:8 }}>
-                  {HORIZONS.map(h => (
-                    <button key={h.j} onClick={()=>onMaj('horizon_jours', h.j)} style={{ height:52, borderRadius:11, border: horizonJours===h.j ? '2px solid #16a34a' : '1.5px solid #ddd', background: horizonJours===h.j ? '#16a34a' : '#fff', color: horizonJours===h.j ? '#fff' : '#333', fontSize:14.5, fontWeight:800, cursor:'pointer', padding:0 }}>
-                      {h.label}
-                    </button>
-                  ))}
-                </div>
-                {/* Durée personnalisée */}
-                <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:10 }}>
-                  <button onClick={()=>onMaj('horizon_jours', Math.max(0, (parseInt(horizonJours)||0) - 1))} style={{ width:52, height:48, borderRadius:11, border:'1.5px solid #ddd', background:'#fff', fontSize:23, fontWeight:700, cursor:'pointer', color:'#111', lineHeight:1 }}>−</button>
-                  <div style={{ flex:1, height:48, border:'1.5px solid #ddd', borderRadius:11, display:'flex', alignItems:'center', justifyContent:'center', gap:6, fontSize:16, fontWeight:800, background:'#fafafa' }}>
-                    {horizonJours === 0 ? "Aujourd'hui" : `${horizonJours} jour${horizonJours > 1 ? 's' : ''}`}
-                    {!HORIZONS.some(h => h.j === parseInt(horizonJours)) && (
-                      <span style={{ fontSize:10.5, fontWeight:700, color:'#16a34a', background:'#f0fdf4', borderRadius:20, padding:'2px 8px' }}>PERSO</span>
-                    )}
-                  </div>
-                  <button onClick={()=>onMaj('horizon_jours', Math.min(180, (parseInt(horizonJours)||0) + 1))} style={{ width:52, height:48, borderRadius:11, border:'1.5px solid #ddd', background:'#fff', fontSize:23, fontWeight:700, cursor:'pointer', color:'#111', lineHeight:1 }}>+</button>
-                </div>
-                <p style={{ margin:'8px 2px 0', fontSize:12, color:'#888', lineHeight:1.5 }}>
-                  {horizonJours === 0
-                    ? 'Les clients ne peuvent commander que pour le jour même.'
-                    : `Les clients peuvent choisir un retrait jusqu'à ${horizonJours} jour${horizonJours > 1 ? 's' : ''} à l'avance.`}
-                </p>
-              </div>
-            )}
 
             {!commandesActives && (
               <div style={{ background:'#fef2f2', border:'1.5px solid #fecaca', borderRadius:12, padding:'12px 14px' }}>
@@ -4468,7 +4420,7 @@ function RefusCommandeModal({ cmd, onClose, onConfirm }) {
 }
 
 // ── Fiche détail d'une commande ──────────────────────────────────────────────
-function CommandeDetail({ cmd, onClose, onStatut, onEdit, onSupprimer, auDessus = false }) {
+function CommandeDetail({ cmd, onClose, onStatut, onEdit, onSupprimer, auDessus = false, statutsSelonDate = false }) {
   const zVoile = auDessus ? 5400 : 4999;
   const zBoite = auDessus ? 5401 : 5000;
   // Confirmation en deux temps : la suppression est definitive.
@@ -4479,12 +4431,25 @@ function CommandeDetail({ cmd, onClose, onStatut, onEdit, onSupprimer, auDessus 
   // de la semaine prochaine, et on ne remet pas en préparation une commande passée.
   const jourCmd = cmd.date_retrait || (cmd.created_at || '').split('T')[0];
   const auj = dateLocale();
+  const aVenir = statutsSelonDate && jourCmd > auj;
   const etiquette = { nouvelle:'Nouvelle', en_preparation:'Acceptée', prete:'Prête', recuperee:'Récupérée', annulee:'Annulée' };
+  // Une commande à venir n'est pas « en préparation » mais « acceptée », et
+  // cette acceptation se lit en vert.
+  const passee = statutsSelonDate && jourCmd < auj;
+  const habiller = (base) => (aVenir && base.id === 'en_preparation')
+    ? { ...base, label:'Acceptée', bg:'#16a34a', fg:'#fff' }
+    : base;
+  // Une commande passée restée « nouvelle » ou « en préparation » n'a plus
+  // d'étape en cours : elle attend d'être clôturée par l'un des trois statuts.
+  const aClôturer = passee && ['nouvelle', 'en_preparation'].includes(cmd.statut);
   const statutsProposes = (
-    jourCmd > auj ? ['nouvelle', 'en_preparation', 'annulee']
-    : jourCmd < auj ? ['prete', 'recuperee', 'annulee']
+    aVenir ? ['nouvelle', 'en_preparation', 'annulee']
+    : passee ? ['prete', 'recuperee', 'annulee']
     : CMD_STATUTS.map(x => x.id)
-  ).map(id => ({ ...cmdStatut(id), label: jourCmd === auj ? cmdStatut(id).label : etiquette[id] }));
+  ).map(id => habiller({ ...cmdStatut(id), label: (aVenir || passee) ? etiquette[id] : cmdStatut(id).label }));
+  const stAffiche = aClôturer
+    ? { ...st, label:'À clôturer', bg:'#f0a020', fg:'#111' }
+    : habiller(st);
 
   const dateLabel = cmd.created_at ? new Date(cmd.created_at).toLocaleString('fr-FR', { weekday:'long', day:'numeric', month:'long', hour:'2-digit', minute:'2-digit' }) : '';
   return (
@@ -4500,7 +4465,7 @@ function CommandeDetail({ cmd, onClose, onStatut, onEdit, onSupprimer, auDessus 
         </div>
 
         <div style={{ padding:'16px 24px 20px', overflowY:'auto', display:'flex', flexDirection:'column', gap:14 }}>
-          <span style={{ background:st.bg, color:st.fg, borderRadius:20, padding:'5px 14px', fontSize:12, fontWeight:800, alignSelf:'flex-start' }}>{st.label}</span>
+          <span style={{ background:stAffiche.bg, color:stAffiche.fg, borderRadius:20, padding:'5px 14px', fontSize:12, fontWeight:800, alignSelf:'flex-start' }}>{stAffiche.label}</span>
 
           {/* Client */}
           <div style={{ background:'#f9f9f9', borderRadius:12, padding:'12px 14px' }}>
@@ -4609,6 +4574,10 @@ function CatalogueModal({ parCategorie, quantiteDe, onAjouter, onRetirer, nbArti
   const isMobile = useIsMobile();
   const [filtreCat, setFiltreCat] = useState('toutes');
   const [recherche, setRecherche] = useState('');
+  // Catégorie en cours de lecture : la pastille correspondante s'allume
+  const [catVisible, setCatVisible] = useState(null);
+  const zoneRef = useRef(null);
+  const pastillesRef = useRef({});
   // Quitter par la croix abandonne les articles ajoutés pendant cette ouverture
   const [confirmeAbandon, setConfirmeAbandon] = useState(false);
 
@@ -4621,6 +4590,38 @@ function CatalogueModal({ parCategorie, quantiteDe, onAjouter, onRetirer, nbArti
         : c.produits,
     }))
     .filter(c => c.produits.length > 0);
+
+  // Repère la catégorie dont l'en-tête vient de passer en haut de la liste
+  // Catégorie en cours de lecture : la dernière dont l'en-tête a passé le haut
+  // de la liste. Un IntersectionObserver sert de déclencheur — plus fiable et
+  // moins coûteux qu'un gestionnaire de défilement.
+  const majCatVisible = () => {
+    const zone = zoneRef.current;
+    if (!zone) return;
+    const hautZone = zone.getBoundingClientRect().top;
+    let courante = null;
+    zone.querySelectorAll('[data-cat]').forEach(el => {
+      if (el.getBoundingClientRect().top - hautZone <= 24) courante = el.dataset.cat;
+    });
+    setCatVisible(prev => (prev === courante ? prev : courante));
+  };
+
+  useEffect(() => {
+    const zone = zoneRef.current;
+    if (!zone || typeof IntersectionObserver === 'undefined') return;
+    const sections = [...zone.querySelectorAll('[data-cat]')];
+    if (!sections.length) return;
+    majCatVisible();
+    const obs = new IntersectionObserver(() => majCatVisible(), { root: zone, threshold: [0, 0.01, 1] });
+    sections.forEach(sec => obs.observe(sec));
+    return () => obs.disconnect();
+  }, [filtreCat, recherche, parCategorie.length]);
+
+  // La pastille allumée reste visible dans la barre de catégories
+  useEffect(() => {
+    const p = catVisible && pastillesRef.current[catVisible];
+    if (p && p.scrollIntoView) p.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'center' });
+  }, [catVisible]);
 
   return (
     <>
@@ -4639,25 +4640,30 @@ function CatalogueModal({ parCategorie, quantiteDe, onAjouter, onRetirer, nbArti
             <button onClick={()=>setConfirmeAbandon(true)} style={{ width:40, height:40, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:19, color:'#666', flexShrink:0 }}>✕</button>
           </div>
           <div style={{ display:'flex', gap:7, overflowX:'auto', paddingBottom:9 }}>
-            {[{ id:'toutes', nom:'Toutes' }, ...parCategorie].map(c => (
-              <button key={c.id} onClick={()=>setFiltreCat(c.id)}
-                style={{ height:34, padding:'0 14px', borderRadius:10, fontSize:12, fontWeight:700, border:'none', flexShrink:0, cursor:'pointer', whiteSpace:'nowrap',
-                  background: filtreCat === c.id ? '#111' : '#f5f5f5',
-                  color: filtreCat === c.id ? '#fff' : '#666' }}>
-                {c.nom}
-              </button>
-            ))}
+            {[{ id:'toutes', nom:'Toutes' }, ...parCategorie].map(c => {
+              // Sur « Toutes », la catégorie en cours de lecture s'allume
+              const enLecture = filtreCat === 'toutes' && c.id !== 'toutes' && catVisible === c.id;
+              const actif = filtreCat === c.id || enLecture;
+              return (
+                <button key={c.id} ref={el => { pastillesRef.current[c.id] = el; }} onClick={()=>setFiltreCat(c.id)}
+                  style={{ height:34, padding:'0 14px', borderRadius:10, fontSize:12, fontWeight:700, border:'none', flexShrink:0, cursor:'pointer', whiteSpace:'nowrap',
+                    background: actif ? '#111' : '#f5f5f5',
+                    color: actif ? '#fff' : '#666', transition:'background 0.18s, color 0.18s' }}>
+                  {c.nom}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Grille de produits */}
-        <div style={{ padding:'4px 16px 16px', overflowY:'auto', flex:1, minHeight:0 }}>
+        <div ref={zoneRef} onScroll={()=>majCatVisible()} style={{ padding:'4px 16px 16px', overflowY:'auto', flex:1, minHeight:0 }}>
           {categoriesAffichees.length === 0 ? (
             <p style={{ margin:0, padding:'60px 20px', textAlign:'center', fontSize:15, color:'#bbb' }}>
               {recherche.trim() ? `Aucun article ne correspond à « ${recherche.trim()} »` : 'Aucun produit disponible dans la carte.'}
             </p>
           ) : categoriesAffichees.map(c => (
-            <div key={c.id} style={{ marginBottom:14 }}>
+            <div key={c.id} data-cat={c.id} style={{ marginBottom:14 }}>
               <p style={{ margin:'8px 0 8px', fontSize:11, fontWeight:800, color:'#888', textTransform:'uppercase', letterSpacing:0.8 }}>{c.nom}</p>
               <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(250px, 1fr))', gap:9 }}>
                 {c.produits.map(p => {
