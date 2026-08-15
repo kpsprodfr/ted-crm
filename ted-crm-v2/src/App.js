@@ -4310,7 +4310,15 @@ function ParametresCommandesModal({ autoAccept, delaiDefaut, commandesActives, m
                   </div>
                 )}
               </div>
-              <MenuToggle value={commandesActives} colorOn="#16a34a" onChange={()=>commandesActives ? fermerPrise(motif) : rouvrirPrise()} />
+              {commandesActives ? (
+                <button onClick={()=>fermerPrise(motif)} style={{ flexShrink:0, height:40, padding:'0 16px', borderRadius:11, border:'1.5px solid #fca5a5', background:'#fff', color:'#b91c1c', fontSize:13, fontWeight:800, cursor:'pointer', whiteSpace:'nowrap' }}>
+                  Désactiver temporairement
+                </button>
+              ) : (
+                <button onClick={rouvrirPrise} style={{ flexShrink:0, height:40, padding:'0 16px', borderRadius:11, border:'none', background:'#16a34a', color:'#fff', fontSize:13, fontWeight:800, cursor:'pointer', whiteSpace:'nowrap' }}>
+                  Réactiver
+                </button>
+              )}
             </div>
 
             {!commandesActives && (
@@ -4342,7 +4350,15 @@ function ParametresCommandesModal({ autoAccept, delaiDefaut, commandesActives, m
                     : 'Chaque commande doit être acceptée à la main dans « Commandes à traiter ».'}
                 </div>
               </div>
-              <MenuToggle value={autoAccept} colorOn="#16a34a" onChange={()=>onMaj('acceptation_auto', autoAccept ? 'false' : 'true')} />
+              {autoAccept ? (
+                <button onClick={()=>onMaj('acceptation_auto', 'false')} style={{ flexShrink:0, height:40, padding:'0 16px', borderRadius:11, border:'1.5px solid #fca5a5', background:'#fff', color:'#b91c1c', fontSize:13, fontWeight:800, cursor:'pointer', whiteSpace:'nowrap' }}>
+                  Désactiver temporairement
+                </button>
+              ) : (
+                <button onClick={()=>onMaj('acceptation_auto', 'true')} style={{ flexShrink:0, height:40, padding:'0 16px', borderRadius:11, border:'none', background:'#16a34a', color:'#fff', fontSize:13, fontWeight:800, cursor:'pointer', whiteSpace:'nowrap' }}>
+                  Réactiver
+                </button>
+              )}
             </div>
 
             {autoAccept && (<>
