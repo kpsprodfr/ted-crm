@@ -4273,6 +4273,31 @@ function ParametresCommandesModal({ autoAccept, delaiDefaut, commandesActives, m
   const [motif, setMotif] = useState(motifFermeture || '');
   const d = parseInt(delaiDefaut) || 30;
 
+  // Désactiver n'est jamais immédiat : on annonce d'abord ce que ça implique
+  const [confirmDesactiver, setConfirmDesactiver] = useState(null);
+  const CONSEQUENCES = {
+    commande: {
+      titre: 'Désactiver la commande en ligne ?',
+      points: [
+        'Les clients ne pourront plus passer commande depuis le lien public.',
+        'La page de commande affichera le motif que vous choisissez ci-dessous.',
+        'Les commandes déjà reçues ne sont pas touchées.',
+        'La commande en ligne se réactivera d\'elle-même demain.',
+      ],
+      action: () => fermerPrise(motif),
+    },
+    auto: {
+      titre: 'Désactiver l\'acceptation automatique ?',
+      points: [
+        'Chaque nouvelle commande devra être acceptée à la main.',
+        'Elle attendra dans « Nouvelles commandes à traiter », sans être préparée.',
+        'Le client ne recevra aucun délai tant que vous n\'avez pas accepté.',
+        'L\'acceptation automatique reviendra d\'elle-même demain.',
+      ],
+      action: () => onMaj('acceptation_auto', 'false'),
+    },
+  };
+
   function fermerPrise(m) {
     onMaj('motif_fermeture', m || '');
     onMaj('commandes_actives', 'false');
@@ -4311,7 +4336,7 @@ function ParametresCommandesModal({ autoAccept, delaiDefaut, commandesActives, m
                 )}
               </div>
               {commandesActives ? (
-                <button onClick={()=>fermerPrise(motif)} style={{ flexShrink:0, height:40, padding:'0 16px', borderRadius:11, border:'1.5px solid #fca5a5', background:'#fff', color:'#b91c1c', fontSize:13, fontWeight:800, cursor:'pointer', whiteSpace:'nowrap' }}>
+                <button onClick={()=>setConfirmDesactiver('commande')} style={{ flexShrink:0, height:40, padding:'0 16px', borderRadius:11, border:'1.5px solid #fca5a5', background:'#fff', color:'#b91c1c', fontSize:13, fontWeight:800, cursor:'pointer', whiteSpace:'nowrap' }}>
                   Désactiver temporairement
                 </button>
               ) : (
@@ -4321,17 +4346,12 @@ function ParametresCommandesModal({ autoAccept, delaiDefaut, commandesActives, m
               )}
             </div>
 
-            {!commandesActives && (
-              <div style={{ background:'#fef2f2', border:'1.5px solid #fecaca', borderRadius:12, padding:'12px 14px' }}>
-                <label style={{ fontSize:11, fontWeight:700, color:'#b91c1c', textTransform:'uppercase', letterSpacing:0.5, display:'block', marginBottom:8 }}>Motif affiché au client</label>
-                <div style={{ display:'flex', flexDirection:'column', gap:7, marginBottom:10 }}>
-                  {MOTIFS_FERMETURE.map(m => (
-                    <button key={m} onClick={()=>{ setMotif(m); onMaj('motif_fermeture', m); }} style={{ width:'100%', minHeight:44, padding:'0 14px', borderRadius:10, border: motif===m ? '2px solid #dc2626' : '1.5px solid #eee', background: motif===m ? '#fff' : '#fff', color: motif===m ? '#b91c1c' : '#333', fontSize:14, fontWeight:700, cursor:'pointer', textAlign:'left' }}>
-                      {m}
-                    </button>
-                  ))}
-                </div>
-                <input value={motif} onChange={e=>setMotif(e.target.value.slice(0, 120))} onBlur={()=>onMaj('motif_fermeture', motif)} placeholder="Autre motif…" style={{ width:'100%', height:44, border:'1.5px solid #ddd', borderRadius:10, padding:'0 12px', fontSize:14, outline:'none', boxSizing:'border-box' }} />
+            {!commandesActives && motif && (
+              <div style={{ background:'#fef2f2', border:'1.5px solid #fecaca', borderRadius:12, padding:'10px 14px', display:'flex', alignItems:'center', gap:9 }}>
+                <AlertCircle size={15} strokeWidth={2} color="#b91c1c" />
+                <span style={{ fontSize:13, color:'#b91c1c' }}>
+                  Motif affiché au client : <strong>{motif}</strong>
+                </span>
               </div>
             )}
           </div>
@@ -4351,7 +4371,7 @@ function ParametresCommandesModal({ autoAccept, delaiDefaut, commandesActives, m
                 </div>
               </div>
               {autoAccept ? (
-                <button onClick={()=>onMaj('acceptation_auto', 'false')} style={{ flexShrink:0, height:40, padding:'0 16px', borderRadius:11, border:'1.5px solid #fca5a5', background:'#fff', color:'#b91c1c', fontSize:13, fontWeight:800, cursor:'pointer', whiteSpace:'nowrap' }}>
+                <button onClick={()=>setConfirmDesactiver('auto')} style={{ flexShrink:0, height:40, padding:'0 16px', borderRadius:11, border:'1.5px solid #fca5a5', background:'#fff', color:'#b91c1c', fontSize:13, fontWeight:800, cursor:'pointer', whiteSpace:'nowrap' }}>
                   Désactiver temporairement
                 </button>
               ) : (
@@ -4384,6 +4404,44 @@ function ParametresCommandesModal({ autoAccept, delaiDefaut, commandesActives, m
           <button onClick={onClose} style={{ ...btnPrimary, width:'100%', height:48 }}>Terminé</button>
         </div>
       </div>
+
+      {/* Confirmation : ce que la désactivation implique concrètement */}
+      {confirmDesactiver && (() => {
+        const c = CONSEQUENCES[confirmDesactiver];
+        return (
+          <>
+            <div onClick={()=>setConfirmDesactiver(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:5300 }} />
+            <div style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:18, width:'min(460px, calc(100vw - 32px))', padding:'24px 26px', boxShadow:'0 32px 80px rgba(0,0,0,0.3)', zIndex:5301 }}>
+              <h3 style={{ margin:'0 0 12px', fontSize:17, fontWeight:800, color:'#111' }}>{c.titre}</h3>
+              <ul style={{ margin:'0 0 18px', padding:'0 0 0 18px', fontSize:13.5, color:'#555', lineHeight:1.65 }}>
+                {c.points.map((p, i) => <li key={i}>{p}</li>)}
+              </ul>
+
+              {/* Commande en ligne : le motif vaut confirmation, un clic suffit */}
+              {confirmDesactiver === 'commande' && (
+                <>
+                  <p style={{ margin:'0 0 8px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Motif affiché au client</p>
+                  <div style={{ display:'flex', flexDirection:'column', gap:7, marginBottom:18 }}>
+                    {MOTIFS_FERMETURE.map(m => (
+                      <button key={m} onClick={()=>{ setMotif(m); fermerPrise(m); setConfirmDesactiver(null); }}
+                        style={{ height:46, borderRadius:11, border:'1.5px solid #eee', background:'#fff', color:'#111', fontSize:14, fontWeight:700, cursor:'pointer', textAlign:'left', padding:'0 14px' }}>
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              <div style={{ display:'flex', gap:10 }}>
+                <button onClick={()=>setConfirmDesactiver(null)} style={{ flex:1, height:48, border:'1.5px solid #ddd', borderRadius:12, background:'#fff', fontSize:14, fontWeight:700, cursor:'pointer', color:'#666' }}>Annuler</button>
+                {confirmDesactiver !== 'commande' && (
+                  <button onClick={()=>{ c.action(); setConfirmDesactiver(null); }} style={{ flex:1, height:48, border:'none', borderRadius:12, background:'#dc2626', color:'#fff', fontSize:14, fontWeight:800, cursor:'pointer' }}>Désactiver</button>
+                )}
+              </div>
+            </div>
+          </>
+        );
+      })()}
     </>
   );
 }
