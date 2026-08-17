@@ -4349,7 +4349,11 @@ function ParametresCommandesModal({ delaiDefaut, commandesActives, motifFermetur
 
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'20px 24px 16px', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
           <h2 style={{ margin:0, fontSize:18, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:9 }}>
-            <Settings size={18} strokeWidth={2} /> Statut du jour
+            {/* Même pastille que le bouton de la page : verte au ralenti, rouge si fermé */}
+            <span className={commandesActives ? 'pastille-active' : 'pastille-fermee'}
+              style={{ width:11, height:11, borderRadius:'50%', flexShrink:0,
+                background: commandesActives ? '#16a34a' : '#dc2626' }} />
+            Statut du jour
           </h2>
           <button onClick={onClose} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666' }}>✕</button>
         </div>
