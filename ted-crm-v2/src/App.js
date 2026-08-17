@@ -916,7 +916,18 @@ const REGLAGES_DEFAUT = {
   lien_commande: 'https://ted-crm.pages.dev/commander.html',
   bascule_soir: 15,            // heure à partir de laquelle on est au service du soir
   fin_de_nuit: 6,              // heure à laquelle la journée de service bascule
-  jours_fermeture: [],         // 0 = dimanche … 6 = samedi
+  // Horaires d'ouverture par jour de semaine. Un service « ouvert: false » = fermé.
+  horaires_semaine: {
+    1:{ midi:{ouvert:true,debut:'12:00',fin:'14:30'}, soir:{ouvert:true,debut:'19:00',fin:'23:30'} },
+    2:{ midi:{ouvert:true,debut:'12:00',fin:'14:30'}, soir:{ouvert:true,debut:'19:00',fin:'23:30'} },
+    3:{ midi:{ouvert:true,debut:'12:00',fin:'14:30'}, soir:{ouvert:true,debut:'19:00',fin:'23:30'} },
+    4:{ midi:{ouvert:true,debut:'12:00',fin:'14:30'}, soir:{ouvert:true,debut:'19:00',fin:'23:30'} },
+    5:{ midi:{ouvert:true,debut:'12:00',fin:'14:30'}, soir:{ouvert:true,debut:'19:00',fin:'23:30'} },
+    6:{ midi:{ouvert:true,debut:'12:00',fin:'14:30'}, soir:{ouvert:true,debut:'19:00',fin:'23:30'} },
+    0:{ midi:{ouvert:false,debut:'12:00',fin:'14:30'}, soir:{ouvert:false,debut:'19:00',fin:'23:30'} },
+  },
+  // Dates qui font exception à la semaine type : fermeture ou horaires particuliers.
+  fermetures: [],
   capacite_midi: 0,            // 0 = pas de limite
   capacite_soir: 0,
   heures_resa_midi: ["12:00","12:15","12:30","12:45","13:00","13:15","13:30"],
@@ -928,14 +939,14 @@ const REGLAGES_DEFAUT = {
 // Objet vivant, lu au rendu par toute l'application.
 const REGLAGES = { ...REGLAGES_DEFAUT };
 
-const REGLAGES_LISTES = ['jours_fermeture','heures_resa_midi','heures_resa_soir','creneaux_retrait_midi','creneaux_retrait_soir'];
+const REGLAGES_JSON = ['fermetures','horaires_semaine','heures_resa_midi','heures_resa_soir','creneaux_retrait_midi','creneaux_retrait_soir'];
 const REGLAGES_NOMBRES = ['bascule_soir','fin_de_nuit','capacite_midi','capacite_soir'];
 
 // Applique une ligne de configuration à l'objet vivant.
 function appliquerReglage(cle, valeur) {
   if (!(cle in REGLAGES_DEFAUT)) return;
-  if (REGLAGES_LISTES.includes(cle)) {
-    try { const v = JSON.parse(valeur); if (Array.isArray(v)) REGLAGES[cle] = v; } catch { /* valeur illisible : on garde le repli */ }
+  if (REGLAGES_JSON.includes(cle)) {
+    try { const v = JSON.parse(valeur); if (v && typeof v === 'object') REGLAGES[cle] = v; } catch { /* valeur illisible : on garde le repli */ }
   } else if (REGLAGES_NOMBRES.includes(cle)) {
     const n = parseInt(valeur, 10);
     if (!Number.isNaN(n)) REGLAGES[cle] = n;
@@ -8193,6 +8204,31 @@ const PARAM_SECTIONS = [
   { id:'donnees',       label:'Données',         icone:History },
 ];
 
+// Un service, sur une ligne : ouvert ou fermé, et ses deux bornes horaires.
+function LigneService({ label, valeur, onChange }) {
+  const v = valeur || { ouvert:false, debut:'12:00', fin:'14:30' };
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+      <button onClick={()=>onChange({ ...v, ouvert: !v.ouvert })}
+        style={{ minWidth:92, height:38, borderRadius:10, cursor:'pointer', fontSize:12.5, fontWeight:800, flexShrink:0,
+          border: v.ouvert ? 'none' : '1.5px solid #e0e0e0',
+          background: v.ouvert ? '#16a34a' : '#fff',
+          color: v.ouvert ? '#fff' : '#999' }}>
+        {label} · {v.ouvert ? 'ouvert' : 'fermé'}
+      </button>
+      {v.ouvert && (
+        <>
+          <input type="time" value={v.debut} onChange={e=>onChange({ ...v, debut: e.target.value })}
+            style={{ width:112, height:38, border:'1.5px solid #e0e0e0', borderRadius:10, padding:'0 10px', fontSize:13.5, outline:'none', boxSizing:'border-box' }} />
+          <span style={{ fontSize:13, color:'#bbb', fontWeight:700 }}>→</span>
+          <input type="time" value={v.fin} onChange={e=>onChange({ ...v, fin: e.target.value })}
+            style={{ width:112, height:38, border:'1.5px solid #e0e0e0', borderRadius:10, padding:'0 10px', fontSize:13.5, outline:'none', boxSizing:'border-box' }} />
+        </>
+      )}
+    </div>
+  );
+}
+
 // Un créneau horaire se saisit à la minute près, mais se lit en grille.
 function GrilleCreneaux({ valeurs, onChange }) {
   const [ajout, setAjout] = useState('');
@@ -8250,7 +8286,7 @@ function ParametresPage({ showToast, user }) {
   const lire = (cle) => {
     if (brouillon[cle] !== undefined) return brouillon[cle];
     if (conf && conf[cle] !== undefined) {
-      if (REGLAGES_LISTES.includes(cle)) { try { const v = JSON.parse(conf[cle]); if (Array.isArray(v)) return v; } catch { /* repli */ } }
+      if (REGLAGES_JSON.includes(cle)) { try { const v = JSON.parse(conf[cle]); if (v && typeof v === 'object') return v; } catch { /* repli */ } }
       else if (REGLAGES_NOMBRES.includes(cle)) { const n = parseInt(conf[cle], 10); if (!Number.isNaN(n)) return n; }
       else return conf[cle];
     }
@@ -8321,7 +8357,29 @@ function ParametresPage({ showToast, user }) {
     </div>
   );
 
-  const joursFermes = lire('jours_fermeture') || [];
+  const semaine = lire('horaires_semaine') || {};
+  const fermetures = lire('fermetures') || [];
+
+  const majJour = (jourId, service, valeur) =>
+    enregistrer('horaires_semaine', { ...semaine, [jourId]: { ...(semaine[jourId] || {}), [service]: valeur } });
+
+  const ajouterFermeture = () => enregistrer('fermetures', [...fermetures, {
+    date: dateLocale(), motif: '',
+    midi: { ouvert:false, debut:'12:00', fin:'14:30' },
+    soir: { ouvert:false, debut:'19:00', fin:'23:30' },
+  }]);
+  const majFermeture = (i, champs) =>
+    enregistrer('fermetures', fermetures.map((f, k) => k === i ? { ...f, ...champs } : f));
+
+  // Phrase de contrôle : ce que la date donnera concrètement.
+  const resumeFermeture = (f) => {
+    const p = [];
+    if (f.midi?.ouvert) p.push(`midi ${f.midi.debut}–${f.midi.fin}`);
+    if (f.soir?.ouvert) p.push(`soir ${f.soir.debut}–${f.soir.fin}`);
+    if (p.length === 0) return 'Fermé toute la journée.';
+    if (p.length === 2) return `Ouvert ${p.join(' et ')}.`;
+    return `Ouvert ${p[0]} seulement — fermé ${f.midi?.ouvert ? 'le soir' : 'le midi'}.`;
+  };
   const autoDefaut = conf ? conf.acceptation_auto_defaut !== 'false' : true;
   const delai = conf ? (parseInt(conf.delai_minutes) || 30) : 30;
   const horizon = conf ? (parseInt(conf.horizon_jours) || 15) : 15;
@@ -8338,26 +8396,20 @@ function ParametresPage({ showToast, user }) {
           </div>
           <Champ cle="site" label="Site internet" placeholder="https://leted.fr" />
         </Bloc>
-        <Bloc titre="Jours de fermeture" aide="Les jours cochés sont ceux où l'établissement est fermé toute la journée.">
-          <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-            {JOURS_SEMAINE.map(j => {
-              const ferme = joursFermes.includes(j.id);
-              return (
-                <button key={j.id}
-                  onClick={()=>enregistrer('jours_fermeture', ferme ? joursFermes.filter(x => x !== j.id) : [...joursFermes, j.id].sort())}
-                  style={{ minWidth:78, height:46, borderRadius:11, cursor:'pointer', fontSize:13.5, fontWeight:800,
-                    border: ferme ? 'none' : '1.5px solid #e0e0e0',
-                    background: ferme ? '#dc2626' : '#fff',
-                    color: ferme ? '#fff' : '#666' }}>
-                  {j.court}
-                </button>
-              );
-            })}
+        <Bloc titre="Repères de service" aide="Deux heures charnières qui partagent toute l'application : celle qui fait basculer du midi au soir, et celle où la journée de service se termine enfin.">
+          <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:16 }}>
+            <div>
+              <p style={{ margin:'0 0 8px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Bascule midi / soir</p>
+              <Compteur cle="bascule_soir" min={11} max={20} format={h => `${h} h`} />
+            </div>
+            <div>
+              <p style={{ margin:'0 0 8px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Fin de nuit</p>
+              <Compteur cle="fin_de_nuit" min={0} max={11} format={h => `${h} h du matin`} />
+            </div>
           </div>
-          <p style={{ margin:'12px 0 0', fontSize:12.5, color:'#999' }}>
-            {joursFermes.length === 0
-              ? 'Ouvert tous les jours.'
-              : `Fermé le ${joursFermes.map(id => JOURS_SEMAINE.find(j => j.id === id)?.long.toLowerCase()).join(', ')}.`}
+          <p style={{ margin:'14px 0 0', fontSize:12.5, color:'#999', lineHeight:1.6 }}>
+            Le service du soir déborde après minuit : jusqu'à la fin de nuit, on travaille
+            encore la journée de la veille. Une commande en préparation à 23 h 59 est toujours là à 2 h.
           </p>
         </Bloc>
       </>
@@ -8365,29 +8417,71 @@ function ParametresPage({ showToast, user }) {
 
     horaires: (
       <>
-        <Bloc titre="Bascule midi / soir" aide="Heure à partir de laquelle une commande ou une réservation relève du service du soir. Ce repère partage toute l'application.">
-          <Compteur cle="bascule_soir" min={11} max={20} format={h => `${h} h`} />
+        <Bloc titre="Semaine type" aide="Les horaires habituels de l'établissement. Un service fermé ne propose aucun créneau.">
+          <div style={{ display:'flex', flexDirection:'column' }}>
+            {JOURS_SEMAINE.map((j, i) => {
+              const jour = semaine[j.id] || {};
+              return (
+                <div key={j.id} style={{ display:'flex', alignItems:'flex-start', gap:14, padding:'12px 0', borderBottom: i < JOURS_SEMAINE.length - 1 ? '1px solid #f5f5f5' : 'none', flexWrap:'wrap' }}>
+                  <span style={{ width:86, flexShrink:0, fontSize:13.5, fontWeight:800, color:'#111', paddingTop:9 }}>{j.long}</span>
+                  <div style={{ display:'flex', flexDirection:'column', gap:8, flex:1, minWidth:0 }}>
+                    <LigneService label="Midi" valeur={jour.midi} onChange={v=>majJour(j.id, 'midi', v)} />
+                    <LigneService label="Soir" valeur={jour.soir} onChange={v=>majJour(j.id, 'soir', v)} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </Bloc>
-        <Bloc titre="Fin de nuit" aide="Le service du soir déborde après minuit. Jusqu'à cette heure, on travaille encore la journée de la veille : une commande en préparation à 23 h 59 est toujours là à 2 h.">
-          <Compteur cle="fin_de_nuit" min={0} max={11} format={h => `${h} h du matin`} />
-        </Bloc>
-        <Bloc titre="Créneaux de réservation — Midi" aide="Heures proposées au client sur le formulaire de réservation.">
-          <GrilleCreneaux valeurs={lire('heures_resa_midi')} onChange={v=>enregistrer('heures_resa_midi', v)} />
-        </Bloc>
-        <Bloc titre="Créneaux de réservation — Soir">
-          <GrilleCreneaux valeurs={lire('heures_resa_soir')} onChange={v=>enregistrer('heures_resa_soir', v)} />
-        </Bloc>
-        <Bloc titre="Créneaux de retrait — Midi" aide="Heures proposées pour venir chercher une commande.">
-          <GrilleCreneaux valeurs={lire('creneaux_retrait_midi')} onChange={v=>enregistrer('creneaux_retrait_midi', v)} />
-        </Bloc>
-        <Bloc titre="Créneaux de retrait — Soir">
-          <GrilleCreneaux valeurs={lire('creneaux_retrait_soir')} onChange={v=>enregistrer('creneaux_retrait_soir', v)} />
+
+        <Bloc titre="Dates particulières" aide="Les jours qui ne suivent pas la semaine type : une fermeture exceptionnelle, ou des horaires différents. Vous pouvez les poser des mois à l'avance.">
+          {fermetures.length === 0
+            ? <p style={{ margin:'0 0 14px', fontSize:13, color:'#bbb' }}>Aucune date particulière enregistrée.</p>
+            : (
+              <div style={{ display:'flex', flexDirection:'column', gap:12, marginBottom:16 }}>
+                {fermetures.map((f, i) => (
+                  <div key={i} style={{ border:'1.5px solid #eee', borderRadius:13, padding:'13px 15px' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:11, flexWrap:'wrap' }}>
+                      <input type="date" value={f.date || ''} onChange={e=>majFermeture(i, { date: e.target.value })}
+                        style={{ height:38, border:'1.5px solid #e0e0e0', borderRadius:10, padding:'0 10px', fontSize:13.5, outline:'none', boxSizing:'border-box' }} />
+                      <input value={f.motif || ''} onChange={e=>majFermeture(i, { motif: e.target.value })} placeholder="Motif (facultatif)"
+                        style={{ flex:1, minWidth:150, height:38, border:'1.5px solid #e0e0e0', borderRadius:10, padding:'0 12px', fontSize:13.5, outline:'none', boxSizing:'border-box' }} />
+                      <button onClick={()=>enregistrer('fermetures', fermetures.filter((_, k) => k !== i))}
+                        style={{ height:38, padding:'0 13px', borderRadius:10, border:'1.5px solid #fca5a5', background:'#fff', color:'#b91c1c', fontSize:12.5, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+                        <Trash2 size={14} strokeWidth={2} /> Retirer
+                      </button>
+                    </div>
+                    <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                      <LigneService label="Midi" valeur={f.midi} onChange={v=>majFermeture(i, { midi: v })} />
+                      <LigneService label="Soir" valeur={f.soir} onChange={v=>majFermeture(i, { soir: v })} />
+                    </div>
+                    <p style={{ margin:'10px 0 0', fontSize:12, color:'#999' }}>{resumeFermeture(f)}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          <button onClick={ajouterFermeture}
+            style={{ height:44, padding:'0 18px', borderRadius:11, border:'1.5px dashed #ddd', background:'transparent', color:'#666', fontSize:13.5, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:8 }}>
+            <Plus size={16} strokeWidth={2.2} /> Ajouter une date
+          </button>
         </Bloc>
       </>
     ),
 
     reservations: (
       <>
+        <Bloc titre="Créneaux de réservation" aide="Heures proposées au client sur le formulaire de réservation. Tapez une heure puis « Ajouter ».">
+          <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:26 }}>
+            <div>
+              <p style={{ margin:'0 0 10px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Midi</p>
+              <GrilleCreneaux valeurs={lire('heures_resa_midi')} onChange={v=>enregistrer('heures_resa_midi', v)} />
+            </div>
+            <div>
+              <p style={{ margin:'0 0 10px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Soir</p>
+              <GrilleCreneaux valeurs={lire('heures_resa_soir')} onChange={v=>enregistrer('heures_resa_soir', v)} />
+            </div>
+          </div>
+        </Bloc>
         <Bloc titre="Capacité du service" aide="Nombre de couverts au-delà duquel le service est considéré comme complet. Laisser à 0 pour ne poser aucune limite.">
           <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:16 }}>
             <div>
@@ -8432,24 +8526,47 @@ function ParametresPage({ showToast, user }) {
         <Bloc titre="Commande à l'avance" aide="Nombre de jours pendant lesquels un client peut réserver un retrait à partir d'aujourd'hui.">
           <Compteur cle="horizon_jours" min={1} max={90} format={v => `${v} jour${v > 1 ? 's' : ''}`} />
         </Bloc>
+        <Bloc titre="Créneaux de retrait" aide="Heures proposées pour venir chercher une commande. Tapez une heure puis « Ajouter ».">
+          <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:26 }}>
+            <div>
+              <p style={{ margin:'0 0 10px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Midi</p>
+              <GrilleCreneaux valeurs={lire('creneaux_retrait_midi')} onChange={v=>enregistrer('creneaux_retrait_midi', v)} />
+            </div>
+            <div>
+              <p style={{ margin:'0 0 10px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Soir</p>
+              <GrilleCreneaux valeurs={lire('creneaux_retrait_soir')} onChange={v=>enregistrer('creneaux_retrait_soir', v)} />
+            </div>
+          </div>
+        </Bloc>
       </>
     ),
 
     liens: (
       <>
-        <Bloc titre="Pages publiques" aide="Les adresses que vous partagez à vos clients. Elles servent aussi aux boutons « Lien client » des pages Réservations et Click and Collect.">
-          <Champ cle="lien_reservation" label="Formulaire de réservation" placeholder="https://…/reserver.html" />
-          <Champ cle="lien_commande" label="Page de commande" placeholder="https://…/commander.html" />
-          <div style={{ marginTop:6 }}>
-            <LigneLien titre="Réservation" url={lire('lien_reservation')} />
-            <LigneLien titre="Commande" url={lire('lien_commande')} />
-            <LigneLien titre="Site internet" url={lire('site')} />
-          </div>
+        <Bloc titre="Pages publiques" aide="Les adresses que vous partagez à vos clients. Elles alimentent les boutons « Lien client » des pages Réservations et Click and Collect.">
+          <LigneLien titre="Formulaire de réservation" url={lire('lien_reservation')} />
+          <LigneLien titre="Page de commande" url={lire('lien_commande')} />
+          <LigneLien titre="Site internet" url={lire('site')} />
         </Bloc>
-        <Bloc titre="QR code" aide="À imprimer sur les tables ou la vitrine. Il pointe vers le formulaire de réservation.">
-          <img alt="QR code du formulaire de réservation"
-            src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(lire('lien_reservation') || '')}`}
-            style={{ width:180, height:180, borderRadius:12, border:'1.5px solid #eee', background:'#fff' }} />
+        <Bloc titre="QR codes" aide="À imprimer sur les tables, la vitrine ou les flyers. Chaque code mène à sa propre page.">
+          <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:20 }}>
+            {[
+              { titre:'Réservation', url: lire('lien_reservation'), fichier:'qr-reservation.png' },
+              { titre:'Commande',    url: lire('lien_commande'),    fichier:'qr-commande.png' },
+            ].map(q => (
+              <div key={q.titre} style={{ border:'1.5px solid #eee', borderRadius:14, padding:'16px', textAlign:'center' }}>
+                <p style={{ margin:'0 0 12px', fontSize:13.5, fontWeight:800, color:'#111' }}>{q.titre}</p>
+                <img alt={`QR code — ${q.titre}`}
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(q.url || '')}`}
+                  style={{ width:180, height:180, borderRadius:12, background:'#fff' }} />
+                <a href={`https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(q.url || '')}`}
+                  download={q.fichier} target="_blank" rel="noreferrer"
+                  style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:7, height:40, marginTop:12, borderRadius:10, background:'#111', color:'#fff', fontSize:13, fontWeight:700, textDecoration:'none' }}>
+                  <Download size={15} strokeWidth={2} /> Télécharger
+                </a>
+              </div>
+            ))}
+          </div>
         </Bloc>
       </>
     ),
@@ -9413,7 +9530,7 @@ function CRMApp({ user, onLogout }) {
   if (!isMobile && activeView === 'parametres') return (
     <>
       {sidebarDesktop}
-      <div style={{ marginLeft:120, minHeight:'100vh', background:'#f5f5f5', overflowY:'auto', boxSizing:'border-box' }}>
+      <div style={{ marginLeft:120, height:'100vh', background:'#f5f5f5', overflowY:'auto', boxSizing:'border-box' }}>
         <ParametresPage showToast={showToast} user={user} />
       </div>
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}

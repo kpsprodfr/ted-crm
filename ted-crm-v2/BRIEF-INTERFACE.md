@@ -290,6 +290,21 @@ par opposition au « Statut du jour » du Click and Collect qui ne vaut qu'une j
 Huit sections en sommaire à gauche : Établissement, Horaires, Réservations,
 Click and Collect, Liens publics, Notifications, Sécurité, Données.
 
+Répartition à respecter :
+
+- **Établissement** : identité + les deux repères de service (bascule midi/soir, fin de nuit).
+- **Horaires** : *uniquement* la semaine type (7 jours × 2 services, ouvert/fermé + bornes)
+  et les **dates particulières** — une date, un motif, et chaque service ouvert ou fermé
+  avec ses horaires. Une phrase de contrôle résume ce que la date donnera.
+- **Réservations** : créneaux midi et soir dans un seul bloc, puis les capacités.
+- **Click and Collect** : acceptation auto, délai, horizon, puis créneaux de retrait
+  midi et soir dans un seul bloc.
+- **Liens publics** : les adresses sont **en consultation seule** (copier / ouvrir),
+  et **un QR code par usage** — réservation et commande — téléchargeables en 600 px.
+
+Le conteneur de la vue utilise `height:'100vh'` et non `minHeight` : avec `minHeight`
++ `overflowY:auto`, c'est le `body` qui défile et la page laisse apparaître du gris.
+
 Tout passe par un objet unique :
 
 ```js
