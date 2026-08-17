@@ -932,16 +932,19 @@ const REGLAGES_DEFAUT = {
   fermetures: [],
   capacite_midi: 0,            // 0 = pas de limite
   capacite_soir: 0,
-  plage_resa_midi: { debut:'12:00', fin:'13:30', pas:15 },
-  plage_resa_soir: { debut:'19:00', fin:'21:30', pas:15 },
-  creneaux_retrait_midi: ['11:30','11:45','12:00','12:15','12:30','12:45','13:00','13:15','13:30','13:45','14:00','14:15'],
-  creneaux_retrait_soir: ['18:00','18:30','19:00','19:15','19:30','19:45','20:00','20:15','20:30','20:45','21:00','21:30'],
+  // mode 'ouverture' : les créneaux suivent les horaires du jour, et s'arrêtent
+  // `avantFermeture` minutes avant la fin du service.
+  // mode 'perso'      : une plage fixe, indépendante de l'ouverture.
+  plage_resa_midi:    { mode:'ouverture', debut:'12:00', fin:'13:30', pas:15, avantFermeture:60 },
+  plage_resa_soir:    { mode:'ouverture', debut:'19:00', fin:'21:30', pas:15, avantFermeture:60 },
+  plage_retrait_midi: { mode:'ouverture', debut:'11:30', fin:'14:15', pas:15, avantFermeture:15 },
+  plage_retrait_soir: { mode:'ouverture', debut:'18:00', fin:'21:30', pas:15, avantFermeture:15 },
 };
 
 // Objet vivant, lu au rendu par toute l'application.
 const REGLAGES = { ...REGLAGES_DEFAUT };
 
-const REGLAGES_JSON = ['applications_actives','fermetures','horaires_semaine','plage_resa_midi','plage_resa_soir','creneaux_retrait_midi','creneaux_retrait_soir'];
+const REGLAGES_JSON = ['applications_actives','fermetures','horaires_semaine','plage_resa_midi','plage_resa_soir','plage_retrait_midi','plage_retrait_soir'];
 const REGLAGES_NOMBRES = ['bascule_soir','fin_de_nuit','capacite_midi','capacite_soir'];
 
 // Applique une ligne de configuration à l'objet vivant.
@@ -1046,8 +1049,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
     }
   }, [showCalPicker]);
 
-  const plage = service === 'midi' ? REGLAGES.plage_resa_midi : REGLAGES.plage_resa_soir;
-  const heures = creneauxEntre(plage.debut, plage.fin, plage.pas);
+  const heures = creneauxService('plage_resa', service, dateIso);
 
   // Recherche automatique dès 10 chiffres
   async function handleTelChange(val) {
@@ -5655,12 +5657,12 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut, 
     );
   })();
 
-  const creneaux = svcRetrait === 'midi' ? REGLAGES.creneaux_retrait_midi : REGLAGES.creneaux_retrait_soir;
+  const creneaux = creneauxService('plage_retrait', svcRetrait, dateRetrait);
 
   // Cinq propositions : les prochains créneaux du jour, sinon le début du service.
   // L'heure déjà choisie reste toujours visible, même hors des cinq.
   const creneauxProposes = (() => {
-    const tous = [...REGLAGES.creneaux_retrait_midi, ...REGLAGES.creneaux_retrait_soir];
+    const tous = [...creneauxService('plage_retrait', 'midi', dateRetrait), ...creneauxService('plage_retrait', 'soir', dateRetrait)];
     let base;
     if (dateRetrait === dateLocale()) {
       const maintenant = new Date();
@@ -8250,37 +8252,97 @@ function creneauxEntre(debut, fin, pas) {
   return liste;
 }
 
-// Réglage d'un service : plage, rythme, et la liste qui en découle.
-function PlageCreneaux({ label, plage, onChange }) {
-  const p = plage || { debut:'12:00', fin:'13:30', pas:15 };
-  const apercu = creneauxEntre(p.debut, p.fin, p.pas);
+// Réglage d'un service : d'où viennent les créneaux, à quel rythme, et
+// jusqu'où avant la fermeture.
+const MARGES_FERMETURE = [0, 15, 30, 45, 60, 90];
+
+function PlageCreneaux({ label, plage, onChange, exemple }) {
+  const p = { mode:'ouverture', debut:'12:00', fin:'13:30', pas:15, avantFermeture:60, ...(plage || {}) };
+  const suitOuverture = p.mode !== 'perso';
+  const apercu = suitOuverture
+    ? creneauxEntre(exemple.debut, enHeure(Math.max(enMinutes(exemple.debut), enMinutes(exemple.fin) - (p.avantFermeture || 0))), p.pas)
+    : creneauxEntre(p.debut, p.fin, p.pas);
+
+  const bouton = (actif) => ({
+    height:42, borderRadius:10, cursor:'pointer', fontSize:12.5, fontWeight:800,
+    border: actif ? 'none' : '1.5px solid #e0e0e0',
+    background: actif ? '#E8C547' : '#fff',
+    color: actif ? '#111' : '#666',
+  });
+
   return (
     <div>
       <p style={{ margin:'0 0 10px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>{label}</p>
-      <div style={{ display:'flex', alignItems:'center', gap:9, marginBottom:12, flexWrap:'wrap' }}>
-        <span style={{ fontSize:13, color:'#888' }}>De</span>
-        <ChoixHeure valeur={p.debut} onChange={h=>onChange({ ...p, debut: h })} />
-        <span style={{ fontSize:13, color:'#888' }}>à</span>
-        <ChoixHeure valeur={p.fin} onChange={h=>onChange({ ...p, fin: h })} />
+
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:7, marginBottom:12 }}>
+        <button onClick={()=>onChange({ ...p, mode:'ouverture' })} style={bouton(suitOuverture)}>Suivre l'ouverture</button>
+        <button onClick={()=>onChange({ ...p, mode:'perso' })} style={bouton(!suitOuverture)}>Plage fixe</button>
       </div>
+
+      {suitOuverture ? (
+        <>
+          <p style={{ margin:'0 0 7px', fontSize:12, color:'#888' }}>Dernier créneau avant la fermeture</p>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:7, marginBottom:11 }}>
+            {MARGES_FERMETURE.map(m => (
+              <button key={m} onClick={()=>onChange({ ...p, avantFermeture:m })} style={bouton(p.avantFermeture === m)}>
+                {m === 0 ? "jusqu'au bout" : m === 60 ? '1 h avant' : m === 90 ? '1 h 30 avant' : `${m} min avant`}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div style={{ display:'flex', alignItems:'center', gap:9, marginBottom:12, flexWrap:'wrap' }}>
+          <span style={{ fontSize:13, color:'#888' }}>De</span>
+          <ChoixHeure valeur={p.debut} onChange={h=>onChange({ ...p, debut: h })} />
+          <span style={{ fontSize:13, color:'#888' }}>à</span>
+          <ChoixHeure valeur={p.fin} onChange={h=>onChange({ ...p, fin: h })} />
+        </div>
+      )}
+
+      <p style={{ margin:'0 0 7px', fontSize:12, color:'#888' }}>Un créneau toutes les</p>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:7, marginBottom:11 }}>
         {PAS_CRENEAUX.map(m => (
-          <button key={m} onClick={()=>onChange({ ...p, pas: m })}
-            style={{ height:42, borderRadius:10, cursor:'pointer', fontSize:13, fontWeight:800,
-              border: p.pas === m ? 'none' : '1.5px solid #e0e0e0',
-              background: p.pas === m ? '#111' : '#fff',
-              color: p.pas === m ? '#E8C547' : '#666' }}>
+          <button key={m} onClick={()=>onChange({ ...p, pas:m })} style={bouton(p.pas === m)}>
             {m === 60 ? '1 h' : `${m} min`}
           </button>
         ))}
       </div>
+
       <p style={{ margin:0, fontSize:12.5, color:'#999', lineHeight:1.6 }}>
         {apercu.length === 0
-          ? 'Plage invalide — la fin doit suivre le début.'
-          : <>Une réservation toutes les {p.pas === 60 ? 'heures' : `${p.pas} minutes`} — <strong style={{ color:'#555' }}>{apercu.length} créneau{apercu.length > 1 ? 'x' : ''}</strong> : {apercu.slice(0, 4).join(', ')}{apercu.length > 4 ? `… ${apercu[apercu.length - 1]}` : ''}</>}
+          ? 'Aucun créneau : la marge dépasse la durée du service.'
+          : <>{suitOuverture ? `Un jour ouvert de ${exemple.debut} à ${exemple.fin} : ` : ''}
+              <strong style={{ color:'#555' }}>{apercu.length} créneau{apercu.length > 1 ? 'x' : ''}</strong>
+              {' '}— {apercu.slice(0, 4).join(', ')}{apercu.length > 4 ? `… ${apercu[apercu.length - 1]}` : ''}</>}
       </p>
     </div>
   );
+}
+
+// Horaires d'un service pour une date : la date particulière l'emporte sur la
+// semaine type.
+function horairesDuJour(dateIso, service) {
+  const exception = (REGLAGES.fermetures || []).find(f => f.date === dateIso);
+  if (exception) return exception[service] || { ouvert:false };
+  const jour = new Date(dateIso + 'T12:00:00').getDay();
+  return (REGLAGES.horaires_semaine || {})[jour]?.[service] || { ouvert:false };
+}
+
+const enMinutes = (h) => { const [a, b] = String(h || '0:0').split(':').map(Number); return a * 60 + b; };
+const enHeure = (t) => `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
+
+// Créneaux réellement proposables : la plage réglée, moins le temps réservé
+// avant la fermeture.
+function creneauxService(cle, service, dateIso) {
+  const cfg = REGLAGES[`${cle}_${service}`] || {};
+  let debut = cfg.debut, fin = cfg.fin;
+  if (cfg.mode !== 'perso') {
+    const h = horairesDuJour(dateIso || dateLocale(), service);
+    if (!h.ouvert) return [];
+    debut = h.debut; fin = h.fin;
+  }
+  const dernier = enMinutes(fin) - (Number(cfg.avantFermeture) || 0);
+  return creneauxEntre(debut, enHeure(Math.max(enMinutes(debut), dernier)), cfg.pas || 15);
 }
 
 // Un créneau horaire se saisit à la minute près, mais se lit en grille.
@@ -8394,6 +8456,27 @@ const APPLICATIONS = [
   },
 ];
 const APPS_TOUJOURS_ACTIVES = ['reservations', 'clients'];
+
+// Interrupteur d'activation, en tête des réglages d'une application.
+function InterrupteurApp({ app, active, onBasculer }) {
+  const verrouillee = APPS_TOUJOURS_ACTIVES.includes(app.id);
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:11, flexShrink:0 }}>
+      <span style={{ fontSize:12.5, fontWeight:800, color: active ? '#15803d' : '#999' }}>
+        {active ? 'Activée' : 'Inactive'}
+      </span>
+      <button onClick={()=>{ if (!verrouillee) onBasculer(app); }}
+        aria-label={active ? "Désactiver l'application" : "Activer l'application"}
+        title={verrouillee ? 'Application essentielle — toujours active' : undefined}
+        style={{ position:'relative', width:56, height:31, borderRadius:16, border:'none', padding:0,
+          background: verrouillee ? '#e4e4e4' : (active ? '#16a34a' : '#d4d4d4'),
+          cursor: verrouillee ? 'not-allowed' : 'pointer', transition:'background 0.22s' }}>
+        <span style={{ position:'absolute', top:3, left: active ? 28 : 3, width:25, height:25, borderRadius:'50%',
+          background:'#fff', boxShadow:'0 1px 3px rgba(0,0,0,0.25)', transition:'left 0.22s cubic-bezier(0.4,0,0.2,1)' }} />
+      </button>
+    </div>
+  );
+}
 
 // Fiche détaillée d'une application, avec son bouton d'activation.
 function ModaleApplication({ app, active, onBasculer, onFermer }) {
@@ -8958,6 +9041,13 @@ function ParametresPage({ showToast, user }) {
 
   // ── Données dérivées ──
   const appsActives = lire('applications_actives') || [];
+
+  // Pour illustrer le réglage : le premier jour où le service est ouvert.
+  const exempleOuverture = (service) => {
+    const sem = lire('horaires_semaine') || {};
+    const trouve = JOURS_SEMAINE.map(j => sem[j.id]?.[service]).find(h => h?.ouvert);
+    return trouve || { debut:'12:00', fin: service === 'midi' ? '14:30' : '23:30' };
+  };
   const basculerApp = (app) => {
     if (APPS_TOUJOURS_ACTIVES.includes(app.id)) return;
     const active = appsActives.includes(app.id);
@@ -9145,8 +9235,8 @@ function ParametresPage({ showToast, user }) {
       <>
         <Bloc titre="Créneaux de réservation" aide="Donnez la plage de chaque service et le rythme des réservations : le CRM en déduit les heures proposées au client.">
           <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:28 }}>
-            <PlageCreneaux label="Midi" plage={lire('plage_resa_midi')} onChange={v=>enregistrer('plage_resa_midi', v)} />
-            <PlageCreneaux label="Soir" plage={lire('plage_resa_soir')} onChange={v=>enregistrer('plage_resa_soir', v)} />
+            <PlageCreneaux label="Midi" plage={lire('plage_resa_midi')} exemple={exempleOuverture('midi')} onChange={v=>enregistrer('plage_resa_midi', v)} />
+            <PlageCreneaux label="Soir" plage={lire('plage_resa_soir')} exemple={exempleOuverture('soir')} onChange={v=>enregistrer('plage_resa_soir', v)} />
           </div>
         </Bloc>
         <Bloc titre="Capacité du service" aide="Nombre de couverts au-delà duquel le service est considéré comme complet. Laisser à 0 pour ne poser aucune limite.">
@@ -9181,29 +9271,27 @@ function ParametresPage({ showToast, user }) {
             </button>
           </div>
         </Bloc>
-        <Bloc titre="Délai annoncé au client" aide="Temps de préparation communiqué quand une commande est acceptée automatiquement.">
+        <Bloc titre="Délai annoncé au client" aide="Temps de préparation communiqué quand une commande est acceptée automatiquement. 30 minutes par défaut.">
           <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8 }}>
             {DELAIS_RAPIDES.map(mn => (
               <button key={mn} onClick={()=>enregistrer('delai_minutes', mn)} disabled={!conf}
-                style={{ height:48, borderRadius:11, border: delai===mn ? '2px solid #16a34a' : '1.5px solid #ddd', background: delai===mn ? '#16a34a' : '#fff', color: delai===mn ? '#fff' : '#333', fontSize:14.5, fontWeight:800, cursor: conf ? 'pointer' : 'wait' }}>
+                style={{ height:48, borderRadius:11, border: delai===mn ? 'none' : '1.5px solid #ddd', background: delai===mn ? '#E8C547' : '#fff', color:'#111', fontSize:14.5, fontWeight:800, cursor: conf ? 'pointer' : 'wait' }}>
                 {fmtDelai(mn)}
               </button>
             ))}
           </div>
+          <p style={{ margin:'12px 0 0', fontSize:12.5, color:'#999', lineHeight:1.6 }}>
+            Modifiable chaque jour sans passer par ici : le bouton d'état en haut du
+            Click and Collect règle le délai de la journée en cours.
+          </p>
         </Bloc>
         <Bloc titre="Commande à l'avance" aide="Nombre de jours pendant lesquels un client peut réserver un retrait à partir d'aujourd'hui.">
           <Compteur cle="horizon_jours" min={1} max={90} format={v => `${v} jour${v > 1 ? 's' : ''}`} />
         </Bloc>
-        <Bloc titre="Créneaux de retrait" aide="Heures proposées pour venir chercher une commande. Tapez une heure puis « Ajouter ».">
-          <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:26 }}>
-            <div>
-              <p style={{ margin:'0 0 10px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Midi</p>
-              <GrilleCreneaux valeurs={lire('creneaux_retrait_midi')} onChange={v=>enregistrer('creneaux_retrait_midi', v)} />
-            </div>
-            <div>
-              <p style={{ margin:'0 0 10px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Soir</p>
-              <GrilleCreneaux valeurs={lire('creneaux_retrait_soir')} onChange={v=>enregistrer('creneaux_retrait_soir', v)} />
-            </div>
+        <Bloc titre="Créneaux de retrait" aide="Les heures auxquelles un client peut venir chercher sa commande, déduites des horaires d'ouverture.">
+          <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:28 }}>
+            <PlageCreneaux label="Midi" plage={lire('plage_retrait_midi')} exemple={exempleOuverture('midi')} onChange={v=>enregistrer('plage_retrait_midi', v)} />
+            <PlageCreneaux label="Soir" plage={lire('plage_retrait_soir')} exemple={exempleOuverture('soir')} onChange={v=>enregistrer('plage_retrait_soir', v)} />
           </div>
         </Bloc>
         <Bloc titre="Repères de service" aide="Deux heures charnières qui partagent toute l'application : celle qui fait basculer du midi au soir, et celle où la journée de service se termine enfin.">
@@ -9258,6 +9346,7 @@ function ParametresPage({ showToast, user }) {
   };
 
   const entree = PARAM_ENTREES.find(e => e.id === section) || PARAM_ENTREES[0];
+  const appCourante = entree.id.startsWith('mod-') ? APPLICATIONS.find(a => a.id === entree.id.slice(4)) : null;
 
   return (
     <div style={{ maxWidth:1180, margin:'0 auto', padding:'28px 32px 40px' }}>
@@ -9311,8 +9400,8 @@ function ParametresPage({ showToast, user }) {
                     return (
                       <button key={e.id} onClick={()=>setSection(e.id)}
                         style={{ display:'block', width:'100%', textAlign:'left', padding:'10px 14px', borderRadius:10, border:'none', cursor:'pointer',
-                          background: actif ? '#111' : 'transparent',
-                          color: actif ? '#E8C547' : '#555',
+                          background: actif ? '#E8C547' : 'transparent',
+                          color: actif ? '#111' : '#555',
                           fontSize:13.5, fontWeight: actif ? 800 : 600 }}>
                         {e.label}
                       </button>
@@ -9329,9 +9418,12 @@ function ParametresPage({ showToast, user }) {
             <p style={{ padding:'40px 0', textAlign:'center', color:'#bbb', fontSize:14 }}>Chargement des réglages…</p>
           ) : (
             <>
-              <div style={{ marginBottom:14 }}>
-                <h2 style={{ margin:0, fontSize:19, fontWeight:800, color:'#111' }}>{entree.label}</h2>
-                <p style={{ margin:'3px 0 0', fontSize:13, color:'#999' }}>{entree.aide}</p>
+              <div style={{ display:'flex', alignItems:'center', gap:16, marginBottom:14, flexWrap:'wrap' }}>
+                <div style={{ flex:1, minWidth:180 }}>
+                  <h2 style={{ margin:0, fontSize:19, fontWeight:800, color:'#111' }}>{entree.label}</h2>
+                  <p style={{ margin:'3px 0 0', fontSize:13, color:'#999' }}>{entree.aide}</p>
+                </div>
+                {appCourante && <InterrupteurApp app={appCourante} active={appsActives.includes(appCourante.id)} onBasculer={basculerApp} />}
               </div>
               {contenus[entree.id]}
             </>

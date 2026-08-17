@@ -309,12 +309,28 @@ Activer ajoute l'entrée au sommaire et bascule dessus ; désactiver la retire.
 La liste vit dans le réglage `applications_actives`.
 `APPS_TOUJOURS_ACTIVES` (Réservations, Fichier clients) ne peuvent pas être coupées.
 
-### Créneaux de réservation
+### Créneaux — réservation et retrait
 
-On ne saisit **pas** les créneaux un à un : on donne **la plage et le rythme**
-(`plage_resa_midi` / `plage_resa_soir` = `{debut, fin, pas}`, pas de 15/30/45/60 min)
-et `creneauxEntre()` en déduit la liste. Une phrase annonce le résultat
-(« toutes les 15 minutes — 7 créneaux : 12:00, 12:15… 13:30 »).
+On ne saisit **jamais** les créneaux un à un. Chaque service se règle par
+`{mode, debut, fin, pas, avantFermeture}` :
+
+- `mode: 'ouverture'` (défaut) — les créneaux **suivent les horaires du jour**
+  et s'arrêtent `avantFermeture` minutes avant la fin (0 / 15 / 30 / 45 / 60 / 90).
+- `mode: 'perso'` — une plage fixe, indépendante de l'ouverture.
+- `pas` : 15, 30, 45 ou 60 minutes.
+
+Clés : `plage_resa_midi|soir`, `plage_retrait_midi|soir`.
+`creneauxService(cle, service, dateIso)` fait le calcul et **tient compte des
+dates particulières**, qui l'emportent sur la semaine type. Une phrase annonce
+le résultat (« un jour ouvert de 12:00 à 14:30 : 10 créneaux — 12:00… 14:15 »).
+
+### Couleur des boutons de sélection
+
+Dans Paramètres, un élément sélectionné est **fond jaune `#E8C547`, texte noir**
+— jamais l'inverse. Vaut pour le sommaire, les rythmes de créneaux et les délais.
+
+Chaque application affiche en tête un **interrupteur** activée / inactive ;
+il est grisé pour les applications essentielles.
 
 Le titre de groupe est une étiquette grise en capitales avec son icône — il ne
 se clique pas. L'entrée active prend le fond noir et le jaune de marque, comme
