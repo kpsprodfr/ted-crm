@@ -3289,7 +3289,7 @@ function CommandesPage({ showToast, user }) {
             color: commandesActives ? '#15803d' : '#b91c1c', fontWeight:700 }}>
             <span className={commandesActives ? 'pastille-active' : 'pastille-fermee'}
               style={{ width:9, height:9, borderRadius:'50%', background: commandesActives ? '#16a34a' : '#dc2626', flexShrink:0 }} />
-            Statut
+            {commandesActives ? 'Actif' : 'Inactif'}
           </button>
           <button onClick={()=>setShowStats(true)} style={{ ...btnSecondary, height:38, display:'flex', alignItems:'center', gap:6 }}>
             <BarChart3 size={15} strokeWidth={2} /> Statistiques
