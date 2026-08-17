@@ -4397,22 +4397,32 @@ function ParametresCommandesModal({ delaiDefaut, commandesActives, motifFermetur
           <div>
             <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:4 }}>
               <label style={{ fontSize:13.5, fontWeight:800, color:'#111' }}>Délai d'acceptation automatique</label>
-              <button onClick={()=>setInfoAuto(v=>!v)} aria-label="À propos de l'acceptation automatique"
-                style={{ width:20, height:20, borderRadius:'50%', border:'none', padding:0, cursor:'pointer', flexShrink:0,
-                  background: infoAuto ? '#111' : '#f0f0f0', color: infoAuto ? '#fff' : '#888',
-                  display:'flex', alignItems:'center', justifyContent:'center' }}>
-                <Info size={13} strokeWidth={2.4} />
-              </button>
+              {/* Bulle accrochée au bouton : elle sort au-dessus du reste du formulaire */}
+              <span style={{ position:'relative', display:'inline-flex', flexShrink:0 }}>
+                <button onClick={()=>setInfoAuto(v=>!v)} aria-label="À propos de l'acceptation automatique"
+                  style={{ width:20, height:20, borderRadius:'50%', border:'none', padding:0, cursor:'pointer',
+                    background: infoAuto ? '#111' : '#f0f0f0', color: infoAuto ? '#fff' : '#888',
+                    display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <Info size={13} strokeWidth={2.4} />
+                </button>
+                {infoAuto && (
+                  <>
+                    <div onClick={()=>setInfoAuto(false)} style={{ position:'fixed', inset:0, zIndex:5210 }} />
+                    <div onClick={()=>setInfoAuto(false)}
+                      style={{ position:'absolute', top:'calc(100% + 9px)', left:-8, width:260, background:'#111', color:'#fff',
+                        borderRadius:12, padding:'11px 14px', fontSize:12.5, lineHeight:1.6, cursor:'pointer',
+                        boxShadow:'0 12px 32px rgba(0,0,0,0.28)', zIndex:5211 }}>
+                      <span style={{ position:'absolute', top:-5, left:14, width:10, height:10, background:'#111', transform:'rotate(45deg)', borderRadius:2 }} />
+                      Pour désactiver l'acceptation automatique, rendez-vous dans les paramètres :
+                      ce réglage est durable et ne se règle pas depuis le statut du jour.
+                    </div>
+                  </>
+                )}
+              </span>
             </div>
             <div style={{ fontSize:12.5, color:'#888', marginBottom:10, lineHeight:1.5 }}>
               Délai annoncé au client quand la commande est acceptée toute seule.
             </div>
-            {infoAuto && (
-              <div style={{ background:'#f7f7f7', borderRadius:11, padding:'10px 13px', marginBottom:12, fontSize:12.5, color:'#555', lineHeight:1.6 }}>
-                Pour désactiver l'acceptation automatique, rendez-vous dans les paramètres :
-                ce réglage est durable et ne se règle pas depuis le statut du jour.
-              </div>
-            )}
             <>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8, marginBottom:10 }}>
               {DELAIS_RAPIDES.map(m => (
