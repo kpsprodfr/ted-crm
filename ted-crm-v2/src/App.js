@@ -3172,29 +3172,40 @@ function CommandesPage({ showToast, user }) {
       : `✅ Commande ${cmd.numero || ''} acceptée — prête dans ~${delai} min`);
   }
 
-  const aujourdhui = dateLocale();
   const aTraiter = commandes.filter(c => c.statut === 'nouvelle');
   const jourDe = (c) => c.date_retrait || (c.created_at || '').split('T')[0];
 
   // La liste principale ne montre PAS les commandes à traiter : elles passent
   // d'abord par le panneau dédié (bandeau rouge en haut).
-  // Jour affiché : aujourd'hui par défaut, sinon la date choisie au calendrier.
-  // Il pilote à la fois les deux filtres et les deux tuiles de tête.
-  // La page ne montre que la journée en cours : la consultation des autres
-  // jours se fait dans le calendrier, sans influencer cet écran de service.
-  const jourAffiche = aujourdhui;
+  // La page est l'écran du service en cours : la consultation des autres jours
+  // se fait dans le calendrier, sans influencer cet écran.
+  //
+  // Le repère n'est pas la date du calendrier mais la JOURNÉE DE SERVICE : le
+  // service du soir déborde après minuit, si bien qu'à 2 h du matin on travaille
+  // encore le service de la veille. La journée bascule à 6 h, pas à minuit.
+  const jourSvc = jourServiceActuel();
+  const svcEnCours = serviceActuel();
 
-  // Les deux filtres portent sur ce jour affiché.
-  // Sur la journée en cours, les deux filtres actifs remontent aussi les
-  // commandes des jours précédents jamais terminées, pour qu'aucune ne disparaisse.
-  // Les commandes des jours précédents jamais terminées restent visibles.
-  const duJour = (c) => jourDe(c) <= aujourdhui;
+  // Ordre des services dans une journée, pour écarter ce qui n'a pas commencé.
+  const rangSvc = (s) => (s === 'midi' ? 0 : 1);
+
+  // Commande relevant du service en cours, ou d'un service déjà passé : une
+  // commande du midi jamais terminée doit rester visible le soir venu, sinon
+  // elle disparaîtrait sans que personne ne la clôture.
+  const jusquAuServiceEnCours = (c) => {
+    const j = jourServiceDe(c);
+    if (j < jourSvc) return true;
+    return j === jourSvc && rangSvc(serviceDe(c)) <= rangSvc(svcEnCours);
+  };
+
+  // « Terminées » couvre la journée de service entière, midi et soir réunis.
+  const deLaJourneeDeService = (c) => jourServiceDe(c) === jourSvc;
 
   const listeFiltree = commandes.filter(c => {
     if (c.statut === 'nouvelle') return false;
-    if (filtre === 'terminees')   return c.statut === 'recuperee' && jourDe(c) === aujourdhui;
-    if (filtre === 'arecuperer')  return c.statut === 'prete' && duJour(c);
-    return c.statut === 'en_preparation' && duJour(c);
+    if (filtre === 'terminees')   return c.statut === 'recuperee' && deLaJourneeDeService(c);
+    if (filtre === 'arecuperer')  return c.statut === 'prete' && jusquAuServiceEnCours(c);
+    return c.statut === 'en_preparation' && jusquAuServiceEnCours(c);
   }).sort((a, b) => {
     // Les commandes terminées passent après celles encore en cours…
     const ta = estTerminee(a), tb = estTerminee(b);
@@ -3216,12 +3227,12 @@ function CommandesPage({ showToast, user }) {
   });
 
   // Compteurs des trois filtres.
-  const nbEnCours    = commandes.filter(c => c.statut === 'en_preparation' && duJour(c)).length;
-  const nbARecuperer = commandes.filter(c => c.statut === 'prete' && duJour(c)).length;
-  const nbTerminees  = commandes.filter(c => c.statut === 'recuperee' && jourDe(c) === aujourdhui).length;
+  const nbEnCours    = commandes.filter(c => c.statut === 'en_preparation' && jusquAuServiceEnCours(c)).length;
+  const nbARecuperer = commandes.filter(c => c.statut === 'prete' && jusquAuServiceEnCours(c)).length;
+  const nbTerminees  = commandes.filter(c => c.statut === 'recuperee' && deLaJourneeDeService(c)).length;
 
-  // Les deux tuiles suivent le même jour et le même service.
-  const cmdDuJour = commandes.filter(c => jourDe(c) === aujourdhui && c.statut !== 'annulee');
+  // Les deux tuiles couvrent la journée de service, midi et soir réunis.
+  const cmdDuJour = commandes.filter(c => deLaJourneeDeService(c) && c.statut !== 'annulee');
   const caJour = cmdDuJour.reduce((s, c) => s + (Number(c.total) || 0), 0);
   const nbJour = cmdDuJour.length;
 
@@ -3399,17 +3410,41 @@ function labelJour(dateStr) {
   return new Date(dateStr + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
 }
 
-// Service d'une commande. Même bascule que les réservations : 15h.
-// Sans heure de retrait, on se rabat sur l'heure de réception.
+// La nuit appartient au service du soir : une commande encore en cours à 2h
+// du matin relève du service de la veille, pas de la journée qui commence.
+const HEURE_FIN_DE_NUIT = 6;
+
+// Service correspondant à une heure donnée
+const serviceDeLHeure = (h) => (h >= 15 || h < HEURE_FIN_DE_NUIT) ? 'soir' : 'midi';
+
+// Service d'une commande, d'après son heure de retrait (ou de réception).
 function serviceDe(c) {
   const h = c.heure_retrait
     ? parseInt(String(c.heure_retrait).slice(0, 2), 10)
     : (c.created_at ? new Date(c.created_at).getHours() : 12);
-  return h < 15 ? 'midi' : 'soir';
+  return serviceDeLHeure(h);
 }
 
-// Service en cours à l'instant présent
-const serviceActuel = () => new Date().getHours() < 15 ? 'midi' : 'soir';
+// Jour de service d'une commande : un retrait avant 6h relève de la veille
+function jourServiceDe(c) {
+  const j = c.date_retrait || (c.created_at || '').split('T')[0];
+  if (!j) return '';
+  const h = c.heure_retrait ? parseInt(String(c.heure_retrait).slice(0, 2), 10) : null;
+  if (h !== null && h < HEURE_FIN_DE_NUIT) {
+    const d = new Date(j + 'T12:00:00');
+    d.setDate(d.getDate() - 1);
+    return dateLocale(d);
+  }
+  return j;
+}
+
+// Service et jour de service en cours à l'instant présent
+const serviceActuel = () => serviceDeLHeure(new Date().getHours());
+function jourServiceActuel() {
+  const d = new Date();
+  if (d.getHours() < HEURE_FIN_DE_NUIT) d.setDate(d.getDate() - 1);
+  return dateLocale(d);
+}
 
 // Une commande récupérée ou annulée ne bouge plus : elle sort du flux en cours.
 const estTerminee = (c) => c.statut === 'recuperee' || c.statut === 'annulee';

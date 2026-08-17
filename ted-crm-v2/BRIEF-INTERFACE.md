@@ -101,11 +101,26 @@ changer de forme quand on navigue) :
 
 `En préparation (N)` · `À récupérer (N)` · `Terminées (N)`
 
-- Ils portent sur le **jour affiché** et le **service** sélectionnés.
-- « En préparation » **ramène toujours à aujourd'hui, toute la journée** : c'est le
-  retour au travail en cours.
-- Sur la journée du jour, « En préparation » remonte aussi les commandes des jours
-  précédents jamais terminées — sinon une commande oubliée devient invisible.
+Le repère n'est pas la date du calendrier mais la **journée de service**, qui
+**bascule à 6 h du matin et non à minuit** : le service du soir déborde après minuit,
+si bien qu'à 2 h du matin on travaille encore le service de la veille. Une commande
+en préparation à 23 h 59 est toujours là à 2 h — c'est le même service.
+
+```js
+HEURE_FIN_DE_NUIT = 6
+service en cours   = 6h–14h59 → midi   |   15h–5h59 → soir
+jour de service    = date du jour, sauf avant 6h → la veille
+```
+
+- « En préparation » et « À récupérer » montrent le **service en cours**, et rien
+  du service qui n'a pas commencé (le soir reste caché pendant le midi).
+- Elles remontent en revanche tout ce qui **traîne d'avant** — midi non clôturé
+  pendant le soir, jours précédents jamais terminés — sinon une commande oubliée
+  devient invisible.
+- « Terminées » couvre la **journée de service entière**, midi et soir réunis,
+  comme les deux tuiles de tête.
+- Une commande dont l'heure de retrait est avant 6 h (ex. 00 h 30) relève du
+  **service du soir de la veille**.
 
 ### Tuiles de tête
 
@@ -237,4 +252,5 @@ le nom du produit cliquable. À remonter si la saisie tactile pose problème.
    elles affichent le nom saisi par le client, pas « Prénom Nom ».
 6. **Créneaux de retrait écrits en dur** : midi 11:30–14:15, soir 18:00–21:30.
    À rendre paramétrables si les horaires changent.
-7. Bascule **midi / soir figée à 15 h**, alignée sur les réservations.
+7. Bascule **midi / soir figée à 15 h** (et fin de nuit à 6 h), alignée sur les
+   réservations. À rendre paramétrable si les horaires changent.
