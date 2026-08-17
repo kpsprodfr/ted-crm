@@ -8277,8 +8277,7 @@ const PARAM_GROUPES = [
   ]},
   { titre:'Établissement', icone:Building2, entrees: [
     { id:'etab-identite', label:'Identité',            aide:'Nom, coordonnées et logo de l\'établissement.' },
-    { id:'etab-horaires', label:'Horaires',            aide:'Les horaires de chaque jour de la semaine.' },
-    { id:'etab-dates',    label:'Dates particulières', aide:'Fermetures exceptionnelles et horaires de circonstance.' },
+    { id:'etab-horaires', label:'Dates / Horaires',   aide:'Les horaires de la semaine et les dates qui font exception.' },
   ]},
   { titre:'Modules', icone:LayoutGrid, entrees: [
     { id:'mod-reservations',   label:'Réservations',     aide:'Créneaux proposés, capacité du service, lien et QR code.' },
@@ -8289,6 +8288,129 @@ const PARAM_GROUPES = [
   ]},
 ];
 const PARAM_ENTREES = PARAM_GROUPES.flatMap(g => g.entrees);
+
+// Calendrier de sélection d'une date, repris à l'identique de « Nouvelle
+// réservation » : mêmes tailles, même jaune, mêmes animations (flash 200 ms
+// sur le jour choisi, puis fermeture animée 300 ms).
+function CalendrierDate({ valeur, onChoisir, onFermer, autoriserPasse = false }) {
+  const [mois, setMois] = useState(() => new Date((valeur || dateLocale()) + 'T12:00:00'));
+  const [flash, setFlash] = useState(null);
+  const [fermeture, setFermeture] = useState(false);
+
+  const annee = mois.getFullYear();
+  const m = mois.getMonth();
+  const premierJourSemaine = new Date(annee, m, 1).getDay() || 7;
+  const nbJours = new Date(annee, m + 1, 0).getDate();
+  const cases = Array(premierJourSemaine - 1).fill(null).concat(Array.from({ length: nbJours }, (_, i) => i + 1));
+  const todayIso = dateLocale();
+
+  const choisir = (iso) => {
+    setFlash(iso);
+    onChoisir(iso);
+    setTimeout(() => {
+      setFermeture(true);
+      setTimeout(() => { setFermeture(false); setFlash(null); onFermer(); }, 300);
+    }, 200);
+  };
+
+  return (
+    <div className={fermeture ? 'cal-fermeture' : ''} style={{ marginTop:8, background:'#fff', borderRadius:12, border:'1.5px solid #eee', boxShadow:'0 4px 16px rgba(0,0,0,0.08)', overflow:'hidden' }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 12px', borderBottom:'1px solid #eee' }}>
+        <button onPointerDown={()=>setMois(new Date(annee, m - 1))} style={{ width:40, height:40, borderRadius:10, border:'1.5px solid #ddd', background:'#fff', fontSize:20, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', touchAction:'manipulation', WebkitTapHighlightColor:'transparent' }}>‹</button>
+        <span style={{ fontSize:15, fontWeight:800, color:'#111', textTransform:'capitalize' }}>{mois.toLocaleDateString('fr-FR', { month:'long', year:'numeric' })}</span>
+        <button onPointerDown={()=>setMois(new Date(annee, m + 1))} style={{ width:40, height:40, borderRadius:10, border:'1.5px solid #ddd', background:'#fff', fontSize:20, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', touchAction:'manipulation', WebkitTapHighlightColor:'transparent' }}>›</button>
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', padding:'6px 6px 2px' }}>
+        {['L','M','M','J','V','S','D'].map((j, i) => <div key={i} style={{ textAlign:'center', fontSize:11, fontWeight:700, color:'#aaa', padding:'3px 0' }}>{j}</div>)}
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', padding:'2px 6px 8px', gap:2 }}>
+        {cases.map((jour, i) => {
+          if (!jour) return <div key={i} />;
+          const iso = `${annee}-${String(m + 1).padStart(2, '0')}-${String(jour).padStart(2, '0')}`;
+          const estAujourdhui = iso === todayIso;
+          const estSelectionne = valeur === iso;
+          const aujourd = new Date(); aujourd.setHours(0, 0, 0, 0);
+          const estPasse = !autoriserPasse && new Date(annee, m, jour) < aujourd;
+          return (
+            <button key={i} disabled={estPasse} className={flash === iso ? 'date-flash' : ''}
+              onPointerDown={()=>{ if (!estPasse) choisir(iso); }}
+              style={{
+                height:44, borderRadius:10,
+                border: estAujourdhui && !estSelectionne ? '2px solid #E8C547' : '1.5px solid transparent',
+                background: estSelectionne ? '#E8C547' : 'transparent',
+                fontWeight: estAujourdhui || estSelectionne ? 800 : 400,
+                fontSize:15, cursor: estPasse ? 'not-allowed' : 'pointer',
+                color: estPasse ? '#ccc' : '#111', opacity: estPasse ? 0.4 : 1,
+                pointerEvents: estPasse ? 'none' : 'auto',
+                touchAction:'manipulation', WebkitTapHighlightColor:'transparent',
+              }}>{jour}</button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Une date qui échappe à la semaine type : le calendrier à gauche, les deux
+// services à droite.
+function DateParticuliere({ valeur, onChange, onRetirer }) {
+  const [calOuvert, setCalOuvert] = useState(!valeur.date);
+  const isMobile = useIsMobile();
+  const label = valeur.date
+    ? new Date(valeur.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' })
+    : 'Choisir une date';
+
+  const resume = (() => {
+    const p = [];
+    if (valeur.midi?.ouvert) p.push(`midi ${valeur.midi.debut}–${valeur.midi.fin}`);
+    if (valeur.soir?.ouvert) p.push(`soir ${valeur.soir.debut}–${valeur.soir.fin}`);
+    if (p.length === 0) return 'Fermé toute la journée.';
+    if (p.length === 2) return `Ouvert ${p.join(' et ')}.`;
+    return `Ouvert ${p[0]} seulement — fermé ${valeur.midi?.ouvert ? 'le soir' : 'le midi'}.`;
+  })();
+
+  return (
+    <div style={{ border:'1.5px solid #eee', borderRadius:14, padding:'16px 18px' }}>
+      <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '288px 1fr', gap:22 }}>
+        {/* Gauche : la date */}
+        <div>
+          <p style={{ margin:'0 0 8px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Date</p>
+          <button onClick={()=>setCalOuvert(v => !v)}
+            style={{ width:'100%', height:46, borderRadius:11, border:`1.5px solid ${calOuvert ? '#E8C547' : '#e0e0e0'}`, background:'#fff', cursor:'pointer',
+              display:'flex', alignItems:'center', gap:9, padding:'0 13px', fontSize:13.5, fontWeight:700, color: valeur.date ? '#111' : '#bbb', textAlign:'left', textTransform:'capitalize' }}>
+            <CalendarDays size={16} strokeWidth={2} color="#888" />
+            <span style={{ flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{label}</span>
+            <ChevronDown size={16} strokeWidth={2} color="#bbb" style={{ transform: calOuvert ? 'rotate(180deg)' : 'none', transition:'transform 0.2s' }} />
+          </button>
+          {calOuvert && (
+            <CalendrierDate valeur={valeur.date} autoriserPasse
+              onChoisir={iso => onChange({ date: iso })}
+              onFermer={()=>setCalOuvert(false)} />
+          )}
+        </div>
+
+        {/* Droite : les deux services */}
+        <div>
+          <p style={{ margin:'0 0 8px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Services</p>
+          <div style={{ display:'flex', flexDirection:'column', gap:9 }}>
+            <LigneService label="Midi" valeur={valeur.midi} onChange={v=>onChange({ midi: v })} />
+            <LigneService label="Soir" valeur={valeur.soir} onChange={v=>onChange({ soir: v })} />
+          </div>
+          <input value={valeur.motif || ''} onChange={e=>onChange({ motif: e.target.value })} placeholder="Motif (facultatif)"
+            style={{ width:'100%', height:40, marginTop:12, border:'1.5px solid #e0e0e0', borderRadius:10, padding:'0 12px', fontSize:13.5, outline:'none', boxSizing:'border-box' }} />
+        </div>
+      </div>
+
+      <div style={{ display:'flex', alignItems:'center', gap:12, marginTop:14, paddingTop:12, borderTop:'1px solid #f5f5f5', flexWrap:'wrap' }}>
+        <span style={{ flex:1, minWidth:180, fontSize:12.5, color:'#999' }}>{resume}</span>
+        <button onClick={onRetirer}
+          style={{ height:38, padding:'0 13px', borderRadius:10, border:'1.5px solid #fca5a5', background:'#fff', color:'#b91c1c', fontSize:12.5, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+          <Trash2 size={14} strokeWidth={2} /> Retirer
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // Les quatre rôles du CRM, du plus restreint au plus large.
 const ROLES_CRM = [
@@ -8506,6 +8628,20 @@ function BlocMotDePasse({ showToast }) {
 
 function ParametresPage({ showToast, user }) {
   const [section, setSection] = useState('etab-identite');
+  const [confirmReinit, setConfirmReinit] = useState(false);
+  const [envoiReinit, setEnvoiReinit] = useState(false);
+
+  // Réinitialisation par e-mail : le lien reçu ramène sur le CRM, où le nouveau
+  // mot de passe se saisit dans « Compte et accès ».
+  async function envoyerReinitialisation() {
+    if (!user?.email) return;
+    setEnvoiReinit(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(user.email, { redirectTo: window.location.origin });
+    setEnvoiReinit(false);
+    setConfirmReinit(false);
+    if (error) showToast(error.message || 'Envoi impossible', 'error');
+    else showToast(`✅ Lien envoyé à ${user.email}`);
+  }
   const [conf, setConf] = useState(null);
   const [brouillon, setBrouillon] = useState({});
   const isMobile = useIsMobile();
@@ -8617,35 +8753,30 @@ function ParametresPage({ showToast, user }) {
     enregistrer('horaires_semaine', { ...semaine, [jourId]: { ...(semaine[jourId] || {}), [service]: valeur } });
 
   const ajouterFermeture = () => enregistrer('fermetures', [...fermetures, {
-    date: dateLocale(), motif: '',
+    date: '', motif: '',
     midi: { ouvert:false, debut:'12:00', fin:'14:30' },
     soir: { ouvert:false, debut:'19:00', fin:'23:30' },
   }]);
   const majFermeture = (i, champs) =>
     enregistrer('fermetures', fermetures.map((f, k) => k === i ? { ...f, ...champs } : f));
 
-  const resumeFermeture = (f) => {
-    const p = [];
-    if (f.midi?.ouvert) p.push(`midi ${f.midi.debut}–${f.midi.fin}`);
-    if (f.soir?.ouvert) p.push(`soir ${f.soir.debut}–${f.soir.fin}`);
-    if (p.length === 0) return 'Fermé toute la journée.';
-    if (p.length === 2) return `Ouvert ${p.join(' et ')}.`;
-    return `Ouvert ${p[0]} seulement — fermé ${f.midi?.ouvert ? 'le soir' : 'le midi'}.`;
-  };
-
   // ── Contenus, une entrée de sommaire à la fois ──
   const contenus = {
     'compte-acces': (
       <>
         <Bloc titre="Compte connecté">
-          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-            <div style={{ width:44, height:44, borderRadius:'50%', background:'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
+            <div style={{ width:44, height:44, borderRadius:'50%', background:'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
               <User size={20} strokeWidth={2} color="#666" />
             </div>
-            <div>
+            <div style={{ flex:1, minWidth:150 }}>
               <div style={{ fontSize:14, fontWeight:700, color:'#111' }}>{user?.email || '—'}</div>
               <div style={{ fontSize:12, color:'#999' }}>Session en cours sur cet appareil</div>
             </div>
+            <button onClick={()=>setConfirmReinit(true)}
+              style={{ height:40, padding:'0 15px', borderRadius:11, border:'1.5px solid #ddd', background:'#fff', color:'#111', fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:7, flexShrink:0 }}>
+              <RefreshCw size={15} strokeWidth={2} /> Réinitialiser le mot de passe
+            </button>
           </div>
         </Bloc>
         <Bloc titre="Mot de passe" aide="Il prend effet immédiatement, sur tous les appareils déjà connectés.">
@@ -8717,41 +8848,25 @@ function ParametresPage({ showToast, user }) {
               })}
             </div>
         </Bloc>
-      </>
-    ),
 
-    'etab-dates': (
-      <Bloc aide="Les jours qui ne suivent pas la semaine type : une fermeture exceptionnelle, ou des horaires différents. Vous pouvez les poser des mois à l'avance.">
-        {fermetures.length === 0
-          ? <p style={{ margin:'0 0 14px', fontSize:13, color:'#bbb' }}>Aucune date particulière enregistrée.</p>
-          : (
-            <div style={{ display:'flex', flexDirection:'column', gap:12, marginBottom:16 }}>
-              {fermetures.map((f, i) => (
-                <div key={i} style={{ border:'1.5px solid #eee', borderRadius:13, padding:'13px 15px' }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:11, flexWrap:'wrap' }}>
-                    <input type="date" value={f.date || ''} onChange={e=>majFermeture(i, { date: e.target.value })}
-                      style={{ height:38, border:'1.5px solid #e0e0e0', borderRadius:10, padding:'0 10px', fontSize:13.5, outline:'none', boxSizing:'border-box' }} />
-                    <input value={f.motif || ''} onChange={e=>majFermeture(i, { motif: e.target.value })} placeholder="Motif (facultatif)"
-                      style={{ flex:1, minWidth:150, height:38, border:'1.5px solid #e0e0e0', borderRadius:10, padding:'0 12px', fontSize:13.5, outline:'none', boxSizing:'border-box' }} />
-                    <button onClick={()=>enregistrer('fermetures', fermetures.filter((_, k) => k !== i))}
-                      style={{ height:38, padding:'0 13px', borderRadius:10, border:'1.5px solid #fca5a5', background:'#fff', color:'#b91c1c', fontSize:12.5, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
-                      <Trash2 size={14} strokeWidth={2} /> Retirer
-                    </button>
-                  </div>
-                  <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                    <LigneService label="Midi" valeur={f.midi} onChange={v=>majFermeture(i, { midi: v })} />
-                    <LigneService label="Soir" valeur={f.soir} onChange={v=>majFermeture(i, { soir: v })} />
-                  </div>
-                  <p style={{ margin:'10px 0 0', fontSize:12, color:'#999' }}>{resumeFermeture(f)}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        <button onClick={ajouterFermeture}
-          style={{ height:44, padding:'0 18px', borderRadius:11, border:'1.5px dashed #ddd', background:'transparent', color:'#666', fontSize:13.5, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:8 }}>
-          <Plus size={16} strokeWidth={2.2} /> Ajouter une date
-        </button>
-      </Bloc>
+        <Bloc titre="Dates particulières" aide="Les jours qui ne suivent pas la semaine type : une fermeture exceptionnelle, ou des horaires différents. Vous pouvez les poser des mois à l'avance.">
+          {fermetures.length === 0
+            ? <p style={{ margin:'0 0 14px', fontSize:13, color:'#bbb' }}>Aucune date particulière enregistrée.</p>
+            : (
+              <div style={{ display:'flex', flexDirection:'column', gap:14, marginBottom:16 }}>
+                {fermetures.map((f, i) => (
+                  <DateParticuliere key={i} valeur={f}
+                    onChange={champs=>majFermeture(i, champs)}
+                    onRetirer={()=>enregistrer('fermetures', fermetures.filter((_, k) => k !== i))} />
+                ))}
+              </div>
+            )}
+          <button onClick={ajouterFermeture}
+            style={{ height:44, padding:'0 18px', borderRadius:11, border:'1.5px dashed #ddd', background:'transparent', color:'#666', fontSize:13.5, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:8 }}>
+            <Plus size={16} strokeWidth={2.2} /> Ajouter une date
+          </button>
+        </Bloc>
+      </>
     ),
 
     'mod-reservations': (
@@ -8887,6 +9002,26 @@ function ParametresPage({ showToast, user }) {
         Réglages durables du CRM. Pour couper la prise de commande sur une seule journée,
         passez plutôt par « Statut du jour » dans le Click and Collect.
       </p>
+
+      {confirmReinit && (
+        <>
+          <div onClick={()=>setConfirmReinit(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:5300 }} />
+          <div style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:18, width:'min(440px, calc(100vw - 32px))', padding:'24px 26px', boxShadow:'0 32px 80px rgba(0,0,0,0.3)', zIndex:5301 }}>
+            <h3 style={{ margin:'0 0 10px', fontSize:17, fontWeight:800, color:'#111' }}>Réinitialiser le mot de passe ?</h3>
+            <p style={{ margin:'0 0 18px', fontSize:13.5, color:'#555', lineHeight:1.7 }}>
+              Un lien part par e-mail à <strong>{user?.email}</strong>. Il vous ramène sur le CRM
+              pour choisir un nouveau mot de passe. L'actuel reste valable tant que vous ne l'avez pas changé.
+            </p>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={()=>setConfirmReinit(false)} style={{ flex:1, height:46, border:'1.5px solid #ddd', borderRadius:11, background:'#fff', fontSize:14, fontWeight:700, cursor:'pointer', color:'#666' }}>Annuler</button>
+              <button onClick={envoyerReinitialisation} disabled={envoiReinit}
+                style={{ flex:1, height:46, border:'none', borderRadius:11, background:'#111', color:'#fff', fontSize:14, fontWeight:800, cursor: envoiReinit ? 'wait' : 'pointer' }}>
+                {envoiReinit ? 'Envoi…' : 'Envoyer le lien'}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       <div style={{ display:'flex', gap:22, alignItems:'flex-start', flexDirection: isMobile ? 'column' : 'row' }}>
         {/* Sommaire : les trois groupes et toutes leurs entrées, d'un coup d'œil */}
