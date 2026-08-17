@@ -292,13 +292,29 @@ suivi de ses entrées cliquables. Tout est visible d'un coup d'œil, sans repli
 ni navigation à plusieurs niveaux.
 
 ```
-PARAMÈTRES DU COMPTE      ÉTABLISSEMENT            MODULES
-  Compte et accès           Identité                 Réservations
-  Sauvegardes               Horaires                 Click and Collect
-                            Dates particulières      Communications
-                                                     Menu
-                                                     Fichier clients
+PARAMÈTRES DU COMPTE      ÉTABLISSEMENT       APPLICATION
+  Compte et accès           Identité            Toutes les applications
+  Sauvegardes               Dates / Horaires    …puis une entrée par
+                                                  application ACTIVE
 ```
+
+### Applications
+
+`APPLICATIONS` décrit chaque application : résumé, texte détaillé, points forts,
+trois vignettes d'aperçu, teinte. « Toutes les applications » les range en
+**Mes applications actives** puis **À découvrir** ; un clic ouvre une modale large
+avec la description complète et un bouton **Activer l'application**.
+
+Activer ajoute l'entrée au sommaire et bascule dessus ; désactiver la retire.
+La liste vit dans le réglage `applications_actives`.
+`APPS_TOUJOURS_ACTIVES` (Réservations, Fichier clients) ne peuvent pas être coupées.
+
+### Créneaux de réservation
+
+On ne saisit **pas** les créneaux un à un : on donne **la plage et le rythme**
+(`plage_resa_midi` / `plage_resa_soir` = `{debut, fin, pas}`, pas de 15/30/45/60 min)
+et `creneauxEntre()` en déduit la liste. Une phrase annonce le résultat
+(« toutes les 15 minutes — 7 créneaux : 12:00, 12:15… 13:30 »).
 
 Le titre de groupe est une étiquette grise en capitales avec son icône — il ne
 se clique pas. L'entrée active prend le fond noir et le jaune de marque, comme

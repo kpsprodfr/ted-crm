@@ -913,6 +913,7 @@ const REGLAGES_DEFAUT = {
   email: '',
   site: 'https://leted.fr',
   logo: '',
+  applications_actives: ['reservations','commandes','clients','menu','communications'],
   lien_reservation: 'https://ted-crm.pages.dev/reserver.html',
   lien_commande: 'https://ted-crm.pages.dev/commander.html',
   bascule_soir: 15,            // heure à partir de laquelle on est au service du soir
@@ -931,8 +932,8 @@ const REGLAGES_DEFAUT = {
   fermetures: [],
   capacite_midi: 0,            // 0 = pas de limite
   capacite_soir: 0,
-  heures_resa_midi: ["12:00","12:15","12:30","12:45","13:00","13:15","13:30"],
-  heures_resa_soir: ["19:00","19:15","19:30","19:45","20:00","20:15","20:30","20:45","21:00","21:15","21:30"],
+  plage_resa_midi: { debut:'12:00', fin:'13:30', pas:15 },
+  plage_resa_soir: { debut:'19:00', fin:'21:30', pas:15 },
   creneaux_retrait_midi: ['11:30','11:45','12:00','12:15','12:30','12:45','13:00','13:15','13:30','13:45','14:00','14:15'],
   creneaux_retrait_soir: ['18:00','18:30','19:00','19:15','19:30','19:45','20:00','20:15','20:30','20:45','21:00','21:30'],
 };
@@ -940,7 +941,7 @@ const REGLAGES_DEFAUT = {
 // Objet vivant, lu au rendu par toute l'application.
 const REGLAGES = { ...REGLAGES_DEFAUT };
 
-const REGLAGES_JSON = ['fermetures','horaires_semaine','heures_resa_midi','heures_resa_soir','creneaux_retrait_midi','creneaux_retrait_soir'];
+const REGLAGES_JSON = ['applications_actives','fermetures','horaires_semaine','plage_resa_midi','plage_resa_soir','creneaux_retrait_midi','creneaux_retrait_soir'];
 const REGLAGES_NOMBRES = ['bascule_soir','fin_de_nuit','capacite_midi','capacite_soir'];
 
 // Applique une ligne de configuration à l'objet vivant.
@@ -1045,7 +1046,8 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
     }
   }, [showCalPicker]);
 
-  const heures = service === 'midi' ? REGLAGES.heures_resa_midi : REGLAGES.heures_resa_soir;
+  const plage = service === 'midi' ? REGLAGES.plage_resa_midi : REGLAGES.plage_resa_soir;
+  const heures = creneauxEntre(plage.debut, plage.fin, plage.pas);
 
   // Recherche automatique dès 10 chiffres
   async function handleTelChange(val) {
@@ -8233,6 +8235,54 @@ function LigneService({ label, valeur, onChange }) {
   );
 }
 
+// Plutôt que d'ajouter les créneaux un à un, on donne la plage et le rythme :
+// « de 12:00 à 13:30, toutes les 15 minutes ». Le CRM en déduit la liste.
+const PAS_CRENEAUX = [15, 30, 45, 60];
+
+function creneauxEntre(debut, fin, pas) {
+  const enMinutes = (h) => { const [a, b] = String(h).split(':').map(Number); return a * 60 + b; };
+  const d = enMinutes(debut), f = enMinutes(fin);
+  if (!(f > d) || !pas) return [];
+  const liste = [];
+  for (let t = d; t <= f; t += pas) {
+    liste.push(`${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`);
+  }
+  return liste;
+}
+
+// Réglage d'un service : plage, rythme, et la liste qui en découle.
+function PlageCreneaux({ label, plage, onChange }) {
+  const p = plage || { debut:'12:00', fin:'13:30', pas:15 };
+  const apercu = creneauxEntre(p.debut, p.fin, p.pas);
+  return (
+    <div>
+      <p style={{ margin:'0 0 10px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>{label}</p>
+      <div style={{ display:'flex', alignItems:'center', gap:9, marginBottom:12, flexWrap:'wrap' }}>
+        <span style={{ fontSize:13, color:'#888' }}>De</span>
+        <ChoixHeure valeur={p.debut} onChange={h=>onChange({ ...p, debut: h })} />
+        <span style={{ fontSize:13, color:'#888' }}>à</span>
+        <ChoixHeure valeur={p.fin} onChange={h=>onChange({ ...p, fin: h })} />
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:7, marginBottom:11 }}>
+        {PAS_CRENEAUX.map(m => (
+          <button key={m} onClick={()=>onChange({ ...p, pas: m })}
+            style={{ height:42, borderRadius:10, cursor:'pointer', fontSize:13, fontWeight:800,
+              border: p.pas === m ? 'none' : '1.5px solid #e0e0e0',
+              background: p.pas === m ? '#111' : '#fff',
+              color: p.pas === m ? '#E8C547' : '#666' }}>
+            {m === 60 ? '1 h' : `${m} min`}
+          </button>
+        ))}
+      </div>
+      <p style={{ margin:0, fontSize:12.5, color:'#999', lineHeight:1.6 }}>
+        {apercu.length === 0
+          ? 'Plage invalide — la fin doit suivre le début.'
+          : <>Une réservation toutes les {p.pas === 60 ? 'heures' : `${p.pas} minutes`} — <strong style={{ color:'#555' }}>{apercu.length} créneau{apercu.length > 1 ? 'x' : ''}</strong> : {apercu.slice(0, 4).join(', ')}{apercu.length > 4 ? `… ${apercu[apercu.length - 1]}` : ''}</>}
+      </p>
+    </div>
+  );
+}
+
 // Un créneau horaire se saisit à la minute près, mais se lit en grille.
 function GrilleCreneaux({ valeurs, onChange }) {
   const [ajout, setAjout] = useState('');
@@ -8269,6 +8319,167 @@ function GrilleCreneaux({ valeurs, onChange }) {
   );
 }
 
+// Le catalogue des applications du CRM. Chacune se décrit, s'active et se coupe.
+const APPLICATIONS = [
+  {
+    id:'reservations', label:'Réservations', icone:CalendarDays, teinte:'#fffbea',
+    resume:"Prendre et suivre les réservations de tables, midi et soir.",
+    detail:"Le cahier de réservation du restaurant, en ligne. Les clients réservent depuis un formulaire public ; vous acceptez ou refusez, et le service du jour se lit d'un coup d'œil.",
+    points:[
+      'Calendrier des services, midi et soir, avec le nombre de couverts',
+      'Demandes en attente signalées par une pastille rouge dans la barre latérale',
+      'Fiche de service imprimable pour la salle',
+      'Créneaux et capacité réglables, lien public et QR code',
+    ],
+    apercu:['Calendrier du mois', 'Liste du service', 'Fiche client'],
+  },
+  {
+    id:'commandes', label:'Click and Collect', icone:ShoppingBag, teinte:'#fffbea',
+    resume:"Recevoir des commandes à emporter et suivre leur préparation.",
+    detail:"Vos clients commandent en ligne ou par téléphone, vous suivez chaque commande de sa réception à son retrait. La journée de service ne s'arrête pas à minuit : une commande en préparation à 23 h 59 est toujours là à 2 h.",
+    points:[
+      'Trois états : en préparation, à récupérer, terminée',
+      'Acceptation automatique avec délai annoncé au client',
+      'Statut du jour pour couper la prise de commande une journée',
+      'Statistiques : ce qui se vend, ce qui dort, vos meilleurs clients',
+    ],
+    apercu:['Commandes du jour', 'Calendrier', 'Statistiques'],
+  },
+  {
+    id:'clients', label:'Fichier clients', icone:Users, teinte:'#eff6ff',
+    resume:"Toutes vos fiches clients, leur historique et leurs habitudes.",
+    detail:"Chaque personne qui réserve ou commande a sa fiche. Vous y retrouvez son historique, ses jours favoris, ce qu'elle commande le plus souvent et ce qu'elle vous a rapporté.",
+    points:[
+      'Historique des réservations et des commandes',
+      'Jours et services favoris, articles préférés',
+      'Chiffre d\'affaires et panier moyen par client',
+      'Corbeille : un client supprimé reste récupérable',
+    ],
+    apercu:['Liste des clients', 'Fiche détaillée', 'Import / Export'],
+  },
+  {
+    id:'menu', label:'Menu', icone:UtensilsCrossed, teinte:'#f0fdf4',
+    resume:"La carte proposée à vos clients, plats, prix et catégories.",
+    detail:"La carte alimente la page de commande et les statistiques. Un produit marqué indisponible disparaît aussitôt de la commande, sans que vous ayez à le supprimer.",
+    points:[
+      'Catégories, produits, prix et ordre d\'affichage',
+      'Plusieurs cartes : midi, soir, événements',
+      'Plat du jour et soirées à thème',
+      'Disponibilité produit par produit',
+    ],
+    apercu:['Catégories', 'Produits', 'Plat du jour'],
+  },
+  {
+    id:'communications', label:'Communications', icone:Megaphone, teinte:'#fdf2f8',
+    resume:"Écrire à vos clients par e-mail ou par SMS.",
+    detail:"Des envois groupés à partir de votre fichier client, avec le suivi de ce qui est parti. Les notifications automatiques aux clients sont pour l'instant hors service.",
+    points:[
+      'Envoi d\'e-mails et de SMS à une sélection de clients',
+      'Historique de ce qui a été envoyé',
+      'Garde-fou contre les doublons d\'envoi',
+    ],
+    apercu:['Rédaction', 'Sélection des destinataires', 'Historique'],
+    alerte:"Les notifications push aux clients ne partent plus (erreur 403). Une intervention serveur est nécessaire.",
+  },
+  {
+    id:'jeux', label:'Grand Jeu', icone:Dices, teinte:'#f5f3ff',
+    resume:"Une roue de la fortune pour animer votre salle.",
+    detail:"Les clients tournent une roue et gagnent une récompense que vous avez définie. Les gains sont tracés et rattachés à leur fiche.",
+    points:[
+      'Récompenses et probabilités réglables',
+      'Stock par récompense',
+      'Historique des gains rattaché aux fiches clients',
+    ],
+    apercu:['La roue', 'Récompenses', 'Gains'],
+  },
+];
+const APPS_TOUJOURS_ACTIVES = ['reservations', 'clients'];
+
+// Fiche détaillée d'une application, avec son bouton d'activation.
+function ModaleApplication({ app, active, onBasculer, onFermer }) {
+  const Icone = app.icone;
+  const verrouillee = APPS_TOUJOURS_ACTIVES.includes(app.id);
+  return (
+    <>
+      <div onClick={onFermer} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:5300 }} />
+      <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:20, width:'min(880px, calc(100vw - 24px))', maxHeight:'calc(100vh - 24px)', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.3)', zIndex:5301, overflow:'hidden' }}>
+
+        <div style={{ display:'flex', alignItems:'center', gap:16, padding:'22px 26px 18px', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
+          <div style={{ width:56, height:56, borderRadius:15, flexShrink:0, background:app.teinte, display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <Icone size={27} strokeWidth={1.9} color="#111" />
+          </div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <h2 style={{ margin:0, fontSize:20, fontWeight:800, color:'#111' }}>{app.label}</h2>
+            <p style={{ margin:'3px 0 0', fontSize:13, color:'#999' }}>{app.resume}</p>
+          </div>
+          <span style={{ flexShrink:0, fontSize:11.5, fontWeight:800, padding:'6px 12px', borderRadius:20,
+            background: active ? '#dcfce7' : '#f2f2f2', color: active ? '#15803d' : '#999' }}>
+            {active ? 'Activée' : 'Inactive'}
+          </span>
+          <button onClick={onFermer} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666', flexShrink:0 }}>✕</button>
+        </div>
+
+        <div style={{ padding:'20px 26px 24px', overflowY:'auto', flex:1, minHeight:0 }}>
+          <p style={{ margin:'0 0 20px', fontSize:14.5, color:'#444', lineHeight:1.75 }}>{app.detail}</p>
+
+          {app.alerte && (
+            <div style={{ background:'#fef2f2', border:'1.5px solid #fecaca', borderRadius:12, padding:'12px 15px', marginBottom:20, display:'flex', gap:10 }}>
+              <AlertCircle size={17} strokeWidth={2} color="#b91c1c" style={{ flexShrink:0, marginTop:1 }} />
+              <span style={{ fontSize:13, color:'#b91c1c', lineHeight:1.6 }}>{app.alerte}</span>
+            </div>
+          )}
+
+          <p style={{ margin:'0 0 10px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Ce que vous y trouvez</p>
+          <div style={{ display:'flex', flexDirection:'column', gap:9, marginBottom:22 }}>
+            {app.points.map(p => (
+              <div key={p} style={{ display:'flex', gap:10, alignItems:'flex-start' }}>
+                <CheckCircle size={16} strokeWidth={2} color="#16a34a" style={{ flexShrink:0, marginTop:2 }} />
+                <span style={{ fontSize:13.5, color:'#444', lineHeight:1.6 }}>{p}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Aperçu : trois écrans esquissés, pour situer l'application */}
+          <p style={{ margin:'0 0 10px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Aperçu</p>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:12 }}>
+            {app.apercu.map((titre, i) => (
+              <div key={titre} style={{ border:'1.5px solid #f0f0f0', borderRadius:12, overflow:'hidden', background:'#fafafa' }}>
+                <div style={{ height:96, background:app.teinte, display:'flex', alignItems:'center', justifyContent:'center', position:'relative' }}>
+                  <Icone size={26} strokeWidth={1.6} color="#11111133" />
+                  {/* Esquisse d'écran : un en-tête et trois lignes */}
+                  <div style={{ position:'absolute', inset:'14px 16px', display:'flex', flexDirection:'column', gap:5 }}>
+                    <div style={{ height:9, width:'55%', borderRadius:3, background:'#11111118' }} />
+                    <div style={{ flex:1 }} />
+                    {[0,1,2].map(k => (
+                      <div key={k} style={{ height:6, width: `${92 - k * 18 - i * 4}%`, borderRadius:3, background:'#11111112' }} />
+                    ))}
+                  </div>
+                </div>
+                <div style={{ padding:'9px 11px', fontSize:12, fontWeight:700, color:'#555', textAlign:'center' }}>{titre}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display:'flex', gap:10, padding:'16px 26px calc(20px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #f0f0f0', flexShrink:0 }}>
+          <button onClick={onFermer} style={{ ...btnSecondary, flex:1, height:48 }}>Fermer</button>
+          <button onClick={()=>onBasculer(app)} disabled={verrouillee}
+            style={{ flex:2, height:48, border:'none', borderRadius:11,
+              background: verrouillee ? '#f0f0f0' : (active ? '#fff' : '#16a34a'),
+              boxShadow: verrouillee ? 'none' : (active ? 'inset 0 0 0 1.5px #fca5a5' : 'none'),
+              color: verrouillee ? '#bbb' : (active ? '#b91c1c' : '#fff'),
+              fontSize:14.5, fontWeight:800, cursor: verrouillee ? 'not-allowed' : 'pointer',
+              display:'flex', alignItems:'center', justifyContent:'center', gap:9 }}>
+            {verrouillee
+              ? 'Application essentielle — toujours active'
+              : active ? 'Désactiver' : <><Plus size={17} strokeWidth={2.4} /> Activer l'application</>}
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // Le sommaire des paramètres : trois groupes, tout visible d'un coup d'œil.
 const PARAM_GROUPES = [
   { titre:'Paramètres du compte', icone:User, entrees: [
@@ -8279,7 +8490,8 @@ const PARAM_GROUPES = [
     { id:'etab-identite', label:'Identité',            aide:'Nom, coordonnées et logo de l\'établissement.' },
     { id:'etab-horaires', label:'Dates / Horaires',   aide:'Les horaires de la semaine et les dates qui font exception.' },
   ]},
-  { titre:'Modules', icone:LayoutGrid, entrees: [
+  { titre:'Application', icone:LayoutGrid, entrees: [
+    { id:'app-catalogue',      label:'Toutes les applications', aide:'Le catalogue complet : ce que fait chaque application, et comment l\'activer.' },
     { id:'mod-reservations',   label:'Réservations',     aide:'Créneaux proposés, capacité du service, lien et QR code.' },
     { id:'mod-commandes',      label:'Click and Collect', aide:'Acceptation des commandes, délai, créneaux de retrait.' },
     { id:'mod-communications', label:'Communications',   aide:'Notifications aux clients et messages automatiques.' },
@@ -8629,6 +8841,7 @@ function BlocMotDePasse({ showToast }) {
 function ParametresPage({ showToast, user }) {
   const [section, setSection] = useState('etab-identite');
   const [confirmReinit, setConfirmReinit] = useState(false);
+  const [appOuverte, setAppOuverte] = useState(null);
   const [envoiReinit, setEnvoiReinit] = useState(false);
 
   // Réinitialisation par e-mail : le lien reçu ramène sur le CRM, où le nouveau
@@ -8744,6 +8957,17 @@ function ParametresPage({ showToast, user }) {
   const vide = (txt) => <p style={{ margin:0, fontSize:13, color:'#555', lineHeight:1.7 }}>{txt}</p>;
 
   // ── Données dérivées ──
+  const appsActives = lire('applications_actives') || [];
+  const basculerApp = (app) => {
+    if (APPS_TOUJOURS_ACTIVES.includes(app.id)) return;
+    const active = appsActives.includes(app.id);
+    const liste = active ? appsActives.filter(x => x !== app.id) : [...appsActives, app.id];
+    enregistrer('applications_actives', liste);
+    setAppOuverte(null);
+    if (!active) setSection('mod-' + app.id);
+    else if (section === 'mod-' + app.id) setSection('app-catalogue');
+  };
+
   const semaine = lire('horaires_semaine') || {};
   const fermetures = lire('fermetures') || [];
   const autoDefaut = conf ? conf.acceptation_auto_defaut !== 'false' : true;
@@ -8869,18 +9093,60 @@ function ParametresPage({ showToast, user }) {
       </>
     ),
 
+    'app-catalogue': (() => {
+      const CarteApp = ({ app, active }) => {
+        const Icone = app.icone;
+        return (
+          <button onClick={()=>setAppOuverte(app)}
+            style={{ display:'flex', alignItems:'flex-start', gap:14, textAlign:'left', cursor:'pointer',
+              background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:16, padding:'16px 18px' }}
+            onMouseEnter={e=>{ e.currentTarget.style.borderColor = '#E8C547'; }}
+            onMouseLeave={e=>{ e.currentTarget.style.borderColor = '#f0f0f0'; }}>
+            <div style={{ width:46, height:46, borderRadius:13, flexShrink:0, background:app.teinte, display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <Icone size={22} strokeWidth={1.9} color="#111" />
+            </div>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3 }}>
+                <span style={{ fontSize:15, fontWeight:800, color:'#111' }}>{app.label}</span>
+                {active && <span style={{ width:7, height:7, borderRadius:'50%', background:'#16a34a', flexShrink:0 }} />}
+              </div>
+              <div style={{ fontSize:12.5, color:'#999', lineHeight:1.55 }}>{app.resume}</div>
+            </div>
+            <ChevronRight size={19} strokeWidth={2} color="#ccc" style={{ flexShrink:0, marginTop:12 }} />
+          </button>
+        );
+      };
+      const actives = APPLICATIONS.filter(a => appsActives.includes(a.id));
+      const inactives = APPLICATIONS.filter(a => !appsActives.includes(a.id));
+      const grille = { display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:12 };
+      return (
+        <>
+          <p style={{ margin:'0 0 10px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>
+            Mes applications actives — {actives.length}
+          </p>
+          <div style={{ ...grille, marginBottom: inactives.length ? 26 : 0 }}>
+            {actives.map(a => <CarteApp key={a.id} app={a} active />)}
+          </div>
+          {inactives.length > 0 && (
+            <>
+              <p style={{ margin:'0 0 10px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>
+                À découvrir — {inactives.length}
+              </p>
+              <div style={grille}>
+                {inactives.map(a => <CarteApp key={a.id} app={a} active={false} />)}
+              </div>
+            </>
+          )}
+        </>
+      );
+    })(),
+
     'mod-reservations': (
       <>
-        <Bloc titre="Créneaux de réservation" aide="Heures proposées au client sur le formulaire. Tapez une heure puis « Ajouter ».">
-          <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:26 }}>
-            <div>
-              <p style={{ margin:'0 0 10px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Midi</p>
-              <GrilleCreneaux valeurs={lire('heures_resa_midi')} onChange={v=>enregistrer('heures_resa_midi', v)} />
-            </div>
-            <div>
-              <p style={{ margin:'0 0 10px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Soir</p>
-              <GrilleCreneaux valeurs={lire('heures_resa_soir')} onChange={v=>enregistrer('heures_resa_soir', v)} />
-            </div>
+        <Bloc titre="Créneaux de réservation" aide="Donnez la plage de chaque service et le rythme des réservations : le CRM en déduit les heures proposées au client.">
+          <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:28 }}>
+            <PlageCreneaux label="Midi" plage={lire('plage_resa_midi')} onChange={v=>enregistrer('plage_resa_midi', v)} />
+            <PlageCreneaux label="Soir" plage={lire('plage_resa_soir')} onChange={v=>enregistrer('plage_resa_soir', v)} />
           </div>
         </Bloc>
         <Bloc titre="Capacité du service" aide="Nombre de couverts au-delà duquel le service est considéré comme complet. Laisser à 0 pour ne poser aucune limite.">
@@ -9003,6 +9269,11 @@ function ParametresPage({ showToast, user }) {
         passez plutôt par « Statut du jour » dans le Click and Collect.
       </p>
 
+      {appOuverte && (
+        <ModaleApplication app={appOuverte} active={appsActives.includes(appOuverte.id)}
+          onBasculer={basculerApp} onFermer={()=>setAppOuverte(null)} />
+      )}
+
       {confirmReinit && (
         <>
           <div onClick={()=>setConfirmReinit(false)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:5300 }} />
@@ -9035,7 +9306,7 @@ function ParametresPage({ showToast, user }) {
                   <span style={{ fontSize:11, fontWeight:800, color:'#999', textTransform:'uppercase', letterSpacing:0.8 }}>{g.titre}</span>
                 </div>
                 <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
-                  {g.entrees.map(e => {
+                  {g.entrees.filter(e => !e.id.startsWith('mod-') || appsActives.includes(e.id.slice(4))).map(e => {
                     const actif = section === e.id;
                     return (
                       <button key={e.id} onClick={()=>setSection(e.id)}
