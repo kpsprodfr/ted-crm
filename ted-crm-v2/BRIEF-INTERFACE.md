@@ -312,9 +312,33 @@ Le **logo** ouvre le bloc Identité, avant le nom de l'établissement.
 
 **Compte et accès** contient le changement de mot de passe
 (`supabase.auth.updateUser`, 8 caractères minimum, saisie confirmée, œil
-d'affichage). La gestion de collaborateurs avec rôles **n'existe pas** : elle
-demande une table de rôles et une fonction serveur autorisée à créer des accès,
-donc une intervention en base — à ne faire que sur demande explicite.
+d'affichage) et la **gestion de l'équipe**.
+
+### Comptes et rôles
+
+Table `collaborateurs` adossée à `auth.users` (`on delete cascade`) : `email`,
+`nom`, `role`, `actif`. Quatre rôles — `service`, `cuisine`, `manager`,
+`proprietaire` — contrôlés par une contrainte.
+
+```sql
+public.mon_role()   -- SECURITY DEFINER, réservée à `authenticated`
+                    -- évite que la policy de lecture ne se rappelle elle-même
+```
+
+Politiques : chacun lit sa fiche, le propriétaire lit toute l'équipe ; seul le
+propriétaire crée, modifie ou retire.
+
+La création d'un accès passe par la fonction **`gerer-collaborateurs`**
+(`verify_jwt: true`) : elle vérifie que l'appelant est propriétaire **actif**
+avant d'utiliser la clé d'administration. Actions : `creer`, `supprimer`,
+`motDePasse`. Si l'insertion de la fiche échoue, le compte auth tout juste créé
+est supprimé — pas d'orphelin. Personne ne peut supprimer son propre compte.
+
+**La clé `service_role` ne doit jamais apparaître dans le frontend.**
+
+⚠️ Les rôles sont **définis et attribués, mais pas encore appliqués** : l'interface
+ne restreint rien selon le rôle, et les politiques des autres tables ne le
+consultent pas. C'est le chantier suivant.
 
 Les horaires se choisissent **dans une liste déroulante au quart d'heure**
 (`ChoixHeure`, 96 options de 00:00 à 23:45), jamais au clavier : le CRM se tient

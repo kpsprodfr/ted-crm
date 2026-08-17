@@ -8290,6 +8290,171 @@ const PARAM_GROUPES = [
 ];
 const PARAM_ENTREES = PARAM_GROUPES.flatMap(g => g.entrees);
 
+// Les quatre rôles du CRM, du plus restreint au plus large.
+const ROLES_CRM = [
+  { id:'service',     label:'Service en salle', aide:'Réservations et commandes : consulter et traiter. Aucune suppression définitive, aucun paramètre.' },
+  { id:'cuisine',     label:'Cuisine',          aide:'Les commandes et leurs statuts. Ni fichier client, ni chiffre d\'affaires, ni paramètres.' },
+  { id:'manager',     label:'Manager',          aide:'Tout le CRM — statistiques, carte et fichier client — sauf la gestion des comptes.' },
+  { id:'proprietaire',label:'Propriétaire',     aide:'Tous les droits, y compris créer et supprimer des comptes.' },
+];
+const libelleRole = (id) => ROLES_CRM.find(r => r.id === id)?.label || id;
+
+// Gestion de l'équipe. Réservée au propriétaire : la création d'un accès passe
+// par une fonction serveur, la clé d'administration ne peut pas vivre ici.
+function BlocCollaborateurs({ showToast, user }) {
+  const [equipe, setEquipe] = useState(null);
+  const [monRole, setMonRole] = useState(null);
+  const [ajout, setAjout] = useState(null);          // null | { nom, email, motDePasse, role }
+  const [envoi, setEnvoi] = useState(false);
+  const [confirmSuppr, setConfirmSuppr] = useState(null);
+
+  async function charger() {
+    const { data } = await safeQuery(
+      () => supabase.from('collaborateurs').select('id,email,nom,role,actif').order('created_at'),
+      { fallback: [], context: 'chargerCollaborateurs' }
+    );
+    const liste = data || [];
+    setEquipe(liste);
+    setMonRole(liste.find(c => c.id === user?.id)?.role || null);
+  }
+  useEffect(() => { charger(); }, []);  // eslint-disable-line
+
+  async function appeler(corps) {
+    const { data: { session } } = await supabase.auth.getSession();
+    const reponse = await fetch(`${supabase.supabaseUrl}/functions/v1/gerer-collaborateurs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+      body: JSON.stringify(corps),
+    });
+    return reponse.json().catch(() => ({ error: 'Réponse illisible' }));
+  }
+
+  async function creer() {
+    if (!ajout) return;
+    setEnvoi(true);
+    const r = await appeler({ action:'creer', ...ajout });
+    setEnvoi(false);
+    if (r.error) { showToast(r.error, 'error'); return; }
+    setAjout(null);
+    showToast('✅ Collaborateur ajouté');
+    charger();
+  }
+
+  async function supprimer(c) {
+    setConfirmSuppr(null);
+    const r = await appeler({ action:'supprimer', id: c.id });
+    if (r.error) { showToast(r.error, 'error'); return; }
+    showToast('Collaborateur supprimé');
+    charger();
+  }
+
+  async function changerRole(c, role) {
+    const { error } = await safeQuery(
+      () => supabase.from('collaborateurs').update({ role, updated_at: new Date().toISOString() }).eq('id', c.id),
+      { fallback: null, context: 'changerRole' }
+    );
+    if (error) { showToast('Modification impossible', 'error'); return; }
+    showToast(`✅ ${c.nom || c.email} — ${libelleRole(role)}`);
+    charger();
+  }
+
+  if (equipe === null) return <p style={{ margin:0, fontSize:13, color:'#bbb' }}>Chargement de l'équipe…</p>;
+
+  if (monRole !== 'proprietaire') return (
+    <p style={{ margin:0, fontSize:13, color:'#555', lineHeight:1.7 }}>
+      Vous êtes connecté en tant que <strong>{libelleRole(monRole) || 'collaborateur'}</strong>.
+      Seul un propriétaire peut créer ou retirer des accès.
+    </p>
+  );
+
+  const valide = ajout && ajout.email.includes('@') && ajout.motDePasse.length >= 8;
+
+  return (
+    <>
+      <div style={{ display:'flex', flexDirection:'column', marginBottom:16 }}>
+        {equipe.map((c, i) => {
+          const moi = c.id === user?.id;
+          return (
+            <div key={c.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 0', borderBottom: i < equipe.length - 1 ? '1px solid #f5f5f5' : 'none', flexWrap:'wrap' }}>
+              <div style={{ width:38, height:38, borderRadius:'50%', flexShrink:0, background:'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:800, color:'#666' }}>
+                {(c.nom || c.email || '?').trim()[0].toUpperCase()}
+              </div>
+              <div style={{ flex:1, minWidth:140 }}>
+                <div style={{ fontSize:14, fontWeight:700, color:'#111' }}>
+                  {c.nom || c.email}{moi && <span style={{ fontSize:11.5, fontWeight:600, color:'#999' }}> — vous</span>}
+                </div>
+                <div style={{ fontSize:12, color:'#999' }}>{c.email}</div>
+              </div>
+              <select value={c.role} disabled={moi} onChange={e=>changerRole(c, e.target.value)}
+                style={{ height:38, minWidth:150, border:'1.5px solid #e0e0e0', borderRadius:10, padding:'0 10px', fontSize:13, fontWeight:700,
+                  color: moi ? '#999' : '#111', background:'#fff', cursor: moi ? 'not-allowed' : 'pointer', boxSizing:'border-box' }}>
+                {ROLES_CRM.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
+              </select>
+              <button onClick={()=>setConfirmSuppr(c)} disabled={moi}
+                style={{ height:38, padding:'0 12px', borderRadius:10, border:`1.5px solid ${moi ? '#eee' : '#fca5a5'}`, background:'#fff',
+                  color: moi ? '#ccc' : '#b91c1c', fontSize:12.5, fontWeight:700, cursor: moi ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', gap:6 }}>
+                <Trash2 size={14} strokeWidth={2} /> Retirer
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      {ajout ? (
+        <div style={{ border:'1.5px solid #eee', borderRadius:13, padding:'16px 18px' }}>
+          <p style={{ margin:'0 0 14px', fontSize:13.5, fontWeight:800, color:'#111' }}>Nouveau collaborateur</p>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:12 }}>
+            <input value={ajout.nom} onChange={e=>setAjout(a => ({ ...a, nom: e.target.value }))} placeholder="Prénom et nom"
+              style={{ height:44, border:'1.5px solid #e0e0e0', borderRadius:10, padding:'0 13px', fontSize:14, outline:'none', boxSizing:'border-box' }} />
+            <input type="email" value={ajout.email} onChange={e=>setAjout(a => ({ ...a, email: e.target.value }))} placeholder="adresse@exemple.fr" autoComplete="off"
+              style={{ height:44, border:'1.5px solid #e0e0e0', borderRadius:10, padding:'0 13px', fontSize:14, outline:'none', boxSizing:'border-box' }} />
+            <input type="password" value={ajout.motDePasse} onChange={e=>setAjout(a => ({ ...a, motDePasse: e.target.value }))} placeholder="Mot de passe provisoire" autoComplete="new-password"
+              style={{ height:44, border:'1.5px solid #e0e0e0', borderRadius:10, padding:'0 13px', fontSize:14, outline:'none', boxSizing:'border-box' }} />
+            <select value={ajout.role} onChange={e=>setAjout(a => ({ ...a, role: e.target.value }))}
+              style={{ height:44, border:'1.5px solid #e0e0e0', borderRadius:10, padding:'0 10px', fontSize:14, fontWeight:700, color:'#111', background:'#fff', cursor:'pointer', boxSizing:'border-box' }}>
+              {ROLES_CRM.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
+            </select>
+          </div>
+          <p style={{ margin:'0 0 14px', fontSize:12, color:'#999', lineHeight:1.6 }}>
+            {ROLES_CRM.find(r => r.id === ajout.role)?.aide}
+            {' '}Communiquez-lui ce mot de passe : il pourra le changer depuis « Compte et accès ».
+          </p>
+          <div style={{ display:'flex', gap:10 }}>
+            <button onClick={()=>setAjout(null)} style={{ flex:1, height:44, border:'1.5px solid #ddd', borderRadius:11, background:'#fff', fontSize:13.5, fontWeight:700, cursor:'pointer', color:'#666' }}>Annuler</button>
+            <button onClick={creer} disabled={!valide || envoi}
+              style={{ flex:2, height:44, border:'none', borderRadius:11, background: valide && !envoi ? '#111' : '#f0f0f0', color: valide && !envoi ? '#fff' : '#bbb', fontSize:13.5, fontWeight:800, cursor: valide && !envoi ? 'pointer' : 'not-allowed' }}>
+              {envoi ? 'Création…' : "Créer l'accès"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={()=>setAjout({ nom:'', email:'', motDePasse:'', role:'service' })}
+          style={{ height:44, padding:'0 18px', borderRadius:11, border:'1.5px dashed #ddd', background:'transparent', color:'#666', fontSize:13.5, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:8 }}>
+          <UserPlus size={16} strokeWidth={2.2} /> Ajouter un collaborateur
+        </button>
+      )}
+
+      {confirmSuppr && (
+        <>
+          <div onClick={()=>setConfirmSuppr(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:5300 }} />
+          <div style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:18, width:'min(440px, calc(100vw - 32px))', padding:'24px 26px', boxShadow:'0 32px 80px rgba(0,0,0,0.3)', zIndex:5301 }}>
+            <h3 style={{ margin:'0 0 10px', fontSize:17, fontWeight:800, color:'#111' }}>Retirer cet accès ?</h3>
+            <p style={{ margin:'0 0 18px', fontSize:13.5, color:'#555', lineHeight:1.7 }}>
+              <strong>{confirmSuppr.nom || confirmSuppr.email}</strong> ne pourra plus se connecter au CRM.
+              Son compte est supprimé définitivement — cette action est irréversible.
+              Les réservations et commandes qu'il a saisies ne sont pas touchées.
+            </p>
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={()=>setConfirmSuppr(null)} style={{ flex:1, height:46, border:'1.5px solid #ddd', borderRadius:11, background:'#fff', fontSize:14, fontWeight:700, cursor:'pointer', color:'#666' }}>Annuler</button>
+              <button onClick={()=>supprimer(confirmSuppr)} style={{ flex:1, height:46, border:'none', borderRadius:11, background:'#dc2626', color:'#fff', fontSize:14, fontWeight:800, cursor:'pointer' }}>Retirer</button>
+            </div>
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
 // Changement du mot de passe du compte connecté.
 function BlocMotDePasse({ showToast }) {
   const [nouveau, setNouveau] = useState('');
@@ -8479,15 +8644,25 @@ function ParametresPage({ showToast, user }) {
             </div>
             <div>
               <div style={{ fontSize:14, fontWeight:700, color:'#111' }}>{user?.email || '—'}</div>
-              <div style={{ fontSize:12, color:'#999' }}>Seul compte du CRM — tous les droits</div>
+              <div style={{ fontSize:12, color:'#999' }}>Session en cours sur cet appareil</div>
             </div>
           </div>
         </Bloc>
         <Bloc titre="Mot de passe" aide="Il prend effet immédiatement, sur tous les appareils déjà connectés.">
           <BlocMotDePasse showToast={showToast} />
         </Bloc>
-        <Bloc titre="Collaborateurs et rôles" aide="Il n'existe aujourd'hui qu'un seul compte, et il donne tous les droits : chacun peut supprimer définitivement un client, une commande ou une réservation.">
-          {vide("Créer de vrais comptes pour vos collaborateurs demande deux choses que je ne peux pas poser sans votre accord : une table qui associe chaque compte à un rôle, et une fonction serveur autorisée à créer les accès. Dites-moi quand vous voulez que je m'en occupe, et quels rôles vous souhaitez.")}
+        <Bloc titre="Collaborateurs et rôles" aide="Chaque personne a son propre accès et son rôle. Un mot de passe provisoire lui est remis à la création : elle pourra le changer elle-même.">
+          <BlocCollaborateurs showToast={showToast} user={user} />
+        </Bloc>
+        <Bloc titre="Ce que permet chaque rôle">
+          <div style={{ display:'flex', flexDirection:'column' }}>
+            {ROLES_CRM.map((r, i) => (
+              <div key={r.id} style={{ padding:'10px 0', borderBottom: i < ROLES_CRM.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
+                <div style={{ fontSize:13.5, fontWeight:800, color:'#111', marginBottom:2 }}>{r.label}</div>
+                <div style={{ fontSize:12.5, color:'#999', lineHeight:1.6 }}>{r.aide}</div>
+              </div>
+            ))}
+          </div>
         </Bloc>
       </>
     ),
