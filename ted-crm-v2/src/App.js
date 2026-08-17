@@ -4373,13 +4373,9 @@ function ParametresCommandesModal({ delaiDefaut, commandesActives, motifFermetur
                   </div>
                 )}
               </div>
-              {commandesActives ? (
+              {commandesActives && (
                 <button onClick={()=>setConfirmDesactiver('commande')} style={{ flexShrink:0, height:40, padding:'0 16px', borderRadius:11, border:'1.5px solid #fca5a5', background:'#fff', color:'#b91c1c', fontSize:13, fontWeight:800, cursor:'pointer', whiteSpace:'nowrap' }}>
                   Désactiver temporairement
-                </button>
-              ) : (
-                <button onClick={rouvrirPrise} style={{ flexShrink:0, height:40, padding:'0 16px', borderRadius:11, border:'none', background:'#16a34a', color:'#fff', fontSize:13, fontWeight:800, cursor:'pointer', whiteSpace:'nowrap' }}>
-                  Réactiver
                 </button>
               )}
             </div>
@@ -4392,7 +4388,16 @@ function ParametresCommandesModal({ delaiDefaut, commandesActives, motifFermetur
                 </span>
               </div>
             )}
+
+            {/* Fermé : aucun réglage à faire, une seule action possible */}
+            {!commandesActives && (
+              <button onClick={rouvrirPrise} style={{ width:'100%', height:60, marginTop:16, border:'none', borderRadius:14, background:'#16a34a', color:'#fff', fontSize:16, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:9, boxShadow:'0 3px 12px rgba(22,163,74,0.28)' }}>
+                <CircleCheck size={20} strokeWidth={2.2} /> Réactiver les commandes
+              </button>
+            )}
           </div>
+
+          {commandesActives && (<>
           <div style={{ height:1, background:'#f0f0f0' }} />
 
           {/* ── Délai d'acceptation automatique ── */}
@@ -4442,6 +4447,7 @@ function ParametresCommandesModal({ delaiDefaut, commandesActives, motifFermetur
             </div>
             </>
           </div>
+          </>)}
 
         </div>
 
