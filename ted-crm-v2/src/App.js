@@ -8272,12 +8272,12 @@ function GrilleCreneaux({ valeurs, onChange }) {
 // Le sommaire des paramètres : trois groupes, tout visible d'un coup d'œil.
 const PARAM_GROUPES = [
   { titre:'Paramètres du compte', icone:User, entrees: [
-    { id:'compte-acces',      label:'Compte et accès',   aide:'Le compte connecté et les droits qu\'il donne.' },
+    { id:'compte-acces',      label:'Compte et accès',   aide:'Compte connecté, mot de passe et droits.' },
     { id:'compte-sauvegarde', label:'Sauvegardes',       aide:'Copies automatiques et état du CRM.' },
   ]},
   { titre:'Établissement', icone:Building2, entrees: [
     { id:'etab-identite', label:'Identité',            aide:'Nom, coordonnées et logo de l\'établissement.' },
-    { id:'etab-horaires', label:'Horaires',            aide:'Les jours d\'ouverture et les horaires de chaque service.' },
+    { id:'etab-horaires', label:'Horaires',            aide:'Les horaires de chaque jour de la semaine.' },
     { id:'etab-dates',    label:'Dates particulières', aide:'Fermetures exceptionnelles et horaires de circonstance.' },
   ]},
   { titre:'Modules', icone:LayoutGrid, entrees: [
@@ -8289,6 +8289,55 @@ const PARAM_GROUPES = [
   ]},
 ];
 const PARAM_ENTREES = PARAM_GROUPES.flatMap(g => g.entrees);
+
+// Changement du mot de passe du compte connecté.
+function BlocMotDePasse({ showToast }) {
+  const [nouveau, setNouveau] = useState('');
+  const [confirme, setConfirme] = useState('');
+  const [voir, setVoir] = useState(false);
+  const [envoi, setEnvoi] = useState(false);
+
+  const tropCourt = nouveau.length > 0 && nouveau.length < 8;
+  const different = confirme.length > 0 && nouveau !== confirme;
+  const pret = nouveau.length >= 8 && nouveau === confirme && !envoi;
+
+  async function changer() {
+    if (!pret) return;
+    setEnvoi(true);
+    const { error } = await supabase.auth.updateUser({ password: nouveau });
+    setEnvoi(false);
+    if (error) { showToast(error.message || 'Changement impossible', 'error'); return; }
+    setNouveau(''); setConfirme(''); setVoir(false);
+    showToast('✅ Mot de passe modifié');
+  }
+
+  const champ = (err) => ({ width:'100%', height:44, border:`1.5px solid ${err ? '#fca5a5' : '#e0e0e0'}`, borderRadius:10, padding:'0 44px 0 13px', fontSize:14.5, outline:'none', boxSizing:'border-box' });
+
+  return (
+    <div style={{ display:'grid', gridTemplateColumns:'1fr', gap:12, maxWidth:420 }}>
+      <div style={{ position:'relative' }}>
+        <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, marginBottom:6 }}>Nouveau mot de passe</label>
+        <input type={voir ? 'text' : 'password'} value={nouveau} onChange={e=>setNouveau(e.target.value)}
+          autoComplete="new-password" placeholder="8 caractères minimum" style={champ(tropCourt)} />
+        <button onClick={()=>setVoir(v=>!v)} aria-label={voir ? 'Masquer' : 'Afficher'}
+          style={{ position:'absolute', right:10, top:29, width:30, height:30, borderRadius:8, border:'none', background:'transparent', cursor:'pointer', color:'#999', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          {voir ? <EyeOff size={17} strokeWidth={2} /> : <Eye size={17} strokeWidth={2} />}
+        </button>
+        {tropCourt && <p style={{ margin:'6px 0 0', fontSize:12, color:'#b91c1c' }}>Au moins 8 caractères.</p>}
+      </div>
+      <div>
+        <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, marginBottom:6 }}>Confirmer</label>
+        <input type={voir ? 'text' : 'password'} value={confirme} onChange={e=>setConfirme(e.target.value)}
+          autoComplete="new-password" placeholder="Retapez le mot de passe" style={champ(different)} />
+        {different && <p style={{ margin:'6px 0 0', fontSize:12, color:'#b91c1c' }}>Les deux saisies diffèrent.</p>}
+      </div>
+      <button onClick={changer} disabled={!pret}
+        style={{ height:46, borderRadius:11, border:'none', background: pret ? '#111' : '#f0f0f0', color: pret ? '#fff' : '#bbb', fontSize:14, fontWeight:800, cursor: pret ? 'pointer' : 'not-allowed' }}>
+        {envoi ? 'Modification…' : 'Modifier le mot de passe'}
+      </button>
+    </div>
+  );
+}
 
 function ParametresPage({ showToast, user }) {
   const [section, setSection] = useState('etab-identite');
@@ -8399,20 +8448,6 @@ function ParametresPage({ showToast, user }) {
   const autoDefaut = conf ? conf.acceptation_auto_defaut !== 'false' : true;
   const delai = conf ? (parseInt(conf.delai_minutes) || 30) : 30;
 
-  // Un jour est « ouvert » dès qu'un de ses deux services l'est.
-  const jourOuvert = (id) => !!(semaine[id]?.midi?.ouvert || semaine[id]?.soir?.ouvert);
-  const joursOuverts = JOURS_SEMAINE.filter(j => jourOuvert(j.id));
-
-  // La frise commande la semaine type : activer un jour l'y fait apparaître.
-  const basculerJour = (id) => {
-    const j = semaine[id] || {};
-    const ouvrir = !jourOuvert(id);
-    enregistrer('horaires_semaine', { ...semaine, [id]: {
-      midi: { debut:'12:00', fin:'14:30', ...(j.midi || {}), ouvert: ouvrir },
-      soir: { debut:'19:00', fin:'23:30', ...(j.soir || {}), ouvert: ouvrir },
-    } });
-  };
-
   const majJour = (jourId, service, valeur) =>
     enregistrer('horaires_semaine', { ...semaine, [jourId]: { ...(semaine[jourId] || {}), [service]: valeur } });
 
@@ -8448,8 +8483,11 @@ function ParametresPage({ showToast, user }) {
             </div>
           </div>
         </Bloc>
-        <Bloc titre="Comptes et rôles" aide="Il n'existe qu'un seul compte. Toute personne qui l'utilise peut supprimer définitivement un client, une commande ou une réservation.">
-          {vide("Des comptes séparés avec des droits limités seraient à créer si plusieurs personnes utilisent le CRM en service.")}
+        <Bloc titre="Mot de passe" aide="Il prend effet immédiatement, sur tous les appareils déjà connectés.">
+          <BlocMotDePasse showToast={showToast} />
+        </Bloc>
+        <Bloc titre="Collaborateurs et rôles" aide="Il n'existe aujourd'hui qu'un seul compte, et il donne tous les droits : chacun peut supprimer définitivement un client, une commande ou une réservation.">
+          {vide("Créer de vrais comptes pour vos collaborateurs demande deux choses que je ne peux pas poser sans votre accord : une table qui associe chaque compte à un rôle, et une fonction serveur autorisée à créer les accès. Dites-moi quand vous voulez que je m'en occupe, et quels rôles vous souhaitez.")}
         </Bloc>
       </>
     ),
@@ -8458,13 +8496,6 @@ function ParametresPage({ showToast, user }) {
 
     'etab-identite': (
       <Bloc aide="Ces informations apparaissent sur la fiche de service imprimée et servent de référence à toute l'application.">
-        <Champ cle="nom" label="Nom de l'établissement" placeholder="LE TED" />
-        <Champ cle="adresse" label="Adresse" placeholder="28 Av. des Frères Montgolfier, 69680 Chassieu" />
-        <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:14 }}>
-          <Champ cle="telephone" label="Téléphone" placeholder="04 78 90 67 80" />
-          <Champ cle="email" label="E-mail de contact" placeholder="contact@leted.fr" type="email" />
-        </div>
-        <Champ cle="site" label="Site internet" placeholder="https://leted.fr" />
         <div>
           <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, marginBottom:6 }}>Logo</label>
           <div style={{ display:'flex', alignItems:'center', gap:14 }}>
@@ -8482,40 +8513,25 @@ function ParametresPage({ showToast, user }) {
             Adresse d'une image déjà en ligne. Elle sert d'en-tête aux e-mails et à la fiche de service imprimée.
           </p>
         </div>
+        <div style={{ height:14 }} />
+        <Champ cle="nom" label="Nom de l'établissement" placeholder="LE TED" />
+        <Champ cle="adresse" label="Adresse" placeholder="28 Av. des Frères Montgolfier, 69680 Chassieu" />
+        <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:14 }}>
+          <Champ cle="telephone" label="Téléphone" placeholder="04 78 90 67 80" />
+          <Champ cle="email" label="E-mail de contact" placeholder="contact@leted.fr" type="email" />
+        </div>
+        <Champ cle="site" label="Site internet" placeholder="https://leted.fr" />
       </Bloc>
     ),
 
     'etab-horaires': (
       <>
-        <Bloc titre="Jours d'ouverture" aide="Activez les jours où l'établissement reçoit. Un jour activé apparaît aussitôt dans la semaine type, avec ses horaires à régler.">
-          <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-            {JOURS_SEMAINE.map(j => {
-              const ouvert = jourOuvert(j.id);
-              return (
-                <button key={j.id} onClick={()=>basculerJour(j.id)}
-                  style={{ minWidth:104, height:62, borderRadius:13, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:3,
-                    border: ouvert ? 'none' : '1.5px solid #e0e0e0',
-                    background: ouvert ? '#111' : '#fff',
-                    color: ouvert ? '#E8C547' : '#bbb' }}>
-                  <span style={{ fontSize:14, fontWeight:900 }}>{j.court}</span>
-                  <span style={{ fontSize:9.5, fontWeight:700, textTransform:'uppercase', letterSpacing:0.4, color: ouvert ? '#E8C547' : '#ccc' }}>
-                    {ouvert ? 'ouverture' : 'fermé'}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </Bloc>
-
-        <Bloc titre="Semaine type" aide="Les horaires de chaque jour d'ouverture. Un clic sur Midi ou Soir ferme le service.">
-          {joursOuverts.length === 0 ? (
-            <p style={{ margin:0, fontSize:13, color:'#bbb' }}>Aucun jour d'ouverture activé ci-dessus.</p>
-          ) : (
+        <Bloc aide="Les horaires de chaque service. Un clic sur Midi ou Soir ferme le service ; un jour dont les deux services sont fermés est un jour de fermeture.">
             <div style={{ display:'flex', flexDirection:'column' }}>
-              {joursOuverts.map((j, i) => {
+              {JOURS_SEMAINE.map((j, i) => {
                 const jour = semaine[j.id] || {};
                 return (
-                  <div key={j.id} style={{ display:'flex', alignItems:'flex-start', gap:14, padding:'12px 0', borderBottom: i < joursOuverts.length - 1 ? '1px solid #f5f5f5' : 'none', flexWrap:'wrap' }}>
+                  <div key={j.id} style={{ display:'flex', alignItems:'flex-start', gap:14, padding:'12px 0', borderBottom: i < JOURS_SEMAINE.length - 1 ? '1px solid #f5f5f5' : 'none', flexWrap:'wrap' }}>
                     <span style={{ width:86, flexShrink:0, fontSize:13.5, fontWeight:800, color:'#111', paddingTop:9 }}>{j.long}</span>
                     <div style={{ display:'flex', flexDirection:'column', gap:8, flex:1, minWidth:0 }}>
                       <LigneService label="Midi" valeur={jour.midi} onChange={v=>majJour(j.id, 'midi', v)} />
@@ -8525,7 +8541,6 @@ function ParametresPage({ showToast, user }) {
                 );
               })}
             </div>
-          )}
         </Bloc>
       </>
     ),

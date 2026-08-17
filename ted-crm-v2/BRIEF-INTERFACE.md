@@ -305,9 +305,16 @@ se clique pas. L'entrée active prend le fond noir et le jaune de marque, comme
 la barre latérale. Le panneau de droite rappelle le nom de l'entrée et sa ligne
 d'explication : les blocs qui répéteraient ce titre n'en portent pas.
 
-La **frise des jours d'ouverture** commande la semaine type : activer un jour l'y
-fait apparaître avec ses horaires, le désactiver l'en retire. Un jour est « ouvert »
-dès qu'un de ses deux services l'est.
+La **semaine type** liste les sept jours. Un jour dont les deux services sont
+fermés est un jour de fermeture — il n'y a pas de frise séparée.
+
+Le **logo** ouvre le bloc Identité, avant le nom de l'établissement.
+
+**Compte et accès** contient le changement de mot de passe
+(`supabase.auth.updateUser`, 8 caractères minimum, saisie confirmée, œil
+d'affichage). La gestion de collaborateurs avec rôles **n'existe pas** : elle
+demande une table de rôles et une fonction serveur autorisée à créer des accès,
+donc une intervention en base — à ne faire que sur demande explicite.
 
 Les horaires se choisissent **dans une liste déroulante au quart d'heure**
 (`ChoixHeure`, 96 options de 00:00 à 23:45), jamais au clavier : le CRM se tient
