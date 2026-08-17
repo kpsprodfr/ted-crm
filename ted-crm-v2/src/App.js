@@ -913,7 +913,9 @@ const REGLAGES_DEFAUT = {
   email: '',
   site: 'https://leted.fr',
   logo: '',
-  applications_actives: ['reservations','commandes','clients','menu','communications'],
+  messages_auto: {},
+  applications_installees: ['reservations','commandes','clients','menu','communications'],
+  applications_actives:    ['reservations','commandes','clients','menu','communications'],
   lien_reservation: 'https://ted-crm.pages.dev/reserver.html',
   lien_commande: 'https://ted-crm.pages.dev/commander.html',
   bascule_soir: 15,            // heure à partir de laquelle on est au service du soir
@@ -944,7 +946,7 @@ const REGLAGES_DEFAUT = {
 // Objet vivant, lu au rendu par toute l'application.
 const REGLAGES = { ...REGLAGES_DEFAUT };
 
-const REGLAGES_JSON = ['applications_actives','fermetures','horaires_semaine','plage_resa_midi','plage_resa_soir','plage_retrait_midi','plage_retrait_soir'];
+const REGLAGES_JSON = ['messages_auto','applications_installees','applications_actives','fermetures','horaires_semaine','plage_resa_midi','plage_resa_soir','plage_retrait_midi','plage_retrait_soir'];
 const REGLAGES_NOMBRES = ['bascule_soir','fin_de_nuit','capacite_midi','capacite_soir'];
 
 // Applique une ligne de configuration à l'objet vivant.
@@ -8381,6 +8383,182 @@ function GrilleCreneaux({ valeurs, onChange }) {
   );
 }
 
+// ─── Messages automatiques ────────────────────────────────────────────────────
+// Chaque moment du parcours client peut déclencher un message. On choisit le
+// canal, on écrit le texte, et les variables entre accolades sont remplacées à
+// l'envoi.
+const MESSAGES_AUTO = [
+  {
+    id:'resa_confirmee', app:'reservations', label:'Réservation confirmée',
+    quand:"Dès que vous acceptez la demande du client.",
+    variables:['prenom','nom','date','heure','couverts','etablissement'],
+    defaut:"Bonjour {prenom}, votre table est réservée le {date} à {heure} pour {couverts} personnes. À très vite, {etablissement}.",
+  },
+  {
+    id:'resa_rappel', app:'reservations', label:'Rappel de réservation',
+    quand:"Avant l'heure de la réservation.", delai:true, delaiDefaut:120,
+    variables:['prenom','date','heure','couverts','etablissement'],
+    defaut:"Bonjour {prenom}, petit rappel : votre table vous attend aujourd'hui à {heure}. À tout à l'heure, {etablissement}.",
+  },
+  {
+    id:'resa_refusee', app:'reservations', label:'Réservation refusée',
+    quand:"Quand vous ne pouvez pas honorer une demande.",
+    variables:['prenom','date','heure','motif','etablissement','telephone'],
+    defaut:"Bonjour {prenom}, nous sommes désolés, nous ne pouvons pas vous accueillir le {date} à {heure} ({motif}). Appelez-nous au {telephone}, nous trouverons une solution.",
+  },
+  {
+    id:'cmd_acceptee', app:'commandes', label:'Commande acceptée',
+    quand:"À l'acceptation d'une commande, automatique ou à la main.",
+    variables:['prenom','numero','delai','total','etablissement'],
+    defaut:"Bonjour {prenom}, votre commande {numero} est acceptée. Elle sera prête dans environ {delai} minutes. {etablissement}.",
+  },
+  {
+    id:'cmd_prete', app:'commandes', label:'Commande prête',
+    quand:"Quand vous marquez la commande prête.",
+    variables:['prenom','numero','total','etablissement','adresse'],
+    defaut:"Bonjour {prenom}, votre commande {numero} est prête ! Nous vous attendons au {adresse}.",
+  },
+  {
+    id:'cmd_recuperee', app:'commandes', label:'Commande récupérée',
+    quand:"Au moment où le client repart avec sa commande.",
+    variables:['prenom','numero','total','etablissement'],
+    defaut:"Merci {prenom} ! Votre commande {numero} vous a bien été remise. À bientôt, {etablissement}.",
+  },
+  {
+    id:'cmd_refusee', app:'commandes', label:'Commande refusée',
+    quand:"Quand vous refusez une commande reçue.",
+    variables:['prenom','numero','motif','telephone','etablissement'],
+    defaut:"Bonjour {prenom}, nous ne pouvons malheureusement pas préparer votre commande {numero} ({motif}). Appelez-nous au {telephone}.",
+  },
+];
+
+const CANAUX = [
+  { id:'sms',   label:'SMS',    icone:MessageSquare },
+  { id:'email', label:'E-mail', icone:Mail },
+];
+
+const DELAIS_RAPPEL = [
+  { v:60,   label:'1 h avant' },
+  { v:120,  label:'2 h avant' },
+  { v:180,  label:'3 h avant' },
+  { v:1440, label:'La veille' },
+];
+
+// Réglage d'un message : canaux, délai éventuel, texte.
+function MessageAuto({ modele, valeur, onChange }) {
+  const [ouvert, setOuvert] = useState(false);
+  const v = {
+    actif: false, canaux: [], texte: modele.defaut,
+    delai: modele.delaiDefaut || 120, ...(valeur || {}),
+  };
+  const zoneRef = useRef(null);
+
+  const basculerCanal = (id) => {
+    const canaux = v.canaux.includes(id) ? v.canaux.filter(c => c !== id) : [...v.canaux, id];
+    // Sans canal, le message ne part nulle part : on le met en sommeil.
+    onChange({ ...v, canaux, actif: canaux.length > 0 && v.actif });
+  };
+
+  const insererVariable = (nom) => {
+    const zone = zoneRef.current;
+    const jeton = `{${nom}}`;
+    if (!zone) { onChange({ ...v, texte: v.texte + jeton }); return; }
+    const d = zone.selectionStart ?? v.texte.length;
+    const f = zone.selectionEnd ?? d;
+    onChange({ ...v, texte: v.texte.slice(0, d) + jeton + v.texte.slice(f) });
+    setTimeout(() => { zone.focus(); zone.setSelectionRange(d + jeton.length, d + jeton.length); }, 0);
+  };
+
+  const resume = v.canaux.length === 0
+    ? 'Aucun canal choisi'
+    : v.canaux.map(c => CANAUX.find(x => x.id === c)?.label).join(' et ');
+
+  return (
+    <div style={{ border:'1.5px solid #eee', borderRadius:14, overflow:'hidden' }}>
+      <button onClick={()=>setOuvert(o => !o)}
+        style={{ display:'flex', alignItems:'center', gap:12, width:'100%', textAlign:'left', cursor:'pointer', background:'#fff', border:'none', padding:'14px 16px' }}>
+        <span style={{ width:9, height:9, borderRadius:'50%', flexShrink:0, background: v.actif ? '#16a34a' : '#d4d4d4' }} />
+        <span style={{ flex:1, minWidth:0 }}>
+          <span style={{ display:'block', fontSize:14, fontWeight:800, color:'#111' }}>{modele.label}</span>
+          <span style={{ display:'block', fontSize:12, color:'#999', marginTop:2 }}>
+            {v.actif ? `Envoyé par ${resume}` : 'Inactif'} · {modele.quand}
+          </span>
+        </span>
+        <ChevronDown size={18} strokeWidth={2} color="#bbb" style={{ flexShrink:0, transform: ouvert ? 'rotate(180deg)' : 'none', transition:'transform 0.2s' }} />
+      </button>
+
+      {ouvert && (
+        <div style={{ padding:'4px 16px 16px', borderTop:'1px solid #f5f5f5' }}>
+          <p style={{ margin:'14px 0 7px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Envoyé par</p>
+          <div style={{ display:'flex', gap:8, marginBottom:16, flexWrap:'wrap' }}>
+            {CANAUX.map(c => {
+              const Icone = c.icone;
+              const choisi = v.canaux.includes(c.id);
+              return (
+                <button key={c.id} onClick={()=>basculerCanal(c.id)}
+                  style={{ height:42, padding:'0 16px', borderRadius:10, cursor:'pointer', fontSize:13, fontWeight:800, display:'flex', alignItems:'center', gap:8,
+                    border: choisi ? 'none' : '1.5px solid #e0e0e0',
+                    background: choisi ? '#E8C547' : '#fff',
+                    color: choisi ? '#111' : '#666' }}>
+                  <Icone size={15} strokeWidth={2} /> {c.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {modele.delai && (
+            <>
+              <p style={{ margin:'0 0 7px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Envoyé</p>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:7, marginBottom:16 }}>
+                {DELAIS_RAPPEL.map(d => (
+                  <button key={d.v} onClick={()=>onChange({ ...v, delai: d.v })}
+                    style={{ height:42, borderRadius:10, cursor:'pointer', fontSize:12.5, fontWeight:800,
+                      border: v.delai === d.v ? 'none' : '1.5px solid #e0e0e0',
+                      background: v.delai === d.v ? '#E8C547' : '#fff',
+                      color: v.delai === d.v ? '#111' : '#666' }}>
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
+          <p style={{ margin:'0 0 7px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Message</p>
+          <textarea ref={zoneRef} value={v.texte} onChange={e=>onChange({ ...v, texte: e.target.value })} rows={4}
+            style={{ width:'100%', border:'1.5px solid #e0e0e0', borderRadius:11, padding:'11px 13px', fontSize:14, lineHeight:1.6, outline:'none', boxSizing:'border-box', resize:'vertical', fontFamily:'inherit' }} />
+
+          <div style={{ display:'flex', flexWrap:'wrap', gap:6, margin:'10px 0 4px' }}>
+            {modele.variables.map(nom => (
+              <button key={nom} onClick={()=>insererVariable(nom)}
+                style={{ height:30, padding:'0 10px', borderRadius:8, border:'1.5px solid #eee', background:'#fafafa', color:'#666', fontSize:12, fontWeight:700, cursor:'pointer' }}>
+                {'{' + nom + '}'}
+              </button>
+            ))}
+          </div>
+          <p style={{ margin:'6px 0 16px', fontSize:12, color:'#bbb' }}>
+            Appuyez sur une étiquette pour l'insérer. Elle sera remplacée par la vraie valeur à l'envoi.
+          </p>
+
+          <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+            <button onClick={()=>onChange({ ...v, texte: modele.defaut })}
+              style={{ height:44, padding:'0 16px', borderRadius:11, border:'1.5px solid #ddd', background:'#fff', color:'#666', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+              Texte par défaut
+            </button>
+            <button onClick={()=>onChange({ ...v, actif: !v.actif })} disabled={v.canaux.length === 0 && !v.actif}
+              style={{ flex:1, minWidth:170, height:44, borderRadius:11, border:'none', fontSize:13.5, fontWeight:800,
+                background: v.actif ? '#fff' : (v.canaux.length ? '#16a34a' : '#f0f0f0'),
+                boxShadow: v.actif ? 'inset 0 0 0 1.5px #fca5a5' : 'none',
+                color: v.actif ? '#b91c1c' : (v.canaux.length ? '#fff' : '#bbb'),
+                cursor: v.canaux.length || v.actif ? 'pointer' : 'not-allowed' }}>
+              {v.actif ? 'Désactiver ce message' : (v.canaux.length ? 'Activer ce message' : 'Choisissez un canal')}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Le catalogue des applications du CRM. Chacune se décrit, s'active et se coupe.
 const APPLICATIONS = [
   {
@@ -8479,7 +8657,7 @@ function InterrupteurApp({ app, active, onBasculer }) {
 }
 
 // Fiche détaillée d'une application, avec son bouton d'activation.
-function ModaleApplication({ app, active, onBasculer, onFermer }) {
+function ModaleApplication({ app, installee, active, onInstaller, onBasculer, onFermer }) {
   const Icone = app.icone;
   const verrouillee = APPS_TOUJOURS_ACTIVES.includes(app.id);
   return (
@@ -8496,8 +8674,9 @@ function ModaleApplication({ app, active, onBasculer, onFermer }) {
             <p style={{ margin:'3px 0 0', fontSize:13, color:'#999' }}>{app.resume}</p>
           </div>
           <span style={{ flexShrink:0, fontSize:11.5, fontWeight:800, padding:'6px 12px', borderRadius:20,
-            background: active ? '#dcfce7' : '#f2f2f2', color: active ? '#15803d' : '#999' }}>
-            {active ? 'Activée' : 'Inactive'}
+            background: !installee ? '#f2f2f2' : (active ? '#dcfce7' : '#fef9c3'),
+            color: !installee ? '#999' : (active ? '#15803d' : '#92400e') }}>
+            {!installee ? 'Non installée' : (active ? 'Activée' : 'Éteinte')}
           </span>
           <button onClick={onFermer} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666', flexShrink:0 }}>✕</button>
         </div>
@@ -8546,17 +8725,24 @@ function ModaleApplication({ app, active, onBasculer, onFermer }) {
 
         <div style={{ display:'flex', gap:10, padding:'16px 26px calc(20px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #f0f0f0', flexShrink:0 }}>
           <button onClick={onFermer} style={{ ...btnSecondary, flex:1, height:48 }}>Fermer</button>
-          <button onClick={()=>onBasculer(app)} disabled={verrouillee}
-            style={{ flex:2, height:48, border:'none', borderRadius:11,
-              background: verrouillee ? '#f0f0f0' : (active ? '#fff' : '#16a34a'),
-              boxShadow: verrouillee ? 'none' : (active ? 'inset 0 0 0 1.5px #fca5a5' : 'none'),
-              color: verrouillee ? '#bbb' : (active ? '#b91c1c' : '#fff'),
-              fontSize:14.5, fontWeight:800, cursor: verrouillee ? 'not-allowed' : 'pointer',
-              display:'flex', alignItems:'center', justifyContent:'center', gap:9 }}>
-            {verrouillee
-              ? 'Application essentielle — toujours active'
-              : active ? 'Désactiver' : <><Plus size={17} strokeWidth={2.4} /> Activer l'application</>}
-          </button>
+          {!installee ? (
+            <button onClick={()=>onInstaller(app)}
+              style={{ flex:2, height:48, border:'none', borderRadius:11, background:'#111', color:'#fff',
+                fontSize:14.5, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:9 }}>
+              <Download size={17} strokeWidth={2.2} /> Installer l'application
+            </button>
+          ) : (
+            <button onClick={()=>onBasculer(app)} disabled={verrouillee}
+              style={{ flex:2, height:48, border:'none', borderRadius:11,
+                background: verrouillee ? '#f0f0f0' : (active ? '#fff' : '#16a34a'),
+                boxShadow: verrouillee ? 'none' : (active ? 'inset 0 0 0 1.5px #fca5a5' : 'none'),
+                color: verrouillee ? '#bbb' : (active ? '#b91c1c' : '#fff'),
+                fontSize:14.5, fontWeight:800, cursor: verrouillee ? 'not-allowed' : 'pointer',
+                display:'flex', alignItems:'center', justifyContent:'center', gap:9 }}>
+              {verrouillee ? 'Application essentielle — toujours active'
+                : active ? "Éteindre l'application" : "Rallumer l'application"}
+            </button>
+          )}
         </div>
       </div>
     </>
@@ -9040,7 +9226,9 @@ function ParametresPage({ showToast, user }) {
   const vide = (txt) => <p style={{ margin:0, fontSize:13, color:'#555', lineHeight:1.7 }}>{txt}</p>;
 
   // ── Données dérivées ──
+  const appsInstallees = lire('applications_installees') || [];
   const appsActives = lire('applications_actives') || [];
+  const messages = lire('messages_auto') || {};
 
   // Pour illustrer le réglage : le premier jour où le service est ouvert.
   const exempleOuverture = (service) => {
@@ -9048,14 +9236,20 @@ function ParametresPage({ showToast, user }) {
     const trouve = JOURS_SEMAINE.map(j => sem[j.id]?.[service]).find(h => h?.ouvert);
     return trouve || { debut:'12:00', fin: service === 'midi' ? '14:30' : '23:30' };
   };
-  const basculerApp = (app) => {
-    if (APPS_TOUJOURS_ACTIVES.includes(app.id)) return;
-    const active = appsActives.includes(app.id);
-    const liste = active ? appsActives.filter(x => x !== app.id) : [...appsActives, app.id];
-    enregistrer('applications_actives', liste);
+  // Installer ajoute l'application à la maison et l'allume. Une fois installée,
+  // elle reste : on ne fait plus que l'allumer ou l'éteindre.
+  const installerApp = (app) => {
+    if (appsInstallees.includes(app.id)) return;
+    enregistrer('applications_installees', [...appsInstallees, app.id]);
+    enregistrer('applications_actives', [...appsActives, app.id]);
     setAppOuverte(null);
-    if (!active) setSection('mod-' + app.id);
-    else if (section === 'mod-' + app.id) setSection('app-catalogue');
+    setSection('mod-' + app.id);
+  };
+
+  const basculerApp = (app) => {
+    if (APPS_TOUJOURS_ACTIVES.includes(app.id) || !appsInstallees.includes(app.id)) return;
+    const active = appsActives.includes(app.id);
+    enregistrer('applications_actives', active ? appsActives.filter(x => x !== app.id) : [...appsActives, app.id]);
   };
 
   const semaine = lire('horaires_semaine') || {};
@@ -9198,7 +9392,8 @@ function ParametresPage({ showToast, user }) {
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3 }}>
                 <span style={{ fontSize:15, fontWeight:800, color:'#111' }}>{app.label}</span>
-                {active && <span style={{ width:7, height:7, borderRadius:'50%', background:'#16a34a', flexShrink:0 }} />}
+                {active && <span title={appsActives.includes(app.id) ? 'Activée' : 'Installée, mais éteinte'}
+                  style={{ width:7, height:7, borderRadius:'50%', flexShrink:0, background: appsActives.includes(app.id) ? '#16a34a' : '#d4d4d4' }} />}
               </div>
               <div style={{ fontSize:12.5, color:'#999', lineHeight:1.55 }}>{app.resume}</div>
             </div>
@@ -9206,13 +9401,13 @@ function ParametresPage({ showToast, user }) {
           </button>
         );
       };
-      const actives = APPLICATIONS.filter(a => appsActives.includes(a.id));
-      const inactives = APPLICATIONS.filter(a => !appsActives.includes(a.id));
+      const actives = APPLICATIONS.filter(a => appsInstallees.includes(a.id));
+      const inactives = APPLICATIONS.filter(a => !appsInstallees.includes(a.id));
       const grille = { display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:12 };
       return (
         <>
           <p style={{ margin:'0 0 10px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>
-            Mes applications actives — {actives.length}
+            Mes applications — {actives.length}
           </p>
           <div style={{ ...grille, marginBottom: inactives.length ? 26 : 0 }}>
             {actives.map(a => <CarteApp key={a.id} app={a} active />)}
@@ -9220,7 +9415,7 @@ function ParametresPage({ showToast, user }) {
           {inactives.length > 0 && (
             <>
               <p style={{ margin:'0 0 10px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>
-                À découvrir — {inactives.length}
+                À installer — {inactives.length}
               </p>
               <div style={grille}>
                 {inactives.map(a => <CarteApp key={a.id} app={a} active={false} />)}
@@ -9316,12 +9511,14 @@ function ParametresPage({ showToast, user }) {
 
     'mod-communications': (
       <>
-        <Bloc titre="Notifications push" alerte
-          aide="Les notifications envoyées aux clients ne partent plus : la fonction « send-push-onesignal » répond 403 depuis un durcissement de l'authentification. Aucun client n'est prévenu de l'acceptation ou du refus de sa demande.">
-          {vide("En attendant, prévenez vos clients par téléphone ou par SMS depuis leur fiche. La réparation demande une intervention côté serveur, pas un réglage.")}
-        </Bloc>
-        <Bloc titre="Messages automatiques" aide="Les e-mails de confirmation et de refus sont pour l'instant écrits dans le code. Leur texte n'est pas modifiable depuis cette page.">
-          {vide("L'objet, le corps et la signature reprennent le nom et le site renseignés dans « Identité ».")}
+        <Bloc titre="Messages automatiques" aide="Ce que reçoit le client à chaque étape. Choisissez le canal, écrivez le texte : il part tout seul le moment venu.">
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            {MESSAGES_AUTO.filter(m => appsInstallees.includes(m.app)).map(m => (
+              <MessageAuto key={m.id} modele={m} valeur={messages[m.id]}
+                onChange={val=>enregistrer('messages_auto', { ...messages, [m.id]: val })} />
+            ))}
+          </div>
+          {MESSAGES_AUTO.every(m => !appsInstallees.includes(m.app)) && vide("Installez Réservations ou Click and Collect pour régler leurs messages.")}
         </Bloc>
       </>
     ),
@@ -9350,17 +9547,16 @@ function ParametresPage({ showToast, user }) {
 
   return (
     <div style={{ maxWidth:1180, margin:'0 auto', padding:'28px 32px 40px' }}>
-      <h1 style={{ margin:0, fontSize:26, fontWeight:900, color:'#111', display:'flex', alignItems:'center', gap:10 }}>
+      <h1 style={{ margin:'0 0 22px', fontSize:26, fontWeight:900, color:'#111', display:'flex', alignItems:'center', gap:10 }}>
         <Settings size={24} strokeWidth={1.9} /> Paramètres
       </h1>
-      <p style={{ color:'#888', fontSize:14, margin:'6px 0 22px', lineHeight:1.6 }}>
-        Réglages durables du CRM. Pour couper la prise de commande sur une seule journée,
-        passez plutôt par « Statut du jour » dans le Click and Collect.
-      </p>
 
       {appOuverte && (
-        <ModaleApplication app={appOuverte} active={appsActives.includes(appOuverte.id)}
-          onBasculer={basculerApp} onFermer={()=>setAppOuverte(null)} />
+        <ModaleApplication app={appOuverte}
+          installee={appsInstallees.includes(appOuverte.id)}
+          active={appsActives.includes(appOuverte.id)}
+          onInstaller={installerApp} onBasculer={basculerApp}
+          onFermer={()=>setAppOuverte(null)} />
       )}
 
       {confirmReinit && (
@@ -9385,7 +9581,8 @@ function ParametresPage({ showToast, user }) {
 
       <div style={{ display:'flex', gap:22, alignItems:'flex-start', flexDirection: isMobile ? 'column' : 'row' }}>
         {/* Sommaire : les trois groupes et toutes leurs entrées, d'un coup d'œil */}
-        <div style={{ width: isMobile ? '100%' : 232, flexShrink:0 }}>
+        <div style={{ width: isMobile ? '100%' : 232, flexShrink:0,
+          position: isMobile ? 'static' : 'sticky', top:0, alignSelf:'flex-start' }}>
           {PARAM_GROUPES.map((g, gi) => {
             const IconeG = g.icone;
             return (
@@ -9395,7 +9592,7 @@ function ParametresPage({ showToast, user }) {
                   <span style={{ fontSize:11, fontWeight:800, color:'#999', textTransform:'uppercase', letterSpacing:0.8 }}>{g.titre}</span>
                 </div>
                 <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
-                  {g.entrees.filter(e => !e.id.startsWith('mod-') || appsActives.includes(e.id.slice(4))).map(e => {
+                  {g.entrees.filter(e => !e.id.startsWith('mod-') || appsInstallees.includes(e.id.slice(4))).map(e => {
                     const actif = section === e.id;
                     return (
                       <button key={e.id} onClick={()=>setSection(e.id)}

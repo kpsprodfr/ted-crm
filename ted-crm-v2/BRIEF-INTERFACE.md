@@ -305,9 +305,32 @@ trois vignettes d'aperçu, teinte. « Toutes les applications » les range en
 **Mes applications actives** puis **À découvrir** ; un clic ouvre une modale large
 avec la description complète et un bouton **Activer l'application**.
 
-Activer ajoute l'entrée au sommaire et bascule dessus ; désactiver la retire.
-La liste vit dans le réglage `applications_actives`.
+**Deux états distincts, à ne pas confondre :**
+
+- `applications_installees` — l'application fait partie de la maison. Elle reste
+  au sommaire même éteinte. Une application non installée s'ajoute par
+  **« Installer l'application »**.
+- `applications_actives` — allumée ou éteinte. Une fois installée, on ne fait
+  plus que basculer cet état ; l'application ne quitte jamais la liste.
+
 `APPS_TOUJOURS_ACTIVES` (Réservations, Fichier clients) ne peuvent pas être coupées.
+
+La page Paramètres n'a **pas de sous-titre** sous son titre, et le **sommaire de
+gauche est fixe** (`position: sticky`) : seule la colonne de droite défile.
+
+### Messages automatiques
+
+`MESSAGES_AUTO` décrit chaque moment du parcours client : confirmation et rappel
+de réservation, refus, commande acceptée / prête / récupérée / refusée. Pour
+chacun : les **canaux** (SMS, e-mail, ou les deux), un **délai** pour le rappel,
+et le **texte**, avec des variables `{prenom}`, `{date}`, `{numero}`… insérables
+d'un appui. Rangé dans `messages_auto`, une entrée par message.
+
+Un message sans canal ne peut pas être activé. Seuls les messages des
+applications installées sont proposés.
+
+⚠️ Les messages sont **réglés mais pas encore envoyés** : il reste à les brancher
+sur les changements de statut et à câbler un service d'envoi SMS.
 
 ### Créneaux — réservation et retrait
 
