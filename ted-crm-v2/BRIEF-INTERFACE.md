@@ -287,23 +287,28 @@ le nom du produit cliquable. À remonter si la saisie tactile pose problème.
 Onglet de la barre latérale, **au-dessus de Déconnexion**. Réglages **durables**,
 par opposition au « Statut du jour » du Click and Collect qui ne vaut qu'une journée.
 
-Huit sections en sommaire à gauche : Établissement, Horaires, Réservations,
-Click and Collect, Liens publics, Notifications, Sécurité, Données.
+Navigation **à deux niveaux**, jamais un sommaire plat :
 
-Répartition à respecter :
+```
+Paramètres (accueil)
+├── Paramètres du compte      compte connecté, rôles, sauvegardes
+├── Établissement             identité, semaine type, dates particulières, repères de service
+└── Modules
+    ├── Réservations          créneaux, capacités, lien public + QR
+    ├── Click and Collect     acceptation auto, délai, horizon, créneaux de retrait, lien + QR
+    ├── Communications        notifications push, messages automatiques
+    ├── Menu                  renvoi vers l'onglet Menu
+    └── Fichier clients       confidentialité, corbeille et export
+```
 
-- **Établissement** : identité + les deux repères de service (bascule midi/soir, fin de nuit).
-- **Horaires** : *uniquement* la semaine type (7 jours × 2 services, ouvert/fermé + bornes)
-  et les **dates particulières** — une date, un motif, et chaque service ouvert ou fermé
-  avec ses horaires. Une phrase de contrôle résume ce que la date donnera.
-- **Réservations** : créneaux midi et soir dans un seul bloc, puis les capacités.
-- **Click and Collect** : acceptation auto, délai, horizon, puis créneaux de retrait
-  midi et soir dans un seul bloc.
-- **Liens publics** : les adresses sont **en consultation seule** (copier / ouvrir),
-  et **un QR code par usage** — réservation et commande — téléchargeables en 600 px.
+L'accueil présente trois grandes cartes (icône, titre, une ligne d'explication,
+chevron). Les modules sont une grille de cinq cartes du même modèle, en plus petit.
+Un bouton de retour en haut à gauche remonte d'un cran — vers Modules depuis un
+module, vers Paramètres sinon.
 
-Le conteneur de la vue utilise `height:'100vh'` et non `minHeight` : avec `minHeight`
-+ `overflowY:auto`, c'est le `body` qui défile et la page laisse apparaître du gris.
+**Le lien public et le QR code appartiennent au module** qui les concerne : celui
+de la réservation dans Réservations, celui de la commande dans Click and Collect.
+Les adresses sont en consultation seule.
 
 Tout passe par un objet unique :
 
