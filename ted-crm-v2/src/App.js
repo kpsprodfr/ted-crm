@@ -902,9 +902,57 @@ function useEcranEtroit(seuil = 1180) {
 // ─── Réservations Page ────────────────────────────────────────────────────────
 const FORM_URL = "https://ted-crm.pages.dev/reserver";
 
+// ─── Réglages de l'établissement ──────────────────────────────────────────────
+// Tout ce qui était écrit en dur et qui doit pouvoir changer sans développeur.
+// Les valeurs ci-dessous sont les repères actuels : elles servent de repli tant
+// que rien n'a été enregistré dans « Paramètres ».
+const REGLAGES_DEFAUT = {
+  nom: 'LE TED',
+  adresse: '28 Av. des Frères Montgolfier, 69680 Chassieu',
+  telephone: '04 78 90 67 80',
+  email: '',
+  site: 'https://leted.fr',
+  lien_reservation: 'https://ted-crm.pages.dev/reserver.html',
+  lien_commande: 'https://ted-crm.pages.dev/commander.html',
+  bascule_soir: 15,            // heure à partir de laquelle on est au service du soir
+  fin_de_nuit: 6,              // heure à laquelle la journée de service bascule
+  jours_fermeture: [],         // 0 = dimanche … 6 = samedi
+  capacite_midi: 0,            // 0 = pas de limite
+  capacite_soir: 0,
+  heures_resa_midi: ["12:00","12:15","12:30","12:45","13:00","13:15","13:30"],
+  heures_resa_soir: ["19:00","19:15","19:30","19:45","20:00","20:15","20:30","20:45","21:00","21:15","21:30"],
+  creneaux_retrait_midi: ['11:30','11:45','12:00','12:15','12:30','12:45','13:00','13:15','13:30','13:45','14:00','14:15'],
+  creneaux_retrait_soir: ['18:00','18:30','19:00','19:15','19:30','19:45','20:00','20:15','20:30','20:45','21:00','21:30'],
+};
+
+// Objet vivant, lu au rendu par toute l'application.
+const REGLAGES = { ...REGLAGES_DEFAUT };
+
+const REGLAGES_LISTES = ['jours_fermeture','heures_resa_midi','heures_resa_soir','creneaux_retrait_midi','creneaux_retrait_soir'];
+const REGLAGES_NOMBRES = ['bascule_soir','fin_de_nuit','capacite_midi','capacite_soir'];
+
+// Applique une ligne de configuration à l'objet vivant.
+function appliquerReglage(cle, valeur) {
+  if (!(cle in REGLAGES_DEFAUT)) return;
+  if (REGLAGES_LISTES.includes(cle)) {
+    try { const v = JSON.parse(valeur); if (Array.isArray(v)) REGLAGES[cle] = v; } catch { /* valeur illisible : on garde le repli */ }
+  } else if (REGLAGES_NOMBRES.includes(cle)) {
+    const n = parseInt(valeur, 10);
+    if (!Number.isNaN(n)) REGLAGES[cle] = n;
+  } else {
+    REGLAGES[cle] = valeur ?? '';
+  }
+}
+
+async function chargerReglages() {
+  const { data } = await safeQuery(
+    () => supabase.from('commandes_config').select('cle,valeur'),
+    { fallback: [], context: 'chargerReglages' }
+  );
+  (data || []).forEach(r => appliquerReglage(r.cle, r.valeur));
+}
+
 const OCCASIONS = ["Anniversaire","EVG — Enterrement de vie de garçon","EVJF — Enterrement de vie de jeune fille","Privatisation","Autre"];
-const HEURES_MIDI = ["12:00","12:15","12:30","12:45","13:00","13:15","13:30"];
-const HEURES_SOIR = ["19:00","19:15","19:30","19:45","20:00","20:15","20:30","20:45","21:00","21:15","21:30"];
 
 // Génère les 30 prochains jours comme options de select
 function buildDateOptions() {
@@ -985,7 +1033,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
     }
   }, [showCalPicker]);
 
-  const heures = service === 'midi' ? HEURES_MIDI : HEURES_SOIR;
+  const heures = service === 'midi' ? REGLAGES.heures_resa_midi : REGLAGES.heures_resa_soir;
 
   // Recherche automatique dès 10 chiffres
   async function handleTelChange(val) {
@@ -2069,7 +2117,7 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
                 style={{width:'100%',height:70,border:'1.5px solid #eee',borderRadius:8,padding:'8px 12px',fontSize:13,resize:'none',outline:'none',fontFamily:'inherit',boxSizing:'border-box'}}/>
               <div style={{display:'flex',flexWrap:'wrap',gap:5}}>
                 <span style={{fontSize:11,color:'#999',alignSelf:'center'}}>Insérer :</span>
-                {[{label:'{prénom}',val:c.prenom||'{prénom}'},{label:'{nom}',val:c.nom||'{nom}'},{label:'Lien',val:'https://ted-crm.pages.dev/reserver.html'}].map(v=>(
+                {[{label:'{prénom}',val:c.prenom||'{prénom}'},{label:'{nom}',val:c.nom||'{nom}'},{label:'Lien',val:REGLAGES.lien_reservation}].map(v=>(
                   <button key={v.label} onClick={()=>setSmsTexte((smsTexte+v.val).slice(0,smsLimit))} style={{background:'#fffbea',border:'1.5px solid #E8C547',borderRadius:6,padding:'3px 10px',fontSize:12,fontWeight:600,color:'#111',cursor:'pointer'}}>{v.label}</button>
                 ))}
               </div>
@@ -2351,7 +2399,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
       const nom = r.clients?.genre === 'Entreprise' ? (r.clients?.entreprise || '') : `${r.clients?.prenom || ''} ${r.clients?.nom || ''}`;
       return `<tr><td>${nom}</td><td style="text-align:center">${r.heure || ''}</td><td style="text-align:center">${r.nb_personnes || ''}</td><td></td><td>${r.commentaire_client || ''}</td><td></td></tr>`;
     }).join('');
-    const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Réservations TED - ${dateFormatee}</title><style>* { margin:0; padding:0; box-sizing:border-box; } body { font-family: Arial, sans-serif; background: #fff; padding: 40px; } .header { text-align: center; margin-bottom: 32px; border-bottom: 3px solid #E8C547; padding-bottom: 20px; } .logo { font-size: 32px; font-weight: 900; letter-spacing: 4px; color: #111; } .subtitle { font-size: 13px; color: #888; letter-spacing: 2px; margin-top: 4px; text-transform: uppercase; } .date-title { font-size: 20px; font-weight: 700; color: #111; margin-top: 16px; } .service-badge { display: inline-block; background: #E8C547; color: #111; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 700; margin-top: 8px; } table { width: 100%; border-collapse: collapse; margin-top: 24px; } th { background: #111; color: #E8C547; padding: 12px 16px; text-align: left; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; } td { padding: 12px 16px; border-bottom: 1px solid #eee; font-size: 14px; color: #333; } tr:last-child td { border-bottom: 2px solid #111; } .footer { margin-top: 32px; text-align: center; font-size: 11px; color: #bbb; } @media print { body { padding: 20px; } }</style></head><body><div class="header"><div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:8px"><img src="https://leted.fr/wp-content/uploads/2023/01/logo-Le-TED.png" style="height:60px;width:auto" onerror="this.src='https://ted-crm.pages.dev/favicon.png'" /><div class="logo">LE TED</div></div><div class="subtitle">Restaurant &amp; Club — Chassieu</div><div class="date-title">${dateFormatee}</div><div class="service-badge">${serviceLabel2}</div></div><table><thead><tr><th>Nom Prénom</th><th style="text-align:center">Heure</th><th style="text-align:center">Couverts</th><th style="text-align:center">N° Table</th><th>Commentaire</th><th style="text-align:center">Validé</th></tr></thead><tbody>${lignes}${(() => { const n = resasConfirmees.length; const nbTotal = Math.max(20, Math.ceil(n / 4) * 4); const nb = nbTotal - n; return Array(nb).fill('<tr><td style="padding:14px 16px;border-bottom:1px solid #eee">&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>').join(''); })()}</tbody></table><div class="footer">Imprimé le ${new Date().toLocaleDateString('fr-FR')} · ${resasConfirmees.length} réservation(s) — Le TED · 28 Av. des Frères Montgolfier, 69680 Chassieu · 04 78 90 67 80</div></body></html>`;
+    const html = `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Réservations TED - ${dateFormatee}</title><style>* { margin:0; padding:0; box-sizing:border-box; } body { font-family: Arial, sans-serif; background: #fff; padding: 40px; } .header { text-align: center; margin-bottom: 32px; border-bottom: 3px solid #E8C547; padding-bottom: 20px; } .logo { font-size: 32px; font-weight: 900; letter-spacing: 4px; color: #111; } .subtitle { font-size: 13px; color: #888; letter-spacing: 2px; margin-top: 4px; text-transform: uppercase; } .date-title { font-size: 20px; font-weight: 700; color: #111; margin-top: 16px; } .service-badge { display: inline-block; background: #E8C547; color: #111; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 700; margin-top: 8px; } table { width: 100%; border-collapse: collapse; margin-top: 24px; } th { background: #111; color: #E8C547; padding: 12px 16px; text-align: left; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; } td { padding: 12px 16px; border-bottom: 1px solid #eee; font-size: 14px; color: #333; } tr:last-child td { border-bottom: 2px solid #111; } .footer { margin-top: 32px; text-align: center; font-size: 11px; color: #bbb; } @media print { body { padding: 20px; } }</style></head><body><div class="header"><div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:8px"><img src="https://leted.fr/wp-content/uploads/2023/01/logo-Le-TED.png" style="height:60px;width:auto" onerror="this.src='https://ted-crm.pages.dev/favicon.png'" /><div class="logo">${REGLAGES.nom}</div></div><div class="subtitle">Restaurant &amp; Club — Chassieu</div><div class="date-title">${dateFormatee}</div><div class="service-badge">${serviceLabel2}</div></div><table><thead><tr><th>Nom Prénom</th><th style="text-align:center">Heure</th><th style="text-align:center">Couverts</th><th style="text-align:center">N° Table</th><th>Commentaire</th><th style="text-align:center">Validé</th></tr></thead><tbody>${lignes}${(() => { const n = resasConfirmees.length; const nbTotal = Math.max(20, Math.ceil(n / 4) * 4); const nb = nbTotal - n; return Array(nb).fill('<tr><td style="padding:14px 16px;border-bottom:1px solid #eee">&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>').join(''); })()}</tbody></table><div class="footer">Imprimé le ${new Date().toLocaleDateString('fr-FR')} · ${resasConfirmees.length} réservation(s) — ${REGLAGES.nom} · ${REGLAGES.adresse} · ${REGLAGES.telephone}</div></body></html>`;
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -2371,9 +2419,9 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
               <button onClick={() => setShowFormDropdown(v => !v)} style={{ background:'rgba(255,255,255,0.08)', border:'1px solid #444', borderRadius:8, height:34, padding:'0 14px', color:'#ccc', fontWeight:600, fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}><Link size={13} /> Formulaire</button>
               {showFormDropdown && (
                 <div style={{ position:'absolute', top:40, left:0, background:'#fff', borderRadius:10, border:'1.5px solid #eee', boxShadow:'0 8px 24px rgba(0,0,0,0.12)', padding:8, zIndex:200, minWidth:180 }}>
-                  <button type="button" onMouseDown={async(e)=>{ e.preventDefault(); e.stopPropagation(); try{ await navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver.html'); }catch{ const t=document.createElement('textarea'); t.value='https://ted-crm.pages.dev/reserver.html'; document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t); } showToast('✅ Lien copié !'); setShowFormDropdown(false); }} style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}><ClipboardList size={14} style={{display:'inline',verticalAlign:'middle',marginRight:6}} />Copier</button>
-                  <button type="button" onMouseDown={(e)=>{ e.preventDefault(); e.stopPropagation(); window.open('https://ted-crm.pages.dev/reserver.html','_blank'); setShowFormDropdown(false); }} style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}><Link size={14} style={{display:'inline',verticalAlign:'middle',marginRight:6}} />Ouvrir</button>
-                  <button type="button" onMouseDown={async(e)=>{ e.preventDefault(); e.stopPropagation(); const url='https://ted-crm.pages.dev/reserver.html'; if(navigator.share){ try{ await navigator.share({title:'Réservation Le TED',url}); }catch{} }else{ try{ await navigator.clipboard.writeText(url); }catch{} showToast('✅ Lien copié !'); } setShowFormDropdown(false); }} style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}><Share2 size={14} style={{display:'inline',verticalAlign:'middle',marginRight:6}} />Partager</button>
+                  <button type="button" onMouseDown={async(e)=>{ e.preventDefault(); e.stopPropagation(); try{ await navigator.clipboard.writeText(REGLAGES.lien_reservation); }catch{ const t=document.createElement('textarea'); t.value=REGLAGES.lien_reservation; document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t); } showToast('✅ Lien copié !'); setShowFormDropdown(false); }} style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}><ClipboardList size={14} style={{display:'inline',verticalAlign:'middle',marginRight:6}} />Copier</button>
+                  <button type="button" onMouseDown={(e)=>{ e.preventDefault(); e.stopPropagation(); window.open(REGLAGES.lien_reservation,'_blank'); setShowFormDropdown(false); }} style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}><Link size={14} style={{display:'inline',verticalAlign:'middle',marginRight:6}} />Ouvrir</button>
+                  <button type="button" onMouseDown={async(e)=>{ e.preventDefault(); e.stopPropagation(); const url=REGLAGES.lien_reservation; if(navigator.share){ try{ await navigator.share({title:'Réservation Le TED',url}); }catch{} }else{ try{ await navigator.clipboard.writeText(url); }catch{} showToast('✅ Lien copié !'); } setShowFormDropdown(false); }} style={{ display:'block', width:'100%', textAlign:'left', padding:'9px 14px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:600, borderRadius:7 }}><Share2 size={14} style={{display:'inline',verticalAlign:'middle',marginRight:6}} />Partager</button>
                 </div>
               )}
             </div>
@@ -2400,9 +2448,9 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                 <>
                   <div onClick={()=>setShowFormDropdown(false)} style={{ position:'fixed', inset:0, zIndex:299 }} />
                   <div style={{ position:'absolute', top:'calc(100% + 8px)', left:0, background:'#fff', borderRadius:10, boxShadow:'0 8px 32px rgba(0,0,0,0.15)', padding:6, minWidth:200, zIndex:300 }}>
-                    <button type="button" onMouseDown={async(e)=>{ e.preventDefault(); e.stopPropagation(); try{ await navigator.clipboard.writeText('https://ted-crm.pages.dev/reserver.html'); }catch{ const t=document.createElement('textarea'); t.value='https://ted-crm.pages.dev/reserver.html'; document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t); } showToast('✅ Lien copié !'); setShowFormDropdown(false); }} style={{ width:'100%', padding:'10px 14px', border:'none', background:'none', textAlign:'left', cursor:'pointer', fontSize:13, borderRadius:6, display:'flex', alignItems:'center', gap:10, color:'#111' }} onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'} onMouseLeave={e=>e.currentTarget.style.background='none'}><Copy size={15} strokeWidth={2} color="#666" /> Copier le lien</button>
-                    <button type="button" onMouseDown={(e)=>{ e.preventDefault(); e.stopPropagation(); window.open('https://ted-crm.pages.dev/reserver.html','_blank'); setShowFormDropdown(false); }} style={{ width:'100%', padding:'10px 14px', border:'none', background:'none', textAlign:'left', cursor:'pointer', fontSize:13, borderRadius:6, display:'flex', alignItems:'center', gap:10, color:'#111' }} onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'} onMouseLeave={e=>e.currentTarget.style.background='none'}><ExternalLink size={15} strokeWidth={2} color="#666" /> Ouvrir</button>
-                    <button type="button" onMouseDown={async(e)=>{ e.preventDefault(); e.stopPropagation(); const url='https://ted-crm.pages.dev/reserver.html'; if(navigator.share){ try{ await navigator.share({title:'Réservation Le TED',url}); }catch{} }else{ try{ await navigator.clipboard.writeText(url); }catch{} showToast('✅ Lien copié !'); } setShowFormDropdown(false); }} style={{ width:'100%', padding:'10px 14px', border:'none', background:'none', textAlign:'left', cursor:'pointer', fontSize:13, borderRadius:6, display:'flex', alignItems:'center', gap:10, color:'#111' }} onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'} onMouseLeave={e=>e.currentTarget.style.background='none'}><Share2 size={15} strokeWidth={2} color="#666" /> Partager</button>
+                    <button type="button" onMouseDown={async(e)=>{ e.preventDefault(); e.stopPropagation(); try{ await navigator.clipboard.writeText(REGLAGES.lien_reservation); }catch{ const t=document.createElement('textarea'); t.value=REGLAGES.lien_reservation; document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t); } showToast('✅ Lien copié !'); setShowFormDropdown(false); }} style={{ width:'100%', padding:'10px 14px', border:'none', background:'none', textAlign:'left', cursor:'pointer', fontSize:13, borderRadius:6, display:'flex', alignItems:'center', gap:10, color:'#111' }} onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'} onMouseLeave={e=>e.currentTarget.style.background='none'}><Copy size={15} strokeWidth={2} color="#666" /> Copier le lien</button>
+                    <button type="button" onMouseDown={(e)=>{ e.preventDefault(); e.stopPropagation(); window.open(REGLAGES.lien_reservation,'_blank'); setShowFormDropdown(false); }} style={{ width:'100%', padding:'10px 14px', border:'none', background:'none', textAlign:'left', cursor:'pointer', fontSize:13, borderRadius:6, display:'flex', alignItems:'center', gap:10, color:'#111' }} onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'} onMouseLeave={e=>e.currentTarget.style.background='none'}><ExternalLink size={15} strokeWidth={2} color="#666" /> Ouvrir</button>
+                    <button type="button" onMouseDown={async(e)=>{ e.preventDefault(); e.stopPropagation(); const url=REGLAGES.lien_reservation; if(navigator.share){ try{ await navigator.share({title:'Réservation Le TED',url}); }catch{} }else{ try{ await navigator.clipboard.writeText(url); }catch{} showToast('✅ Lien copié !'); } setShowFormDropdown(false); }} style={{ width:'100%', padding:'10px 14px', border:'none', background:'none', textAlign:'left', cursor:'pointer', fontSize:13, borderRadius:6, display:'flex', alignItems:'center', gap:10, color:'#111' }} onMouseEnter={e=>e.currentTarget.style.background='#f5f5f5'} onMouseLeave={e=>e.currentTarget.style.background='none'}><Share2 size={15} strokeWidth={2} color="#666" /> Partager</button>
                   </div>
                 </>
               )}
@@ -3030,7 +3078,7 @@ function CommandesPage({ showToast, user }) {
   const basculeesRef = useRef(new Set()); // commandes déjà passées en « Prête » automatiquement
   const isMobile = useIsMobile();
   const etroit = useEcranEtroit();
-  const LIEN_COMMANDE = 'https://ted-crm.pages.dev/commander.html';
+  const LIEN_COMMANDE = REGLAGES.lien_commande;
 
   async function loadCommandes(silent = false) {
     if (!silent) setLoading(true);
@@ -3434,10 +3482,11 @@ function labelJour(dateStr) {
 
 // La nuit appartient au service du soir : une commande encore en cours à 2h
 // du matin relève du service de la veille, pas de la journée qui commence.
-const HEURE_FIN_DE_NUIT = 6;
+// Les deux heures charnières se règlent dans « Paramètres ».
+const finDeNuit = () => REGLAGES.fin_de_nuit;
 
 // Service correspondant à une heure donnée
-const serviceDeLHeure = (h) => (h >= 15 || h < HEURE_FIN_DE_NUIT) ? 'soir' : 'midi';
+const serviceDeLHeure = (h) => (h >= REGLAGES.bascule_soir || h < finDeNuit()) ? 'soir' : 'midi';
 
 // Service d'une commande, d'après son heure de retrait (ou de réception).
 function serviceDe(c) {
@@ -3452,7 +3501,7 @@ function jourServiceDe(c) {
   const j = c.date_retrait || (c.created_at || '').split('T')[0];
   if (!j) return '';
   const h = c.heure_retrait ? parseInt(String(c.heure_retrait).slice(0, 2), 10) : null;
-  if (h !== null && h < HEURE_FIN_DE_NUIT) {
+  if (h !== null && h < finDeNuit()) {
     const d = new Date(j + 'T12:00:00');
     d.setDate(d.getDate() - 1);
     return dateLocale(d);
@@ -3620,7 +3669,7 @@ function BlocClickCollect({ stats, compact = false }) {
 const serviceActuel = () => serviceDeLHeure(new Date().getHours());
 function jourServiceActuel() {
   const d = new Date();
-  if (d.getHours() < HEURE_FIN_DE_NUIT) d.setDate(d.getDate() - 1);
+  if (d.getHours() < finDeNuit()) d.setDate(d.getDate() - 1);
   return dateLocale(d);
 }
 
@@ -5309,8 +5358,6 @@ function CatalogueModal({ parCategorie, quantiteDe, onAjouter, onRetirer, nbArti
 }
 
 // ── Créneaux de retrait proposés en un clic (mêmes services que les résas) ────
-const CRENEAUX_MIDI = ['11:30','11:45','12:00','12:15','12:30','12:45','13:00','13:15','13:30','13:45','14:00','14:15'];
-const CRENEAUX_SOIR = ['18:00','18:30','19:00','19:15','19:30','19:45','20:00','20:15','20:30','20:45','21:00','21:30'];
 
 // ── Prise de commande au téléphone / modification d'une commande ─────────────
 // `cmd` absent → création. `cmd` présent → édition de cette commande.
@@ -5594,12 +5641,12 @@ function NouvelleCommandeModal({ cmd, onClose, onSaved, showToast, delaiDefaut, 
     );
   })();
 
-  const creneaux = svcRetrait === 'midi' ? CRENEAUX_MIDI : CRENEAUX_SOIR;
+  const creneaux = svcRetrait === 'midi' ? REGLAGES.creneaux_retrait_midi : REGLAGES.creneaux_retrait_soir;
 
   // Cinq propositions : les prochains créneaux du jour, sinon le début du service.
   // L'heure déjà choisie reste toujours visible, même hors des cinq.
   const creneauxProposes = (() => {
-    const tous = [...CRENEAUX_MIDI, ...CRENEAUX_SOIR];
+    const tous = [...REGLAGES.creneaux_retrait_midi, ...REGLAGES.creneaux_retrait_soir];
     let base;
     if (dateRetrait === dateLocale()) {
       const maintenant = new Date();
@@ -8125,10 +8172,68 @@ function MenuPage({ showToast }) {
 
 const TABLES_BACKUP = ['clients','reservations','roue_gains','roue_recompenses','roue_config','parametres','menu_produits','menu_categories','menu_cartes','menu_soirees','menu_plat_jour','menu_origines'];
 
-// Réglages durables, par opposition au « Statut du jour » qui ne vaut que pour
-// la journée en cours.
-function ParametresPage({ showToast }) {
+// ─── Paramètres ───────────────────────────────────────────────────────────────
+// Tout ce qui était écrit en dur dans le code se règle ici. Par opposition au
+// « Statut du jour » du Click and Collect, qui ne vaut que pour la journée.
+const JOURS_SEMAINE = [
+  { id:1, court:'Lun', long:'Lundi' }, { id:2, court:'Mar', long:'Mardi' },
+  { id:3, court:'Mer', long:'Mercredi' }, { id:4, court:'Jeu', long:'Jeudi' },
+  { id:5, court:'Ven', long:'Vendredi' }, { id:6, court:'Sam', long:'Samedi' },
+  { id:0, court:'Dim', long:'Dimanche' },
+];
+
+const PARAM_SECTIONS = [
+  { id:'etablissement', label:'Établissement',   icone:Building2 },
+  { id:'horaires',      label:'Horaires',        icone:Clock },
+  { id:'reservations',  label:'Réservations',    icone:CalendarDays },
+  { id:'commandes',     label:'Click and Collect', icone:ShoppingBag },
+  { id:'liens',         label:'Liens publics',   icone:Link },
+  { id:'notifications', label:'Notifications',   icone:Bell },
+  { id:'securite',      label:'Sécurité',        icone:ShieldCheck },
+  { id:'donnees',       label:'Données',         icone:History },
+];
+
+// Un créneau horaire se saisit à la minute près, mais se lit en grille.
+function GrilleCreneaux({ valeurs, onChange }) {
+  const [ajout, setAjout] = useState('');
+  const ajouter = () => {
+    const h = ajout.trim();
+    if (!/^\d{1,2}:\d{2}$/.test(h)) return;
+    const norm = h.padStart(5, '0');
+    if (valeurs.includes(norm)) { setAjout(''); return; }
+    onChange([...valeurs, norm].sort());
+    setAjout('');
+  };
+  return (
+    <>
+      <div style={{ display:'flex', flexWrap:'wrap', gap:7, marginBottom:12 }}>
+        {valeurs.length === 0
+          ? <span style={{ fontSize:13, color:'#bbb' }}>Aucun créneau — les clients ne pourront rien choisir.</span>
+          : valeurs.map(h => (
+            <span key={h} style={{ display:'inline-flex', alignItems:'center', gap:6, fontSize:13, fontWeight:700, color:'#111', background:'#f7f7f7', border:'1.5px solid #eee', borderRadius:9, padding:'6px 8px 6px 11px' }}>
+              {h}
+              <button onClick={()=>onChange(valeurs.filter(v => v !== h))} aria-label={`Retirer ${h}`}
+                style={{ width:18, height:18, borderRadius:'50%', border:'none', background:'#e4e4e4', color:'#666', fontSize:11, cursor:'pointer', lineHeight:1 }}>✕</button>
+            </span>
+          ))}
+      </div>
+      <div style={{ display:'flex', gap:8 }}>
+        <input value={ajout} onChange={e=>setAjout(e.target.value)} onKeyDown={e=>{ if (e.key === 'Enter') ajouter(); }}
+          placeholder="19:45" maxLength={5}
+          style={{ width:110, height:40, border:'1.5px solid #e0e0e0', borderRadius:10, padding:'0 12px', fontSize:14, outline:'none', boxSizing:'border-box' }} />
+        <button onClick={ajouter} style={{ height:40, padding:'0 16px', borderRadius:10, border:'1.5px solid #ddd', background:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', color:'#111' }}>
+          Ajouter
+        </button>
+      </div>
+    </>
+  );
+}
+
+function ParametresPage({ showToast, user }) {
+  const [section, setSection] = useState('etablissement');
   const [conf, setConf] = useState(null);
+  const [brouillon, setBrouillon] = useState({});   // saisies texte en attente d'enregistrement
+  const isMobile = useIsMobile();
 
   async function charger() {
     const { data } = await safeQuery(
@@ -8141,81 +8246,294 @@ function ParametresPage({ showToast }) {
   }
   useEffect(() => { charger(); }, []);
 
-  async function maj(cle, valeur) {
-    setConf(c => ({ ...c, [cle]: String(valeur) }));
+  // Valeur courante : le brouillon en cours de saisie, sinon la base, sinon le repli.
+  const lire = (cle) => {
+    if (brouillon[cle] !== undefined) return brouillon[cle];
+    if (conf && conf[cle] !== undefined) {
+      if (REGLAGES_LISTES.includes(cle)) { try { const v = JSON.parse(conf[cle]); if (Array.isArray(v)) return v; } catch { /* repli */ } }
+      else if (REGLAGES_NOMBRES.includes(cle)) { const n = parseInt(conf[cle], 10); if (!Number.isNaN(n)) return n; }
+      else return conf[cle];
+    }
+    return REGLAGES_DEFAUT[cle] !== undefined ? REGLAGES_DEFAUT[cle] : '';
+  };
+
+  async function enregistrer(cle, valeur) {
+    const brut = Array.isArray(valeur) ? JSON.stringify(valeur) : String(valeur);
+    setConf(c => ({ ...(c || {}), [cle]: brut }));
+    setBrouillon(b => { const n = { ...b }; delete n[cle]; return n; });
+    appliquerReglage(cle, brut);      // effet immédiat dans toute l'application
     const { error } = await safeQuery(
-      () => supabase.from('commandes_config').upsert({ cle, valeur: String(valeur), updated_at: new Date().toISOString() }, { onConflict: 'cle' }),
+      () => supabase.from('commandes_config').upsert({ cle, valeur: brut, updated_at: new Date().toISOString() }, { onConflict: 'cle' }),
       { fallback: null, context: 'majParametre' }
     );
     if (error) { showToast('Enregistrement impossible', 'error'); charger(); }
     else showToast('✅ Réglage enregistré');
   }
 
-  const autoDefaut = conf ? conf.acceptation_auto_defaut !== 'false' : true;
-  const delai = conf ? (parseInt(conf.delai_minutes) || 30) : 30;
-  const horizon = conf ? (parseInt(conf.horizon_jours) || 15) : 15;
-
-  const Bloc = ({ titre, aide, children }) => (
-    <div style={{ background:'#fff', borderRadius:16, padding:'20px 24px', marginBottom:16 }}>
-      <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#111' }}>{titre}</h3>
-      {aide && <p style={{ margin:'4px 0 16px', fontSize:12.5, color:'#999', lineHeight:1.6 }}>{aide}</p>}
+  // ── Briques d'interface, communes à toutes les sections ──
+  const Bloc = ({ titre, aide, children, alerte }) => (
+    <div style={{ background:'#fff', borderRadius:16, padding:'20px 24px', marginBottom:16, border: alerte ? '1.5px solid #fecaca' : 'none' }}>
+      <h3 style={{ margin:0, fontSize:15, fontWeight:800, color: alerte ? '#b91c1c' : '#111' }}>{titre}</h3>
+      {aide && <p style={{ margin:'5px 0 16px', fontSize:12.5, color:'#999', lineHeight:1.6 }}>{aide}</p>}
       {children}
     </div>
   );
 
+  const Champ = ({ cle, label, placeholder, type = 'text' }) => (
+    <div style={{ marginBottom:14 }}>
+      <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, marginBottom:6 }}>{label}</label>
+      <input type={type} value={lire(cle)} placeholder={placeholder}
+        onChange={e=>setBrouillon(b => ({ ...b, [cle]: e.target.value }))}
+        onBlur={e=>{ if (brouillon[cle] !== undefined && e.target.value !== (conf?.[cle] ?? REGLAGES_DEFAUT[cle])) enregistrer(cle, e.target.value); }}
+        style={{ width:'100%', height:44, border:'1.5px solid #e0e0e0', borderRadius:10, padding:'0 13px', fontSize:14.5, outline:'none', boxSizing:'border-box' }} />
+    </div>
+  );
+
+  const Compteur = ({ cle, min, max, pas = 1, format }) => {
+    const v = lire(cle);
+    return (
+      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+        <button onClick={()=>enregistrer(cle, Math.max(min, v - pas))}
+          style={{ width:52, height:46, borderRadius:11, border:'1.5px solid #ddd', background:'#fff', fontSize:22, fontWeight:700, cursor:'pointer', color:'#111', lineHeight:1 }}>−</button>
+        <div style={{ flex:1, height:46, border:'1.5px solid #ddd', borderRadius:11, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, fontWeight:800, background:'#fafafa' }}>
+          {format ? format(v) : v}
+        </div>
+        <button onClick={()=>enregistrer(cle, Math.min(max, v + pas))}
+          style={{ width:52, height:46, borderRadius:11, border:'1.5px solid #ddd', background:'#fff', fontSize:22, fontWeight:700, cursor:'pointer', color:'#111', lineHeight:1 }}>+</button>
+      </div>
+    );
+  };
+
+  const LigneLien = ({ url, titre }) => (
+    <div style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 0', borderBottom:'1px solid #f5f5f5' }}>
+      <div style={{ flex:1, minWidth:0 }}>
+        <div style={{ fontSize:13.5, fontWeight:700, color:'#111' }}>{titre}</div>
+        <div style={{ fontSize:12, color:'#999', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{url || '—'}</div>
+      </div>
+      <button onClick={async()=>{ try { await navigator.clipboard.writeText(url); showToast('✅ Lien copié !'); } catch { showToast('Copie impossible', 'error'); } }}
+        disabled={!url} style={{ height:36, padding:'0 12px', borderRadius:9, border:'1.5px solid #ddd', background:'#fff', fontSize:12.5, fontWeight:700, cursor: url ? 'pointer' : 'not-allowed', color:'#111', display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+        <Copy size={14} strokeWidth={2} /> Copier
+      </button>
+      <button onClick={()=>window.open(url, '_blank')} disabled={!url}
+        style={{ height:36, padding:'0 12px', borderRadius:9, border:'none', background: url ? '#111' : '#f0f0f0', color: url ? '#fff' : '#bbb', fontSize:12.5, fontWeight:700, cursor: url ? 'pointer' : 'not-allowed', display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+        <ExternalLink size={14} strokeWidth={2} /> Ouvrir
+      </button>
+    </div>
+  );
+
+  const joursFermes = lire('jours_fermeture') || [];
+  const autoDefaut = conf ? conf.acceptation_auto_defaut !== 'false' : true;
+  const delai = conf ? (parseInt(conf.delai_minutes) || 30) : 30;
+  const horizon = conf ? (parseInt(conf.horizon_jours) || 15) : 15;
+
+  const contenu = {
+    etablissement: (
+      <>
+        <Bloc titre="Identité" aide="Ces informations apparaissent sur la fiche de service imprimée et servent de référence à toute l'application.">
+          <Champ cle="nom" label="Nom de l'établissement" placeholder="LE TED" />
+          <Champ cle="adresse" label="Adresse" placeholder="28 Av. des Frères Montgolfier, 69680 Chassieu" />
+          <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:14 }}>
+            <Champ cle="telephone" label="Téléphone" placeholder="04 78 90 67 80" />
+            <Champ cle="email" label="E-mail de contact" placeholder="contact@leted.fr" type="email" />
+          </div>
+          <Champ cle="site" label="Site internet" placeholder="https://leted.fr" />
+        </Bloc>
+        <Bloc titre="Jours de fermeture" aide="Les jours cochés sont ceux où l'établissement est fermé toute la journée.">
+          <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+            {JOURS_SEMAINE.map(j => {
+              const ferme = joursFermes.includes(j.id);
+              return (
+                <button key={j.id}
+                  onClick={()=>enregistrer('jours_fermeture', ferme ? joursFermes.filter(x => x !== j.id) : [...joursFermes, j.id].sort())}
+                  style={{ minWidth:78, height:46, borderRadius:11, cursor:'pointer', fontSize:13.5, fontWeight:800,
+                    border: ferme ? 'none' : '1.5px solid #e0e0e0',
+                    background: ferme ? '#dc2626' : '#fff',
+                    color: ferme ? '#fff' : '#666' }}>
+                  {j.court}
+                </button>
+              );
+            })}
+          </div>
+          <p style={{ margin:'12px 0 0', fontSize:12.5, color:'#999' }}>
+            {joursFermes.length === 0
+              ? 'Ouvert tous les jours.'
+              : `Fermé le ${joursFermes.map(id => JOURS_SEMAINE.find(j => j.id === id)?.long.toLowerCase()).join(', ')}.`}
+          </p>
+        </Bloc>
+      </>
+    ),
+
+    horaires: (
+      <>
+        <Bloc titre="Bascule midi / soir" aide="Heure à partir de laquelle une commande ou une réservation relève du service du soir. Ce repère partage toute l'application.">
+          <Compteur cle="bascule_soir" min={11} max={20} format={h => `${h} h`} />
+        </Bloc>
+        <Bloc titre="Fin de nuit" aide="Le service du soir déborde après minuit. Jusqu'à cette heure, on travaille encore la journée de la veille : une commande en préparation à 23 h 59 est toujours là à 2 h.">
+          <Compteur cle="fin_de_nuit" min={0} max={11} format={h => `${h} h du matin`} />
+        </Bloc>
+        <Bloc titre="Créneaux de réservation — Midi" aide="Heures proposées au client sur le formulaire de réservation.">
+          <GrilleCreneaux valeurs={lire('heures_resa_midi')} onChange={v=>enregistrer('heures_resa_midi', v)} />
+        </Bloc>
+        <Bloc titre="Créneaux de réservation — Soir">
+          <GrilleCreneaux valeurs={lire('heures_resa_soir')} onChange={v=>enregistrer('heures_resa_soir', v)} />
+        </Bloc>
+        <Bloc titre="Créneaux de retrait — Midi" aide="Heures proposées pour venir chercher une commande.">
+          <GrilleCreneaux valeurs={lire('creneaux_retrait_midi')} onChange={v=>enregistrer('creneaux_retrait_midi', v)} />
+        </Bloc>
+        <Bloc titre="Créneaux de retrait — Soir">
+          <GrilleCreneaux valeurs={lire('creneaux_retrait_soir')} onChange={v=>enregistrer('creneaux_retrait_soir', v)} />
+        </Bloc>
+      </>
+    ),
+
+    reservations: (
+      <>
+        <Bloc titre="Capacité du service" aide="Nombre de couverts au-delà duquel le service est considéré comme complet. Laisser à 0 pour ne poser aucune limite.">
+          <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:16 }}>
+            <div>
+              <p style={{ margin:'0 0 8px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Midi</p>
+              <Compteur cle="capacite_midi" min={0} max={400} pas={5} format={v => v ? `${v} couverts` : 'sans limite'} />
+            </div>
+            <div>
+              <p style={{ margin:'0 0 8px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Soir</p>
+              <Compteur cle="capacite_soir" min={0} max={400} pas={5} format={v => v ? `${v} couverts` : 'sans limite'} />
+            </div>
+          </div>
+        </Bloc>
+      </>
+    ),
+
+    commandes: (
+      <>
+        <Bloc titre="Acceptation automatique" aide="Quand elle est active, une commande en ligne est acceptée seule et le client reçoit aussitôt son délai. Sinon, chaque commande attend une validation à la main dans « Nouvelles commandes à traiter ».">
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:16 }}>
+            <span style={{ fontSize:14, fontWeight:700, color: autoDefaut ? '#15803d' : '#b91c1c' }}>
+              {autoDefaut ? 'Active en permanence' : 'Désactivée — validation manuelle'}
+            </span>
+            <button onClick={()=>enregistrer('acceptation_auto_defaut', autoDefaut ? 'false' : 'true')} disabled={!conf}
+              style={{ height:42, padding:'0 18px', borderRadius:11, cursor: conf ? 'pointer' : 'wait', fontSize:13.5, fontWeight:800, whiteSpace:'nowrap',
+                border: autoDefaut ? '1.5px solid #fca5a5' : 'none',
+                background: autoDefaut ? '#fff' : '#16a34a',
+                color: autoDefaut ? '#b91c1c' : '#fff' }}>
+              {autoDefaut ? 'Désactiver' : 'Réactiver'}
+            </button>
+          </div>
+        </Bloc>
+        <Bloc titre="Délai annoncé au client" aide="Temps de préparation communiqué quand une commande est acceptée automatiquement.">
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8 }}>
+            {DELAIS_RAPIDES.map(mn => (
+              <button key={mn} onClick={()=>enregistrer('delai_minutes', mn)} disabled={!conf}
+                style={{ height:48, borderRadius:11, border: delai===mn ? '2px solid #16a34a' : '1.5px solid #ddd', background: delai===mn ? '#16a34a' : '#fff', color: delai===mn ? '#fff' : '#333', fontSize:14.5, fontWeight:800, cursor: conf ? 'pointer' : 'wait' }}>
+                {fmtDelai(mn)}
+              </button>
+            ))}
+          </div>
+        </Bloc>
+        <Bloc titre="Commande à l'avance" aide="Nombre de jours pendant lesquels un client peut réserver un retrait à partir d'aujourd'hui.">
+          <Compteur cle="horizon_jours" min={1} max={90} format={v => `${v} jour${v > 1 ? 's' : ''}`} />
+        </Bloc>
+      </>
+    ),
+
+    liens: (
+      <>
+        <Bloc titre="Pages publiques" aide="Les adresses que vous partagez à vos clients. Elles servent aussi aux boutons « Lien client » des pages Réservations et Click and Collect.">
+          <Champ cle="lien_reservation" label="Formulaire de réservation" placeholder="https://…/reserver.html" />
+          <Champ cle="lien_commande" label="Page de commande" placeholder="https://…/commander.html" />
+          <div style={{ marginTop:6 }}>
+            <LigneLien titre="Réservation" url={lire('lien_reservation')} />
+            <LigneLien titre="Commande" url={lire('lien_commande')} />
+            <LigneLien titre="Site internet" url={lire('site')} />
+          </div>
+        </Bloc>
+        <Bloc titre="QR code" aide="À imprimer sur les tables ou la vitrine. Il pointe vers le formulaire de réservation.">
+          <img alt="QR code du formulaire de réservation"
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(lire('lien_reservation') || '')}`}
+            style={{ width:180, height:180, borderRadius:12, border:'1.5px solid #eee', background:'#fff' }} />
+        </Bloc>
+      </>
+    ),
+
+    notifications: (
+      <>
+        <Bloc titre="Notifications push" alerte
+          aide="Les notifications envoyées aux clients ne partent plus : la fonction « send-push-onesignal » répond 403 depuis un durcissement de l'authentification. Aucun client n'est prévenu de l'acceptation ou du refus de sa demande.">
+          <p style={{ margin:0, fontSize:13, color:'#555', lineHeight:1.7 }}>
+            En attendant, prévenez vos clients par téléphone ou par SMS depuis leur fiche.
+            La réparation demande une intervention côté serveur, pas un réglage.
+          </p>
+        </Bloc>
+        <Bloc titre="Messages automatiques" aide="Les e-mails de confirmation et de refus sont pour l'instant écrits dans le code. Leur texte n'est pas modifiable depuis cette page.">
+          <p style={{ margin:0, fontSize:13, color:'#555', lineHeight:1.7 }}>
+            L'objet, le corps et la signature reprennent le nom et le site renseignés dans « Établissement ».
+          </p>
+        </Bloc>
+      </>
+    ),
+
+    securite: (
+      <>
+        <Bloc titre="Compte connecté">
+          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+            <div style={{ width:44, height:44, borderRadius:'50%', background:'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <User size={20} strokeWidth={2} color="#666" />
+            </div>
+            <div>
+              <div style={{ fontSize:14, fontWeight:700, color:'#111' }}>{user?.email || '—'}</div>
+              <div style={{ fontSize:12, color:'#999' }}>Seul compte du CRM — tous les droits</div>
+            </div>
+          </div>
+        </Bloc>
+        <Bloc titre="Fichier client exposé" alerte
+          aide="La table des clients est lisible publiquement avec la clé anonyme de l'application. Noms, téléphones et e-mails sont accessibles à qui sait la demander.">
+          <p style={{ margin:0, fontSize:13, color:'#555', lineHeight:1.7 }}>
+            Cela se corrige côté base de données, en restreignant la lecture aux comptes connectés.
+            Je ne touche pas à la base sans votre accord explicite.
+          </p>
+        </Bloc>
+        <Bloc titre="Comptes et rôles" aide="Il n'existe qu'un seul compte. Toute personne qui l'utilise peut supprimer définitivement un client, une commande ou une réservation.">
+          <p style={{ margin:0, fontSize:13, color:'#555', lineHeight:1.7 }}>
+            Des comptes séparés avec des droits limités seraient à créer si plusieurs personnes utilisent le CRM en service.
+          </p>
+        </Bloc>
+      </>
+    ),
+
+    donnees: <SystemePage showToast={showToast} />,
+  };
+
   return (
-    <div style={{ maxWidth:900, margin:'0 auto', padding:'28px 32px 40px' }}>
+    <div style={{ maxWidth:1100, margin:'0 auto', padding:'28px 32px 40px' }}>
       <h1 style={{ margin:0, fontSize:26, fontWeight:900, color:'#111', display:'flex', alignItems:'center', gap:10 }}>
         <Settings size={24} strokeWidth={1.9} /> Paramètres
       </h1>
-      <p style={{ color:'#888', fontSize:14, margin:'6px 0 24px' }}>
+      <p style={{ color:'#888', fontSize:14, margin:'6px 0 22px' }}>
         Réglages durables du CRM. Pour couper la prise de commande sur une seule journée,
         passez plutôt par « Statut du jour » dans le Click and Collect.
       </p>
 
-      <Bloc titre="Acceptation automatique des commandes"
-        aide="Quand elle est active, une commande en ligne est acceptée seule et le client reçoit aussitôt son délai. Sinon, chaque commande attend une validation à la main dans « Nouvelles commandes à traiter ».">
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:16 }}>
-          <span style={{ fontSize:14, fontWeight:700, color: autoDefaut ? '#15803d' : '#b91c1c' }}>
-            {autoDefaut ? 'Active en permanence' : 'Désactivée — validation manuelle'}
-          </span>
-          <button onClick={()=>maj('acceptation_auto_defaut', autoDefaut ? 'false' : 'true')} disabled={!conf}
-            style={{ height:42, padding:'0 18px', borderRadius:11, cursor: conf ? 'pointer' : 'wait', fontSize:13.5, fontWeight:800, whiteSpace:'nowrap',
-              border: autoDefaut ? '1.5px solid #fca5a5' : 'none',
-              background: autoDefaut ? '#fff' : '#16a34a',
-              color: autoDefaut ? '#b91c1c' : '#fff' }}>
-            {autoDefaut ? 'Désactiver' : 'Réactiver'}
-          </button>
+      <div style={{ display:'flex', gap:20, alignItems:'flex-start', flexDirection: isMobile ? 'column' : 'row' }}>
+        {/* Sommaire : mêmes codes que la barre latérale, en clair */}
+        <div style={{ width: isMobile ? '100%' : 210, flexShrink:0, display:'flex', flexDirection: isMobile ? 'row' : 'column', gap:4, overflowX: isMobile ? 'auto' : 'visible' }}>
+          {PARAM_SECTIONS.map(sec => {
+            const Icone = sec.icone;
+            const actif = section === sec.id;
+            return (
+              <button key={sec.id} onClick={()=>setSection(sec.id)}
+                style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 14px', borderRadius:11, border:'none', cursor:'pointer', textAlign:'left', whiteSpace:'nowrap', flexShrink:0,
+                  background: actif ? '#111' : 'transparent', color: actif ? '#E8C547' : '#666',
+                  fontSize:13.5, fontWeight: actif ? 800 : 600 }}>
+                <Icone size={16} strokeWidth={2} /> {sec.label}
+              </button>
+            );
+          })}
         </div>
-      </Bloc>
-
-      <Bloc titre="Délai annoncé au client"
-        aide="Temps de préparation communiqué quand une commande est acceptée automatiquement.">
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8 }}>
-          {DELAIS_RAPIDES.map(mn => (
-            <button key={mn} onClick={()=>maj('delai_minutes', mn)} disabled={!conf}
-              style={{ height:48, borderRadius:11, border: delai===mn ? '2px solid #16a34a' : '1.5px solid #ddd', background: delai===mn ? '#16a34a' : '#fff', color: delai===mn ? '#fff' : '#333', fontSize:14.5, fontWeight:800, cursor: conf ? 'pointer' : 'wait' }}>
-              {fmtDelai(mn)}
-            </button>
-          ))}
+        <div style={{ flex:1, minWidth:0 }}>
+          {conf === null
+            ? <p style={{ padding:'40px 0', textAlign:'center', color:'#bbb', fontSize:14 }}>Chargement des réglages…</p>
+            : contenu[section]}
         </div>
-      </Bloc>
-
-      <Bloc titre="Commande à l'avance"
-        aide="Nombre de jours pendant lesquels un client peut réserver un retrait à partir d'aujourd'hui.">
-        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-          <button onClick={()=>maj('horizon_jours', Math.max(1, horizon - 1))} disabled={!conf}
-            style={{ width:52, height:46, borderRadius:11, border:'1.5px solid #ddd', background:'#fff', fontSize:22, fontWeight:700, cursor: conf ? 'pointer' : 'wait', color:'#111', lineHeight:1 }}>−</button>
-          <div style={{ flex:1, height:46, border:'1.5px solid #ddd', borderRadius:11, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, fontWeight:800, background:'#fafafa' }}>
-            {horizon} jour{horizon > 1 ? 's' : ''}
-          </div>
-          <button onClick={()=>maj('horizon_jours', Math.min(90, horizon + 1))} disabled={!conf}
-            style={{ width:52, height:46, borderRadius:11, border:'1.5px solid #ddd', background:'#fff', fontSize:22, fontWeight:700, cursor: conf ? 'pointer' : 'wait', color:'#111', lineHeight:1 }}>+</button>
-        </div>
-      </Bloc>
-
-      {/* Sauvegardes : la page existait déjà, elle n'était simplement plus atteignable */}
-      <SystemePage showToast={showToast} />
+      </div>
     </div>
   );
 }
@@ -9096,7 +9414,7 @@ function CRMApp({ user, onLogout }) {
     <>
       {sidebarDesktop}
       <div style={{ marginLeft:120, minHeight:'100vh', background:'#f5f5f5', overflowY:'auto', boxSizing:'border-box' }}>
-        <ParametresPage showToast={showToast} />
+        <ParametresPage showToast={showToast} user={user} />
       </div>
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
     </>
@@ -9231,7 +9549,7 @@ function CRMApp({ user, onLogout }) {
           .replace(/{nom}/g, client.nom || '')
           .replace(/{tel}/g, client.tel || '')
           .replace(/{entreprise}/g, client.entreprise || '')
-          .replace(/{lien_resa}/g, 'https://ted-crm.pages.dev/reserver.html');
+          .replace(/{lien_resa}/g, REGLAGES.lien_reservation);
         try {
           // Envoi via la function protégée (la clé Brevo ne quitte jamais le serveur)
           const res = await fetch('/send-sms', {
@@ -9659,7 +9977,7 @@ function CRMApp({ user, onLogout }) {
                       .replace(/{nom}/g, premier?.nom||'Nom')
                       .replace(/{tel}/g, premier?.tel||'Téléphone')
                       .replace(/{entreprise}/g, premier?.entreprise||'Entreprise')
-                      .replace(/{lien_resa}/g, 'https://ted-crm.pages.dev/reserver.html');
+                      .replace(/{lien_resa}/g, REGLAGES.lien_reservation);
                     return (
                       <div style={{border:'1.5px solid #eee',borderRadius:14,overflow:'hidden'}}>
                         {commType==='email' ? (
@@ -10669,6 +10987,16 @@ function CRMApp({ user, onLogout }) {
 export default function App() {
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
+  // Les réglages sont chargés avant le premier rendu du CRM : remonter
+  // l'application après coup couperait les abonnements temps réel.
+  const [reglagesPrets, setReglagesPrets] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    let vivant = true;
+    chargerReglages().finally(() => { if (vivant) setReglagesPrets(true); });
+    return () => { vivant = false; };
+  }, [user]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -10688,5 +11016,6 @@ export default function App() {
 
   if (checking) return <div style={{ textAlign:"center", paddingTop:80, fontSize:16, color:"#888" }}>Chargement…</div>;
   if (!user) return <LoginPage onLogin={()=>{}} />;
+  if (!reglagesPrets) return <div style={{ textAlign:"center", paddingTop:80, fontSize:16, color:"#888" }}>Chargement…</div>;
   return <CRMApp user={user} onLogout={handleLogout} />;
 }

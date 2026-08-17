@@ -282,6 +282,39 @@ le nom du produit cliquable. À remonter si la saisie tactile pose problème.
 
 ---
 
+## 8 bis. Paramètres
+
+Onglet de la barre latérale, **au-dessus de Déconnexion**. Réglages **durables**,
+par opposition au « Statut du jour » du Click and Collect qui ne vaut qu'une journée.
+
+Huit sections en sommaire à gauche : Établissement, Horaires, Réservations,
+Click and Collect, Liens publics, Notifications, Sécurité, Données.
+
+Tout passe par un objet unique :
+
+```js
+REGLAGES_DEFAUT   // les valeurs qui étaient en dur, servent de repli
+REGLAGES          // objet vivant, lu au rendu par toute l'application
+chargerReglages() // hydraté depuis commandes_config AVANT le premier rendu du CRM
+appliquerReglage()// effet immédiat quand on enregistre depuis la page
+```
+
+**Le chargement bloque le premier rendu** : remonter le CRM après coup (via une
+`key`) coupait les abonnements temps réel — « Maximum call stack size exceeded ».
+
+Les valeurs par défaut ne doivent **jamais** se référencer elles-mêmes : une
+substitution globale trop large a déjà produit `lien_reservation: REGLAGES.lien_reservation`,
+ce qui plantait le module au chargement (page blanche, aucune erreur console).
+
+Réglages **effectivement câblés** : créneaux de réservation et de retrait, bascule
+midi/soir, fin de nuit, liens publics, nom/adresse/téléphone de la fiche imprimée,
+acceptation automatique, délai, horizon.
+Réglages **enregistrés mais pas encore appliqués** : jours de fermeture, capacités
+par service, e-mail de contact (les pages publiques `reserver.html` et
+`commander.html` ne lisent pas encore la configuration).
+
+---
+
 ## 9. Chantiers ouverts
 
 À traiter uniquement sur demande, mais à connaître :
