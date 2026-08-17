@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus, UserPlus, Trophy, ArrowUpDown, LayoutGrid, Settings, MapPin, Dices, Bell, X, Award, Gift, Image as ImageIcon, BadgeCheck, ShoppingBag, BarChart3 } from 'lucide-react';
+import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus, UserPlus, Trophy, ArrowUpDown, LayoutGrid, Settings, MapPin, Dices, Bell, X, Award, Gift, Image as ImageIcon, BadgeCheck, ShoppingBag, BarChart3, Info } from 'lucide-react';
 import { supabase } from "./supabase";
 import { safeQuery, resilientChannel, logError } from "./lib/db";
 
@@ -3378,7 +3378,6 @@ function CommandesPage({ showToast, user }) {
       )}
       {showParams && (
         <ParametresCommandesModal
-          autoAccept={autoAccept}
           delaiDefaut={delaiDefaut}
           commandesActives={commandesActives}
           motifFermeture={motifFermeture}
@@ -4313,8 +4312,9 @@ function CalendrierCommandesModal({ commandes, onOuvrirCommande, onClose }) {
 }
 
 // ── Paramètres des commandes ─────────────────────────────────────────────────
-function ParametresCommandesModal({ autoAccept, delaiDefaut, commandesActives, motifFermeture, horizonJours, onMaj, onClose }) {
+function ParametresCommandesModal({ delaiDefaut, commandesActives, motifFermeture, horizonJours, onMaj, onClose }) {
   const [motif, setMotif] = useState(motifFermeture || '');
+  const [infoAuto, setInfoAuto] = useState(false);
   const d = parseInt(delaiDefaut) || 30;
 
   // Désactiver n'est jamais immédiat : on annonce d'abord ce que ça implique
@@ -4329,16 +4329,6 @@ function ParametresCommandesModal({ autoAccept, delaiDefaut, commandesActives, m
         'La commande en ligne se réactivera d\'elle-même demain.',
       ],
       action: () => fermerPrise(motif),
-    },
-    auto: {
-      titre: 'Désactiver l\'acceptation automatique ?',
-      points: [
-        'Chaque nouvelle commande devra être acceptée à la main.',
-        'Elle attendra dans « Nouvelles commandes à traiter », sans être préparée.',
-        'Le client ne recevra aucun délai tant que vous n\'avez pas accepté.',
-        'L\'acceptation automatique reviendra d\'elle-même demain.',
-      ],
-      action: () => onMaj('acceptation_auto', 'false'),
     },
   };
 
@@ -4401,32 +4391,29 @@ function ParametresCommandesModal({ autoAccept, delaiDefaut, commandesActives, m
           </div>
           <div style={{ height:1, background:'#f0f0f0' }} />
 
-          {/* ── Acceptation automatique ── */}
+          {/* ── Délai d'acceptation automatique ── */}
+          {/* Ce n'est plus un interrupteur : couper l'acceptation automatique
+              relève des paramètres, pas du statut du jour. Ici on règle le délai. */}
           <div>
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:14, marginBottom:12 }}>
-              <div style={{ minWidth:0 }}>
-                <div style={{ fontSize:15, fontWeight:800, color:'#111', display:'flex', alignItems:'center', gap:8 }}>
-                  <CircleCheck size={17} strokeWidth={2} color={autoAccept ? '#16a34a' : '#bbb'} /> Acceptation automatique (du jour)
-                </div>
-                <div style={{ fontSize:12.5, color:'#888', marginTop:4, lineHeight:1.5 }}>
-                  {autoAccept
-                    ? 'Les commandes qui arrivent sont acceptées seules, avec le délai ci-dessous.'
-                    : 'Chaque commande doit être acceptée à la main dans « Commandes à traiter ».'}
-                </div>
-              </div>
-              {autoAccept ? (
-                <button onClick={()=>setConfirmDesactiver('auto')} style={{ flexShrink:0, height:40, padding:'0 16px', borderRadius:11, border:'1.5px solid #fca5a5', background:'#fff', color:'#b91c1c', fontSize:13, fontWeight:800, cursor:'pointer', whiteSpace:'nowrap' }}>
-                  Désactiver temporairement
-                </button>
-              ) : (
-                <button onClick={()=>onMaj('acceptation_auto', 'true')} style={{ flexShrink:0, height:40, padding:'0 16px', borderRadius:11, border:'none', background:'#16a34a', color:'#fff', fontSize:13, fontWeight:800, cursor:'pointer', whiteSpace:'nowrap' }}>
-                  Réactiver
-                </button>
-              )}
+            <div style={{ display:'flex', alignItems:'center', gap:7, marginBottom:4 }}>
+              <label style={{ fontSize:13.5, fontWeight:800, color:'#111' }}>Délai d'acceptation automatique</label>
+              <button onClick={()=>setInfoAuto(v=>!v)} aria-label="À propos de l'acceptation automatique"
+                style={{ width:20, height:20, borderRadius:'50%', border:'none', padding:0, cursor:'pointer', flexShrink:0,
+                  background: infoAuto ? '#111' : '#f0f0f0', color: infoAuto ? '#fff' : '#888',
+                  display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <Info size={13} strokeWidth={2.4} />
+              </button>
             </div>
-
-            {autoAccept && (<>
-            <label style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, display:'block', marginBottom:8 }}>Délai annoncé au client</label>
+            <div style={{ fontSize:12.5, color:'#888', marginBottom:10, lineHeight:1.5 }}>
+              Délai annoncé au client quand la commande est acceptée toute seule.
+            </div>
+            {infoAuto && (
+              <div style={{ background:'#f7f7f7', borderRadius:11, padding:'10px 13px', marginBottom:12, fontSize:12.5, color:'#555', lineHeight:1.6 }}>
+                Pour désactiver l'acceptation automatique, rendez-vous dans les paramètres :
+                ce réglage est durable et ne se règle pas depuis le statut du jour.
+              </div>
+            )}
+            <>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8, marginBottom:10 }}>
               {DELAIS_RAPIDES.map(m => (
                 <button key={m} onClick={()=>onMaj('delai_minutes', m)} style={{ height:52, borderRadius:11, border: d===m ? '2px solid #16a34a' : '1.5px solid #ddd', background: d===m ? '#16a34a' : '#fff', color: d===m ? '#fff' : '#333', fontSize:15, fontWeight:800, cursor:'pointer', padding:0 }}>
@@ -4439,7 +4426,7 @@ function ParametresCommandesModal({ autoAccept, delaiDefaut, commandesActives, m
               <div style={{ flex:1, height:48, border:'1.5px solid #ddd', borderRadius:11, display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, fontWeight:800, background:'#fafafa' }}>{fmtDelai(d)}</div>
               <button onClick={()=>onMaj('delai_minutes', Math.min(180, d + 5))} style={{ width:52, height:48, borderRadius:11, border:'1.5px solid #ddd', background:'#fff', fontSize:23, fontWeight:700, cursor:'pointer', color:'#111', lineHeight:1 }}>+</button>
             </div>
-            </>)}
+            </>
           </div>
 
         </div>
