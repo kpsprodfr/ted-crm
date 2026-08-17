@@ -74,7 +74,7 @@ fige en haut quand on descend, et reprend sa place quand on remonte.
 | Statut | Fond | Texte |
 |---|---|---|
 | Nouvelle | `#dc2626` rouge | blanc |
-| En préparation | `#f0a020` jaune orangé | `#111` |
+| En préparation | `#E8C547` jaune de marque | `#111` |
 | Prête | `#16a34a` vert | blanc |
 | Récupérée | `#111` noir | blanc |
 | Annulée | `#f5f5f5` gris | `#999` |

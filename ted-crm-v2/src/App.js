@@ -2990,7 +2990,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
 
 const CMD_STATUTS = [
   { id:'nouvelle',       label:'Nouvelle',       court:'Nouvelle',  bg:'#dc2626', fg:'#fff' },
-  { id:'en_preparation', label:'En préparation', court:'En prépa',  bg:'#f0a020', fg:'#111' },
+  { id:'en_preparation', label:'En préparation', court:'En prépa',  bg:'#E8C547', fg:'#111' },
   { id:'prete',          label:'Prête',          court:'Prête',     bg:'#16a34a', fg:'#fff' },
   { id:'recuperee',      label:'Récupérée',      court:'Récupérée', bg:'#111111', fg:'#fff' },
   { id:'annulee',        label:'Annulée',        court:'Annulée',   bg:'#f5f5f5', fg:'#999' },
