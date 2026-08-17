@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus, UserPlus, Trophy, ArrowUpDown, LayoutGrid, Settings, MapPin, Dices, Bell, X, Award, Gift, Image as ImageIcon, BadgeCheck, ShoppingBag, BarChart3, Info } from 'lucide-react';
 import { supabase } from "./supabase";
 import { safeQuery, resilientChannel, logError } from "./lib/db";
@@ -11879,17 +11879,52 @@ function CRMApp({ user, onLogout }) {
 }
 
 // ─── Root App ─────────────────────────────────────────────────────────────────
+// Un écran cassé ne doit jamais devenir une page blanche : on montre l'erreur
+// et de quoi repartir.
+class GardeFou extends React.Component {
+  constructor(props) { super(props); this.state = { erreur: null }; }
+  static getDerivedStateFromError(erreur) { return { erreur }; }
+  componentDidCatch(erreur) {
+    try { logError(erreur?.message || String(erreur), 'ecran'); } catch { /* rien à faire de plus */ }
+  }
+  render() {
+    if (!this.state.erreur) return this.props.children;
+    return (
+      <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#f5f5f5', padding:24 }}>
+        <div style={{ background:'#fff', borderRadius:18, padding:'28px 26px', maxWidth:460, width:'100%', boxShadow:'0 20px 60px rgba(0,0,0,0.12)' }}>
+          <h2 style={{ margin:'0 0 10px', fontSize:19, fontWeight:800, color:'#111' }}>Cet écran n'a pas pu s'afficher</h2>
+          <p style={{ margin:'0 0 18px', fontSize:14, color:'#666', lineHeight:1.7 }}>
+            Vos données ne sont pas touchées. Rechargez la page pour repartir ;
+            si le problème revient, le détail ci-dessous aide à le corriger.
+          </p>
+          <pre style={{ margin:'0 0 18px', padding:'11px 13px', background:'#fafafa', border:'1.5px solid #eee', borderRadius:10, fontSize:11.5, color:'#b91c1c', whiteSpace:'pre-wrap', wordBreak:'break-word', maxHeight:140, overflow:'auto' }}>
+            {String(this.state.erreur?.message || this.state.erreur)}
+          </pre>
+          <button onClick={()=>window.location.reload()} style={{ width:'100%', height:48, border:'none', borderRadius:12, background:'#111', color:'#fff', fontSize:15, fontWeight:800, cursor:'pointer' }}>
+            Recharger le CRM
+          </button>
+        </div>
+      </div>
+    );
+  }
+}
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
-  // Les réglages sont chargés avant le premier rendu du CRM : remonter
-  // l'application après coup couperait les abonnements temps réel.
-  const [reglagesPrets, setReglagesPrets] = useState(false);
+  // Les réglages arrivent en tâche de fond. Ils ne bloquent pas l'affichage :
+  // le CRM démarre sur les valeurs par défaut, et ce compteur déclenche un
+  // simple rendu quand la configuration est là — surtout pas un remontage,
+  // qui couperait les abonnements temps réel.
+  const [reglagesVersion, setReglagesVersion] = useState(0);
 
   useEffect(() => {
     if (!user) return;
     let vivant = true;
-    chargerReglages().finally(() => { if (vivant) setReglagesPrets(true); });
+    Promise.resolve()
+      .then(chargerReglages)
+      .catch(e => logError(e?.message || String(e), 'chargerReglages'))
+      .finally(() => { if (vivant) setReglagesVersion(v => v + 1); });
     return () => { vivant = false; };
   }, [user]);
 
@@ -11911,6 +11946,9 @@ export default function App() {
 
   if (checking) return <div style={{ textAlign:"center", paddingTop:80, fontSize:16, color:"#888" }}>Chargement…</div>;
   if (!user) return <LoginPage onLogin={()=>{}} />;
-  if (!reglagesPrets) return <div style={{ textAlign:"center", paddingTop:80, fontSize:16, color:"#888" }}>Chargement…</div>;
-  return <CRMApp user={user} onLogout={handleLogout} />;
+  return (
+    <GardeFou>
+      <CRMApp user={user} onLogout={handleLogout} reglagesVersion={reglagesVersion} />
+    </GardeFou>
+  );
 }
