@@ -2821,13 +2821,12 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           ? resasDuJour.filter(r => { const n = `${r.clients?.prenom||''} ${r.clients?.nom||''} ${r.clients?.entreprise||''} ${r.clients?.tel||''}`.toLowerCase(); return n.includes(resaSearchPanel.toLowerCase()); })
           : resasDuJour;
         return (
-          <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', height:'100%', display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
-            {/* Prise de réservation : en tête du panneau, avant la liste du jour */}
-            <div style={{ flexShrink:0, padding:'14px 20px', borderBottom:'1px solid #f5f5f5' }}>
-              <button onClick={()=>setShowAddResa(true)} style={{ width:'100%', height:52, background:'#E8C547', border:'none', borderRadius:14, fontSize:15, fontWeight:800, cursor:'pointer', color:'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:8, boxShadow:'0 2px 8px rgba(232,197,71,0.3)' }}>
-                <Plus size={18} strokeWidth={2} /> Nouvelle réservation
-              </button>
-            </div>
+          <div style={{ height:'100%', display:'flex', flexDirection:'column', gap:10, minHeight:0 }}>
+          {/* Prise de réservation : au-dessus du bloc, à la hauteur de « Nouvelle commande » */}
+          <button onClick={()=>setShowAddResa(true)} style={{ ...btnPrimary, width:'100%', height:38, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+            <Plus size={16} strokeWidth={2.4} /> Nouvelle réservation
+          </button>
+          <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', flex:1, minHeight:0, display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
             {/* Header fixe */}
             <div style={{padding:'16px 20px 12px', flexShrink:0, borderBottom:'1px solid #f5f5f5'}}>
               <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8}}>
@@ -2909,6 +2908,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                 </div>
               )}
             </div>
+          </div>
           </div>
         );
       })()}
