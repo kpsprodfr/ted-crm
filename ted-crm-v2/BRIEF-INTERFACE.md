@@ -189,7 +189,10 @@ Règles :
 - **Ligne 1** : nom du client et badges à gauche, **« Prête dans X min » à droite**
 - **Ligne 2** : numéro et téléphone à gauche, **jour et heure de retrait à droite**
 - Le nom affiché est **« Prénom Nom »** via une jointure sur la fiche client
-  (`select('*, client:clients(prenom,nom,entreprise)')`), avec repli sur le nom saisi.
+  (`select('*, client:clients(prenom,nom,entreprise)')`). Les commandes en ligne
+  n'ayant pas de `client_id`, la fiche est retrouvée **par le téléphone**
+  (`cleTel` : chiffres seuls, 9 derniers, pour ignorer le 0 ou le +33).
+  Repli sur le nom saisi si aucune fiche ne correspond.
 - Une commande récupérée affiche « Récupérée aujourd'hui / hier / le … à HH:MM »
   (horodatage `traited_at`, posé automatiquement au passage du statut).
 

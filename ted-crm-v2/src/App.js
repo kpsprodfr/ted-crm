@@ -2999,6 +2999,13 @@ const cmdStatut = (id) => CMD_STATUTS.find(s => s.id === id) || CMD_STATUTS[0];
 const cmdTotal  = (items) => (items || []).reduce((s, it) => s + (Number(it.prix) || 0) * (Number(it.quantite) || 1), 0);
 const fmtEuro   = (n) => (Number(n) || 0).toFixed(2).replace('.', ',') + ' €';
 
+// Rapprochement de deux numéros de téléphone saisis librement : on ne garde que
+// les chiffres, et seulement les 9 derniers pour ignorer le 0 ou le +33 initial.
+const cleTel = (t) => {
+  const chiffres = String(t || '').replace(/\D/g, '');
+  return chiffres.length >= 9 ? chiffres.slice(-9) : '';
+};
+
 function CommandesPage({ showToast, user }) {
   const [commandes, setCommandes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -3031,7 +3038,23 @@ function CommandesPage({ showToast, user }) {
       () => supabase.from('commandes').select('*, client:clients(prenom,nom,entreprise)').order('created_at', { ascending: false }).limit(500),
       { fallback: [], context: 'loadCommandes' }
     );
-    setCommandes(data || []);
+    // Les commandes en ligne ne sont pas rattachées à une fiche : on retrouve
+    // le client par son téléphone pour afficher « Prénom Nom » plutôt que le
+    // seul nom que le client a bien voulu taper.
+    const orphelines = (data || []).filter(c => !c.client && c.client_tel);
+    let parTel = {};
+    if (orphelines.length) {
+      const { data: fiches } = await safeQuery(
+        () => supabase.from('clients').select('tel,prenom,nom,entreprise').limit(2000),
+        { fallback: [], context: 'loadClientsPourCommandes' }
+      );
+      (fiches || []).forEach(f => { const k = cleTel(f.tel); if (k) parTel[k] = f; });
+    }
+    setCommandes((data || []).map(c =>
+      (!c.client && c.client_tel && parTel[cleTel(c.client_tel)])
+        ? { ...c, client: parTel[cleTel(c.client_tel)] }
+        : c
+    ));
     if (!silent) setLoading(false);
   }
 
