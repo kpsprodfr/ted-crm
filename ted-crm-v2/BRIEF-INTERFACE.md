@@ -292,10 +292,10 @@ Navigation **à deux niveaux**, jamais un sommaire plat :
 ```
 Paramètres (accueil)
 ├── Paramètres du compte      compte connecté, rôles, sauvegardes
-├── Établissement             identité, semaine type, dates particulières, repères de service
+├── Établissement             identité (logo compris), jours d'ouverture, semaine type, dates particulières
 └── Modules
     ├── Réservations          créneaux, capacités, lien public + QR
-    ├── Click and Collect     acceptation auto, délai, horizon, créneaux de retrait, lien + QR
+    ├── Click and Collect     acceptation auto, délai, horizon, créneaux, repères de service, lien + QR
     ├── Communications        notifications push, messages automatiques
     ├── Menu                  renvoi vers l'onglet Menu
     └── Fichier clients       confidentialité, corbeille et export
@@ -305,6 +305,14 @@ L'accueil présente trois grandes cartes (icône, titre, une ligne d'explication
 chevron). Les modules sont une grille de cinq cartes du même modèle, en plus petit.
 Un bouton de retour en haut à gauche remonte d'un cran — vers Modules depuis un
 module, vers Paramètres sinon.
+
+La **frise des jours d'ouverture** commande la semaine type : activer un jour l'y
+fait apparaître avec ses horaires, le désactiver l'en retire. Un jour est « ouvert »
+dès qu'un de ses deux services l'est.
+
+Les horaires se choisissent **dans une liste déroulante au quart d'heure**
+(`ChoixHeure`, 96 options de 00:00 à 23:45), jamais au clavier : le CRM se tient
+sur une tablette en plein service. Ne pas revenir à `<input type="time">`.
 
 **Le lien public et le QR code appartiennent au module** qui les concerne : celui
 de la réservation dans Réservations, celui de la commande dans Click and Collect.

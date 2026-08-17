@@ -912,6 +912,7 @@ const REGLAGES_DEFAUT = {
   telephone: '04 78 90 67 80',
   email: '',
   site: 'https://leted.fr',
+  logo: '',
   lien_reservation: 'https://ted-crm.pages.dev/reserver.html',
   lien_commande: 'https://ted-crm.pages.dev/commander.html',
   bascule_soir: 15,            // heure à partir de laquelle on est au service du soir
@@ -8193,6 +8194,23 @@ const JOURS_SEMAINE = [
   { id:0, court:'Dim', long:'Dimanche' },
 ];
 
+// Toutes les heures de la journée au quart d'heure : on choisit dans une liste,
+// jamais au clavier — le CRM se tient sur une tablette, en plein service.
+const HEURES_QUART = Array.from({ length: 96 }, (_, i) =>
+  `${String(Math.floor(i / 4)).padStart(2, '0')}:${String((i % 4) * 15).padStart(2, '0')}`);
+
+function ChoixHeure({ valeur, onChange }) {
+  return (
+    <select value={valeur} onChange={e=>onChange(e.target.value)}
+      style={{ width:104, height:38, border:'1.5px solid #e0e0e0', borderRadius:10, padding:'0 8px', fontSize:13.5,
+        fontWeight:700, color:'#111', background:'#fff', outline:'none', cursor:'pointer', boxSizing:'border-box',
+        textAlign:'center' }}>
+      {HEURES_QUART.map(h => <option key={h} value={h}>{h}</option>)}
+    </select>
+  );
+}
+
+// Un service, sur une ligne : ouvert ou fermé, et ses deux bornes horaires.
 function LigneService({ label, valeur, onChange }) {
   const v = valeur || { ouvert:false, debut:'12:00', fin:'14:30' };
   return (
@@ -8206,11 +8224,9 @@ function LigneService({ label, valeur, onChange }) {
       </button>
       {v.ouvert && (
         <>
-          <input type="time" value={v.debut} onChange={e=>onChange({ ...v, debut: e.target.value })}
-            style={{ width:112, height:38, border:'1.5px solid #e0e0e0', borderRadius:10, padding:'0 10px', fontSize:13.5, outline:'none', boxSizing:'border-box' }} />
+          <ChoixHeure valeur={v.debut} onChange={h=>onChange({ ...v, debut: h })} />
           <span style={{ fontSize:13, color:'#bbb', fontWeight:700 }}>→</span>
-          <input type="time" value={v.fin} onChange={e=>onChange({ ...v, fin: e.target.value })}
-            style={{ width:112, height:38, border:'1.5px solid #e0e0e0', borderRadius:10, padding:'0 10px', fontSize:13.5, outline:'none', boxSizing:'border-box' }} />
+          <ChoixHeure valeur={v.fin} onChange={h=>onChange({ ...v, fin: h })} />
         </>
       )}
     </div>
@@ -8372,6 +8388,20 @@ function ParametresPage({ showToast, user }) {
   const autoDefaut = conf ? conf.acceptation_auto_defaut !== 'false' : true;
   const delai = conf ? (parseInt(conf.delai_minutes) || 30) : 30;
 
+  // Un jour est « ouvert » dès qu'un de ses deux services l'est.
+  const jourOuvert = (id) => !!(semaine[id]?.midi?.ouvert || semaine[id]?.soir?.ouvert);
+  const joursOuverts = JOURS_SEMAINE.filter(j => jourOuvert(j.id));
+
+  // La frise commande la semaine type : activer un jour l'y fait apparaître.
+  const basculerJour = (id) => {
+    const j = semaine[id] || {};
+    const ouvrir = !jourOuvert(id);
+    enregistrer('horaires_semaine', { ...semaine, [id]: {
+      midi: { debut:'12:00', fin:'14:30', ...(j.midi || {}), ouvert: ouvrir },
+      soir: { debut:'19:00', fin:'23:30', ...(j.soir || {}), ouvert: ouvrir },
+    } });
+  };
+
   const majJour = (jourId, service, valeur) =>
     enregistrer('horaires_semaine', { ...semaine, [jourId]: { ...(semaine[jourId] || {}), [service]: valeur } });
 
@@ -8479,14 +8509,54 @@ function ParametresPage({ showToast, user }) {
           <Champ cle="email" label="E-mail de contact" placeholder="contact@leted.fr" type="email" />
         </div>
         <Champ cle="site" label="Site internet" placeholder="https://leted.fr" />
+        <div>
+          <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, marginBottom:6 }}>Logo</label>
+          <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+            <div style={{ width:64, height:64, borderRadius:14, flexShrink:0, border:'1.5px solid #eee', background:'#fafafa', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden' }}>
+              {lire('logo')
+                ? <img src={lire('logo')} alt="Logo de l'établissement" style={{ maxWidth:'100%', maxHeight:'100%', objectFit:'contain' }} />
+                : <ImageIcon size={22} strokeWidth={1.8} color="#ccc" />}
+            </div>
+            <input type="url" value={lire('logo')} placeholder="https://…/logo.png"
+              onChange={e=>setBrouillon(b => ({ ...b, logo: e.target.value }))}
+              onBlur={e=>{ if (brouillon.logo !== undefined && e.target.value !== (conf?.logo ?? '')) enregistrer('logo', e.target.value); }}
+              style={{ flex:1, minWidth:0, height:44, border:'1.5px solid #e0e0e0', borderRadius:10, padding:'0 13px', fontSize:14.5, outline:'none', boxSizing:'border-box' }} />
+          </div>
+          <p style={{ margin:'8px 0 0', fontSize:12, color:'#999' }}>
+            Adresse d'une image déjà en ligne. Elle sert d'en-tête aux e-mails et à la fiche de service imprimée.
+          </p>
+        </div>
       </Bloc>
 
-      <Bloc titre="Semaine type" aide="Les horaires habituels de l'établissement. Un service fermé ne propose aucun créneau.">
+      <Bloc titre="Jours d'ouverture" aide="Activez les jours où l'établissement reçoit. Un jour activé apparaît aussitôt dans la semaine type, avec ses horaires à régler.">
+        <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+          {JOURS_SEMAINE.map(j => {
+            const ouvert = jourOuvert(j.id);
+            return (
+              <button key={j.id} onClick={()=>basculerJour(j.id)}
+                style={{ minWidth:104, height:62, borderRadius:13, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:3,
+                  border: ouvert ? 'none' : '1.5px solid #e0e0e0',
+                  background: ouvert ? '#111' : '#fff',
+                  color: ouvert ? '#E8C547' : '#bbb' }}>
+                <span style={{ fontSize:14, fontWeight:900 }}>{j.court}</span>
+                <span style={{ fontSize:9.5, fontWeight:700, textTransform:'uppercase', letterSpacing:0.4, color: ouvert ? '#E8C547' : '#ccc' }}>
+                  {ouvert ? 'ouverture' : 'fermé'}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </Bloc>
+
+      <Bloc titre="Semaine type" aide="Les horaires de chaque jour d'ouverture. Un clic sur Midi ou Soir ferme le service.">
+        {joursOuverts.length === 0 ? (
+          <p style={{ margin:0, fontSize:13, color:'#bbb' }}>Aucun jour d'ouverture activé ci-dessus.</p>
+        ) : (
         <div style={{ display:'flex', flexDirection:'column' }}>
-          {JOURS_SEMAINE.map((j, i) => {
+          {joursOuverts.map((j, i) => {
             const jour = semaine[j.id] || {};
             return (
-              <div key={j.id} style={{ display:'flex', alignItems:'flex-start', gap:14, padding:'12px 0', borderBottom: i < JOURS_SEMAINE.length - 1 ? '1px solid #f5f5f5' : 'none', flexWrap:'wrap' }}>
+              <div key={j.id} style={{ display:'flex', alignItems:'flex-start', gap:14, padding:'12px 0', borderBottom: i < joursOuverts.length - 1 ? '1px solid #f5f5f5' : 'none', flexWrap:'wrap' }}>
                 <span style={{ width:86, flexShrink:0, fontSize:13.5, fontWeight:800, color:'#111', paddingTop:9 }}>{j.long}</span>
                 <div style={{ display:'flex', flexDirection:'column', gap:8, flex:1, minWidth:0 }}>
                   <LigneService label="Midi" valeur={jour.midi} onChange={v=>majJour(j.id, 'midi', v)} />
@@ -8496,6 +8566,7 @@ function ParametresPage({ showToast, user }) {
             );
           })}
         </div>
+        )}
       </Bloc>
 
       <Bloc titre="Dates particulières" aide="Les jours qui ne suivent pas la semaine type : une fermeture exceptionnelle, ou des horaires différents. Vous pouvez les poser des mois à l'avance.">
@@ -8530,22 +8601,6 @@ function ParametresPage({ showToast, user }) {
         </button>
       </Bloc>
 
-      <Bloc titre="Repères de service" aide="Deux heures charnières qui partagent toute l'application : celle qui fait basculer du midi au soir, et celle où la journée de service se termine enfin.">
-        <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:16 }}>
-          <div>
-            <p style={{ margin:'0 0 8px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Bascule midi / soir</p>
-            <Compteur cle="bascule_soir" min={11} max={20} format={h => `${h} h`} />
-          </div>
-          <div>
-            <p style={{ margin:'0 0 8px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Fin de nuit</p>
-            <Compteur cle="fin_de_nuit" min={0} max={11} format={h => `${h} h du matin`} />
-          </div>
-        </div>
-        <p style={{ margin:'14px 0 0', fontSize:12.5, color:'#999', lineHeight:1.6 }}>
-          Le service du soir déborde après minuit : jusqu'à la fin de nuit, on travaille
-          encore la journée de la veille. Une commande en préparation à 23 h 59 est toujours là à 2 h.
-        </p>
-      </Bloc>
     </>
   );
 
@@ -8620,6 +8675,22 @@ function ParametresPage({ showToast, user }) {
               <GrilleCreneaux valeurs={lire('creneaux_retrait_soir')} onChange={v=>enregistrer('creneaux_retrait_soir', v)} />
             </div>
           </div>
+        </Bloc>
+        <Bloc titre="Repères de service" aide="Deux heures charnières qui partagent toute l'application : celle qui fait basculer du midi au soir, et celle où la journée de service se termine enfin.">
+          <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:16 }}>
+            <div>
+              <p style={{ margin:'0 0 8px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Bascule midi / soir</p>
+              <Compteur cle="bascule_soir" min={11} max={20} format={h => `${h} h`} />
+            </div>
+            <div>
+              <p style={{ margin:'0 0 8px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Fin de nuit</p>
+              <Compteur cle="fin_de_nuit" min={0} max={11} format={h => `${h} h du matin`} />
+            </div>
+          </div>
+          <p style={{ margin:'14px 0 0', fontSize:12.5, color:'#999', lineHeight:1.6 }}>
+            Le service du soir déborde après minuit : jusqu'à la fin de nuit, on travaille
+            encore la journée de la veille. Une commande en préparation à 23 h 59 est toujours là à 2 h.
+          </p>
         </Bloc>
         <BlocLienPublic titre="Page de commande" url={lire('lien_commande')} fichier="qr-commande.png" />
       </>
