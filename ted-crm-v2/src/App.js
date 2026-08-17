@@ -3946,11 +3946,14 @@ function ATraiterPanel({ commandes, delaiDefaut, autoAccept, onAccepter, onRefus
 // ── Statistiques des commandes ───────────────────────────────────────────────
 // Palette de données validée (CVD) : or foncé #b8860b + bleu #2563eb sur fond clair.
 const STAT_OR = '#b8860b';
+const boutonVoirTout = { height:26, padding:'0 11px', borderRadius:8, border:'1.5px solid #e4e4e4', background:'#fff', color:'#555', fontSize:11.5, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' };
 const STAT_BLEU = '#2563eb';
 
 function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
   const [periode, setPeriode] = useState('7j');       // jour | 7j | mois | annee | perso
   const [triProduits, setTriProduits] = useState('qte'); // qte | ca
+  const [voirTout, setVoirTout] = useState(null);        // null | 'vend' | 'dorment'
+  const [rechercheTout, setRechercheTout] = useState('');
   const isMobile = useIsMobile();
   const etroit = useEcranEtroit();
   // En tablette l'écran fait ~620 px : un graphe plein format pousserait tout
@@ -4079,6 +4082,7 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
     .sort((a, b) => triProduits === 'ca' ? b.ca - a.ca : b.qte - a.qte)
     .slice(0, 8);
   const maxProduit = Math.max(1, ...topProduits.map(p => triProduits === 'ca' ? p.ca : p.qte));
+  const tousProduits = produits.slice().sort((a, b) => triProduits === 'ca' ? b.ca - a.ca : b.qte - a.qte);
 
   // La carte, pour savoir ce qui n'est jamais parti sur la période.
   const [carte, setCarte] = useState([]);
@@ -4089,7 +4093,16 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
         () => supabase.from('menu_produits').select('nom').eq('disponible', true).limit(500),
         { fallback: [], context: 'statsCarte' }
       );
-      if (vivant) setCarte((data || []).map(p => (p.nom || '').trim()).filter(Boolean));
+      if (!vivant) return;
+      const vus = new Set();
+      const noms = [];
+      (data || []).forEach(p => {
+        const nom = (p.nom || '').trim();
+        const k = normalizeStr(nom);
+        if (!nom || vus.has(k)) return;
+        vus.add(k); noms.push(nom);
+      });
+      setCarte(noms);
     })();
     return () => { vivant = false; };
   }, []);
@@ -4227,14 +4240,21 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
 
             {/* Ce qui se vend : la quantité guide les achats, l'argent guide la carte */}
             <Carte titre="Ce qui se vend" action={
-              <div style={{ display:'flex', gap:4, background:'#f2f2f2', borderRadius:9, padding:3 }}>
-                {[{id:'qte',label:'Quantité'},{id:'ca',label:'Chiffre'}].map(o => (
-                  <button key={o.id} onClick={()=>setTriProduits(o.id)}
-                    style={{ height:26, padding:'0 11px', borderRadius:7, border:'none', cursor:'pointer', fontSize:11.5, fontWeight:700,
-                      background: triProduits===o.id ? '#fff' : 'transparent', color: triProduits===o.id ? '#111' : '#888' }}>
-                    {o.label}
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <div style={{ display:'flex', gap:4, background:'#f2f2f2', borderRadius:9, padding:3 }}>
+                  {[{id:'qte',label:'Quantité'},{id:'ca',label:'Chiffre'}].map(o => (
+                    <button key={o.id} onClick={()=>setTriProduits(o.id)}
+                      style={{ height:26, padding:'0 11px', borderRadius:7, border:'none', cursor:'pointer', fontSize:11.5, fontWeight:700,
+                        background: triProduits===o.id ? '#fff' : 'transparent', color: triProduits===o.id ? '#111' : '#888' }}>
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+                {produits.length > topProduits.length && (
+                  <button onClick={()=>{ setRechercheTout(''); setVoirTout('vend'); }} style={boutonVoirTout}>
+                    Voir les {produits.length}
                   </button>
-                ))}
+                )}
               </div>
             }>
               {topProduits.length === 0 ? vide('Aucun article vendu') : (
@@ -4291,7 +4311,13 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
           <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:14 }}>
 
             {/* Ce qui dort : la carte proposée mais jamais commandée */}
-            <Carte titre="Personne n'en a pris">
+            <Carte titre="Personne n'en a pris" action={
+              dorment.length > 14 ? (
+                <button onClick={()=>{ setRechercheTout(''); setVoirTout('dorment'); }} style={boutonVoirTout}>
+                  Voir les {dorment.length}
+                </button>
+              ) : null
+            }>
               {carte.length === 0 ? vide('Carte non chargée')
                 : dorment.length === 0 ? vide('Toute la carte a trouvé preneur')
                 : (
@@ -4301,8 +4327,8 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
                       {duree < 28 && <span style={{ color:'#b45309' }}> Sur {duree} jour{duree > 1 ? 's' : ''}, c'est normal : regardez plutôt sur un mois ou une année.</span>}
                     </p>
                     <div style={{ display:'flex', flexWrap:'wrap', gap:7 }}>
-                      {dorment.slice(0, 14).map(n => (
-                        <span key={n} style={{ fontSize:12.5, color:'#666', background:'#f7f7f7', border:'1px solid #eee', borderRadius:8, padding:'5px 10px' }}>{n}</span>
+                      {dorment.slice(0, 14).map((n, i) => (
+                        <span key={n + i} style={{ fontSize:12.5, color:'#666', background:'#f7f7f7', border:'1px solid #eee', borderRadius:8, padding:'5px 10px' }}>{n}</span>
                       ))}
                       {dorment.length > 14 && <span style={{ fontSize:12.5, color:'#bbb', padding:'5px 4px' }}>et {dorment.length - 14} autres</span>}
                     </div>
@@ -4333,6 +4359,92 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
             </Carte>
           </div>
         </div>
+
+        {/* La liste entière, quand les huit premières lignes ne suffisent plus */}
+        {voirTout && (() => {
+          const surLaCarte = voirTout === 'dorment';
+          const filtre = normalizeStr(rechercheTout.trim());
+          const lignes = surLaCarte
+            ? dorment.filter(n => !filtre || normalizeStr(n).includes(filtre))
+            : tousProduits.filter(p => !filtre || normalizeStr(p.nom).includes(filtre));
+          const maxTout = surLaCarte ? 1
+            : Math.max(1, ...tousProduits.map(p => triProduits === 'ca' ? p.ca : p.qte));
+          return (
+            <>
+              <div onClick={()=>setVoirTout(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:5400 }} />
+              <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:20, width:'min(760px, calc(100vw - 24px))', height:'min(820px, calc(100vh - 24px))', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.3)', zIndex:5401, overflow:'hidden' }}>
+
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, padding:'18px 24px 14px', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
+                  <div style={{ minWidth:0 }}>
+                    <h3 style={{ margin:0, fontSize:17, fontWeight:800, color:'#111' }}>
+                      {surLaCarte ? "Personne n'en a pris" : 'Ce qui se vend'}
+                    </h3>
+                    <p style={{ margin:'3px 0 0', fontSize:12.5, color:'#999' }}>
+                      {surLaCarte
+                        ? `${dorment.length} produit${dorment.length > 1 ? 's' : ''} de la carte sans aucune commande`
+                        : `${tousProduits.length} produit${tousProduits.length > 1 ? 's' : ''} vendu${tousProduits.length > 1 ? 's' : ''}`} · {libelleFenetre}
+                    </p>
+                  </div>
+                  <button onClick={()=>setVoirTout(null)} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666', flexShrink:0 }}>✕</button>
+                </div>
+
+                {/* Recherche et tri restent visibles, seule la liste défile */}
+                <div style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 24px', borderBottom:'1px solid #f5f5f5', flexShrink:0 }}>
+                  <div style={{ position:'relative', flex:1 }}>
+                    <Search size={15} strokeWidth={2} color="#999" style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} />
+                    <input value={rechercheTout} onChange={e=>setRechercheTout(e.target.value)} placeholder="Rechercher un produit…"
+                      style={{ width:'100%', height:40, border:'1.5px solid #eee', borderRadius:10, padding:'0 12px 0 36px', fontSize:14, outline:'none', boxSizing:'border-box' }} />
+                  </div>
+                  {!surLaCarte && (
+                    <div style={{ display:'flex', gap:4, background:'#f2f2f2', borderRadius:9, padding:3, flexShrink:0 }}>
+                      {[{id:'qte',label:'Quantité'},{id:'ca',label:'Chiffre'}].map(o => (
+                        <button key={o.id} onClick={()=>setTriProduits(o.id)}
+                          style={{ height:28, padding:'0 12px', borderRadius:7, border:'none', cursor:'pointer', fontSize:12, fontWeight:700,
+                            background: triProduits===o.id ? '#fff' : 'transparent', color: triProduits===o.id ? '#111' : '#888' }}>
+                          {o.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ flex:1, minHeight:0, overflowY:'auto', padding:'14px 24px 20px' }}>
+                  {lignes.length === 0 ? vide('Aucun produit ne correspond')
+                    : surLaCarte ? (
+                      <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+                        {lignes.map((n, i) => (
+                          <span key={n + i} style={{ fontSize:13, color:'#666', background:'#f7f7f7', border:'1px solid #eee', borderRadius:9, padding:'7px 12px' }}>{n}</span>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ display:'flex', flexDirection:'column', gap:11 }}>
+                        {lignes.map((p, i) => {
+                          const part = caArticles ? Math.round((p.ca / caArticles) * 100) : 0;
+                          return (
+                            <div key={p.nom}>
+                              <div style={{ display:'flex', justifyContent:'space-between', gap:10, marginBottom:5 }}>
+                                <span style={{ fontSize:13.5, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                                  <span style={{ color:'#bbb', fontWeight:700, marginRight:7 }}>{i + 1}</span>{p.nom}
+                                </span>
+                                <span style={{ fontSize:13, color:'#555', whiteSpace:'nowrap' }}>×{p.qte} · {fmtEuro(p.ca)} <span style={{ color:'#bbb' }}>({part} %)</span></span>
+                              </div>
+                              <div style={{ height:8, background:'#f2f2f2', borderRadius:4, overflow:'hidden' }}>
+                                <div style={{ width:`${Math.round(((triProduits === 'ca' ? p.ca : p.qte) / maxTout) * 100)}%`, height:'100%', background:STAT_OR, borderRadius:4 }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                </div>
+
+                <div style={{ padding:'12px 24px calc(16px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #f0f0f0', flexShrink:0 }}>
+                  <button onClick={()=>setVoirTout(null)} style={{ ...btnPrimary, width:'100%', height:46 }}>Fermer</button>
+                </div>
+              </div>
+            </>
+          );
+        })()}
 
         {/* Export */}
         <div style={{ display:'flex', gap:10, padding:'16px 28px calc(20px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #e8e8e8', background:'#fff', flexShrink:0 }}>

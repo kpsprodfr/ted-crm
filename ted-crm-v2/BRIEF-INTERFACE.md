@@ -228,6 +228,11 @@ indicateur qui ne sert aucune de ces trois décisions n'a pas sa place ici.
   période. En dessous de 28 jours, un avertissement rappelle que le chiffre ne
   veut rien dire à cette échelle.
 - « Vos clients » : nouveaux, déjà venus, part de ceux qui reviennent, top 5 par CA.
+- Les deux listes de produits gardent un aperçu court (8 lignes / 14 étiquettes) et
+  un bouton **« Voir les N »** qui ouvre une modale dédiée : liste entière,
+  **recherche** en tête et bascule quantité / chiffre conservée.
+  La carte est **dédoublonnée par nom** — elle contient des homonymes qui, sans
+  cela, faussaient le compte et cassaient le filtrage (clés React en double).
 
 ---
 
