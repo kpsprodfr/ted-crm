@@ -208,6 +208,29 @@ Bouton discret en bas du détail, confirmation en deux temps annonçant que l'ac
 est **irréversible** et que la commande disparaît des listes, du calendrier, des
 statistiques et des exports.
 
+### Statistiques des commandes
+
+Trois axes seulement : **la carte, le chiffre d'affaires, les clients**. Tout
+indicateur qui ne sert aucune de ces trois décisions n'a pas sa place ici.
+
+- Périodes : `Aujourd'hui · 7 jours · Ce mois · Cette année · Dates au choix`.
+- **Chaque chiffre est comparé à la période précédente** de même durée, placée
+  juste avant. Un chiffre sans comparaison ne se regarde qu'une fois ; sans
+  passé comparable on affiche « pas de comparable », jamais un faux 0 %.
+- Quatre tuiles : CA, commandes, panier moyen (avec leur évolution), clients
+  (nouveaux / déjà venus).
+- Courbe : CA par jour tant que la fenêtre tient en 31 jours, sinon par mois.
+  Hauteur des barres réduite à 116 px en `etroit` — sinon tout le reste passe
+  sous le pli sur les 620 px de la tablette.
+- « Ce qui se vend » : top 8, **basculable quantité / chiffre** — le plat le plus
+  vendu n'est pas celui qui rapporte — avec la part du CA de chacun.
+- « Personne n'en a pris » : les produits de la carte jamais commandés sur la
+  période. En dessous de 28 jours, un avertissement rappelle que le chiffre ne
+  veut rien dire à cette échelle.
+- « Vos clients » : nouveaux, déjà venus, part de ceux qui reviennent, top 5 par CA.
+
+---
+
 ### Volet Click and Collect de la fiche client
 
 Présent dans la fiche bureau (entre le commentaire et l'historique des réservations)

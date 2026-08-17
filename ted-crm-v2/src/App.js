@@ -3949,109 +3949,213 @@ const STAT_OR = '#b8860b';
 const STAT_BLEU = '#2563eb';
 
 function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
-  const [periode, setPeriode] = useState('mois'); // jour | mois | annee
+  const [periode, setPeriode] = useState('7j');       // jour | 7j | mois | annee | perso
+  const [triProduits, setTriProduits] = useState('qte'); // qte | ca
   const isMobile = useIsMobile();
+  const etroit = useEcranEtroit();
+  // En tablette l'écran fait ~620 px : un graphe plein format pousserait tout
+  // le reste sous le pli.
+  const hBarre = etroit ? 116 : 186;
 
   const auj = new Date();
   const aujStr = dateLocale(auj);
   const jourDe = (c) => c.date_retrait || (c.created_at || '').split('T')[0];
+  const decale = (str, n) => { const d = new Date(str + 'T12:00:00'); d.setDate(d.getDate() + n); return dateLocale(d); };
+  const nbJoursEntre = (a, b) => Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 86400000) + 1;
 
-  // Commandes retenues : tout sauf les refusées
+  const [debutPerso, setDebutPerso] = useState(decale(aujStr, -29));
+  const [finPerso, setFinPerso] = useState(aujStr);
+
+  // Une commande annulée n'a rien vendu : elle ne compte nulle part.
   const valides = commandes.filter(c => c.statut !== 'annulee');
 
-  const debutPeriode = (() => {
-    if (periode === 'jour') return aujStr;
-    if (periode === 'mois') return `${auj.getFullYear()}-${String(auj.getMonth()+1).padStart(2,'0')}-01`;
-    return `${auj.getFullYear()}-01-01`;
+  // Fenêtre observée, et la fenêtre de même durée qui la précède immédiatement :
+  // c'est elle qui donne son sens à chaque chiffre.
+  const fenetre = (() => {
+    if (periode === 'jour')  return { debut: aujStr, fin: aujStr };
+    if (periode === '7j')    return { debut: decale(aujStr, -6), fin: aujStr };
+    if (periode === 'mois')  return { debut: `${auj.getFullYear()}-${String(auj.getMonth()+1).padStart(2,'0')}-01`, fin: aujStr };
+    if (periode === 'annee') return { debut: `${auj.getFullYear()}-01-01`, fin: aujStr };
+    const d = debutPerso <= finPerso ? debutPerso : finPerso;
+    const f = debutPerso <= finPerso ? finPerso : debutPerso;
+    return { debut: d, fin: f };
   })();
-  const dansPeriode = valides.filter(c => jourDe(c) >= debutPeriode && jourDe(c) <= aujStr);
+  const duree = Math.max(1, nbJoursEntre(fenetre.debut, fenetre.fin));
+  const avant = { debut: decale(fenetre.debut, -duree), fin: decale(fenetre.debut, -1) };
 
-  const nb = dansPeriode.length;
-  const ca = dansPeriode.reduce((s, c) => s + (Number(c.total) || 0), 0);
-  const panierMoyen = nb ? ca / nb : 0;
-  const clients = new Set(dansPeriode.map(c => (c.client_tel || c.client_nom || '').trim().toLowerCase()).filter(Boolean)).size;
-  const nbEnLigne = dansPeriode.filter(c => c.source === 'en_ligne').length;
-  const nbTel = nb - nbEnLigne;
-  const partEnLigne = nb ? Math.round((nbEnLigne / nb) * 100) : 0;
-  const articles = dansPeriode.reduce((s, c) => s + (c.items || []).reduce((n, it) => n + (Number(it.quantite) || 1), 0), 0);
-  const refusees = commandes.filter(c => c.statut === 'annulee' && jourDe(c) >= debutPeriode && jourDe(c) <= aujStr).length;
+  const lotDe = (f) => valides.filter(c => { const j = jourDe(c); return j >= f.debut && j <= f.fin; });
+  const dansPeriode = lotDe(fenetre);
+  const dansAvant   = lotDe(avant);
 
-  // Évolution : 14 derniers jours (période jour/mois) ou 12 mois (année)
+  // Un client = un numéro de téléphone, à défaut le nom saisi.
+  const cleClient = (c) => cleTel(c.client_tel) || (c.client_nom || '').trim().toLowerCase();
+  const mesure = (lot) => {
+    const ca = lot.reduce((s, c) => s + (Number(c.total) || 0), 0);
+    return {
+      nb: lot.length, ca,
+      panier: lot.length ? ca / lot.length : 0,
+      clients: new Set(lot.map(cleClient).filter(Boolean)).size,
+    };
+  };
+  const m = mesure(dansPeriode);
+  const mAvant = mesure(dansAvant);
+
+  // Évolution en pourcentage. Sans passé comparable, on n'invente rien.
+  const evolution = (a, b) => (!b ? null : Math.round(((a - b) / b) * 100));
+
+  // Premier achat de chaque client, tous temps confondus : sert à distinguer
+  // un nouveau venu d'un habitué.
+  const premierAchat = {};
+  valides.forEach(c => {
+    const k = cleClient(c); if (!k) return;
+    const j = jourDe(c) || '';
+    if (!premierAchat[k] || j < premierAchat[k]) premierAchat[k] = j;
+  });
+  const commandesParClient = {};
+  valides.forEach(c => { const k = cleClient(c); if (k) commandesParClient[k] = (commandesParClient[k] || 0) + 1; });
+
+  const clientsPeriode = {};
+  dansPeriode.forEach(c => {
+    const k = cleClient(c); if (!k) return;
+    if (!clientsPeriode[k]) clientsPeriode[k] = { cle:k, nom: c.client_nom || c.client_tel || 'Client', nb:0, ca:0 };
+    clientsPeriode[k].nb += 1;
+    clientsPeriode[k].ca += Number(c.total) || 0;
+  });
+  const listeClients = Object.values(clientsPeriode);
+  const nouveaux = listeClients.filter(cl => premierAchat[cl.cle] >= fenetre.debut).length;
+  const habitues = listeClients.length - nouveaux;
+  const fideles  = listeClients.filter(cl => (commandesParClient[cl.cle] || 0) >= 2).length;
+  const tauxRetour = listeClients.length ? Math.round((fideles / listeClients.length) * 100) : 0;
+  const topClients = listeClients.slice().sort((a, b) => b.ca - a.ca).slice(0, 5);
+
+  // Courbe : un point par jour tant que la fenêtre tient en un mois, sinon par mois.
+  const parMois = duree > 31;
   const serie = (() => {
-    if (periode === 'annee') {
-      return Array.from({ length: 12 }, (_, i) => {
-        const prefix = `${auj.getFullYear()}-${String(i+1).padStart(2,'0')}`;
-        const lot = valides.filter(c => (jourDe(c) || '').startsWith(prefix));
-        return {
-          cle: ['J','F','M','A','M','J','J','A','S','O','N','D'][i],
-          titre: new Date(auj.getFullYear(), i, 1).toLocaleDateString('fr-FR', { month:'long' }),
-          nb: lot.length,
-          ca: lot.reduce((s, c) => s + (Number(c.total) || 0), 0),
-        };
-      });
+    if (parMois) {
+      const debutD = new Date(fenetre.debut + 'T12:00:00');
+      const finD = new Date(fenetre.fin + 'T12:00:00');
+      const points = [];
+      const d = new Date(debutD.getFullYear(), debutD.getMonth(), 1);
+      while (d <= finD) {
+        const prefix = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+        const lot = dansPeriode.filter(c => (jourDe(c) || '').startsWith(prefix));
+        points.push({
+          cle: d.toLocaleDateString('fr-FR', { month:'short' }).replace('.', ''),
+          titre: d.toLocaleDateString('fr-FR', { month:'long', year:'numeric' }),
+          nb: lot.length, ca: lot.reduce((s, c) => s + (Number(c.total) || 0), 0),
+        });
+        d.setMonth(d.getMonth() + 1);
+      }
+      return points;
     }
-    return Array.from({ length: 14 }, (_, i) => {
-      const d = new Date(); d.setDate(d.getDate() - (13 - i));
-      const str = dateLocale(d);
-      const lot = valides.filter(c => jourDe(c) === str);
+    return Array.from({ length: duree }, (_, i) => {
+      const str = decale(fenetre.debut, i);
+      const d = new Date(str + 'T12:00:00');
+      const lot = dansPeriode.filter(c => jourDe(c) === str);
       return {
-        cle: String(d.getDate()),
+        cle: duree <= 14 ? d.toLocaleDateString('fr-FR', { weekday:'short' }).slice(0, 1).toUpperCase() : String(d.getDate()),
         titre: d.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' }),
-        nb: lot.length,
-        ca: lot.reduce((s, c) => s + (Number(c.total) || 0), 0),
+        nb: lot.length, ca: lot.reduce((s, c) => s + (Number(c.total) || 0), 0),
       };
     });
   })();
   const maxCa = Math.max(1, ...serie.map(p => p.ca));
+  const meilleur = serie.slice().sort((a, b) => b.ca - a.ca)[0];
 
-  // Produits les plus commandés
-  const topProduits = (() => {
+  // Ce qui se vend, en quantité comme en argent.
+  const produits = (() => {
     const compte = {};
     dansPeriode.forEach(c => (c.items || []).forEach(it => {
       const nom = (it.nom || '').trim();
       if (!nom) return;
-      if (!compte[nom]) compte[nom] = { nom, qte: 0, ca: 0 };
+      if (!compte[nom]) compte[nom] = { nom, qte:0, ca:0 };
       compte[nom].qte += Number(it.quantite) || 1;
       compte[nom].ca  += (Number(it.prix) || 0) * (Number(it.quantite) || 1);
     }));
-    return Object.values(compte).sort((a, b) => b.qte - a.qte).slice(0, 5);
+    return Object.values(compte);
   })();
-  const maxQte = Math.max(1, ...topProduits.map(p => p.qte));
+  const caArticles = produits.reduce((s, p) => s + p.ca, 0);
+  const topProduits = produits.slice()
+    .sort((a, b) => triProduits === 'ca' ? b.ca - a.ca : b.qte - a.qte)
+    .slice(0, 8);
+  const maxProduit = Math.max(1, ...topProduits.map(p => triProduits === 'ca' ? p.ca : p.qte));
 
-  const labelPeriode = periode === 'jour' ? "aujourd'hui" : periode === 'mois' ? 'ce mois-ci' : 'cette année';
+  // La carte, pour savoir ce qui n'est jamais parti sur la période.
+  const [carte, setCarte] = useState([]);
+  useEffect(() => {
+    let vivant = true;
+    (async () => {
+      const { data } = await safeQuery(
+        () => supabase.from('menu_produits').select('nom').eq('disponible', true).limit(500),
+        { fallback: [], context: 'statsCarte' }
+      );
+      if (vivant) setCarte((data || []).map(p => (p.nom || '').trim()).filter(Boolean));
+    })();
+    return () => { vivant = false; };
+  }, []);
+  const vendus = new Set(produits.map(p => normalizeStr(p.nom)));
+  const dorment = carte.filter(n => !vendus.has(normalizeStr(n)));
+
+  const nbEnLigne = dansPeriode.filter(c => c.source === 'en_ligne').length;
+  const refusees = commandes.filter(c => { const j = jourDe(c); return c.statut === 'annulee' && j >= fenetre.debut && j <= fenetre.fin; }).length;
+
+  const libelleFenetre = fenetre.debut === fenetre.fin
+    ? new Date(fenetre.debut + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' })
+    : `${new Date(fenetre.debut + 'T12:00:00').toLocaleDateString('fr-FR', { day:'numeric', month:'short' })} → ${new Date(fenetre.fin + 'T12:00:00').toLocaleDateString('fr-FR', { day:'numeric', month:'short' })}`;
 
   function exporterCSV() {
     const lignes = [['Numero','Date retrait','Heure','Client','Telephone','Source','Statut','Articles','Total EUR'].join(';')];
-    dansPeriode
-      .slice()
-      .sort((a, b) => (jourDe(a) < jourDe(b) ? -1 : 1))
-      .forEach(c => {
-        const detail = (c.items || []).map(it => `${it.quantite || 1}x ${it.nom}`).join(' / ');
-        lignes.push([
-          c.numero || '', jourDe(c) || '', c.heure_retrait || '',
-          (c.client_nom || '').replace(/;/g, ','), c.client_tel || '',
-          c.source === 'en_ligne' ? 'En ligne' : 'Telephone',
-          cmdStatut(c.statut).label,
-          detail.replace(/;/g, ','),
-          String(Number(c.total) || 0).replace('.', ','),
-        ].join(';'));
-      });
+    dansPeriode.slice().sort((a, b) => (jourDe(a) < jourDe(b) ? -1 : 1)).forEach(c => {
+      const detail = (c.items || []).map(it => `${it.quantite || 1}x ${it.nom}`).join(' / ');
+      lignes.push([
+        c.numero || '', jourDe(c) || '', c.heure_retrait || '',
+        (c.client_nom || '').replace(/;/g, ','), c.client_tel || '',
+        c.source === 'en_ligne' ? 'En ligne' : 'Telephone',
+        cmdStatut(c.statut).label,
+        detail.replace(/;/g, ','),
+        String(Number(c.total) || 0).replace('.', ','),
+      ].join(';'));
+    });
     const blob = new Blob(['﻿' + lignes.join('\n')], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `commandes-${periode}-${aujStr}.csv`;
+    a.download = `commandes-${fenetre.debut}_${fenetre.fin}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     showToast(`✅ ${dansPeriode.length} commande${dansPeriode.length > 1 ? 's' : ''} exportée${dansPeriode.length > 1 ? 's' : ''}`);
   }
 
-  const Tuile = ({ valeur, libelle, accent }) => (
-    <div style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:14, padding:'16px 14px', textAlign:'center' }}>
-      <p style={{ fontSize:26, fontWeight:900, color: accent || '#111', margin:'0 0 4px', lineHeight:1.1 }}>{valeur}</p>
-      <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0 }}>{libelle}</p>
+  // Une tuile ne vaut que par sa comparaison : le chiffre seul ne dit rien.
+  const Tuile = ({ valeur, libelle, delta, sub }) => {
+    const hausse = delta !== null && delta !== undefined && delta >= 0;
+    return (
+      <div style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:14, padding: etroit ? '10px 13px' : '14px 16px' }}>
+        <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 5px' }}>{libelle}</p>
+        <p style={{ fontSize: etroit ? 19 : 24, fontWeight:900, color:'#111', margin:'0 0 5px', lineHeight:1.1 }}>{valeur}</p>
+        {delta === null || delta === undefined ? (
+          <p style={{ fontSize:11.5, color:'#bbb', margin:0 }}>{sub || 'pas de comparable'}</p>
+        ) : (
+          <p style={{ fontSize:11.5, margin:0, color: hausse ? '#15803d' : '#b91c1c', fontWeight:700, display:'flex', alignItems:'center', gap:4 }}>
+            {hausse ? '▲' : '▼'} {Math.abs(delta)} %
+            <span style={{ color:'#bbb', fontWeight:500 }}>vs période précédente</span>
+          </p>
+        )}
+      </div>
+    );
+  };
+
+  const Carte = ({ titre, action, children }) => (
+    <div style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:16, padding:'16px 18px' }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, marginBottom:14 }}>
+        <h3 style={{ margin:0, fontSize:14, fontWeight:800, color:'#111' }}>{titre}</h3>
+        {action}
+      </div>
+      {children}
     </div>
   );
+
+  const vide = (txt) => <p style={{ margin:0, padding:'22px 0', textAlign:'center', color:'#bbb', fontSize:13.5 }}>{txt}</p>;
 
   return (
     <>
@@ -4059,126 +4163,182 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
       <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#f7f7f7', borderRadius:20, width:'min(1240px, calc(100vw - 24px))', height:'min(940px, calc(100vh - 24px))', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.28)', zIndex:5201, overflow:'hidden' }}>
 
         {/* En-tête */}
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, padding:'22px 28px 18px', borderBottom:'1px solid #e8e8e8', background:'#fff', flexShrink:0 }}>
-          <h2 style={{ margin:0, fontSize:20, fontWeight:800, color:'#111' }}>Statistiques des commandes</h2>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, padding:'20px 28px 16px', borderBottom:'1px solid #e8e8e8', background:'#fff', flexShrink:0 }}>
+          <div>
+            <h2 style={{ margin:0, fontSize:20, fontWeight:800, color:'#111' }}>Statistiques des commandes</h2>
+            <p style={{ margin:'3px 0 0', fontSize:12.5, color:'#999', textTransform:'capitalize' }}>{libelleFenetre}</p>
+          </div>
           <button onClick={onClose} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666', flexShrink:0 }}>✕</button>
         </div>
 
         {/* Période */}
-        <div style={{ display:'flex', gap:8, padding:'16px 28px 0', background:'#f7f7f7', flexShrink:0 }}>
-          {[{id:'jour',label:"Aujourd'hui"},{id:'mois',label:'Ce mois'},{id:'annee',label:'Cette année'}].map(p => (
-            <button key={p.id} onClick={()=>setPeriode(p.id)} style={{ flex:1, height:40, borderRadius:10, fontSize:13.5, fontWeight:700, border:'none', cursor:'pointer', background: periode===p.id ? '#111' : '#fff', color: periode===p.id ? '#fff' : '#666' }}>
-              {p.label}
-            </button>
-          ))}
+        <div style={{ padding:'14px 28px 0', background:'#f7f7f7', flexShrink:0 }}>
+          <div style={{ display:'flex', gap:8 }}>
+            {[{id:'jour',label:"Aujourd'hui"},{id:'7j',label:'7 jours'},{id:'mois',label:'Ce mois'},{id:'annee',label:'Cette année'},{id:'perso',label:'Dates au choix'}].map(p => (
+              <button key={p.id} onClick={()=>setPeriode(p.id)} style={{ flex:1, height:38, borderRadius:10, fontSize:13, fontWeight:700, border:'none', cursor:'pointer', background: periode===p.id ? '#111' : '#fff', color: periode===p.id ? '#fff' : '#666' }}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+          {periode === 'perso' && (
+            <div style={{ display:'flex', alignItems:'center', gap:10, marginTop:10 }}>
+              <input type="date" value={debutPerso} max={aujStr} onChange={e=>setDebutPerso(e.target.value)}
+                style={{ flex:1, height:40, border:'1.5px solid #e0e0e0', borderRadius:10, padding:'0 12px', fontSize:13.5, background:'#fff', outline:'none', boxSizing:'border-box' }} />
+              <span style={{ fontSize:13, color:'#999', fontWeight:700 }}>→</span>
+              <input type="date" value={finPerso} max={aujStr} onChange={e=>setFinPerso(e.target.value)}
+                style={{ flex:1, height:40, border:'1.5px solid #e0e0e0', borderRadius:10, padding:'0 12px', fontSize:13.5, background:'#fff', outline:'none', boxSizing:'border-box' }} />
+            </div>
+          )}
         </div>
 
-        <div style={{ padding:'18px 28px 24px', overflowY:'auto', display:'flex', flexDirection:'column', gap:20, flex:1, minHeight:0 }}>
+        <div style={{ padding:'16px 28px 24px', overflowY:'auto', display:'flex', flexDirection:'column', gap:16, flex:1, minHeight:0 }}>
 
-          {/* Chiffres clés */}
+          {/* Les quatre chiffres qui comptent, chacun face à la période précédente */}
           <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap:10 }}>
-            <Tuile valeur={nb} libelle={`Commandes ${labelPeriode}`} />
-            <Tuile valeur={fmtEuro(ca)} libelle="Chiffre d'affaires" />
-            <Tuile valeur={fmtEuro(panierMoyen)} libelle="Panier moyen" />
-            <Tuile valeur={clients} libelle="Clients" />
+            <Tuile libelle="Chiffre d'affaires" valeur={fmtEuro(m.ca)} delta={evolution(m.ca, mAvant.ca)} />
+            <Tuile libelle="Commandes" valeur={m.nb} delta={evolution(m.nb, mAvant.nb)} />
+            <Tuile libelle="Panier moyen" valeur={fmtEuro(m.panier)} delta={evolution(m.panier, mAvant.panier)} />
+            <Tuile libelle="Clients" valeur={m.clients} delta={null}
+              sub={m.clients ? `${nouveaux} nouveau${nouveaux > 1 ? 'x' : ''} · ${habitues} déjà venu${habitues > 1 ? 's' : ''}` : 'aucun client'} />
           </div>
 
-          {/* Évolution — une seule série, donc pas de légende */}
-          <div style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:16, padding:'16px 18px' }}>
-            <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', marginBottom:14 }}>
-              <h3 style={{ margin:0, fontSize:14, fontWeight:800, color:'#111' }}>
-                {periode === 'annee' ? "Chiffre d'affaires par mois" : "Chiffre d'affaires des 14 derniers jours"}
-              </h3>
-              <span style={{ fontSize:11.5, color:'#999' }}>max {fmtEuro(maxCa)}</span>
-            </div>
-            {nb === 0 && serie.every(p => p.ca === 0) ? (
-              <p style={{ margin:0, padding:'26px 0', textAlign:'center', color:'#bbb', fontSize:13.5 }}>Aucune donnée sur cette période</p>
-            ) : (
-              <div style={{ display:'flex', alignItems:'flex-end', gap: periode === 'annee' ? 10 : 6, height:230 }}>
-                {serie.map((p, i) => {
-                  const h = Math.round((p.ca / maxCa) * 198);
-                  return (
-                    <div key={i} title={`${p.titre} — ${p.nb} commande${p.nb > 1 ? 's' : ''} · ${fmtEuro(p.ca)}`}
-                      style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'default' }}>
-                      <div style={{ width:'100%', height:198, display:'flex', alignItems:'flex-end' }}>
-                        <div style={{ width:'100%', height: Math.max(p.ca > 0 ? 4 : 2, h), background: p.ca > 0 ? STAT_OR : '#ececec', borderRadius:'4px 4px 0 0', transition:'height 0.2s' }} />
-                      </div>
-                      <span style={{ fontSize:10, color:'#999', fontWeight:600 }}>{p.cle}</span>
+          {/* Évolution du chiffre d'affaires — une seule série, pas de légende */}
+          <Carte
+            titre={parMois ? "Chiffre d'affaires par mois" : "Chiffre d'affaires par jour"}
+            action={meilleur && meilleur.ca > 0
+              ? <span style={{ fontSize:11.5, color:'#999' }}>meilleur : {meilleur.titre} · {fmtEuro(meilleur.ca)}</span>
+              : null}>
+            {m.nb === 0 ? vide('Aucune commande sur cette période') : (
+              <div style={{ display:'flex', alignItems:'flex-end', gap: serie.length > 20 ? 3 : 6, height: hBarre + 30 }}>
+                {serie.map((p, i) => (
+                  <div key={i} title={`${p.titre} — ${p.nb} commande${p.nb > 1 ? 's' : ''} · ${fmtEuro(p.ca)}`}
+                    style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'default', minWidth:0 }}>
+                    <div style={{ width:'100%', height:hBarre, display:'flex', alignItems:'flex-end' }}>
+                      <div style={{ width:'100%', height: Math.max(p.ca > 0 ? 4 : 2, Math.round((p.ca / maxCa) * hBarre)), background: p.ca > 0 ? STAT_OR : '#ececec', borderRadius:'4px 4px 0 0' }} />
                     </div>
-                  );
-                })}
+                    {serie.length <= 31 && <span style={{ fontSize:10, color:'#999', fontWeight:600 }}>{p.cle}</span>}
+                  </div>
+                ))}
               </div>
             )}
+          </Carte>
+
+          <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:14 }}>
+
+            {/* Ce qui se vend : la quantité guide les achats, l'argent guide la carte */}
+            <Carte titre="Ce qui se vend" action={
+              <div style={{ display:'flex', gap:4, background:'#f2f2f2', borderRadius:9, padding:3 }}>
+                {[{id:'qte',label:'Quantité'},{id:'ca',label:'Chiffre'}].map(o => (
+                  <button key={o.id} onClick={()=>setTriProduits(o.id)}
+                    style={{ height:26, padding:'0 11px', borderRadius:7, border:'none', cursor:'pointer', fontSize:11.5, fontWeight:700,
+                      background: triProduits===o.id ? '#fff' : 'transparent', color: triProduits===o.id ? '#111' : '#888' }}>
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            }>
+              {topProduits.length === 0 ? vide('Aucun article vendu') : (
+                <div style={{ display:'flex', flexDirection:'column', gap:11 }}>
+                  {topProduits.map(p => {
+                    const part = caArticles ? Math.round((p.ca / caArticles) * 100) : 0;
+                    return (
+                      <div key={p.nom}>
+                        <div style={{ display:'flex', justifyContent:'space-between', gap:10, marginBottom:5 }}>
+                          <span style={{ fontSize:13.5, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.nom}</span>
+                          <span style={{ fontSize:13, color:'#555', whiteSpace:'nowrap' }}>×{p.qte} · {fmtEuro(p.ca)} <span style={{ color:'#bbb' }}>({part} %)</span></span>
+                        </div>
+                        <div style={{ height:8, background:'#f2f2f2', borderRadius:4, overflow:'hidden' }}>
+                          <div style={{ width:`${Math.round(((triProduits === 'ca' ? p.ca : p.qte) / maxProduit) * 100)}%`, height:'100%', background:STAT_OR, borderRadius:4 }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Carte>
+
+            {/* Les clients : qui revient, et qui pèse */}
+            <Carte titre="Vos clients">
+              {listeClients.length === 0 ? vide('Aucun client sur cette période') : (
+                <>
+                  <div style={{ display:'flex', gap:20, paddingBottom:14, marginBottom:14, borderBottom:'1px solid #f2f2f2' }}>
+                    <div>
+                      <div style={{ fontSize:19, fontWeight:900, color:'#111' }}>{nouveaux}</div>
+                      <div style={{ fontSize:10.5, color:'#999', fontWeight:700, textTransform:'uppercase', letterSpacing:0.4 }}>Nouveaux</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize:19, fontWeight:900, color:'#111' }}>{habitues}</div>
+                      <div style={{ fontSize:10.5, color:'#999', fontWeight:700, textTransform:'uppercase', letterSpacing:0.4 }}>Déjà venus</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize:19, fontWeight:900, color:'#111' }}>{tauxRetour} %</div>
+                      <div style={{ fontSize:10.5, color:'#999', fontWeight:700, textTransform:'uppercase', letterSpacing:0.4 }}>Reviennent</div>
+                    </div>
+                  </div>
+                  <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 8px' }}>Meilleurs clients</p>
+                  {topClients.map((cl, i) => (
+                    <div key={cl.cle} style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 0', borderBottom: i < topClients.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
+                      <span style={{ fontSize:13.5, color:'#111', flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{cl.nom}</span>
+                      <span style={{ fontSize:12, color:'#999', flexShrink:0 }}>{cl.nb} cmd</span>
+                      <span style={{ fontSize:13.5, fontWeight:800, color:'#111', flexShrink:0 }}>{fmtEuro(cl.ca)}</span>
+                    </div>
+                  ))}
+                </>
+              )}
+            </Carte>
           </div>
 
           <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:14 }}>
 
-            {/* Origine des commandes — 2 catégories, libellées (jamais la couleur seule) */}
-            <div style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:16, padding:'16px 18px' }}>
-              <h3 style={{ margin:'0 0 14px', fontSize:14, fontWeight:800, color:'#111' }}>Origine des commandes</h3>
-              {nb === 0 ? (
-                <p style={{ margin:0, padding:'18px 0', textAlign:'center', color:'#bbb', fontSize:13.5 }}>Aucune commande</p>
-              ) : (
-                <>
-                  <div style={{ display:'flex', height:16, borderRadius:8, overflow:'hidden', gap:2, marginBottom:14 }}>
-                    {nbEnLigne > 0 && <div style={{ width:`${partEnLigne}%`, background:STAT_BLEU }} />}
-                    {nbTel > 0 && <div style={{ flex:1, background:STAT_OR }} />}
-                  </div>
-                  <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:9 }}>
-                      <span style={{ width:11, height:11, borderRadius:3, background:STAT_BLEU, flexShrink:0 }} />
-                      <span style={{ fontSize:13.5, color:'#111', flex:1 }}>En ligne</span>
-                      <span style={{ fontSize:13.5, color:'#555' }}>{nbEnLigne} · {partEnLigne} %</span>
+            {/* Ce qui dort : la carte proposée mais jamais commandée */}
+            <Carte titre="Personne n'en a pris">
+              {carte.length === 0 ? vide('Carte non chargée')
+                : dorment.length === 0 ? vide('Toute la carte a trouvé preneur')
+                : (
+                  <>
+                    <p style={{ margin:'-6px 0 12px', fontSize:12, color:'#999' }}>
+                      {dorment.length} produit{dorment.length > 1 ? 's' : ''} de la carte sur {carte.length} n'{dorment.length > 1 ? 'ont' : 'a'} pas été commandé{dorment.length > 1 ? 's' : ''}.
+                      {duree < 28 && <span style={{ color:'#b45309' }}> Sur {duree} jour{duree > 1 ? 's' : ''}, c'est normal : regardez plutôt sur un mois ou une année.</span>}
+                    </p>
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:7 }}>
+                      {dorment.slice(0, 14).map(n => (
+                        <span key={n} style={{ fontSize:12.5, color:'#666', background:'#f7f7f7', border:'1px solid #eee', borderRadius:8, padding:'5px 10px' }}>{n}</span>
+                      ))}
+                      {dorment.length > 14 && <span style={{ fontSize:12.5, color:'#bbb', padding:'5px 4px' }}>et {dorment.length - 14} autres</span>}
                     </div>
-                    <div style={{ display:'flex', alignItems:'center', gap:9 }}>
-                      <span style={{ width:11, height:11, borderRadius:3, background:STAT_OR, flexShrink:0 }} />
-                      <span style={{ fontSize:13.5, color:'#111', flex:1 }}>Téléphone</span>
-                      <span style={{ fontSize:13.5, color:'#555' }}>{nbTel} · {100 - partEnLigne} %</span>
-                    </div>
-                  </div>
-                  <div style={{ display:'flex', gap:20, marginTop:16, paddingTop:14, borderTop:'1px solid #f2f2f2' }}>
-                    <div>
-                      <div style={{ fontSize:18, fontWeight:900, color:'#111' }}>{articles}</div>
-                      <div style={{ fontSize:10.5, color:'#999', fontWeight:700, textTransform:'uppercase', letterSpacing:0.4 }}>Articles vendus</div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize:18, fontWeight:900, color:'#111' }}>{refusees}</div>
-                      <div style={{ fontSize:10.5, color:'#999', fontWeight:700, textTransform:'uppercase', letterSpacing:0.4 }}>Refusées</div>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+                  </>
+                )}
+            </Carte>
 
-            {/* Produits les plus commandés */}
-            <div style={{ background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:16, padding:'16px 18px' }}>
-              <h3 style={{ margin:'0 0 14px', fontSize:14, fontWeight:800, color:'#111' }}>Produits les plus commandés</h3>
-              {topProduits.length === 0 ? (
-                <p style={{ margin:0, padding:'18px 0', textAlign:'center', color:'#bbb', fontSize:13.5 }}>Aucun article</p>
-              ) : (
-                <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-                  {topProduits.map((p, i) => (
-                    <div key={i}>
-                      <div style={{ display:'flex', justifyContent:'space-between', gap:10, marginBottom:5 }}>
-                        <span style={{ fontSize:13.5, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.nom}</span>
-                        <span style={{ fontSize:13.5, color:'#555', whiteSpace:'nowrap' }}>{p.qte} · {fmtEuro(p.ca)}</span>
-                      </div>
-                      <div style={{ height:8, background:'#f2f2f2', borderRadius:4, overflow:'hidden' }}>
-                        <div style={{ width:`${Math.round((p.qte / maxQte) * 100)}%`, height:'100%', background:STAT_OR, borderRadius:4 }} />
-                      </div>
-                    </div>
-                  ))}
+            {/* Le reste, en une ligne : ce n'est pas ce qu'on vient chercher ici */}
+            <Carte titre="Autres repères">
+              <div style={{ display:'flex', flexWrap:'wrap', gap:26 }}>
+                <div>
+                  <div style={{ fontSize:19, fontWeight:900, color:'#111' }}>{nbEnLigne}</div>
+                  <div style={{ fontSize:10.5, color:'#999', fontWeight:700, textTransform:'uppercase', letterSpacing:0.4 }}>En ligne</div>
                 </div>
-              )}
-            </div>
+                <div>
+                  <div style={{ fontSize:19, fontWeight:900, color:'#111' }}>{m.nb - nbEnLigne}</div>
+                  <div style={{ fontSize:10.5, color:'#999', fontWeight:700, textTransform:'uppercase', letterSpacing:0.4 }}>Téléphone</div>
+                </div>
+                <div>
+                  <div style={{ fontSize:19, fontWeight:900, color:'#111' }}>{refusees}</div>
+                  <div style={{ fontSize:10.5, color:'#999', fontWeight:700, textTransform:'uppercase', letterSpacing:0.4 }}>Annulées</div>
+                </div>
+                <div>
+                  <div style={{ fontSize:19, fontWeight:900, color:'#111' }}>{fmtEuro(mAvant.ca)}</div>
+                  <div style={{ fontSize:10.5, color:'#999', fontWeight:700, textTransform:'uppercase', letterSpacing:0.4 }}>Période précédente</div>
+                </div>
+              </div>
+            </Carte>
           </div>
         </div>
 
         {/* Export */}
         <div style={{ display:'flex', gap:10, padding:'16px 28px calc(20px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #e8e8e8', background:'#fff', flexShrink:0 }}>
           <button onClick={onClose} style={{ ...btnSecondary, flex:1, height:48 }}>Fermer</button>
-          <button onClick={exporterCSV} disabled={nb === 0} style={{ flex:2, height:48, border:'none', borderRadius:10, background: nb ? '#111' : '#f0f0f0', color: nb ? '#fff' : '#bbb', fontSize:14.5, fontWeight:800, cursor: nb ? 'pointer' : 'not-allowed', display:'flex', alignItems:'center', justifyContent:'center', gap:9 }}>
-            <Download size={17} strokeWidth={2} /> Exporter ({nb})
+          <button onClick={exporterCSV} disabled={m.nb === 0} style={{ flex:2, height:48, border:'none', borderRadius:10, background: m.nb ? '#111' : '#f0f0f0', color: m.nb ? '#fff' : '#bbb', fontSize:14.5, fontWeight:800, cursor: m.nb ? 'pointer' : 'not-allowed', display:'flex', alignItems:'center', justifyContent:'center', gap:9 }}>
+            <Download size={17} strokeWidth={2} /> Exporter en CSV
           </button>
         </div>
       </div>
