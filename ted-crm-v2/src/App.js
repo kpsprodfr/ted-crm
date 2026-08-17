@@ -4221,24 +4221,33 @@ function CalendrierCommandesModal({ commandes, onOuvrirCommande, onClose }) {
           {/* Panneau de droite : service, puis les commandes du jour choisi */}
           <div style={{ width: isMobile ? '100%' : 380, flexShrink:0, display:'flex', flexDirection:'column', gap:10, minHeight:0 }}>
 
-            {/* Service */}
+            {/* Service — chaque camp annonce le nombre de commandes du jour consulté */}
+            {(() => {
+              const duJourConsulte = commandes.filter(c =>
+                (c.date_retrait || (c.created_at || '').split('T')[0]) === jourLocal && c.statut !== 'annulee');
+              const nbSvc = { midi:0, soir:0 };
+              duJourConsulte.forEach(c => { nbSvc[serviceDe(c)] += 1; });
+              return (
             <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
               <span style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1 }}>Service</span>
               <div onClick={()=>setSvcChoisi(svcChoisi === 'midi' ? 'soir' : 'midi')}
-                style={{ position:'relative', display:'flex', width:172, height:38, borderRadius:19, background:'#f0f0f0', cursor:'pointer', userSelect:'none', flexShrink:0 }}>
-                <span style={{ position:'absolute', top:3, left: svcChoisi === 'midi' ? 3 : 86, width:83, height:32, borderRadius:16, background:'#111', transition:'left 0.22s cubic-bezier(0.4,0,0.2,1)' }} />
+                style={{ position:'relative', display:'flex', width:200, height:38, borderRadius:10, background:'#f0f0f0', cursor:'pointer', userSelect:'none', flexShrink:0 }}>
+                <span style={{ position:'absolute', top:3, left: svcChoisi === 'midi' ? 3 : 100, width:97, height:32, borderRadius:8, background:'#111', transition:'left 0.22s cubic-bezier(0.4,0,0.2,1)' }} />
                 {[{id:'midi',label:'Midi',Icone:Sun},{id:'soir',label:'Soir',Icone:Moon}].map(o => {
                   const actif = svcChoisi === o.id;
                   const Icone = o.Icone;
                   return (
-                    <span key={o.id} style={{ position:'relative', width:86, height:38, display:'flex', alignItems:'center', justifyContent:'center', gap:5,
-                      fontSize:13.5, fontWeight:800, color: actif ? '#E8C547' : '#888', transition:'color 0.22s' }}>
-                      <Icone size={15} strokeWidth={2.2} />{o.label}
+                    <span key={o.id} style={{ position:'relative', width:100, height:38, display:'flex', alignItems:'center', justifyContent:'center', gap:4,
+                      fontSize:13, fontWeight:800, color: actif ? '#E8C547' : '#888', transition:'color 0.22s' }}>
+                      <Icone size={14} strokeWidth={2.2} />{o.label}
+                      <span style={{ fontWeight:700, opacity: actif ? 0.85 : 0.7 }}>({nbSvc[o.id]})</span>
                     </span>
                   );
                 })}
               </div>
             </div>
+              );
+            })()}
 
             {/* Jour consulté */}
             <div style={{ fontSize:14.5, fontWeight:800, color:'#111', textTransform:'capitalize', flexShrink:0 }}>
