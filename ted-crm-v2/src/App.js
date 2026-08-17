@@ -2822,6 +2822,12 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           : resasDuJour;
         return (
           <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', height:'100%', display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
+            {/* Prise de réservation : en tête du panneau, avant la liste du jour */}
+            <div style={{ flexShrink:0, padding:'14px 20px', borderBottom:'1px solid #f5f5f5' }}>
+              <button onClick={()=>setShowAddResa(true)} style={{ width:'100%', height:52, background:'#E8C547', border:'none', borderRadius:14, fontSize:15, fontWeight:800, cursor:'pointer', color:'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:8, boxShadow:'0 2px 8px rgba(232,197,71,0.3)' }}>
+                <Plus size={18} strokeWidth={2} /> Nouvelle réservation
+              </button>
+            </div>
             {/* Header fixe */}
             <div style={{padding:'16px 20px 12px', flexShrink:0, borderBottom:'1px solid #f5f5f5'}}>
               <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8}}>
@@ -2902,12 +2908,6 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                   <p style={{ fontSize:14, margin:0 }}>{calJourSelectionne && calServiceSelectionne ? 'Aucune réservation confirmée' : 'Sélectionner un jour et un service'}</p>
                 </div>
               )}
-            </div>
-            {/* Bouton fixe en bas */}
-            <div style={{ flexShrink:0, padding:'14px 20px', borderTop:'1px solid #f5f5f5' }}>
-              <button onClick={()=>setShowAddResa(true)} style={{ width:'100%', height:52, background:'#E8C547', border:'none', borderRadius:14, fontSize:15, fontWeight:800, cursor:'pointer', color:'#111', display:'flex', alignItems:'center', justifyContent:'center', gap:8, boxShadow:'0 2px 8px rgba(232,197,71,0.3)' }}>
-                <Plus size={18} strokeWidth={2} /> Nouvelle réservation
-              </button>
             </div>
           </div>
         );
