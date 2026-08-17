@@ -4090,24 +4090,24 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
     let vivant = true;
     (async () => {
       const { data } = await safeQuery(
-        () => supabase.from('menu_produits').select('nom').eq('disponible', true).limit(500),
+        () => supabase.from('menu_produits').select('nom,prix').eq('disponible', true).limit(500),
         { fallback: [], context: 'statsCarte' }
       );
       if (!vivant) return;
       const vus = new Set();
-      const noms = [];
+      const liste = [];
       (data || []).forEach(p => {
         const nom = (p.nom || '').trim();
         const k = normalizeStr(nom);
         if (!nom || vus.has(k)) return;
-        vus.add(k); noms.push(nom);
+        vus.add(k); liste.push({ nom, prix: Number(p.prix) || 0 });
       });
-      setCarte(noms);
+      setCarte(liste);
     })();
     return () => { vivant = false; };
   }, []);
   const vendus = new Set(produits.map(p => normalizeStr(p.nom)));
-  const dorment = carte.filter(n => !vendus.has(normalizeStr(n)));
+  const dorment = carte.filter(p => !vendus.has(normalizeStr(p.nom)));
 
   const nbEnLigne = dansPeriode.filter(c => c.source === 'en_ligne').length;
   const refusees = commandes.filter(c => { const j = jourDe(c); return c.statut === 'annulee' && j >= fenetre.debut && j <= fenetre.fin; }).length;
@@ -4327,8 +4327,8 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
                       {duree < 28 && <span style={{ color:'#b45309' }}> Sur {duree} jour{duree > 1 ? 's' : ''}, c'est normal : regardez plutôt sur un mois ou une année.</span>}
                     </p>
                     <div style={{ display:'flex', flexWrap:'wrap', gap:7 }}>
-                      {dorment.slice(0, 14).map((n, i) => (
-                        <span key={n + i} style={{ fontSize:12.5, color:'#666', background:'#f7f7f7', border:'1px solid #eee', borderRadius:8, padding:'5px 10px' }}>{n}</span>
+                      {dorment.slice(0, 14).map((p, i) => (
+                        <span key={p.nom + i} style={{ fontSize:12.5, color:'#666', background:'#f7f7f7', border:'1px solid #eee', borderRadius:8, padding:'5px 10px' }}>{p.nom}</span>
                       ))}
                       {dorment.length > 14 && <span style={{ fontSize:12.5, color:'#bbb', padding:'5px 4px' }}>et {dorment.length - 14} autres</span>}
                     </div>
@@ -4364,9 +4364,8 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
         {voirTout && (() => {
           const surLaCarte = voirTout === 'dorment';
           const filtre = normalizeStr(rechercheTout.trim());
-          const lignes = surLaCarte
-            ? dorment.filter(n => !filtre || normalizeStr(n).includes(filtre))
-            : tousProduits.filter(p => !filtre || normalizeStr(p.nom).includes(filtre));
+          const lignes = (surLaCarte ? dorment : tousProduits)
+            .filter(p => !filtre || normalizeStr(p.nom).includes(filtre));
           const maxTout = surLaCarte ? 1
             : Math.max(1, ...tousProduits.map(p => triProduits === 'ca' ? p.ca : p.qte));
           return (
@@ -4411,9 +4410,14 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
                 <div style={{ flex:1, minHeight:0, overflowY:'auto', padding:'14px 24px 20px' }}>
                   {lignes.length === 0 ? vide('Aucun produit ne correspond')
                     : surLaCarte ? (
-                      <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-                        {lignes.map((n, i) => (
-                          <span key={n + i} style={{ fontSize:13, color:'#666', background:'#f7f7f7', border:'1px solid #eee', borderRadius:9, padding:'7px 12px' }}>{n}</span>
+                      <div style={{ display:'flex', flexDirection:'column' }}>
+                        {lignes.map((p, i) => (
+                          <div key={p.nom + i} style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', gap:10, padding:'9px 0', borderBottom: i < lignes.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
+                            <span style={{ fontSize:13.5, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                              <span style={{ color:'#bbb', fontWeight:700, marginRight:7 }}>{i + 1}</span>{p.nom}
+                            </span>
+                            <span style={{ fontSize:13, color:'#999', whiteSpace:'nowrap', flexShrink:0 }}>{p.prix ? fmtEuro(p.prix) : '—'}</span>
+                          </div>
                         ))}
                       </div>
                     ) : (
