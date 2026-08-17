@@ -4181,7 +4181,13 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
             <h2 style={{ margin:0, fontSize:20, fontWeight:800, color:'#111' }}>Statistiques des commandes</h2>
             <p style={{ margin:'3px 0 0', fontSize:12.5, color:'#999', textTransform:'capitalize' }}>{libelleFenetre}</p>
           </div>
-          <button onClick={onClose} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666', flexShrink:0 }}>✕</button>
+          <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
+            <button onClick={exporterCSV} disabled={m.nb === 0}
+              style={{ height:36, padding:'0 15px', border:'none', borderRadius:10, background: m.nb ? '#111' : '#f0f0f0', color: m.nb ? '#fff' : '#bbb', fontSize:13, fontWeight:800, cursor: m.nb ? 'pointer' : 'not-allowed', display:'flex', alignItems:'center', gap:7, whiteSpace:'nowrap' }}>
+              <Download size={15} strokeWidth={2} /> Exporter en CSV
+            </button>
+            <button onClick={onClose} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666' }}>✕</button>
+          </div>
         </div>
 
         {/* Période */}
@@ -4277,6 +4283,35 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
               )}
             </Carte>
 
+            {/* Ce qui dort : la carte proposée mais jamais commandée */}
+            <Carte titre="Personne n'en a pris" action={
+              dorment.length > 14 ? (
+                <button onClick={()=>{ setRechercheTout(''); setVoirTout('dorment'); }} style={boutonVoirTout}>
+                  Voir les {dorment.length}
+                </button>
+              ) : null
+            }>
+              {carte.length === 0 ? vide('Carte non chargée')
+                : dorment.length === 0 ? vide('Toute la carte a trouvé preneur')
+                : (
+                  <>
+                    <p style={{ margin:'-6px 0 12px', fontSize:12, color:'#999' }}>
+                      {dorment.length} produit{dorment.length > 1 ? 's' : ''} de la carte sur {carte.length} n'{dorment.length > 1 ? 'ont' : 'a'} pas été commandé{dorment.length > 1 ? 's' : ''}.
+                      {duree < 28 && <span style={{ color:'#b45309' }}> Sur {duree} jour{duree > 1 ? 's' : ''}, c'est normal : regardez plutôt sur un mois ou une année.</span>}
+                    </p>
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:7 }}>
+                      {dorment.slice(0, 14).map((p, i) => (
+                        <span key={p.nom + i} style={{ fontSize:12.5, color:'#666', background:'#f7f7f7', border:'1px solid #eee', borderRadius:8, padding:'5px 10px' }}>{p.nom}</span>
+                      ))}
+                      {dorment.length > 14 && <span style={{ fontSize:12.5, color:'#bbb', padding:'5px 4px' }}>et {dorment.length - 14} autres</span>}
+                    </div>
+                  </>
+                )}
+            </Carte>
+          </div>
+
+          <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:14 }}>
+
             {/* Les clients : qui revient, et qui pèse */}
             <Carte titre="Vos clients">
               {listeClients.length === 0 ? vide('Aucun client sur cette période') : (
@@ -4305,35 +4340,6 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
                   ))}
                 </>
               )}
-            </Carte>
-          </div>
-
-          <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:14 }}>
-
-            {/* Ce qui dort : la carte proposée mais jamais commandée */}
-            <Carte titre="Personne n'en a pris" action={
-              dorment.length > 14 ? (
-                <button onClick={()=>{ setRechercheTout(''); setVoirTout('dorment'); }} style={boutonVoirTout}>
-                  Voir les {dorment.length}
-                </button>
-              ) : null
-            }>
-              {carte.length === 0 ? vide('Carte non chargée')
-                : dorment.length === 0 ? vide('Toute la carte a trouvé preneur')
-                : (
-                  <>
-                    <p style={{ margin:'-6px 0 12px', fontSize:12, color:'#999' }}>
-                      {dorment.length} produit{dorment.length > 1 ? 's' : ''} de la carte sur {carte.length} n'{dorment.length > 1 ? 'ont' : 'a'} pas été commandé{dorment.length > 1 ? 's' : ''}.
-                      {duree < 28 && <span style={{ color:'#b45309' }}> Sur {duree} jour{duree > 1 ? 's' : ''}, c'est normal : regardez plutôt sur un mois ou une année.</span>}
-                    </p>
-                    <div style={{ display:'flex', flexWrap:'wrap', gap:7 }}>
-                      {dorment.slice(0, 14).map((p, i) => (
-                        <span key={p.nom + i} style={{ fontSize:12.5, color:'#666', background:'#f7f7f7', border:'1px solid #eee', borderRadius:8, padding:'5px 10px' }}>{p.nom}</span>
-                      ))}
-                      {dorment.length > 14 && <span style={{ fontSize:12.5, color:'#bbb', padding:'5px 4px' }}>et {dorment.length - 14} autres</span>}
-                    </div>
-                  </>
-                )}
             </Carte>
 
             {/* Le reste, en une ligne : ce n'est pas ce qu'on vient chercher ici */}
@@ -4450,13 +4456,6 @@ function StatistiquesCommandesModal({ commandes, onClose, showToast }) {
           );
         })()}
 
-        {/* Export */}
-        <div style={{ display:'flex', gap:10, padding:'16px 28px calc(20px + env(safe-area-inset-bottom, 0px))', borderTop:'1px solid #e8e8e8', background:'#fff', flexShrink:0 }}>
-          <button onClick={onClose} style={{ ...btnSecondary, flex:1, height:48 }}>Fermer</button>
-          <button onClick={exporterCSV} disabled={m.nb === 0} style={{ flex:2, height:48, border:'none', borderRadius:10, background: m.nb ? '#111' : '#f0f0f0', color: m.nb ? '#fff' : '#bbb', fontSize:14.5, fontWeight:800, cursor: m.nb ? 'pointer' : 'not-allowed', display:'flex', alignItems:'center', justifyContent:'center', gap:9 }}>
-            <Download size={17} strokeWidth={2} /> Exporter en CSV
-          </button>
-        </div>
       </div>
     </>
   );
