@@ -3460,6 +3460,162 @@ function jourServiceDe(c) {
   return j;
 }
 
+// Ce qu'un client a commandé à emporter. Le chiffre d'affaires ne retient que
+// les commandes réellement récupérées ; les goûts, eux, se lisent sur tout ce
+// qui n'a pas été annulé.
+function statsClickCollect(commandes, client) {
+  const cle = cleTel(client.tel);
+  const siennes = (commandes || []).filter(c =>
+    (c.client_id && c.client_id === client.id) || (cle && cleTel(c.client_tel) === cle));
+
+  const retenues = siennes.filter(c => c.statut !== 'annulee');
+  const payees   = siennes.filter(c => c.statut === 'recuperee');
+  const ca       = payees.reduce((s2, c) => s2 + (Number(c.total) || 0), 0);
+  const enCours  = retenues.length - payees.length;
+
+  const jour = (c) => c.date_retrait || (c.created_at || '').split('T')[0] || '';
+  const parDateDesc = retenues.slice().sort((a, b) => jour(b).localeCompare(jour(a)));
+  const derniere = parDateDesc[0] || null;
+  const ilYA = derniere && jour(derniere)
+    ? Math.round((new Date(dateLocale() + 'T12:00:00') - new Date(jour(derniere) + 'T12:00:00')) / 86400000)
+    : null;
+
+  const compte = {};
+  retenues.forEach(c => (c.items || []).forEach(it => {
+    const nom = (it.nom || '').trim();
+    if (nom) compte[nom] = (compte[nom] || 0) + (Number(it.quantite) || 1);
+  }));
+  const topArticles = Object.entries(compte).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+  const svc = { midi:0, soir:0 };
+  retenues.forEach(c => { svc[serviceDe(c)] += 1; });
+  const servicePrefere = (svc.midi || svc.soir)
+    ? (svc.midi >= svc.soir ? 'midi' : 'soir') : null;
+
+  return {
+    nb: payees.length, enCours, ca,
+    panier: payees.length ? ca / payees.length : 0,
+    derniere, ilYA, jourDeLaCommande: jour,
+    dernieres: parDateDesc.slice(0, 5),
+    topArticles, svc, servicePrefere,
+    aucune: retenues.length === 0,
+  };
+}
+
+// Volet Click and Collect de la fiche client. `compact` sert la fiche mobile :
+// mêmes chiffres, sans les colonnes côte à côte.
+function BlocClickCollect({ stats, compact = false }) {
+  const st = stats;
+  const jour = st.jourDeLaCommande;
+  const dateCourte = (c) => {
+    const j = jour(c);
+    return j ? new Date(j + 'T12:00:00').toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' }) : '—';
+  };
+  const STATUT_FICHE = {
+    recuperee:      { bg:'#111',     color:'#fff',    label:'Récupérée' },
+    prete:          { bg:'#dcfce7',  color:'#16a34a', label:'Prête' },
+    en_preparation: { bg:'#fffbea',  color:'#92400e', label:'En prépa' },
+    nouvelle:       { bg:'#fee2e2',  color:'#dc2626', label:'Nouvelle' },
+  };
+
+  const tuiles = [
+    { label:'COMMANDES',      valeur: st.nb,               sub: st.enCours > 0 ? `+ ${st.enCours} en cours` : 'récupérées' },
+    { label:'CHIFFRE D\'AFFAIRES', valeur: fmtEuro(st.ca), sub: 'commandes récupérées' },
+    { label:'PANIER MOYEN',   valeur: fmtEuro(st.panier),  sub: st.nb ? `sur ${st.nb} commande${st.nb > 1 ? 's' : ''}` : '—' },
+    { label:'DERNIÈRE COMMANDE', valeur: st.derniere ? dateCourte(st.derniere) : 'Jamais',
+      sub: st.ilYA === null ? ''
+        : st.ilYA === 0 ? "aujourd'hui"
+        : st.ilYA < 0   ? `à retirer dans ${-st.ilYA} jour${-st.ilYA > 1 ? 's' : ''}`
+        : `il y a ${st.ilYA} jour${st.ilYA > 1 ? 's' : ''}` },
+  ];
+
+  const enTete = (
+    <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
+      <ShoppingBag size={18} strokeWidth={2} color="#111" />
+      <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#111' }}>Click and Collect</h3>
+      {st.servicePrefere && (
+        <span style={{ marginLeft:'auto', display:'inline-flex', alignItems:'center', gap:5, fontSize:12, fontWeight:700,
+          padding:'4px 10px', borderRadius:20,
+          background: st.servicePrefere === 'midi' ? '#fffbea' : '#1e1b4b',
+          color:      st.servicePrefere === 'midi' ? '#92400e' : '#c7d2fe',
+          border:     st.servicePrefere === 'midi' ? '1.5px solid #fde68a' : '1.5px solid #4338ca' }}>
+          {st.servicePrefere === 'midi' ? <Sun size={12} strokeWidth={2.2} /> : <Moon size={12} strokeWidth={2.2} />}
+          Plutôt {st.servicePrefere} · {st.svc[st.servicePrefere]}
+        </span>
+      )}
+    </div>
+  );
+
+  if (st.aucune) return (
+    <div style={{ background:'#fff', borderRadius:16, padding:'20px 24px', marginBottom:16 }}>
+      {enTete}
+      <p style={{ margin:0, fontSize:13, color:'#bbb' }}>Ce client n'a jamais commandé à emporter.</p>
+    </div>
+  );
+
+  const listeCommandes = (
+    <div>
+      <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 8px' }}>Dernières commandes</p>
+      {st.dernieres.map((c, i) => {
+        const sc = STATUT_FICHE[c.statut] || STATUT_FICHE.recuperee;
+        return (
+          <div key={c.id || i} style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 0', borderBottom: i < st.dernieres.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:'#111' }}>{dateCourte(c)}</div>
+              <div style={{ fontSize:11.5, color:'#999', display:'flex', alignItems:'center', gap:4 }}>
+                {serviceDe(c) === 'midi' ? <Sun size={11} strokeWidth={2} /> : <Moon size={11} strokeWidth={2} />}
+                {c.heure_retrait || '—'} · {(c.items || []).length} article{(c.items || []).length > 1 ? 's' : ''}
+              </div>
+            </div>
+            <span style={{ fontSize:13.5, fontWeight:800, color:'#111', flexShrink:0 }}>{fmtEuro(c.total)}</span>
+            <span style={{ background:sc.bg, color:sc.color, borderRadius:20, padding:'3px 9px', fontSize:10.5, fontWeight:700, flexShrink:0 }}>{sc.label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  const maxArticle = st.topArticles.length ? st.topArticles[0][1] : 1;
+  const listeArticles = (
+    <div>
+      <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 8px' }}>Articles préférés</p>
+      {st.topArticles.length === 0
+        ? <p style={{ fontSize:13, color:'#bbb', margin:0 }}>Pas encore d'article commandé</p>
+        : st.topArticles.map(([nom, n], i) => (
+          <div key={nom} style={{ padding:'7px 0', borderBottom: i < st.topArticles.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
+            <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', gap:10, marginBottom:5 }}>
+              <span style={{ fontSize:13, fontWeight:700, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{nom}</span>
+              <span style={{ fontSize:12, fontWeight:800, color:'#888', flexShrink:0 }}>×{n}</span>
+            </div>
+            {/* La barre situe l'article par rapport au plus commandé */}
+            <div style={{ height:5, borderRadius:3, background:'#f0f0f0', overflow:'hidden' }}>
+              <div style={{ width:`${Math.round(n / maxArticle * 100)}%`, height:'100%', borderRadius:3, background:'#E8C547' }} />
+            </div>
+          </div>
+        ))}
+    </div>
+  );
+
+  return (
+    <div style={{ background:'#fff', borderRadius:16, padding:'20px 24px', marginBottom:16 }}>
+      {enTete}
+      <div style={{ display:'grid', gridTemplateColumns: compact ? '1fr 1fr' : 'repeat(4, 1fr)', gap:12, marginBottom:18 }}>
+        {tuiles.map(t => (
+          <div key={t.label} style={{ background:'#f9f9f9', borderRadius:12, padding:'12px 14px' }}>
+            <p style={{ fontSize:9.5, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 4px' }}>{t.label}</p>
+            <p style={{ fontSize:16, fontWeight:900, color:'#111', margin:'0 0 2px' }}>{t.valeur}</p>
+            <p style={{ fontSize:11, color:'#999', margin:0 }}>{t.sub}</p>
+          </div>
+        ))}
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns: compact ? '1fr' : '1fr 1fr', gap: compact ? 18 : 28 }}>
+        {listeCommandes}
+        {listeArticles}
+      </div>
+    </div>
+  );
+}
+
 // Service et jour de service en cours à l'instant présent
 const serviceActuel = () => serviceDeLHeure(new Date().getHours());
 function jourServiceActuel() {
@@ -7996,6 +8152,7 @@ function CRMApp({ user, onLogout }) {
   const [statsClients, setStatsClients] = useState({});
   const [topJours, setTopJours] = useState([]);
   const [resasData, setResasData] = useState([]);
+  const [commandesData, setCommandesData] = useState([]);
   const [modalEdit, setModalEdit] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [showConfirmDeconnexion, setShowConfirmDeconnexion] = useState(false);
@@ -8241,6 +8398,12 @@ function CRMApp({ user, onLogout }) {
   async function chargerToutesStatsClients() {
     const { data } = await safeQuery(() => supabase.from('reservations').select('client_id, statut, date, service'), { fallback: [], context: 'statsClients' });
     setResasData(data || []);
+    // Le volet Click and Collect des fiches se sert de ces commandes.
+    const { data: cmds } = await safeQuery(
+      () => supabase.from('commandes').select('id,client_id,client_tel,statut,total,items,date_retrait,heure_retrait,created_at').limit(3000),
+      { fallback: [], context: 'commandesClients' }
+    );
+    setCommandesData(cmds || []);
     const stats = {};
     const joursSemaine = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
     const compteParJourService = {};
@@ -9659,6 +9822,7 @@ function CRMApp({ user, onLogout }) {
                   </div>
                 );
               })()}
+              <BlocClickCollect stats={statsClickCollect(commandesData, c)} compact />
             </div>
         );
         const ficheFooter = (
@@ -9779,6 +9943,8 @@ function CRMApp({ user, onLogout }) {
                   <Plus size={14} strokeWidth={2} color="#999"/> Ajouter un commentaire
                 </button>
               )}
+
+              <BlocClickCollect stats={statsClickCollect(commandesData, c)} />
 
               {/* Grille historique + jours favoris */}
               <div style={{ display:'grid', gridTemplateColumns:'1fr 320px', gap:16, alignItems:'stretch' }}>

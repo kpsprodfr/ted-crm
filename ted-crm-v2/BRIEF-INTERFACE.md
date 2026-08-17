@@ -208,6 +208,21 @@ Bouton discret en bas du détail, confirmation en deux temps annonçant que l'ac
 est **irréversible** et que la commande disparaît des listes, du calendrier, des
 statistiques et des exports.
 
+### Volet Click and Collect de la fiche client
+
+Présent dans la fiche bureau (entre le commentaire et l'historique des réservations)
+et dans la fiche mobile, en version `compact` (tuiles sur deux colonnes, listes
+empilées). Les commandes sont rattachées au client **par `client_id` ou par
+téléphone** (`cleTel`), les commandes en ligne n'ayant pas de `client_id`.
+
+- **Commandes / Chiffre d'affaires / Panier moyen** : calculés sur les seules
+  commandes **récupérées** — l'argent réellement encaissé. Les commandes encore
+  en cours sont signalées à part (« + N en cours »).
+- **Dernière commande**, **Articles préférés** (top 5, barres relatives au plus
+  commandé) et **service préféré** : sur tout l'historique, annulées exclues.
+- **Dernières commandes** : les 5 dernières, avec date, service, heure, montant
+  et statut.
+
 ---
 
 ## 7. Dimensions de référence en tablette (`etroit`)
