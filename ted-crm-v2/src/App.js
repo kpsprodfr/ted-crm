@@ -3072,7 +3072,7 @@ function CommandesPage({ showToast, user }) {
     setDelaiDefaut(parseInt(conf.delai_minutes) || 30);
     setMotifFermeture(conf.motif_fermeture || '');
     setHorizonJours(parseInt(conf.horizon_jours) ?? 15);
-    setAutoAccept(duJour('acceptation_auto') ? conf.acceptation_auto === 'true' : true);
+    setAutoAccept(duJour('acceptation_auto') ? conf.acceptation_auto === 'true' : conf.acceptation_auto_defaut !== 'false');
     setCommandesActives(duJour('commandes_actives') ? conf.commandes_actives !== 'false' : true);
   }
 
@@ -8125,6 +8125,101 @@ function MenuPage({ showToast }) {
 
 const TABLES_BACKUP = ['clients','reservations','roue_gains','roue_recompenses','roue_config','parametres','menu_produits','menu_categories','menu_cartes','menu_soirees','menu_plat_jour','menu_origines'];
 
+// Réglages durables, par opposition au « Statut du jour » qui ne vaut que pour
+// la journée en cours.
+function ParametresPage({ showToast }) {
+  const [conf, setConf] = useState(null);
+
+  async function charger() {
+    const { data } = await safeQuery(
+      () => supabase.from('commandes_config').select('cle,valeur'),
+      { fallback: [], context: 'parametresConfig' }
+    );
+    const c = {};
+    (data || []).forEach(r => { c[r.cle] = r.valeur; });
+    setConf(c);
+  }
+  useEffect(() => { charger(); }, []);
+
+  async function maj(cle, valeur) {
+    setConf(c => ({ ...c, [cle]: String(valeur) }));
+    const { error } = await safeQuery(
+      () => supabase.from('commandes_config').upsert({ cle, valeur: String(valeur), updated_at: new Date().toISOString() }, { onConflict: 'cle' }),
+      { fallback: null, context: 'majParametre' }
+    );
+    if (error) { showToast('Enregistrement impossible', 'error'); charger(); }
+    else showToast('✅ Réglage enregistré');
+  }
+
+  const autoDefaut = conf ? conf.acceptation_auto_defaut !== 'false' : true;
+  const delai = conf ? (parseInt(conf.delai_minutes) || 30) : 30;
+  const horizon = conf ? (parseInt(conf.horizon_jours) || 15) : 15;
+
+  const Bloc = ({ titre, aide, children }) => (
+    <div style={{ background:'#fff', borderRadius:16, padding:'20px 24px', marginBottom:16 }}>
+      <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#111' }}>{titre}</h3>
+      {aide && <p style={{ margin:'4px 0 16px', fontSize:12.5, color:'#999', lineHeight:1.6 }}>{aide}</p>}
+      {children}
+    </div>
+  );
+
+  return (
+    <div style={{ maxWidth:900, margin:'0 auto', padding:'28px 32px 40px' }}>
+      <h1 style={{ margin:0, fontSize:26, fontWeight:900, color:'#111', display:'flex', alignItems:'center', gap:10 }}>
+        <Settings size={24} strokeWidth={1.9} /> Paramètres
+      </h1>
+      <p style={{ color:'#888', fontSize:14, margin:'6px 0 24px' }}>
+        Réglages durables du CRM. Pour couper la prise de commande sur une seule journée,
+        passez plutôt par « Statut du jour » dans le Click and Collect.
+      </p>
+
+      <Bloc titre="Acceptation automatique des commandes"
+        aide="Quand elle est active, une commande en ligne est acceptée seule et le client reçoit aussitôt son délai. Sinon, chaque commande attend une validation à la main dans « Nouvelles commandes à traiter ».">
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:16 }}>
+          <span style={{ fontSize:14, fontWeight:700, color: autoDefaut ? '#15803d' : '#b91c1c' }}>
+            {autoDefaut ? 'Active en permanence' : 'Désactivée — validation manuelle'}
+          </span>
+          <button onClick={()=>maj('acceptation_auto_defaut', autoDefaut ? 'false' : 'true')} disabled={!conf}
+            style={{ height:42, padding:'0 18px', borderRadius:11, cursor: conf ? 'pointer' : 'wait', fontSize:13.5, fontWeight:800, whiteSpace:'nowrap',
+              border: autoDefaut ? '1.5px solid #fca5a5' : 'none',
+              background: autoDefaut ? '#fff' : '#16a34a',
+              color: autoDefaut ? '#b91c1c' : '#fff' }}>
+            {autoDefaut ? 'Désactiver' : 'Réactiver'}
+          </button>
+        </div>
+      </Bloc>
+
+      <Bloc titre="Délai annoncé au client"
+        aide="Temps de préparation communiqué quand une commande est acceptée automatiquement.">
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8 }}>
+          {DELAIS_RAPIDES.map(mn => (
+            <button key={mn} onClick={()=>maj('delai_minutes', mn)} disabled={!conf}
+              style={{ height:48, borderRadius:11, border: delai===mn ? '2px solid #16a34a' : '1.5px solid #ddd', background: delai===mn ? '#16a34a' : '#fff', color: delai===mn ? '#fff' : '#333', fontSize:14.5, fontWeight:800, cursor: conf ? 'pointer' : 'wait' }}>
+              {fmtDelai(mn)}
+            </button>
+          ))}
+        </div>
+      </Bloc>
+
+      <Bloc titre="Commande à l'avance"
+        aide="Nombre de jours pendant lesquels un client peut réserver un retrait à partir d'aujourd'hui.">
+        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+          <button onClick={()=>maj('horizon_jours', Math.max(1, horizon - 1))} disabled={!conf}
+            style={{ width:52, height:46, borderRadius:11, border:'1.5px solid #ddd', background:'#fff', fontSize:22, fontWeight:700, cursor: conf ? 'pointer' : 'wait', color:'#111', lineHeight:1 }}>−</button>
+          <div style={{ flex:1, height:46, border:'1.5px solid #ddd', borderRadius:11, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, fontWeight:800, background:'#fafafa' }}>
+            {horizon} jour{horizon > 1 ? 's' : ''}
+          </div>
+          <button onClick={()=>maj('horizon_jours', Math.min(90, horizon + 1))} disabled={!conf}
+            style={{ width:52, height:46, borderRadius:11, border:'1.5px solid #ddd', background:'#fff', fontSize:22, fontWeight:700, cursor: conf ? 'pointer' : 'wait', color:'#111', lineHeight:1 }}>+</button>
+        </div>
+      </Bloc>
+
+      {/* Sauvegardes : la page existait déjà, elle n'était simplement plus atteignable */}
+      <SystemePage showToast={showToast} />
+    </div>
+  );
+}
+
 function SystemePage({ showToast }) {
   const [backups, setBackups] = useState([]);
   const [loadingBk, setLoadingBk] = useState(true);
@@ -8875,6 +8970,13 @@ function CRMApp({ user, onLogout }) {
           <span style={{ fontSize:9, fontWeight:600, color:'#555' }}>{healthStatus==='ok' ? 'Système OK' : healthStatus==='degraded' ? 'Dégradé' : 'Panne'}</span>
         </div>
       )}
+      <button onClick={()=>setActiveView('parametres')} style={{ width:'100%', padding:'12px 8px', border:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer', marginBottom:4,
+        borderLeft: activeView==='parametres' ? '3px solid #E8C547' : '3px solid transparent',
+        background: activeView==='parametres' ? 'rgba(232,197,71,0.1)' : 'transparent',
+        color: activeView==='parametres' ? '#E8C547' : '#555' }}>
+        <Settings size={22} strokeWidth={1.8} />
+        <span style={{ fontSize:10, fontWeight:600 }}>Paramètres</span>
+      </button>
       <button onClick={()=>setShowConfirmDeconnexion(true)} style={{ width:'100%', padding:'12px 8px', border:'none', background:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer', color:'#555' }}>
         <LogOut size={22} strokeWidth={1.8} />
         <span style={{ fontSize:10, fontWeight:600 }}>Déconnexion</span>
@@ -8987,6 +9089,16 @@ function CRMApp({ user, onLogout }) {
       <div style={{ marginLeft:120, minHeight:'100vh', background:'#f5f5f5', overflowY:'auto', boxSizing:'border-box' }}>
         <RouePage showToast={showToast} />
       </div>
+    </>
+  );
+
+  if (!isMobile && activeView === 'parametres') return (
+    <>
+      {sidebarDesktop}
+      <div style={{ marginLeft:120, minHeight:'100vh', background:'#f5f5f5', overflowY:'auto', boxSizing:'border-box' }}>
+        <ParametresPage showToast={showToast} />
+      </div>
+      {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
     </>
   );
 
