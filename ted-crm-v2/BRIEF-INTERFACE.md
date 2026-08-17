@@ -287,24 +287,23 @@ le nom du produit cliquable. À remonter si la saisie tactile pose problème.
 Onglet de la barre latérale, **au-dessus de Déconnexion**. Réglages **durables**,
 par opposition au « Statut du jour » du Click and Collect qui ne vaut qu'une journée.
 
-Navigation **à deux niveaux**, jamais un sommaire plat :
+**Sommaire groupé** dans une colonne de gauche : trois titres de groupe, chacun
+suivi de ses entrées cliquables. Tout est visible d'un coup d'œil, sans repli
+ni navigation à plusieurs niveaux.
 
 ```
-Paramètres (accueil)
-├── Paramètres du compte      compte connecté, rôles, sauvegardes
-├── Établissement             identité (logo compris), jours d'ouverture, semaine type, dates particulières
-└── Modules
-    ├── Réservations          créneaux, capacités, lien public + QR
-    ├── Click and Collect     acceptation auto, délai, horizon, créneaux, repères de service, lien + QR
-    ├── Communications        notifications push, messages automatiques
-    ├── Menu                  renvoi vers l'onglet Menu
-    └── Fichier clients       confidentialité, corbeille et export
+PARAMÈTRES DU COMPTE      ÉTABLISSEMENT            MODULES
+  Compte et accès           Identité                 Réservations
+  Sauvegardes               Horaires                 Click and Collect
+                            Dates particulières      Communications
+                                                     Menu
+                                                     Fichier clients
 ```
 
-L'accueil présente trois grandes cartes (icône, titre, une ligne d'explication,
-chevron). Les modules sont une grille de cinq cartes du même modèle, en plus petit.
-Un bouton de retour en haut à gauche remonte d'un cran — vers Modules depuis un
-module, vers Paramètres sinon.
+Le titre de groupe est une étiquette grise en capitales avec son icône — il ne
+se clique pas. L'entrée active prend le fond noir et le jaune de marque, comme
+la barre latérale. Le panneau de droite rappelle le nom de l'entrée et sa ligne
+d'explication : les blocs qui répéteraient ce titre n'en portent pas.
 
 La **frise des jours d'ouverture** commande la semaine type : activer un jour l'y
 fait apparaître avec ses horaires, le désactiver l'en retire. Un jour est « ouvert »

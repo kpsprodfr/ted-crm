@@ -8269,18 +8269,29 @@ function GrilleCreneaux({ valeurs, onChange }) {
   );
 }
 
-// Les cinq modules du CRM, chacun avec ses propres réglages.
-const PARAM_MODULES = [
-  { id:'reservations', label:'Réservations',    icone:CalendarDays,      aide:'Créneaux proposés, capacité du service, lien et QR code' },
-  { id:'commandes',    label:'Click and Collect', icone:ShoppingBag,     aide:'Acceptation des commandes, délai, créneaux de retrait' },
-  { id:'communications', label:'Communications', icone:Megaphone,        aide:'Notifications aux clients et messages automatiques' },
-  { id:'menu',         label:'Menu',            icone:UtensilsCrossed,   aide:'La carte proposée aux clients' },
-  { id:'clients',      label:'Fichier clients', icone:Users,             aide:'Corbeille, export et confidentialité des fiches' },
+// Le sommaire des paramètres : trois groupes, tout visible d'un coup d'œil.
+const PARAM_GROUPES = [
+  { titre:'Paramètres du compte', icone:User, entrees: [
+    { id:'compte-acces',      label:'Compte et accès',   aide:'Le compte connecté et les droits qu\'il donne.' },
+    { id:'compte-sauvegarde', label:'Sauvegardes',       aide:'Copies automatiques et état du CRM.' },
+  ]},
+  { titre:'Établissement', icone:Building2, entrees: [
+    { id:'etab-identite', label:'Identité',            aide:'Nom, coordonnées et logo de l\'établissement.' },
+    { id:'etab-horaires', label:'Horaires',            aide:'Les jours d\'ouverture et les horaires de chaque service.' },
+    { id:'etab-dates',    label:'Dates particulières', aide:'Fermetures exceptionnelles et horaires de circonstance.' },
+  ]},
+  { titre:'Modules', icone:LayoutGrid, entrees: [
+    { id:'mod-reservations',   label:'Réservations',     aide:'Créneaux proposés, capacité du service, lien et QR code.' },
+    { id:'mod-commandes',      label:'Click and Collect', aide:'Acceptation des commandes, délai, créneaux de retrait.' },
+    { id:'mod-communications', label:'Communications',   aide:'Notifications aux clients et messages automatiques.' },
+    { id:'mod-menu',           label:'Menu',             aide:'La carte proposée aux clients.' },
+    { id:'mod-clients',        label:'Fichier clients',  aide:'Corbeille, export et confidentialité des fiches.' },
+  ]},
 ];
+const PARAM_ENTREES = PARAM_GROUPES.flatMap(g => g.entrees);
 
 function ParametresPage({ showToast, user }) {
-  // Navigation à deux niveaux : accueil → section, et Modules → module.
-  const [vue, setVue] = useState('accueil');
+  const [section, setSection] = useState('etab-identite');
   const [conf, setConf] = useState(null);
   const [brouillon, setBrouillon] = useState({});
   const isMobile = useIsMobile();
@@ -8322,8 +8333,8 @@ function ParametresPage({ showToast, user }) {
   // ── Briques communes ──
   const Bloc = ({ titre, aide, children, alerte }) => (
     <div style={{ background:'#fff', borderRadius:16, padding:'20px 24px', marginBottom:16, border: alerte ? '1.5px solid #fecaca' : 'none' }}>
-      <h3 style={{ margin:0, fontSize:15, fontWeight:800, color: alerte ? '#b91c1c' : '#111' }}>{titre}</h3>
-      {aide && <p style={{ margin:'5px 0 16px', fontSize:12.5, color:'#999', lineHeight:1.6 }}>{aide}</p>}
+      {titre && <h3 style={{ margin:0, fontSize:15, fontWeight:800, color: alerte ? '#b91c1c' : '#111' }}>{titre}</h3>}
+      {aide && <p style={{ margin: titre ? '5px 0 16px' : '0 0 16px', fontSize:12.5, color:'#999', lineHeight:1.6 }}>{aide}</p>}
       {children}
     </div>
   );
@@ -8422,86 +8433,31 @@ function ParametresPage({ showToast, user }) {
     return `Ouvert ${p[0]} seulement — fermé ${f.midi?.ouvert ? 'le soir' : 'le midi'}.`;
   };
 
-  // ── Accueil : trois portes d'entrée ──
-  const GrandeCarte = ({ icone: Icone, titre, aide, onClick, accent }) => (
-    <button onClick={onClick}
-      style={{ display:'flex', alignItems:'center', gap:18, width:'100%', textAlign:'left', cursor:'pointer',
-        background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:18, padding:'22px 24px', marginBottom:14 }}
-      onMouseEnter={e=>{ e.currentTarget.style.borderColor = '#E8C547'; }}
-      onMouseLeave={e=>{ e.currentTarget.style.borderColor = '#f0f0f0'; }}>
-      <div style={{ width:54, height:54, borderRadius:15, flexShrink:0, background: accent || '#fffbea', display:'flex', alignItems:'center', justifyContent:'center' }}>
-        <Icone size={26} strokeWidth={1.9} color="#111" />
-      </div>
-      <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ fontSize:17, fontWeight:800, color:'#111', marginBottom:3 }}>{titre}</div>
-        <div style={{ fontSize:13, color:'#999', lineHeight:1.5 }}>{aide}</div>
-      </div>
-      <ChevronRight size={22} strokeWidth={2} color="#ccc" />
-    </button>
-  );
-
-  const accueil = (
-    <>
-      <GrandeCarte icone={User} titre="Paramètres du compte"
-        aide="Compte connecté, sécurité et sauvegardes du CRM"
-        onClick={()=>setVue('compte')} accent="#eff6ff" />
-      <GrandeCarte icone={Building2} titre="Établissement"
-        aide="Identité, horaires d'ouverture et dates de fermeture"
-        onClick={()=>setVue('etablissement')} />
-      <GrandeCarte icone={LayoutGrid} titre="Modules"
-        aide="Réservations, Click and Collect, Communications, Menu, Fichier clients"
-        onClick={()=>setVue('modules')} accent="#f0fdf4" />
-    </>
-  );
-
-  const modules = (
-    <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:14 }}>
-      {PARAM_MODULES.map(m => {
-        const Icone = m.icone;
-        return (
-          <button key={m.id} onClick={()=>setVue('mod:' + m.id)}
-            style={{ display:'flex', alignItems:'center', gap:15, textAlign:'left', cursor:'pointer',
-              background:'#fff', border:'1.5px solid #f0f0f0', borderRadius:16, padding:'18px 20px' }}
-            onMouseEnter={e=>{ e.currentTarget.style.borderColor = '#E8C547'; }}
-            onMouseLeave={e=>{ e.currentTarget.style.borderColor = '#f0f0f0'; }}>
-            <div style={{ width:46, height:46, borderRadius:13, flexShrink:0, background:'#fffbea', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              <Icone size={22} strokeWidth={1.9} color="#111" />
+  // ── Contenus, une entrée de sommaire à la fois ──
+  const contenus = {
+    'compte-acces': (
+      <>
+        <Bloc titre="Compte connecté">
+          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+            <div style={{ width:44, height:44, borderRadius:'50%', background:'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <User size={20} strokeWidth={2} color="#666" />
             </div>
-            <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize:15, fontWeight:800, color:'#111', marginBottom:2 }}>{m.label}</div>
-              <div style={{ fontSize:12.5, color:'#999', lineHeight:1.5 }}>{m.aide}</div>
+            <div>
+              <div style={{ fontSize:14, fontWeight:700, color:'#111' }}>{user?.email || '—'}</div>
+              <div style={{ fontSize:12, color:'#999' }}>Seul compte du CRM — tous les droits</div>
             </div>
-            <ChevronRight size={20} strokeWidth={2} color="#ccc" />
-          </button>
-        );
-      })}
-    </div>
-  );
-
-  // ── Contenus ──
-  const compte = (
-    <>
-      <Bloc titre="Compte connecté">
-        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-          <div style={{ width:44, height:44, borderRadius:'50%', background:'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <User size={20} strokeWidth={2} color="#666" />
           </div>
-          <div>
-            <div style={{ fontSize:14, fontWeight:700, color:'#111' }}>{user?.email || '—'}</div>
-            <div style={{ fontSize:12, color:'#999' }}>Seul compte du CRM — tous les droits</div>
-          </div>
-        </div>
-      </Bloc>
-      <Bloc titre="Comptes et rôles" aide="Il n'existe qu'un seul compte. Toute personne qui l'utilise peut supprimer définitivement un client, une commande ou une réservation.">
-        {vide("Des comptes séparés avec des droits limités seraient à créer si plusieurs personnes utilisent le CRM en service.")}
-      </Bloc>
-      <SystemePage showToast={showToast} />
-    </>
-  );
+        </Bloc>
+        <Bloc titre="Comptes et rôles" aide="Il n'existe qu'un seul compte. Toute personne qui l'utilise peut supprimer définitivement un client, une commande ou une réservation.">
+          {vide("Des comptes séparés avec des droits limités seraient à créer si plusieurs personnes utilisent le CRM en service.")}
+        </Bloc>
+      </>
+    ),
 
-  const etablissement = (
-    <>
-      <Bloc titre="Identité" aide="Ces informations apparaissent sur la fiche de service imprimée et servent de référence à toute l'application.">
+    'compte-sauvegarde': <SystemePage showToast={showToast} />,
+
+    'etab-identite': (
+      <Bloc aide="Ces informations apparaissent sur la fiche de service imprimée et servent de référence à toute l'application.">
         <Champ cle="nom" label="Nom de l'établissement" placeholder="LE TED" />
         <Champ cle="adresse" label="Adresse" placeholder="28 Av. des Frères Montgolfier, 69680 Chassieu" />
         <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:14 }}>
@@ -8527,49 +8483,55 @@ function ParametresPage({ showToast, user }) {
           </p>
         </div>
       </Bloc>
+    ),
 
-      <Bloc titre="Jours d'ouverture" aide="Activez les jours où l'établissement reçoit. Un jour activé apparaît aussitôt dans la semaine type, avec ses horaires à régler.">
-        <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-          {JOURS_SEMAINE.map(j => {
-            const ouvert = jourOuvert(j.id);
-            return (
-              <button key={j.id} onClick={()=>basculerJour(j.id)}
-                style={{ minWidth:104, height:62, borderRadius:13, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:3,
-                  border: ouvert ? 'none' : '1.5px solid #e0e0e0',
-                  background: ouvert ? '#111' : '#fff',
-                  color: ouvert ? '#E8C547' : '#bbb' }}>
-                <span style={{ fontSize:14, fontWeight:900 }}>{j.court}</span>
-                <span style={{ fontSize:9.5, fontWeight:700, textTransform:'uppercase', letterSpacing:0.4, color: ouvert ? '#E8C547' : '#ccc' }}>
-                  {ouvert ? 'ouverture' : 'fermé'}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </Bloc>
+    'etab-horaires': (
+      <>
+        <Bloc titre="Jours d'ouverture" aide="Activez les jours où l'établissement reçoit. Un jour activé apparaît aussitôt dans la semaine type, avec ses horaires à régler.">
+          <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+            {JOURS_SEMAINE.map(j => {
+              const ouvert = jourOuvert(j.id);
+              return (
+                <button key={j.id} onClick={()=>basculerJour(j.id)}
+                  style={{ minWidth:104, height:62, borderRadius:13, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:3,
+                    border: ouvert ? 'none' : '1.5px solid #e0e0e0',
+                    background: ouvert ? '#111' : '#fff',
+                    color: ouvert ? '#E8C547' : '#bbb' }}>
+                  <span style={{ fontSize:14, fontWeight:900 }}>{j.court}</span>
+                  <span style={{ fontSize:9.5, fontWeight:700, textTransform:'uppercase', letterSpacing:0.4, color: ouvert ? '#E8C547' : '#ccc' }}>
+                    {ouvert ? 'ouverture' : 'fermé'}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </Bloc>
 
-      <Bloc titre="Semaine type" aide="Les horaires de chaque jour d'ouverture. Un clic sur Midi ou Soir ferme le service.">
-        {joursOuverts.length === 0 ? (
-          <p style={{ margin:0, fontSize:13, color:'#bbb' }}>Aucun jour d'ouverture activé ci-dessus.</p>
-        ) : (
-        <div style={{ display:'flex', flexDirection:'column' }}>
-          {joursOuverts.map((j, i) => {
-            const jour = semaine[j.id] || {};
-            return (
-              <div key={j.id} style={{ display:'flex', alignItems:'flex-start', gap:14, padding:'12px 0', borderBottom: i < joursOuverts.length - 1 ? '1px solid #f5f5f5' : 'none', flexWrap:'wrap' }}>
-                <span style={{ width:86, flexShrink:0, fontSize:13.5, fontWeight:800, color:'#111', paddingTop:9 }}>{j.long}</span>
-                <div style={{ display:'flex', flexDirection:'column', gap:8, flex:1, minWidth:0 }}>
-                  <LigneService label="Midi" valeur={jour.midi} onChange={v=>majJour(j.id, 'midi', v)} />
-                  <LigneService label="Soir" valeur={jour.soir} onChange={v=>majJour(j.id, 'soir', v)} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        )}
-      </Bloc>
+        <Bloc titre="Semaine type" aide="Les horaires de chaque jour d'ouverture. Un clic sur Midi ou Soir ferme le service.">
+          {joursOuverts.length === 0 ? (
+            <p style={{ margin:0, fontSize:13, color:'#bbb' }}>Aucun jour d'ouverture activé ci-dessus.</p>
+          ) : (
+            <div style={{ display:'flex', flexDirection:'column' }}>
+              {joursOuverts.map((j, i) => {
+                const jour = semaine[j.id] || {};
+                return (
+                  <div key={j.id} style={{ display:'flex', alignItems:'flex-start', gap:14, padding:'12px 0', borderBottom: i < joursOuverts.length - 1 ? '1px solid #f5f5f5' : 'none', flexWrap:'wrap' }}>
+                    <span style={{ width:86, flexShrink:0, fontSize:13.5, fontWeight:800, color:'#111', paddingTop:9 }}>{j.long}</span>
+                    <div style={{ display:'flex', flexDirection:'column', gap:8, flex:1, minWidth:0 }}>
+                      <LigneService label="Midi" valeur={jour.midi} onChange={v=>majJour(j.id, 'midi', v)} />
+                      <LigneService label="Soir" valeur={jour.soir} onChange={v=>majJour(j.id, 'soir', v)} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Bloc>
+      </>
+    ),
 
-      <Bloc titre="Dates particulières" aide="Les jours qui ne suivent pas la semaine type : une fermeture exceptionnelle, ou des horaires différents. Vous pouvez les poser des mois à l'avance.">
+    'etab-dates': (
+      <Bloc aide="Les jours qui ne suivent pas la semaine type : une fermeture exceptionnelle, ou des horaires différents. Vous pouvez les poser des mois à l'avance.">
         {fermetures.length === 0
           ? <p style={{ margin:'0 0 14px', fontSize:13, color:'#bbb' }}>Aucune date particulière enregistrée.</p>
           : (
@@ -8600,12 +8562,9 @@ function ParametresPage({ showToast, user }) {
           <Plus size={16} strokeWidth={2.2} /> Ajouter une date
         </button>
       </Bloc>
+    ),
 
-    </>
-  );
-
-  const contenusModules = {
-    reservations: (
+    'mod-reservations': (
       <>
         <Bloc titre="Créneaux de réservation" aide="Heures proposées au client sur le formulaire. Tapez une heure puis « Ajouter ».">
           <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:26 }}>
@@ -8635,7 +8594,7 @@ function ParametresPage({ showToast, user }) {
       </>
     ),
 
-    commandes: (
+    'mod-commandes': (
       <>
         <Bloc titre="Acceptation automatique" aide="Quand elle est active, une commande en ligne est acceptée seule et le client reçoit aussitôt son délai. Sinon, chaque commande attend une validation à la main dans « Nouvelles commandes à traiter ».">
           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:16 }}>
@@ -8696,25 +8655,25 @@ function ParametresPage({ showToast, user }) {
       </>
     ),
 
-    communications: (
+    'mod-communications': (
       <>
         <Bloc titre="Notifications push" alerte
           aide="Les notifications envoyées aux clients ne partent plus : la fonction « send-push-onesignal » répond 403 depuis un durcissement de l'authentification. Aucun client n'est prévenu de l'acceptation ou du refus de sa demande.">
           {vide("En attendant, prévenez vos clients par téléphone ou par SMS depuis leur fiche. La réparation demande une intervention côté serveur, pas un réglage.")}
         </Bloc>
         <Bloc titre="Messages automatiques" aide="Les e-mails de confirmation et de refus sont pour l'instant écrits dans le code. Leur texte n'est pas modifiable depuis cette page.">
-          {vide("L'objet, le corps et la signature reprennent le nom et le site renseignés dans « Établissement ».")}
+          {vide("L'objet, le corps et la signature reprennent le nom et le site renseignés dans « Identité ».")}
         </Bloc>
       </>
     ),
 
-    menu: (
+    'mod-menu': (
       <Bloc titre="La carte" aide="Les produits, catégories et cartes se gèrent directement dans l'onglet Menu.">
         {vide("Aucun réglage n'est nécessaire ici : ajouter un plat, changer un prix ou masquer une catégorie se fait dans l'onglet Menu de la barre latérale. Les produits marqués indisponibles n'apparaissent ni à la commande, ni dans les statistiques.")}
       </Bloc>
     ),
 
-    clients: (
+    'mod-clients': (
       <>
         <Bloc titre="Fichier client exposé" alerte
           aide="La table des clients est lisible publiquement avec la clé anonyme de l'application. Noms, téléphones et e-mails sont accessibles à qui sait la demander.">
@@ -8727,44 +8686,65 @@ function ParametresPage({ showToast, user }) {
     ),
   };
 
-  // ── Fil d'Ariane et titre de la vue courante ──
-  const module = vue.startsWith('mod:') ? PARAM_MODULES.find(m => m.id === vue.slice(4)) : null;
-  const titres = {
-    accueil: { titre:'Paramètres', aide:"Réglages durables du CRM. Pour couper la prise de commande sur une seule journée, passez plutôt par « Statut du jour » dans le Click and Collect." },
-    compte: { titre:'Paramètres du compte', aide:'Compte connecté, sécurité et sauvegardes.' },
-    etablissement: { titre:'Établissement', aide:"Identité, horaires d'ouverture et dates de fermeture." },
-    modules: { titre:'Modules', aide:'Les réglages propres à chaque partie du CRM.' },
-  };
-  const entete = module
-    ? { titre: module.label, aide: module.aide }
-    : titres[vue];
-  const retour = vue === 'accueil' ? null : (module ? 'modules' : 'accueil');
+  const entree = PARAM_ENTREES.find(e => e.id === section) || PARAM_ENTREES[0];
 
   return (
-    <div style={{ maxWidth:1000, margin:'0 auto', padding:'28px 32px 40px' }}>
-      {retour && (
-        <button onClick={()=>setVue(retour)}
-          style={{ display:'flex', alignItems:'center', gap:7, height:36, padding:'0 14px 0 10px', marginBottom:14, borderRadius:10, border:'1.5px solid #e4e4e4', background:'#fff', color:'#666', fontSize:13, fontWeight:700, cursor:'pointer' }}>
-          <ArrowLeft size={16} strokeWidth={2} /> {retour === 'modules' ? 'Modules' : 'Paramètres'}
-        </button>
-      )}
+    <div style={{ maxWidth:1180, margin:'0 auto', padding:'28px 32px 40px' }}>
       <h1 style={{ margin:0, fontSize:26, fontWeight:900, color:'#111', display:'flex', alignItems:'center', gap:10 }}>
-        <Settings size={24} strokeWidth={1.9} /> {entete.titre}
+        <Settings size={24} strokeWidth={1.9} /> Paramètres
       </h1>
-      <p style={{ color:'#888', fontSize:14, margin:'6px 0 22px', lineHeight:1.6 }}>{entete.aide}</p>
+      <p style={{ color:'#888', fontSize:14, margin:'6px 0 22px', lineHeight:1.6 }}>
+        Réglages durables du CRM. Pour couper la prise de commande sur une seule journée,
+        passez plutôt par « Statut du jour » dans le Click and Collect.
+      </p>
 
-      {conf === null
-        ? <p style={{ padding:'40px 0', textAlign:'center', color:'#bbb', fontSize:14 }}>Chargement des réglages…</p>
-        : vue === 'accueil' ? accueil
-        : vue === 'modules' ? modules
-        : vue === 'compte' ? compte
-        : vue === 'etablissement' ? etablissement
-        : module ? contenusModules[module.id]
-        : accueil}
+      <div style={{ display:'flex', gap:22, alignItems:'flex-start', flexDirection: isMobile ? 'column' : 'row' }}>
+        {/* Sommaire : les trois groupes et toutes leurs entrées, d'un coup d'œil */}
+        <div style={{ width: isMobile ? '100%' : 232, flexShrink:0 }}>
+          {PARAM_GROUPES.map((g, gi) => {
+            const IconeG = g.icone;
+            return (
+              <div key={g.titre} style={{ marginBottom: gi < PARAM_GROUPES.length - 1 ? 20 : 0 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8, padding:'0 4px 8px' }}>
+                  <IconeG size={15} strokeWidth={2} color="#999" />
+                  <span style={{ fontSize:11, fontWeight:800, color:'#999', textTransform:'uppercase', letterSpacing:0.8 }}>{g.titre}</span>
+                </div>
+                <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
+                  {g.entrees.map(e => {
+                    const actif = section === e.id;
+                    return (
+                      <button key={e.id} onClick={()=>setSection(e.id)}
+                        style={{ display:'block', width:'100%', textAlign:'left', padding:'10px 14px', borderRadius:10, border:'none', cursor:'pointer',
+                          background: actif ? '#111' : 'transparent',
+                          color: actif ? '#E8C547' : '#555',
+                          fontSize:13.5, fontWeight: actif ? 800 : 600 }}>
+                        {e.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{ flex:1, minWidth:0 }}>
+          {conf === null ? (
+            <p style={{ padding:'40px 0', textAlign:'center', color:'#bbb', fontSize:14 }}>Chargement des réglages…</p>
+          ) : (
+            <>
+              <div style={{ marginBottom:14 }}>
+                <h2 style={{ margin:0, fontSize:19, fontWeight:800, color:'#111' }}>{entree.label}</h2>
+                <p style={{ margin:'3px 0 0', fontSize:13, color:'#999' }}>{entree.aide}</p>
+              </div>
+              {contenus[entree.id]}
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
-
 function SystemePage({ showToast }) {
   const [backups, setBackups] = useState([]);
   const [loadingBk, setLoadingBk] = useState(true);
