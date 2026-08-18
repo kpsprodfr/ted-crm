@@ -546,14 +546,12 @@ rassemble `Réservations`, le bandeau **Demandes en attente** en version compact
 Le bouton *Formulaire* est retiré.
 
 Cette bascule remplace l'ancien bouton du bandeau : **Plan de salle** ⇄
-**Vue calendrier**, jamais « Fermer ». Un espace de la largeur de la colonne de
-droite (396 px, 280 en `etroit`) la termine, si bien qu'elle tombe juste à
-gauche de « Nouvelle réservation », un cran plus bas. Tous les boutons du haut sont calés sur
+**Vue calendrier**, jamais « Fermer ». Elle est suivie de **Nouvelle
+réservation** : les deux terminent la ligne du titre, calés à droite,
+au-dessus du bloc « Réservations du ». Tous les boutons du haut sont calés sur
 ceux du Click and Collect : **38 px de haut, 13 px de texte** (14 pour l'action
 principale).
 
-**Nouvelle réservation** ne bouge pas : toujours au-dessus du bloc
-« Réservations du », en 377 px calés à droite quand le plan est ouvert.
 Plan ouvert, la colonne du calendrier est masquée (`display:none`), sinon elle
 pousse le bloc en bas de l'écran.
 

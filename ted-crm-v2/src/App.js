@@ -2873,9 +2873,9 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                 ? <><CalendarDays size={14} strokeWidth={2} color="#E8C547" /> Vue calendrier</>
                 : <><LayoutGrid size={14} strokeWidth={2} color="#666" /> Plan de salle</>}
             </button>
-            {/* Réserve la largeur de la colonne de droite : la bascule tombe
-                ainsi juste à gauche de « Nouvelle réservation ». */}
-            <span style={{ width: etroit ? 280 : 396, flexShrink:0 }} />
+            <button onClick={()=>setShowAddResa(true)} style={{ ...btnPrimary, height:38, flexShrink:0, display:'flex', alignItems:'center', gap:6 }}>
+              <Plus size={16} strokeWidth={2.4} /> Nouvelle réservation
+            </button>
             <div style={{ position:'relative', display:'none' }}>
               <button onClick={()=>setShowFormDropdown(v=>!v)} style={{ display:'flex', alignItems:'center', gap:6, height:38, padding:'0 14px', background:'#fff', border:'1.5px solid #eee', borderRadius:10, fontSize:13, fontWeight:600, cursor:'pointer', color:'#666' }}>
                 <Link size={14} strokeWidth={2} /> Formulaire
@@ -3292,9 +3292,6 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
         return (
           <div style={{ height:'100%', display:'flex', flexDirection:'column', gap:10, minHeight:0 }}>
           {/* Prise de réservation : au-dessus du bloc, à la hauteur de « Nouvelle commande » */}
-          <button onClick={()=>setShowAddResa(true)} style={{ ...btnPrimary, width: planOuvert ? 377 : '100%', alignSelf: planOuvert ? 'flex-end' : 'stretch', height:38, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-            <Plus size={16} strokeWidth={2.4} /> Nouvelle réservation
-          </button>
           <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', flex:1, minHeight:0, display:'flex', flexDirection:'row', overflow:'hidden', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
 
           {/* Le plan partage le bloc avec la liste du service */}
