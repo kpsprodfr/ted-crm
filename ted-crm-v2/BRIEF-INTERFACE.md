@@ -521,6 +521,18 @@ générique :
   (barré, gris) et *Après la modification* (vert) ;
 - le reste en lignes libellé / valeur espacées.
 
+**On n'approuve pas un tableau, on approuve ce que le client verra.** Le bouton
+principal est **« Voir un aperçu »** ; la décision se prend dans la modale, au
+bout de l'aperçu. Chaque aperçu imite le support réel :
+
+- **SMS** → un téléphone (châssis noir, barre d'état, en-tête de conversation,
+  bulle reçue grise à coin cassé) ;
+- **E-mail** → une boîte mail (fenêtre à trois pastilles, objet, expéditeur, corps) ;
+- **Site** → un navigateur avec barre d'URL, la page esquissée et **le bloc
+  modifié encadré en vert**, ancien texte barré au-dessus du nouveau ;
+- **Carte / tarifs** → une ligne de carte, plat barré ou ancien prix barré ;
+- sinon, le détail en lignes libellé / valeur.
+
 **Un refus doit être motivé** : le bouton reste inactif tant que le motif est
 vide, avec quatre motifs fréquents proposés. C'est ce motif que l'assistant
 relit pour proposer une version corrigée ; la révision affiche alors un bandeau

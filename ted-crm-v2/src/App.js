@@ -8521,10 +8521,170 @@ function DetailDemande({ demande }) {
   );
 }
 
+// ─── Aperçus ──────────────────────────────────────────────────────────────────
+// On n'approuve pas un tableau de données : on approuve ce que le client verra.
+// Chaque aperçu imite le support réel — un téléphone pour un SMS, une boîte mail
+// pour un e-mail, un navigateur pour le site.
+
+function EcranTelephone({ expediteur, message }) {
+  return (
+    <div style={{ width:300, margin:'0 auto', background:'#111', borderRadius:42, padding:11, boxShadow:'0 18px 50px rgba(0,0,0,0.28)' }}>
+      <div style={{ background:'#fff', borderRadius:32, overflow:'hidden' }}>
+        {/* Barre d'état */}
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 20px 4px', fontSize:11.5, fontWeight:700, color:'#111' }}>
+          <span>9:41</span>
+          <span style={{ display:'flex', gap:4, alignItems:'center' }}>
+            <span style={{ width:15, height:9, border:'1.2px solid #111', borderRadius:2.5, display:'inline-block', position:'relative' }}>
+              <span style={{ position:'absolute', inset:1.5, right:4, background:'#111', borderRadius:1 }} />
+            </span>
+          </span>
+        </div>
+        {/* En-tête de conversation */}
+        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:5, padding:'8px 0 12px', borderBottom:'1px solid #f0f0f0' }}>
+          <div style={{ width:38, height:38, borderRadius:'50%', background:'#E8C547', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:900, color:'#111' }}>
+            {(expediteur || '?').slice(0, 2).toUpperCase()}
+          </div>
+          <span style={{ fontSize:12.5, fontWeight:700, color:'#111' }}>{expediteur}</span>
+        </div>
+        {/* Le message reçu */}
+        <div style={{ padding:'16px 14px 26px', minHeight:170, background:'#fff' }}>
+          <div style={{ maxWidth:'85%', background:'#e9e9eb', borderRadius:'18px 18px 18px 5px', padding:'10px 14px' }}>
+            <p style={{ margin:0, fontSize:14, color:'#111', lineHeight:1.5, whiteSpace:'pre-wrap' }}>{message}</p>
+          </div>
+          <p style={{ margin:'6px 0 0 6px', fontSize:10.5, color:'#bbb' }}>maintenant</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Châssis commun à la boîte mail et au navigateur.
+function Fenetre({ barre, children }) {
+  return (
+    <div style={{ border:'1.5px solid #e4e4e4', borderRadius:14, overflow:'hidden', background:'#fff', boxShadow:'0 14px 40px rgba(0,0,0,0.12)' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', background:'#f7f7f7', borderBottom:'1px solid #ececec' }}>
+        <span style={{ display:'flex', gap:6, flexShrink:0 }}>
+          {['#ff5f57','#febc2e','#28c840'].map(c => <span key={c} style={{ width:10, height:10, borderRadius:'50%', background:c }} />)}
+        </span>
+        {barre}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function EcranMail({ expediteur, adresse, objet, message }) {
+  return (
+    <Fenetre barre={<span style={{ fontSize:12, color:'#999', fontWeight:600 }}>Boîte de réception</span>}>
+      <div style={{ padding:'18px 22px' }}>
+        <h4 style={{ margin:'0 0 14px', fontSize:17, fontWeight:800, color:'#111' }}>{objet}</h4>
+        <div style={{ display:'flex', alignItems:'center', gap:11, paddingBottom:14, borderBottom:'1px solid #f0f0f0', marginBottom:16 }}>
+          <div style={{ width:36, height:36, borderRadius:'50%', flexShrink:0, background:'#E8C547', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:900, color:'#111' }}>
+            {(expediteur || '?').slice(0, 2).toUpperCase()}
+          </div>
+          <div style={{ minWidth:0 }}>
+            <div style={{ fontSize:13.5, fontWeight:700, color:'#111' }}>{expediteur}</div>
+            <div style={{ fontSize:12, color:'#999', overflow:'hidden', textOverflow:'ellipsis' }}>{adresse || 'contact@…'} · à moi</div>
+          </div>
+        </div>
+        <p style={{ margin:0, fontSize:14.5, color:'#333', lineHeight:1.75, whiteSpace:'pre-wrap' }}>{message}</p>
+      </div>
+    </Fenetre>
+  );
+}
+
+function EcranSite({ url, avant, apres }) {
+  return (
+    <Fenetre barre={
+      <span style={{ flex:1, height:26, borderRadius:13, background:'#fff', border:'1px solid #e4e4e4', display:'flex', alignItems:'center', padding:'0 12px', fontSize:11.5, color:'#888', overflow:'hidden', whiteSpace:'nowrap', textOverflow:'ellipsis' }}>
+        {url || 'votre-site.fr'}
+      </span>
+    }>
+      <div style={{ padding:'22px 24px 26px', background:'#fff' }}>
+        {/* Une page esquissée, pour situer le bloc modifié */}
+        <div style={{ height:10, width:'42%', borderRadius:4, background:'#ededed', marginBottom:9 }} />
+        <div style={{ height:7, width:'72%', borderRadius:4, background:'#f4f4f4', marginBottom:20 }} />
+
+        <div style={{ border:'2px solid #16a34a', borderRadius:12, padding:'14px 16px', background:'#f0fdf4', marginBottom:18 }}>
+          <p style={{ margin:'0 0 8px', fontSize:10.5, fontWeight:800, color:'#15803d', textTransform:'uppercase', letterSpacing:0.6 }}>Le bloc modifié</p>
+          <p style={{ margin:'0 0 6px', fontSize:14, color:'#bbb', textDecoration:'line-through', whiteSpace:'pre-wrap', lineHeight:1.55 }}>{avant || '—'}</p>
+          <p style={{ margin:0, fontSize:15, fontWeight:700, color:'#111', whiteSpace:'pre-wrap', lineHeight:1.55 }}>{apres || '—'}</p>
+        </div>
+
+        <div style={{ height:7, width:'88%', borderRadius:4, background:'#f4f4f4', marginBottom:7 }} />
+        <div style={{ height:7, width:'64%', borderRadius:4, background:'#f4f4f4' }} />
+      </div>
+    </Fenetre>
+  );
+}
+
+// Une ligne de carte, comme le client la voit.
+function EcranCarte({ titre, lignes }) {
+  return (
+    <Fenetre barre={<span style={{ fontSize:12, color:'#999', fontWeight:600 }}>{titre}</span>}>
+      <div style={{ padding:'18px 22px' }}>
+        {lignes.map((l, i) => (
+          <div key={i} style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', gap:14, padding:'11px 0', borderBottom: i < lignes.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
+            <span style={{ fontSize:14.5, color: l.retire ? '#ccc' : '#111', fontWeight: l.retire ? 500 : 600, textDecoration: l.retire ? 'line-through' : 'none' }}>{l.nom}</span>
+            <span style={{ flexShrink:0, fontSize:14, fontWeight:800, color: l.retire ? '#ddd' : '#111' }}>
+              {l.prixAvant && <span style={{ color:'#bbb', fontWeight:600, textDecoration:'line-through', marginRight:8 }}>{l.prixAvant}</span>}
+              {l.prix}
+            </span>
+          </div>
+        ))}
+      </div>
+    </Fenetre>
+  );
+}
+
+// Choisit l'aperçu qui correspond à la demande.
+function ApercuDemande({ demande }) {
+  const c = demande.contenu || {};
+  const maison = REGLAGES.nom || 'Votre établissement';
+
+  if (demande.type === 'campagne' && c.message) {
+    const parSMS = String(c.canal || '').toLowerCase().includes('sms');
+    return parSMS
+      ? <EcranTelephone expediteur={maison} message={c.message} />
+      : <EcranMail expediteur={maison} adresse={REGLAGES.email} objet={c.objet || demande.titre} message={c.message} />;
+  }
+
+  if (demande.type === 'site') {
+    return <EcranSite url={c.page || REGLAGES.site} avant={c.avant} apres={c.apres} />;
+  }
+
+  if (demande.type === 'tarifs' && (c.avant || c.apres)) {
+    return <EcranCarte titre="Votre carte" lignes={[
+      { nom: c.produit || demande.titre, prixAvant: c.avant, prix: c.apres },
+    ]} />;
+  }
+
+  if (demande.type === 'menu' && c.plats) {
+    return <EcranCarte titre="Votre carte" lignes={
+      String(c.plats).split(',').map(p => ({ nom: p.trim(), prix: '—', retire: true }))
+    } />;
+  }
+
+  // Pas de support à imiter : on montre le détail, proprement.
+  return (
+    <div style={{ background:'#fafafa', border:'1.5px solid #eee', borderRadius:14, padding:'6px 16px' }}>
+      {Object.entries(c).filter(([, v]) => v !== null && v !== '').map(([cle, val], i, arr) => (
+        <div key={cle} style={{ display:'flex', gap:14, padding:'11px 0', borderBottom: i < arr.length - 1 ? '1px solid #f0f0f0' : 'none', alignItems:'baseline', flexWrap:'wrap' }}>
+          <span style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.4, minWidth:120, flexShrink:0 }}>{cle}</span>
+          <span style={{ flex:1, minWidth:180, fontSize:14, color:'#111', lineHeight:1.6, whiteSpace:'pre-wrap', wordBreak:'break-word' }}>
+            {typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function ApprobationsPage({ showToast, user, onCountChange }) {
   const [demandes, setDemandes] = useState(null);
   const [filtre, setFiltre] = useState('en_attente');
   const [refus, setRefus] = useState(null);
+  const [apercu, setApercu] = useState(null);
   const [motif, setMotif] = useState('');
   const [monRole, setMonRole] = useState(null);
   const isMobile = useIsMobile();
@@ -8736,9 +8896,9 @@ function ApprobationsPage({ showToast, user, onCountChange }) {
                             style={{ flex:1, minWidth:140, height:48, borderRadius:12, border:'1.5px solid #e0e0e0', background:'#fff', color:'#555', fontSize:14.5, fontWeight:800, cursor:'pointer' }}>
                             Refuser
                           </button>
-                          <button onClick={()=>decider(d, 'approuvee')}
-                            style={{ flex:2, minWidth:180, height:48, borderRadius:12, border:'none', background:'#16a34a', color:'#fff', fontSize:14.5, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:9 }}>
-                            <CheckCircle size={18} strokeWidth={2.2} /> Approuver
+                          <button onClick={()=>setApercu(d)}
+                            style={{ flex:2, minWidth:180, height:48, borderRadius:12, border:'none', background:'#111', color:'#fff', fontSize:14.5, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:9 }}>
+                            <Eye size={18} strokeWidth={2.2} /> Voir un aperçu
                           </button>
                         </div>
                       )}
@@ -8751,10 +8911,60 @@ function ApprobationsPage({ showToast, user, onCountChange }) {
         );
       })}
 
+      {apercu && (() => {
+        const dom = domaineDe(apercu.type);
+        const c = apercu.contenu || {};
+        const parSMS = String(c.canal || '').toLowerCase().includes('sms');
+        const support = apercu.type === 'campagne' ? (parSMS ? 'Sur le téléphone du client' : 'Dans la boîte mail du client')
+          : apercu.type === 'site' ? 'Sur votre site internet'
+          : (apercu.type === 'menu' || apercu.type === 'tarifs') ? 'Sur votre carte'
+          : 'Ce que la demande contient';
+        return (
+          <>
+            <div onClick={()=>setApercu(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:5200 }} />
+            <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#f5f5f5', borderRadius:20, width:'min(680px, calc(100vw - 24px))', maxHeight:'calc(100vh - 24px)', display:'flex', flexDirection:'column', boxShadow:'0 32px 80px rgba(0,0,0,0.3)', zIndex:5201, overflow:'hidden' }}>
+
+              <div style={{ display:'flex', alignItems:'center', gap:12, padding:'18px 22px 15px', background:'#fff', borderBottom:'1px solid #f0f0f0', flexShrink:0 }}>
+                <div style={{ width:36, height:36, borderRadius:10, flexShrink:0, background:dom.fond, border:`1.5px solid ${dom.bord}`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <dom.icone size={17} strokeWidth={2} color={dom.teinte} />
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <h2 style={{ margin:0, fontSize:16.5, fontWeight:800, color:'#111', lineHeight:1.3 }}>{apercu.titre}</h2>
+                  <p style={{ margin:'2px 0 0', fontSize:12.5, color:'#999' }}>{support}</p>
+                </div>
+                <button onClick={()=>setApercu(null)} style={{ width:34, height:34, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:16, color:'#666', flexShrink:0 }}>✕</button>
+              </div>
+
+              <div style={{ flex:1, minHeight:0, overflowY:'auto', padding:'26px 24px' }}>
+                <ApercuDemande demande={apercu} />
+                {apercu.type === 'campagne' && (
+                  <p style={{ margin:'22px 0 0', textAlign:'center', fontSize:12.5, color:'#999' }}>
+                    {c.destinataires ? `Envoyé à ${c.destinataires}` : ''}{c.destinataires && c.envoi ? ' · ' : ''}{c.envoi || ''}
+                  </p>
+                )}
+              </div>
+
+              {apercu.statut === 'en_attente' && peutDecider && (
+                <div style={{ display:'flex', gap:10, padding:'14px 22px calc(18px + env(safe-area-inset-bottom, 0px))', background:'#fff', borderTop:'1px solid #f0f0f0', flexShrink:0 }}>
+                  <button onClick={()=>{ setRefus(apercu); setApercu(null); setMotif(''); }}
+                    style={{ flex:1, height:48, borderRadius:12, border:'1.5px solid #e0e0e0', background:'#fff', color:'#555', fontSize:14.5, fontWeight:800, cursor:'pointer' }}>
+                    Refuser
+                  </button>
+                  <button onClick={()=>{ decider(apercu, 'approuvee'); setApercu(null); }}
+                    style={{ flex:2, height:48, borderRadius:12, border:'none', background:'#16a34a', color:'#fff', fontSize:14.5, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:9 }}>
+                    <CheckCircle size={18} strokeWidth={2.2} /> Approuver
+                  </button>
+                </div>
+              )}
+            </div>
+          </>
+        );
+      })()}
+
       {refus && (
         <>
-          <div onClick={()=>setRefus(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:5200 }} />
-          <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:18, width:'min(500px, calc(100vw - 32px))', maxHeight:'calc(100vh - 32px)', overflowY:'auto', padding:'24px 26px', boxShadow:'0 32px 80px rgba(0,0,0,0.3)', zIndex:5201 }}>
+          <div onClick={()=>setRefus(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:5300 }} />
+          <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:18, width:'min(500px, calc(100vw - 32px))', maxHeight:'calc(100vh - 32px)', overflowY:'auto', padding:'24px 26px', boxShadow:'0 32px 80px rgba(0,0,0,0.3)', zIndex:5301 }}>
             <h3 style={{ margin:'0 0 8px', fontSize:17, fontWeight:800, color:'#111' }}>Pourquoi refuser ?</h3>
             <p style={{ margin:'0 0 16px', fontSize:13.5, color:'#666', lineHeight:1.7 }}>
               L'assistant repartira de votre motif pour proposer une version corrigée.
