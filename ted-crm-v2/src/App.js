@@ -9424,12 +9424,6 @@ function ParametresPage({ showToast, user }) {
                     <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:10, flexWrap:'wrap' }}>
                       <span style={{ fontSize:13.5, fontWeight:800, color:'#111' }}>{j.long}</span>
                       <span style={{ flex:1 }} />
-                      {services.length < MAX_SERVICES && (
-                        <button onClick={()=>ajouterService(j.id)}
-                          style={{ height:32, padding:'0 11px', borderRadius:9, border:'1.5px dashed #ddd', background:'transparent', color:'#666', fontSize:12, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
-                          <Plus size={14} strokeWidth={2.2} /> Ajouter un service
-                        </button>
-                      )}
                       <button onClick={()=>appliquerASemaine(j.id)}
                         style={{ height:32, padding:'0 11px', borderRadius:9, border:'none', background:'#E8C547', color:'#111', fontSize:12, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
                         <Copy size={13} strokeWidth={2.2} /> Appliquer à toute la semaine
@@ -9445,6 +9439,13 @@ function ParametresPage({ showToast, user }) {
                             onRetirer={socle ? null : ()=>retirerService(j.id, k)} />
                         );
                       })}
+                      {/* L'ajout vient après les services déjà posés */}
+                      {services.length < MAX_SERVICES && (
+                        <button onClick={()=>ajouterService(j.id)}
+                          style={{ alignSelf:'flex-start', height:38, padding:'0 14px', borderRadius:10, border:'1.5px dashed #ddd', background:'transparent', color:'#666', fontSize:12.5, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:7 }}>
+                          <Plus size={15} strokeWidth={2.2} /> Ajouter un service
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
