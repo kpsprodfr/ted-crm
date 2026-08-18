@@ -908,45 +908,45 @@ const PLAN_SALLE_DEFAUT = {
     {
       id: 'salle', nom: 'Salle',
       decor: [
-        { type:'bar',      nom:'Bar',      x:4,  y:6,  l:12, h:52 },
-        { type:'entree',   nom:'Entrée',   x:44, y:92, l:14, h:7  },
-        { type:'escalier', nom:'Escalier', x:84, y:6,  l:12, h:22 },
-        { type:'cuisine',  nom:'Cuisine',  x:84, y:74, l:12, h:22 },
+        { type:'bar',      nom:'Bar',      x:3,  y:8,  l:12, h:50 },
+        { type:'entree',   nom:'Entrée',   x:43, y:91, l:14, h:7  },
+        { type:'escalier', nom:'Escalier', x:85, y:8,  l:12, h:20 },
+        { type:'cuisine',  nom:'Cuisine',  x:85, y:70, l:12, h:20 },
       ],
       tables: [
-        { id:'T1', nom:'1',  forme:'ronde',  places:2, x:24, y:12 },
-        { id:'T2', nom:'2',  forme:'ronde',  places:2, x:40, y:12 },
-        { id:'T3', nom:'3',  forme:'carree', places:4, x:57, y:11 },
-        { id:'T4', nom:'4',  forme:'carree', places:4, x:24, y:36 },
-        { id:'T5', nom:'5',  forme:'ovale',  places:6, x:41, y:37 },
-        { id:'T6', nom:'6',  forme:'carree', places:4, x:62, y:36 },
-        { id:'T7', nom:'7',  forme:'ronde',  places:2, x:24, y:63 },
-        { id:'T8', nom:'8',  forme:'ovale',  places:8, x:40, y:62 },
-        { id:'T9', nom:'9',  forme:'carree', places:4, x:63, y:63 },
+        { id:'T1', nom:'1', forme:'ronde',  places:2, x:23, y:9  },
+        { id:'T2', nom:'2', forme:'ronde',  places:2, x:42, y:9  },
+        { id:'T3', nom:'3', forme:'ronde',  places:2, x:61, y:9  },
+        { id:'T4', nom:'4', forme:'carree', places:4, x:23, y:34 },
+        { id:'T5', nom:'5', forme:'carree', places:4, x:45, y:34 },
+        { id:'T6', nom:'6', forme:'carree', places:4, x:67, y:34 },
+        { id:'T7', nom:'7', forme:'ovale',  places:6, x:23, y:64 },
+        { id:'T8', nom:'8', forme:'ovale',  places:8, x:52, y:64 },
       ],
     },
     {
       id: 'terrasse', nom: 'Terrasse',
-      decor: [{ type:'entree', nom:'Accès salle', x:2, y:44, l:9, h:14 }],
+      decor: [{ type:'entree', nom:'Accès salle', x:2, y:42, l:9, h:16 }],
       tables: [
-        { id:'E1', nom:'E1', forme:'ronde',  places:2, x:20, y:16 },
-        { id:'E2', nom:'E2', forme:'ronde',  places:2, x:38, y:16 },
-        { id:'E3', nom:'E3', forme:'ronde',  places:2, x:56, y:16 },
-        { id:'E4', nom:'E4', forme:'carree', places:4, x:20, y:52 },
-        { id:'E5', nom:'E5', forme:'carree', places:4, x:40, y:52 },
-        { id:'E6', nom:'E6', forme:'ovale',  places:6, x:60, y:53 },
+        { id:'E1', nom:'E1', forme:'ronde',  places:2, x:22, y:14 },
+        { id:'E2', nom:'E2', forme:'ronde',  places:2, x:41, y:14 },
+        { id:'E3', nom:'E3', forme:'ronde',  places:2, x:60, y:14 },
+        { id:'E4', nom:'E4', forme:'carree', places:4, x:22, y:48 },
+        { id:'E5', nom:'E5', forme:'carree', places:4, x:44, y:48 },
+        { id:'E6', nom:'E6', forme:'ovale',  places:6, x:64, y:49 },
       ],
     },
     {
       id: 'etage', nom: 'Étage',
       decor: [
-        { type:'escalier', nom:'Escalier', x:4, y:6, l:12, h:22 },
-        { type:'bar',      nom:'Bar',      x:82, y:6, l:14, h:34 },
+        { type:'escalier', nom:'Escalier', x:3,  y:8, l:12, h:20 },
+        { type:'bar',      nom:'Bar',      x:84, y:8, l:13, h:32 },
       ],
       tables: [
-        { id:'A1', nom:'A1', forme:'ovale',  places:8,  x:26, y:16 },
-        { id:'A2', nom:'A2', forme:'ovale',  places:10, x:26, y:50 },
-        { id:'A3', nom:'A3', forme:'carree', places:4,  x:62, y:52 },
+        { id:'A1', nom:'A1', forme:'ovale',  places:8,  x:24, y:14 },
+        { id:'A2', nom:'A2', forme:'ovale',  places:10, x:24, y:52 },
+        { id:'A3', nom:'A3', forme:'carree', places:4,  x:62, y:14 },
+        { id:'A4', nom:'A4', forme:'carree', places:4,  x:62, y:52 },
       ],
     },
   ],
@@ -964,6 +964,40 @@ const decaleJour = (iso, n) => {
   d.setDate(d.getDate() + n);
   return dateLocale(d);
 };
+
+// Répartition des chaises autour d'une table : deux sur les côtés, le reste
+// partagé entre le haut et le bas. Positions en % du cadre de la table.
+function chaisesAutour(places, forme) {
+  const n = Math.max(1, places);
+  const chaises = [];
+  const ep = 15;              // épaisseur d'une chaise, en % du cadre
+  const ecart = 20;           // distance au bord de la table
+
+  if (n <= 2 && forme !== 'ovale') {
+    chaises.push({ left:-ecart, top:50 - ep/2, w:ep, h:ep });
+    if (n === 2) chaises.push({ left:100 + ecart - ep, top:50 - ep/2, w:ep, h:ep });
+    return chaises;
+  }
+
+  const cotes = n >= 4 ? 2 : 0;
+  const reste = n - cotes;
+  const haut = Math.ceil(reste / 2);
+  const bas = reste - haut;
+
+  const poser = (combien, y) => {
+    for (let i = 0; i < combien; i++) {
+      const pas = 100 / (combien + 1);
+      chaises.push({ left: pas * (i + 1) - ep / 2, top: y, w: ep, h: ep });
+    }
+  };
+  poser(haut, -ecart);
+  poser(bas, 100 + ecart - ep);
+  if (cotes) {
+    chaises.push({ left:-ecart, top:50 - ep/2, w:ep, h:ep });
+    chaises.push({ left:100 + ecart - ep, top:50 - ep/2, w:ep, h:ep });
+  }
+  return chaises;
+}
 
 // Dimensions d'une table selon sa forme et sa capacité.
 function gabaritTable(t) {
@@ -1038,15 +1072,11 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, onFerm
             {aPlacer.length} à placer
           </span>
         )}
-        <button onClick={onFermer}
-          style={{ height:34, padding:'0 12px', borderRadius:9, border:'1.5px solid #e0e0e0', background:'#fff', color:'#666', fontSize:12.5, fontWeight:700, cursor:'pointer' }}>
-          Fermer
-        </button>
       </div>
 
       {/* La salle vue d'en haut */}
-      <div style={{ flex:1, minHeight:0, overflow:'auto', padding:16, background:'#fafafa' }}>
-        <div style={{ position:'relative', width:'100%', paddingTop:'62%', background:'#fff', border:'1.5px solid #eee', borderRadius:14,
+      <div style={{ flex:1, minHeight:0, display:'flex', flexDirection:'column', gap:10, padding:16, background:'#fafafa' }}>
+        <div style={{ position:'relative', flex:1, minHeight:0, width:'100%', background:'#fff', border:'1.5px solid #eee', borderRadius:14,
           backgroundImage:'radial-gradient(#f0f0f0 1px, transparent 1px)', backgroundSize:'22px 22px' }}>
 
           {zone.decor.map((d, i) => {
@@ -1067,31 +1097,38 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, onFerm
             const couverts = dessus.reduce((s, r) => s + (r.nb_personnes || 0), 0);
             const trop = couverts > t.places;
             return (
-              <button key={t.id} onClick={()=>setTableOuverte(t)}
-                title={occupee ? dessus.map(nomDe).join(', ') : `Table ${t.nom} — ${t.places} places`}
-                style={{ position:'absolute', left:`${t.x}%`, top:`${t.y}%`, width:`${g.l}%`, height:`${g.h}%`,
-                  borderRadius:g.radius, cursor:'pointer', padding:2, boxSizing:'border-box',
-                  border: trop ? '2px solid #dc2626' : occupee ? 'none' : '2px dashed #d4d4d4',
-                  background: occupee ? '#E8C547' : '#fff',
-                  display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:1,
-                  boxShadow: occupee ? '0 3px 10px rgba(232,197,71,0.45)' : 'none', overflow:'hidden' }}>
-                {occupee ? (
-                  <>
-                    <span style={{ fontSize:10.5, fontWeight:900, color:'#111', maxWidth:'96%', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                      {nomDe(dessus[0]).split(' ')[0]}
-                    </span>
-                    <span style={{ fontSize:9.5, fontWeight:800, color:'#7a5c00' }}>
-                      {couverts}/{t.places}
-                      {dessus[0].heure ? ` · ${dessus[0].heure}` : ''}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span style={{ fontSize:11.5, fontWeight:900, color:'#999' }}>{t.nom}</span>
-                    <span style={{ fontSize:9.5, fontWeight:700, color:'#c4c4c4' }}>{t.places} pl.</span>
-                  </>
-                )}
-              </button>
+              <div key={t.id} style={{ position:'absolute', left:`${t.x}%`, top:`${t.y}%`, width:`${g.l}%`, height:`${g.h}%` }}>
+                {chaisesAutour(t.places, t.forme).map((c, i) => (
+                  <span key={i} style={{ position:'absolute', left:`${c.left}%`, top:`${c.top}%`, width:`${c.w}%`, height:`${c.h}%`,
+                    borderRadius:4, background: occupee ? '#d9ae23' : '#e8e8e8' }} />
+                ))}
+                <button onClick={()=>setTableOuverte(t)}
+                  data-table={t.id}
+                  title={occupee ? dessus.map(nomDe).join(', ') : `Table ${t.nom} — ${t.places} places`}
+                  style={{ position:'absolute', inset:0, width:'100%', height:'100%',
+                    borderRadius:g.radius, cursor:'pointer', padding:2, boxSizing:'border-box',
+                    border: trop ? '2px solid #dc2626' : occupee ? 'none' : '2px dashed #d4d4d4',
+                    background: occupee ? '#E8C547' : '#fff',
+                    display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:1,
+                    boxShadow: occupee ? '0 3px 10px rgba(232,197,71,0.45)' : 'none', overflow:'hidden' }}>
+                  {occupee ? (
+                    <>
+                      <span style={{ fontSize:10.5, fontWeight:900, color:'#111', maxWidth:'96%', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                        {nomDe(dessus[0]).split(' ')[0]}
+                      </span>
+                      <span style={{ fontSize:9.5, fontWeight:800, color:'#7a5c00' }}>
+                        {couverts}/{t.places}
+                        {dessus[0].heure ? ` · ${dessus[0].heure}` : ''}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span style={{ fontSize:11.5, fontWeight:900, color:'#999' }}>{t.nom}</span>
+                      <span style={{ fontSize:9.5, fontWeight:700, color:'#c4c4c4' }}>{t.places} pl.</span>
+                    </>
+                  )}
+                </button>
+              </div>
             );
           })}
         </div>
@@ -2488,6 +2525,37 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
 const [showDemandesAttente, setShowDemandesAttente] = useState(false);
   const [showFormDropdown, setShowFormDropdown] = useState(false);
   const [planOuvert, setPlanOuvert] = useState(false);
+  // Glisser une réservation vers une table : appui maintenu, puis dépôt.
+  const [glisse, setGlisse] = useState(null);
+  const glisseRef = useRef(null);
+
+  function demarrerGlisse(resa, e) {
+    if (!planOuvert) return;
+    const depart = { x: e.clientX, y: e.clientY };
+    const minuteur = setTimeout(() => {
+      glisseRef.current = { resa, actif: true };
+      setGlisse({ resa, x: depart.x, y: depart.y, cible: null });
+    }, 320);
+    glisseRef.current = { resa, minuteur, actif: false };
+  }
+
+  function suivreGlisse(e) {
+    const g = glisseRef.current;
+    if (!g) return;
+    if (!g.actif) return;                    // l'appui n'a pas encore duré
+    e.preventDefault();
+    const sous = document.elementFromPoint(e.clientX, e.clientY);
+    const cible = sous?.closest?.('[data-table]')?.getAttribute('data-table') || null;
+    setGlisse(prev => prev ? { ...prev, x: e.clientX, y: e.clientY, cible } : prev);
+  }
+
+  function finirGlisse() {
+    const g = glisseRef.current;
+    if (g?.minuteur) clearTimeout(g.minuteur);
+    if (g?.actif && glisse?.cible) placerSurTable(g.resa, glisse.cible);
+    glisseRef.current = null;
+    setGlisse(null);
+  }
 
   // Placer une réservation sur une table, ou l'en retirer.
   async function placerSurTable(resa, tableId) {
@@ -2742,7 +2810,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
         </header>
       )}
 
-      <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? (etroit ? '1fr 268px' : '1fr 380px') : undefined, gap: !isMobile ? (etroit ? 12 : 16) : undefined, padding: !isMobile ? (etroit ? '14px 16px' : '24px 32px') : undefined, maxWidth: !isMobile ? 1440 : undefined, margin: !isMobile ? '0 auto' : undefined, alignItems: !isMobile ? 'stretch' : 'start', height: !isMobile ? (etroit ? 'calc(100vh - 28px)' : 'calc(100vh - 48px)') : undefined, boxSizing: !isMobile ? 'border-box' : undefined, background: !isMobile ? '#f5f5f5' : undefined }}>
+      <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? (planOuvert ? '1fr' : (etroit ? '1fr 268px' : '1fr 380px')) : undefined, gridTemplateRows: !isMobile && planOuvert ? 'auto 1fr' : undefined, gap: !isMobile ? (etroit ? 12 : 16) : undefined, padding: !isMobile ? (etroit ? '14px 16px' : '24px 32px') : undefined, maxWidth: !isMobile ? 1440 : undefined, margin: !isMobile ? '0 auto' : undefined, alignItems: !isMobile ? 'stretch' : 'start', height: !isMobile ? (etroit ? 'calc(100vh - 28px)' : 'calc(100vh - 48px)') : undefined, boxSizing: !isMobile ? 'border-box' : undefined, background: !isMobile ? '#f5f5f5' : undefined }}>
       <main style={{ maxWidth: isMobile ? 800 : 'none', margin: isMobile ? '0 auto' : 0, padding: isMobile ? '12px 16px 100px' : '0', display: !isMobile ? 'flex' : 'block', flexDirection: !isMobile ? 'column' : undefined, gap: !isMobile ? (etroit ? 10 : 12) : undefined, height: !isMobile ? '100%' : undefined, overflow: !isMobile ? 'hidden' : undefined }}>
 
         {!isMobile && (
@@ -2763,20 +2831,6 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                 </>
               )}
             </div>
-          </div>
-        )}
-
-        {/* Le plan de salle prend la place du calendrier tant qu'il est ouvert */}
-        {!isMobile && planOuvert && (
-          <div style={{ flex:1, minHeight:0 }}>
-            <PlanDeSalle
-              resas={resaList}
-              jour={calJourSelectionne || dateLocale()}
-              service={calServiceSelectionne || serviceActuel()}
-              onJour={setCalJourSelectionne}
-              onService={setCalServiceSelectionne}
-              onPlacer={placerSurTable}
-              onFermer={()=>setPlanOuvert(false)} />
           </div>
         )}
 
@@ -3196,7 +3250,25 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           <button onClick={()=>setShowAddResa(true)} style={{ ...btnPrimary, width:'100%', height:38, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
             <Plus size={16} strokeWidth={2.4} /> Nouvelle réservation
           </button>
-          <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', flex:1, minHeight:0, display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
+          <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', flex:1, minHeight:0, display:'flex', flexDirection:'row', overflow:'hidden', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
+
+          {/* Le plan partage le bloc avec la liste du service */}
+          {planOuvert && (
+            <>
+              <div style={{ flex:1, minWidth:0, display:'flex', flexDirection:'column' }}>
+                <PlanDeSalle
+                  resas={resaList}
+                  jour={calJourSelectionne || dateLocale()}
+                  service={calServiceSelectionne || serviceActuel()}
+                  onJour={setCalJourSelectionne}
+                  onService={setCalServiceSelectionne}
+                  onPlacer={placerSurTable} />
+              </div>
+              <div style={{ width:1, background:'#f0f0f0', flexShrink:0 }} />
+            </>
+          )}
+
+          <div style={{ width: planOuvert ? 372 : '100%', flexShrink:0, display:'flex', flexDirection:'column', minHeight:0 }}>
             {/* Header fixe */}
             <div style={{padding:'16px 20px 12px', flexShrink:0, borderBottom:'1px solid #f5f5f5'}}>
               <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:6, marginBottom:8, flexWrap:'wrap'}}>
@@ -3265,7 +3337,12 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                 };
                 const s = statutColors[r.statut] || statutColors['confirmee'];
                 return (
-                  <div key={r.id} onClick={()=>setDetailResa(r)} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 20px', borderBottom:'1px solid #f5f5f5', cursor:'pointer' }}
+                  <div key={r.id} onClick={()=>{ if (!glisse) setDetailResa(r); }}
+                    onPointerDown={e=>demarrerGlisse(r, e)}
+                    onPointerMove={suivreGlisse}
+                    onPointerUp={finirGlisse}
+                    onPointerCancel={finirGlisse}
+                    style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 20px', borderBottom:'1px solid #f5f5f5', cursor: planOuvert ? 'grab' : 'pointer', touchAction: planOuvert ? 'none' : 'auto', opacity: glisse?.resa?.id === r.id ? 0.4 : 1 }}
                     onMouseEnter={e=>e.currentTarget.style.background='#fafafa'}
                     onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                     <span style={{ fontSize:14, fontWeight:800, color:'#111', minWidth:44, flexShrink:0 }}>{r.heure||'—'}</span>
@@ -3273,7 +3350,12 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                       <div style={{ fontWeight:700, fontSize:14, color: r.statut==='absente'?'#dc2626':'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
                         {r.clients?.genre==='Entreprise' ? r.clients?.entreprise : `${r.clients?.prenom||''} ${r.clients?.nom||''}`.trim()}
                       </div>
-                      <div style={{ fontSize:12, color:'#999' }}>{r.nb_personnes} pers.</div>
+                      <div style={{ fontSize:12, color:'#999', display:'flex', alignItems:'center', gap:6 }}>
+                        {r.nb_personnes} pers.
+                        {r.table_plan
+                          ? <span style={{ fontSize:11, fontWeight:800, color:'#111', background:'#E8C547', borderRadius:20, padding:'2px 8px' }}>Table {r.table_plan}</span>
+                          : planOuvert && <span style={{ fontSize:11, fontWeight:700, color:'#bbb' }}>à placer</span>}
+                      </div>
                     </div>
                     {r.source === 'Grand Jeux du TED'
                       ? <span style={{ background:'#E8C547', color:'#111', borderRadius:20, padding:'3px 10px', fontSize:11, fontWeight:700, flexShrink:0, whiteSpace:'nowrap', display:'inline-flex', alignItems:'center', gap:4 }}><Dices size={11} /> Jeux</span>
@@ -3291,10 +3373,25 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
             </div>
           </div>
           </div>
+          </div>
         );
       })()}
 
       </div>{/* end 2-col grid */}
+
+      {glisse && (
+        <div style={{ position:'fixed', left:glisse.x + 14, top:glisse.y - 18, zIndex:9000, pointerEvents:'none',
+          background:'#111', color:'#fff', borderRadius:11, padding:'9px 13px', boxShadow:'0 12px 30px rgba(0,0,0,0.3)' }}>
+          <div style={{ fontSize:13, fontWeight:800 }}>
+            {glisse.resa.clients?.genre === 'Entreprise'
+              ? glisse.resa.clients?.entreprise
+              : `${glisse.resa.clients?.prenom || ''} ${glisse.resa.clients?.nom || ''}`.trim()}
+          </div>
+          <div style={{ fontSize:11.5, color: glisse.cible ? '#E8C547' : '#999' }}>
+            {glisse.cible ? `Déposer sur la table ${glisse.cible}` : 'Glissez sur une table'}
+          </div>
+        </div>
+      )}
 
       {acceptResa && <AccepterModal resa={acceptResa} onConfirm={()=>accepter(acceptResa)} onCancel={()=>setAcceptResa(null)} />}
       {refusResa && <RefusModal onConfirm={raison=>refuser(refusResa, raison)} onCancel={()=>setRefusResa(null)} />}

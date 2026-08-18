@@ -513,6 +513,18 @@ Midi / Soir, puisque le calendrier n'est plus visible.
 
 Le plan est un réglage (`plan_salle`) : il pourra être édité sans toucher au code.
 
+`chaisesAutour()` dessine les chaises : deux sur les côtés, le reste partagé
+entre le haut et le bas. Elles débordent du cadre de la table — **les positions
+doivent laisser assez d'espace pour qu'aucune table, chaises comprises, n'en
+touche une autre**. À vérifier par mesure après tout déplacement.
+
+**Glisser-déposer** : un appui maintenu de 320 ms sur une ligne de « Réservations
+du » saisit la réservation ; une vignette suit le doigt et annonce la table
+survolée ; le dépôt place. Les tables portent `data-table` et sont retrouvées
+par `elementFromPoint` — la souris comme le doigt fonctionnent (`touchAction:none`
+pendant le glissement). Une réservation placée porte un badge **Table X** dans
+la liste ; sinon « à placer » tant que le plan est ouvert.
+
 Une table **libre** est en pointillés gris, **occupée** en jaune de marque avec
 le prénom, les couverts et l'heure, **en rouge** si les couverts dépassent les
 places. Un clic ouvre la table : qui y est assis, et la liste des réservations
