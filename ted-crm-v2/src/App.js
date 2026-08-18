@@ -937,10 +937,13 @@ const REGLAGES_DEFAUT = {
   // mode 'ouverture' : les créneaux suivent les horaires du jour, et s'arrêtent
   // `avantFermeture` minutes avant la fin du service.
   // mode 'perso'      : une plage fixe, indépendante de l'ouverture.
-  plage_resa_midi:    { mode:'ouverture', debut:'12:00', fin:'13:30', pas:15, avantFermeture:60 },
-  plage_resa_soir:    { mode:'ouverture', debut:'19:00', fin:'21:30', pas:15, avantFermeture:60 },
-  plage_retrait_midi: { mode:'ouverture', debut:'11:30', fin:'14:15', pas:15, avantFermeture:15 },
-  plage_retrait_soir: { mode:'ouverture', debut:'18:00', fin:'21:30', pas:15, avantFermeture:15 },
+  // Les créneaux suivent toujours les horaires d'ouverture. Reste à dire à quel
+  // rythme, et jusqu'où : une table doit pouvoir être libérée avant la fermeture
+  // (durée du service), une commande doit pouvoir être remise (marge de retrait).
+  plage_resa_midi:    { pas:15, dureeService:45 },
+  plage_resa_soir:    { pas:15, dureeService:90 },
+  plage_retrait_midi: { pas:15, avantFermeture:15 },
+  plage_retrait_soir: { pas:15, avantFermeture:15 },
 };
 
 // Objet vivant, lu au rendu par toute l'application.
@@ -8254,16 +8257,23 @@ function creneauxEntre(debut, fin, pas) {
   return liste;
 }
 
-// Réglage d'un service : d'où viennent les créneaux, à quel rythme, et
-// jusqu'où avant la fermeture.
-const MARGES_FERMETURE = [0, 15, 30, 45, 60, 90];
+// Réglage d'un service. Les créneaux suivent toujours l'ouverture : on ne
+// choisit que le rythme, et le temps qu'il faut réserver en fin de service.
+const DUREES_SERVICE = [30, 45, 60, 90, 120];
+const MARGES_RETRAIT = [0, 15, 30, 45];
 
-function PlageCreneaux({ label, plage, onChange, exemple }) {
-  const p = { mode:'ouverture', debut:'12:00', fin:'13:30', pas:15, avantFermeture:60, ...(plage || {}) };
-  const suitOuverture = p.mode !== 'perso';
-  const apercu = suitOuverture
-    ? creneauxEntre(exemple.debut, enHeure(Math.max(enMinutes(exemple.debut), enMinutes(exemple.fin) - (p.avantFermeture || 0))), p.pas)
-    : creneauxEntre(p.debut, p.fin, p.pas);
+const fmtDuree = (m) => m < 60 ? `${m} min`
+  : m % 60 === 0 ? `${m / 60} h`
+  : `${Math.floor(m / 60)} h ${m % 60}`;
+
+function ReglageCreneaux({ label, type, plage, onChange, exemple }) {
+  const p = { pas:15, dureeService:45, avantFermeture:15, ...(plage || {}) };
+  const resa = type === 'resa';
+  const marge = resa ? p.dureeService : p.avantFermeture;
+
+  const ouverture = enMinutes(exemple.fin) - enMinutes(exemple.debut);
+  const dernier = enMinutes(exemple.fin) - marge;
+  const apercu = dernier < enMinutes(exemple.debut) ? [] : creneauxEntre(exemple.debut, enHeure(dernier), p.pas);
 
   const bouton = (actif) => ({
     height:42, borderRadius:10, cursor:'pointer', fontSize:12.5, fontWeight:800,
@@ -8276,33 +8286,8 @@ function PlageCreneaux({ label, plage, onChange, exemple }) {
     <div>
       <p style={{ margin:'0 0 10px', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>{label}</p>
 
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:7, marginBottom:12 }}>
-        <button onClick={()=>onChange({ ...p, mode:'ouverture' })} style={bouton(suitOuverture)}>Suivre l'ouverture</button>
-        <button onClick={()=>onChange({ ...p, mode:'perso' })} style={bouton(!suitOuverture)}>Plage fixe</button>
-      </div>
-
-      {suitOuverture ? (
-        <>
-          <p style={{ margin:'0 0 7px', fontSize:12, color:'#888' }}>Dernier créneau avant la fermeture</p>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:7, marginBottom:11 }}>
-            {MARGES_FERMETURE.map(m => (
-              <button key={m} onClick={()=>onChange({ ...p, avantFermeture:m })} style={bouton(p.avantFermeture === m)}>
-                {m === 0 ? "jusqu'au bout" : m === 60 ? '1 h avant' : m === 90 ? '1 h 30 avant' : `${m} min avant`}
-              </button>
-            ))}
-          </div>
-        </>
-      ) : (
-        <div style={{ display:'flex', alignItems:'center', gap:9, marginBottom:12, flexWrap:'wrap' }}>
-          <span style={{ fontSize:13, color:'#888' }}>De</span>
-          <ChoixHeure valeur={p.debut} onChange={h=>onChange({ ...p, debut: h })} />
-          <span style={{ fontSize:13, color:'#888' }}>à</span>
-          <ChoixHeure valeur={p.fin} onChange={h=>onChange({ ...p, fin: h })} />
-        </div>
-      )}
-
       <p style={{ margin:'0 0 7px', fontSize:12, color:'#888' }}>Un créneau toutes les</p>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:7, marginBottom:11 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:7, marginBottom:16 }}>
         {PAS_CRENEAUX.map(m => (
           <button key={m} onClick={()=>onChange({ ...p, pas:m })} style={bouton(p.pas === m)}>
             {m === 60 ? '1 h' : `${m} min`}
@@ -8310,13 +8295,37 @@ function PlageCreneaux({ label, plage, onChange, exemple }) {
         ))}
       </div>
 
-      <p style={{ margin:0, fontSize:12.5, color:'#999', lineHeight:1.6 }}>
-        {apercu.length === 0
-          ? 'Aucun créneau : la marge dépasse la durée du service.'
-          : <>{suitOuverture ? `Un jour ouvert de ${exemple.debut} à ${exemple.fin} : ` : ''}
-              <strong style={{ color:'#555' }}>{apercu.length} créneau{apercu.length > 1 ? 'x' : ''}</strong>
-              {' '}— {apercu.slice(0, 4).join(', ')}{apercu.length > 4 ? `… ${apercu[apercu.length - 1]}` : ''}</>}
+      <p style={{ margin:'0 0 7px', fontSize:12, color:'#888' }}>
+        {resa ? "Combien de temps un client reste à table" : "Dernier retrait avant la fermeture"}
       </p>
+      <div style={{ display:'grid', gridTemplateColumns: resa ? 'repeat(5, 1fr)' : 'repeat(4, 1fr)', gap:7, marginBottom:12 }}>
+        {(resa ? DUREES_SERVICE : MARGES_RETRAIT).map(m => (
+          <button key={m}
+            onClick={()=>onChange(resa ? { ...p, dureeService:m } : { ...p, avantFermeture:m })}
+            style={bouton(marge === m)}>
+            {resa ? fmtDuree(m) : (m === 0 ? 'aucune' : `${m} min`)}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ background:'#fafafa', border:'1.5px solid #f0f0f0', borderRadius:11, padding:'11px 13px' }}>
+        {apercu.length === 0 ? (
+          <p style={{ margin:0, fontSize:12.5, color:'#b91c1c', lineHeight:1.6 }}>
+            Aucun créneau : {resa ? `un service de ${fmtDuree(marge)} ne tient pas dans une ouverture de ${fmtDuree(ouverture)}.` : 'la marge dépasse la durée du service.'}
+          </p>
+        ) : (
+          <p style={{ margin:0, fontSize:12.5, color:'#666', lineHeight:1.7 }}>
+            Sur un service <strong style={{ color:'#111' }}>{exemple.debut} – {exemple.fin}</strong>, vos clients
+            {resa ? ' peuvent réserver' : ' peuvent venir chercher leur commande'} de{' '}
+            <strong style={{ color:'#111' }}>{apercu[0]}</strong> à{' '}
+            <strong style={{ color:'#111' }}>{apercu[apercu.length - 1]}</strong>, soit {apercu.length} créneau{apercu.length > 1 ? 'x' : ''}.
+            {resa && (
+              <><br />Le dernier part à {apercu[apercu.length - 1]} pour libérer la table à {exemple.fin} : au-delà,
+              le repas déborderait sur la fermeture.</>
+            )}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -8333,18 +8342,23 @@ function horairesDuJour(dateIso, service) {
 const enMinutes = (h) => { const [a, b] = String(h || '0:0').split(':').map(Number); return a * 60 + b; };
 const enHeure = (t) => `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
 
-// Créneaux réellement proposables : la plage réglée, moins le temps réservé
-// avant la fermeture.
+// Créneaux réellement proposables un jour donné. Ils épousent les horaires
+// d'ouverture ; le dernier est celui qui laisse encore le temps de finir :
+//   réservation → la table doit être libérée avant la fermeture
+//   retrait     → la commande doit pouvoir être remise avant la fermeture
+function margeDeFin(cle, cfg) {
+  return cle === 'plage_resa'
+    ? (Number(cfg.dureeService) || 45)
+    : (Number(cfg.avantFermeture) || 0);
+}
+
 function creneauxService(cle, service, dateIso) {
   const cfg = REGLAGES[`${cle}_${service}`] || {};
-  let debut = cfg.debut, fin = cfg.fin;
-  if (cfg.mode !== 'perso') {
-    const h = horairesDuJour(dateIso || dateLocale(), service);
-    if (!h.ouvert) return [];
-    debut = h.debut; fin = h.fin;
-  }
-  const dernier = enMinutes(fin) - (Number(cfg.avantFermeture) || 0);
-  return creneauxEntre(debut, enHeure(Math.max(enMinutes(debut), dernier)), cfg.pas || 15);
+  const h = horairesDuJour(dateIso || dateLocale(), service);
+  if (!h.ouvert) return [];
+  const dernier = enMinutes(h.fin) - margeDeFin(cle, cfg);
+  if (dernier < enMinutes(h.debut)) return [];
+  return creneauxEntre(h.debut, enHeure(dernier), cfg.pas || 15);
 }
 
 // Un créneau horaire se saisit à la minute près, mais se lit en grille.
@@ -9428,10 +9442,11 @@ function ParametresPage({ showToast, user }) {
 
     'mod-reservations': (
       <>
-        <Bloc titre="Créneaux de réservation" aide="Donnez la plage de chaque service et le rythme des réservations : le CRM en déduit les heures proposées au client.">
+        <Bloc titre="Créneaux de réservation"
+          aide="Les créneaux suivent tout seuls vos horaires d'ouverture : si vous changez un horaire dans « Dates / Horaires », les réservations s'y adaptent sans rien retoucher ici.">
           <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:28 }}>
-            <PlageCreneaux label="Midi" plage={lire('plage_resa_midi')} exemple={exempleOuverture('midi')} onChange={v=>enregistrer('plage_resa_midi', v)} />
-            <PlageCreneaux label="Soir" plage={lire('plage_resa_soir')} exemple={exempleOuverture('soir')} onChange={v=>enregistrer('plage_resa_soir', v)} />
+            <ReglageCreneaux label="Midi" type="resa" plage={lire('plage_resa_midi')} exemple={exempleOuverture('midi')} onChange={v=>enregistrer('plage_resa_midi', v)} />
+            <ReglageCreneaux label="Soir" type="resa" plage={lire('plage_resa_soir')} exemple={exempleOuverture('soir')} onChange={v=>enregistrer('plage_resa_soir', v)} />
           </div>
         </Bloc>
         <Bloc titre="Capacité du service" aide="Nombre de couverts au-delà duquel le service est considéré comme complet. Laisser à 0 pour ne poser aucune limite.">
@@ -9483,10 +9498,11 @@ function ParametresPage({ showToast, user }) {
         <Bloc titre="Commande à l'avance" aide="Nombre de jours pendant lesquels un client peut réserver un retrait à partir d'aujourd'hui.">
           <Compteur cle="horizon_jours" min={1} max={90} format={v => `${v} jour${v > 1 ? 's' : ''}`} />
         </Bloc>
-        <Bloc titre="Créneaux de retrait" aide="Les heures auxquelles un client peut venir chercher sa commande, déduites des horaires d'ouverture.">
+        <Bloc titre="Créneaux de retrait"
+          aide="Les heures auxquelles un client peut venir chercher sa commande. Elles suivent tout seules vos horaires d'ouverture.">
           <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:28 }}>
-            <PlageCreneaux label="Midi" plage={lire('plage_retrait_midi')} exemple={exempleOuverture('midi')} onChange={v=>enregistrer('plage_retrait_midi', v)} />
-            <PlageCreneaux label="Soir" plage={lire('plage_retrait_soir')} exemple={exempleOuverture('soir')} onChange={v=>enregistrer('plage_retrait_soir', v)} />
+            <ReglageCreneaux label="Midi" type="retrait" plage={lire('plage_retrait_midi')} exemple={exempleOuverture('midi')} onChange={v=>enregistrer('plage_retrait_midi', v)} />
+            <ReglageCreneaux label="Soir" type="retrait" plage={lire('plage_retrait_soir')} exemple={exempleOuverture('soir')} onChange={v=>enregistrer('plage_retrait_soir', v)} />
           </div>
         </Bloc>
         <Bloc titre="Repères de service" aide="Deux heures charnières qui partagent toute l'application : celle qui fait basculer du midi au soir, et celle où la journée de service se termine enfin.">

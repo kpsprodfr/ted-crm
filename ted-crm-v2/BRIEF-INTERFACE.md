@@ -334,18 +334,22 @@ sur les changements de statut et à câbler un service d'envoi SMS.
 
 ### Créneaux — réservation et retrait
 
-On ne saisit **jamais** les créneaux un à un. Chaque service se règle par
-`{mode, debut, fin, pas, avantFermeture}` :
+Les créneaux **suivent toujours les horaires d'ouverture**. Il n'y a pas de choix
+de mode : changer un horaire dans « Dates / Horaires » suffit, les créneaux
+s'adaptent. On ne règle que deux choses par service :
 
-- `mode: 'ouverture'` (défaut) — les créneaux **suivent les horaires du jour**
-  et s'arrêtent `avantFermeture` minutes avant la fin (0 / 15 / 30 / 45 / 60 / 90).
-- `mode: 'perso'` — une plage fixe, indépendante de l'ouverture.
-- `pas` : 15, 30, 45 ou 60 minutes.
+- **le rythme** — un créneau toutes les 15 / 30 / 45 / 60 minutes ;
+- **jusqu'où aller** :
+  - réservation → **la durée du service** (30 min à 2 h, réglée séparément midi
+    et soir). Le dernier créneau est celui qui laisse le temps de finir :
+    `dernier = fermeture − durée`. Un service de 45 min sur une ouverture
+    12:00–14:30 s'arrête à **13:45** ; réserver 30 min avant la fermeture est
+    impossible, le repas déborderait.
+  - retrait → **la marge avant fermeture** (0 / 15 / 30 / 45 min) : il n'y a pas
+    de table à libérer, juste une commande à remettre.
 
-Clés : `plage_resa_midi|soir`, `plage_retrait_midi|soir`.
-`creneauxService(cle, service, dateIso)` fait le calcul et **tient compte des
-dates particulières**, qui l'emportent sur la semaine type. Une phrase annonce
-le résultat (« un jour ouvert de 12:00 à 14:30 : 10 créneaux — 12:00… 14:15 »).
+`creneauxService()` fait le calcul et tient compte des dates particulières.
+Un encadré explique le résultat en toutes lettres, avec un exemple daté.
 
 ### Couleur des boutons de sélection
 
