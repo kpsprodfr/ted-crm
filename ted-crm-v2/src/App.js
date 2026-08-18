@@ -8373,20 +8373,26 @@ function MenuPage({ showToast }) {
 const TABLES_BACKUP = ['clients','reservations','roue_gains','roue_recompenses','roue_config','parametres','menu_produits','menu_categories','menu_cartes','menu_soirees','menu_plat_jour','menu_origines'];
 
 // ─── Approbations ─────────────────────────────────────────────────────────────
-// Ce que l'assistant IA propose de faire, et que personne ne fera sans qu'un
+// Ce que l'assistant propose de faire, et que personne ne fera sans qu'un
 // responsable ait tranché. Un refus doit être motivé : c'est ce motif qui
 // permet à l'assistant de revenir avec une version corrigée.
-const TYPES_APPROBATION = {
-  campagne:    { label:'Campagne',    icone:Megaphone,       teinte:'#fdf2f8' },
-  site:        { label:'Site web',    icone:ExternalLink,    teinte:'#eff6ff' },
-  menu:        { label:'Carte',       icone:UtensilsCrossed, teinte:'#f0fdf4' },
-  tarifs:      { label:'Tarifs',      icone:BarChart3,       teinte:'#fffbea' },
-  reservation: { label:'Réservations', icone:CalendarDays,   teinte:'#fffbea' },
-  autre:       { label:'Autre',       icone:ClipboardList,   teinte:'#f5f5f5' },
+//
+// Règle de lecture : on doit savoir DE QUOI on parle avant de lire une ligne.
+// D'où le regroupement par domaine, la couleur propre à chacun, et un rendu
+// adapté — un SMS se lit comme un SMS, une modification du site comme un
+// avant/après.
+const DOMAINES = {
+  campagne:    { label:'Communication',  icone:Megaphone,       teinte:'#6d28d9', fond:'#f5f3ff', bord:'#ddd6fe' },
+  site:        { label:'Site internet',  icone:ExternalLink,    teinte:'#1d4ed8', fond:'#eff6ff', bord:'#bfdbfe' },
+  menu:        { label:'La carte',       icone:UtensilsCrossed, teinte:'#15803d', fond:'#f0fdf4', bord:'#bbf7d0' },
+  tarifs:      { label:'Tarifs',         icone:BarChart3,       teinte:'#b45309', fond:'#fffbea', bord:'#fde68a' },
+  reservation: { label:'Réservations',   icone:CalendarDays,    teinte:'#a16207', fond:'#fefce8', bord:'#fde047' },
+  clients:     { label:'Fichier clients', icone:Users,          teinte:'#0e7490', fond:'#ecfeff', bord:'#a5f3fc' },
+  autre:       { label:'Divers',         icone:ClipboardList,   teinte:'#525252', fond:'#fafafa', bord:'#e5e5e5' },
 };
-const typeAppro = (t) => TYPES_APPROBATION[t] || TYPES_APPROBATION.autre;
+const ORDRE_DOMAINES = ['campagne', 'site', 'menu', 'tarifs', 'reservation', 'clients', 'autre'];
+const domaineDe = (t) => DOMAINES[t] || DOMAINES.autre;
 
-// Les motifs qui reviennent le plus, pour ne pas avoir à tout écrire.
 const MOTIFS_REFUS_APPRO = [
   "Le ton ne correspond pas à l'établissement",
   'Mauvais moment pour cette action',
@@ -8394,10 +8400,87 @@ const MOTIFS_REFUS_APPRO = [
   'Trop coûteux',
 ];
 
+// Le détail d'une demande, présenté selon ce dont il s'agit.
+function DetailDemande({ demande }) {
+  const c = demande.contenu || {};
+  const etiquette = { fontSize:10.5, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 5px' };
+
+  // Un message part vers des gens, à une date : on montre les trois.
+  if (demande.type === 'campagne' && c.message) {
+    const parSMS = String(c.canal || '').toLowerCase().includes('sms');
+    return (
+      <>
+        <p style={etiquette}>Le message qui partira</p>
+        <div style={{ background:'#fff', border:'1.5px solid #e9e5f7', borderLeft:'4px solid #6d28d9', borderRadius:'4px 14px 14px 14px', padding:'13px 16px', marginBottom:14 }}>
+          <p style={{ margin:0, fontSize:14.5, color:'#111', lineHeight:1.65, whiteSpace:'pre-wrap' }}>{c.message}</p>
+        </div>
+        <div style={{ display:'flex', flexWrap:'wrap', gap:10 }}>
+          {[
+            { icone: parSMS ? MessageSquare : Mail, texte: c.canal || (parSMS ? 'SMS' : 'E-mail') },
+            c.destinataires && { icone: Users, texte: c.destinataires },
+            c.envoi && { icone: Clock, texte: c.envoi },
+          ].filter(Boolean).map((p, i) => {
+            const I = p.icone;
+            return (
+              <span key={i} style={{ display:'inline-flex', alignItems:'center', gap:7, fontSize:13, fontWeight:700, color:'#444', background:'#fff', border:'1.5px solid #eee', borderRadius:10, padding:'8px 12px' }}>
+                <I size={14} strokeWidth={2} color="#888" /> {p.texte}
+              </span>
+            );
+          })}
+        </div>
+      </>
+    );
+  }
+
+  // Une modification se juge en comparant : ce qu'il y a, ce qu'il y aurait.
+  if (c.avant !== undefined || c.apres !== undefined) {
+    return (
+      <>
+        {c.page && (
+          <p style={{ margin:'0 0 12px', fontSize:13, color:'#666' }}>
+            <span style={etiquette.textTransform ? {} : {}} />
+            Page concernée : <strong style={{ color:'#111' }}>{c.page}</strong>
+          </p>
+        )}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+          <div>
+            <p style={etiquette}>Aujourd'hui</p>
+            <div style={{ background:'#fff', border:'1.5px solid #eee', borderRadius:12, padding:'12px 14px', minHeight:56 }}>
+              <p style={{ margin:0, fontSize:14, color:'#999', lineHeight:1.6, textDecoration:'line-through', textDecorationColor:'#ddd', whiteSpace:'pre-wrap' }}>{String(c.avant ?? '—')}</p>
+            </div>
+          </div>
+          <div>
+            <p style={{ ...etiquette, color:'#15803d' }}>Après la modification</p>
+            <div style={{ background:'#f0fdf4', border:'1.5px solid #bbf7d0', borderRadius:12, padding:'12px 14px', minHeight:56 }}>
+              <p style={{ margin:0, fontSize:14, color:'#111', fontWeight:600, lineHeight:1.6, whiteSpace:'pre-wrap' }}>{String(c.apres ?? '—')}</p>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Sinon, les éléments tels quels, mais lisibles.
+  const lignes = Object.entries(c).filter(([, v]) => v !== null && v !== '');
+  if (lignes.length === 0) return null;
+  return (
+    <div style={{ background:'#fff', border:'1.5px solid #eee', borderRadius:12, padding:'6px 14px' }}>
+      {lignes.map(([cle, val], i) => (
+        <div key={cle} style={{ display:'flex', gap:14, padding:'9px 0', borderBottom: i < lignes.length - 1 ? '1px solid #f5f5f5' : 'none', alignItems:'baseline', flexWrap:'wrap' }}>
+          <span style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.4, minWidth:120, flexShrink:0 }}>{cle}</span>
+          <span style={{ flex:1, minWidth:180, fontSize:14, color:'#111', lineHeight:1.6, whiteSpace:'pre-wrap', wordBreak:'break-word' }}>
+            {typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function ApprobationsPage({ showToast, user, onCountChange }) {
   const [demandes, setDemandes] = useState(null);
   const [filtre, setFiltre] = useState('en_attente');
-  const [refus, setRefus] = useState(null);       // demande en cours de refus
+  const [refus, setRefus] = useState(null);
   const [motif, setMotif] = useState('');
   const [monRole, setMonRole] = useState(null);
   const isMobile = useIsMobile();
@@ -8425,7 +8508,6 @@ function ApprobationsPage({ showToast, user, onCountChange }) {
 
   useEffect(() => { charger(); chargerRole(); }, []);   // eslint-disable-line
 
-  // Une décision prise ailleurs doit apparaître ici sans recharger la page.
   useEffect(() => {
     return resilientChannel(supabase, 'approbations-rt', (chan) => chan
       .on('postgres_changes', { event: '*', schema: 'public', table: 'approbations' }, () => charger())
@@ -8441,7 +8523,7 @@ function ApprobationsPage({ showToast, user, onCountChange }) {
       { fallback: null, context: 'deciderApprobation' }
     );
     if (error) { showToast('Décision impossible', 'error'); return; }
-    showToast(statut === 'approuvee' ? '✅ Demande approuvée' : 'Demande refusée — l\'assistant en sera informé');
+    showToast(statut === 'approuvee' ? '✅ Demande approuvée' : "Refusée — l'assistant en sera informé");
     setRefus(null); setMotif('');
     charger();
   }
@@ -8454,28 +8536,31 @@ function ApprobationsPage({ showToast, user, onCountChange }) {
   const liste = filtre === 'en_attente' ? enAttente : demandes.filter(d => d.statut !== 'en_attente');
   const parId = Object.fromEntries(demandes.map(d => [d.id, d]));
 
-  const filtres = [
-    { id:'en_attente', label:'À traiter', nb: enAttente.length },
-    { id:'traitees',   label:'Traitées',  nb: demandes.length - enAttente.length },
-  ];
+  // Regroupées par domaine : on sait de quoi on parle avant de lire.
+  const groupes = ORDRE_DOMAINES
+    .map(id => ({ id, dom: DOMAINES[id], items: liste.filter(d => (DOMAINES[d.type] ? d.type : 'autre') === id) }))
+    .filter(g => g.items.length > 0);
 
-  const dateLongue = (iso) => new Date(iso).toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' })
+  const quand = (iso) => new Date(iso).toLocaleDateString('fr-FR', { day:'numeric', month:'long' })
     + ' à ' + new Date(iso).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
 
   return (
     <div style={{ padding: isMobile ? '16px 14px 90px' : (etroit ? '14px 16px 28px' : '24px 28px'), minHeight:'100vh', boxSizing:'border-box', background:'#f5f5f5' }}>
 
-      <div style={{ marginBottom:16 }}>
+      <div style={{ marginBottom:18 }}>
         <h1 style={{ margin:0, fontSize: isMobile ? 22 : 26, fontWeight:900, color:'#111' }}>Approbations</h1>
-        <p style={{ margin:'4px 0 0', fontSize:13, color:'#888' }}>
-          Ce que l'assistant propose. Rien n'est exécuté tant que vous n'avez pas tranché.
+        <p style={{ margin:'4px 0 0', fontSize:13.5, color:'#888' }}>
+          Rien ne part sans votre accord. Approuvez, ou refusez en expliquant pourquoi.
         </p>
       </div>
 
-      <div style={{ display:'flex', gap:8, marginBottom:16, flexWrap:'wrap' }}>
-        {filtres.map(f => (
+      <div style={{ display:'flex', gap:8, marginBottom:18, flexWrap:'wrap' }}>
+        {[
+          { id:'en_attente', label:'À traiter', nb: enAttente.length },
+          { id:'traitees',   label:'Déjà traitées', nb: demandes.length - enAttente.length },
+        ].map(f => (
           <button key={f.id} onClick={()=>setFiltre(f.id)}
-            style={{ height:36, padding:'0 15px', borderRadius:10, border:'none', cursor:'pointer', fontSize:13, fontWeight:800,
+            style={{ height:38, padding:'0 16px', borderRadius:10, border:'none', cursor:'pointer', fontSize:13.5, fontWeight:800,
               background: filtre === f.id ? '#111' : '#fff',
               color: filtre === f.id ? '#E8C547' : '#666' }}>
             {f.label} ({f.nb})
@@ -8484,96 +8569,102 @@ function ApprobationsPage({ showToast, user, onCountChange }) {
       </div>
 
       {!peutDecider && monRole && (
-        <div style={{ background:'#fffbea', border:'1.5px solid #fde68a', borderRadius:12, padding:'11px 14px', marginBottom:16, fontSize:13, color:'#92400e' }}>
+        <div style={{ background:'#fffbea', border:'1.5px solid #fde68a', borderRadius:12, padding:'11px 14px', marginBottom:18, fontSize:13, color:'#92400e' }}>
           Vous consultez les demandes, mais seuls un propriétaire ou un manager peuvent les approuver.
         </div>
       )}
 
-      {liste.length === 0 ? (
-        <div style={{ background:'#fff', borderRadius:16, padding:'48px 24px', textAlign:'center' }}>
-          <ClipboardList size={32} strokeWidth={1.5} color="#ddd" style={{ marginBottom:12 }} />
-          <p style={{ margin:0, fontSize:14, color:'#bbb' }}>
-            {filtre === 'en_attente' ? 'Aucune demande en attente.' : 'Aucune demande traitée pour l\'instant.'}
+      {groupes.length === 0 ? (
+        <div style={{ background:'#fff', borderRadius:16, padding:'56px 24px', textAlign:'center' }}>
+          <BadgeCheck size={34} strokeWidth={1.5} color="#ddd" style={{ marginBottom:14 }} />
+          <p style={{ margin:0, fontSize:15, fontWeight:700, color:'#999' }}>
+            {filtre === 'en_attente' ? 'Rien à traiter' : 'Aucune demande traitée'}
+          </p>
+          <p style={{ margin:'6px 0 0', fontSize:13.5, color:'#bbb' }}>
+            {filtre === 'en_attente'
+              ? "Les propositions de l'assistant arriveront ici."
+              : 'Les demandes approuvées ou refusées apparaîtront ici.'}
           </p>
         </div>
-      ) : (
-        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-          {liste.map(d => {
-            const t = typeAppro(d.type);
-            const Icone = t.icone;
-            const parent = d.revision_de ? parId[d.revision_de] : null;
-            const details = Object.entries(d.contenu || {}).filter(([, v]) => v !== null && v !== '');
-            return (
-              <div key={d.id} style={{ background:'#fff', borderRadius:16, padding:'18px 22px' }}>
+      ) : groupes.map(g => {
+        const Icone = g.dom.icone;
+        return (
+          <div key={g.id} style={{ marginBottom:28 }}>
 
-                <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:12, flexWrap:'wrap' }}>
-                  <div style={{ width:40, height:40, borderRadius:11, flexShrink:0, background:t.teinte, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                    <Icone size={19} strokeWidth={1.9} color="#111" />
-                  </div>
-                  <div style={{ flex:1, minWidth:180 }}>
-                    <div style={{ fontSize:15.5, fontWeight:800, color:'#111' }}>{d.titre}</div>
-                    <div style={{ fontSize:12, color:'#999' }}>
-                      {t.label} · {d.demandeur} · {dateLongue(d.created_at)}
+            {/* En-tête de domaine : le sujet, avant tout le reste */}
+            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:12 }}>
+              <div style={{ width:34, height:34, borderRadius:10, flexShrink:0, background:g.dom.fond, border:`1.5px solid ${g.dom.bord}`, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <Icone size={17} strokeWidth={2} color={g.dom.teinte} />
+              </div>
+              <h2 style={{ margin:0, fontSize:17, fontWeight:900, color:'#111' }}>{g.dom.label}</h2>
+              <span style={{ fontSize:13, fontWeight:700, color:'#bbb' }}>
+                {g.items.length} demande{g.items.length > 1 ? 's' : ''}
+              </span>
+            </div>
+
+            <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+              {g.items.map(d => {
+                const parent = d.revision_de ? parId[d.revision_de] : null;
+                return (
+                  <div key={d.id} style={{ background:'#fff', borderRadius:16, borderLeft:`5px solid ${g.dom.teinte}`, overflow:'hidden', boxShadow:'0 1px 4px rgba(0,0,0,0.05)' }}>
+
+                    <div style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'16px 20px 0', flexWrap:'wrap' }}>
+                      <div style={{ flex:1, minWidth:200 }}>
+                        <h3 style={{ margin:'0 0 3px', fontSize:17, fontWeight:800, color:'#111', lineHeight:1.35 }}>{d.titre}</h3>
+                        <p style={{ margin:0, fontSize:12.5, color:'#999' }}>Proposé par l'assistant · {quand(d.created_at)}</p>
+                      </div>
+                      <span style={{ flexShrink:0, fontSize:11.5, fontWeight:800, padding:'5px 11px', borderRadius:20,
+                        background: d.statut === 'en_attente' ? '#fef9c3' : d.statut === 'approuvee' ? '#dcfce7' : '#fee2e2',
+                        color:      d.statut === 'en_attente' ? '#92400e' : d.statut === 'approuvee' ? '#15803d' : '#b91c1c' }}>
+                        {d.statut === 'en_attente' ? 'À traiter' : d.statut === 'approuvee' ? 'Approuvée' : 'Refusée'}
+                      </span>
+                    </div>
+
+                    <div style={{ padding:'14px 20px 18px' }}>
+                      {parent && (
+                        <div style={{ background:'#fffbea', border:'1.5px solid #fde68a', borderRadius:11, padding:'10px 13px', marginBottom:14 }}>
+                          <p style={{ margin:0, fontSize:12.5, color:'#92400e', lineHeight:1.6 }}>
+                            Version corrigée de « {parent.titre} »{parent.motif_refus ? `, refusée car : ${parent.motif_refus}` : ''}.
+                          </p>
+                        </div>
+                      )}
+
+                      {d.description && (
+                        <p style={{ margin:'0 0 14px', fontSize:14.5, color:'#444', lineHeight:1.7, whiteSpace:'pre-wrap' }}>{d.description}</p>
+                      )}
+
+                      <div style={{ background:g.dom.fond, border:`1.5px solid ${g.dom.bord}`, borderRadius:14, padding:'14px 16px' }}>
+                        <DetailDemande demande={d} />
+                      </div>
+
+                      {d.statut === 'refusee' && d.motif_refus && (
+                        <div style={{ background:'#fef2f2', border:'1.5px solid #fecaca', borderRadius:11, padding:'10px 13px', marginTop:14, display:'flex', gap:9 }}>
+                          <AlertCircle size={15} strokeWidth={2} color="#b91c1c" style={{ flexShrink:0, marginTop:2 }} />
+                          <span style={{ fontSize:13, color:'#b91c1c', lineHeight:1.6 }}>Refusée : {d.motif_refus}</span>
+                        </div>
+                      )}
+
+                      {d.statut === 'en_attente' && peutDecider && (
+                        <div style={{ display:'flex', gap:10, marginTop:16, flexWrap:'wrap' }}>
+                          <button onClick={()=>{ setRefus(d); setMotif(''); }}
+                            style={{ flex:1, minWidth:140, height:48, borderRadius:12, border:'1.5px solid #e0e0e0', background:'#fff', color:'#555', fontSize:14.5, fontWeight:800, cursor:'pointer' }}>
+                            Refuser
+                          </button>
+                          <button onClick={()=>decider(d, 'approuvee')}
+                            style={{ flex:2, minWidth:180, height:48, borderRadius:12, border:'none', background:'#16a34a', color:'#fff', fontSize:14.5, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:9 }}>
+                            <CheckCircle size={18} strokeWidth={2.2} /> Approuver
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <span style={{ flexShrink:0, fontSize:11.5, fontWeight:800, padding:'5px 11px', borderRadius:20,
-                    background: d.statut === 'en_attente' ? '#fef9c3' : d.statut === 'approuvee' ? '#dcfce7' : '#fee2e2',
-                    color:      d.statut === 'en_attente' ? '#92400e' : d.statut === 'approuvee' ? '#15803d' : '#b91c1c' }}>
-                    {d.statut === 'en_attente' ? 'À traiter' : d.statut === 'approuvee' ? 'Approuvée' : 'Refusée'}
-                  </span>
-                </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
 
-                {parent && (
-                  <div style={{ background:'#fffbea', border:'1.5px solid #fde68a', borderRadius:11, padding:'10px 13px', marginBottom:12 }}>
-                    <p style={{ margin:0, fontSize:12.5, color:'#92400e', lineHeight:1.6 }}>
-                      Nouvelle version de « {parent.titre} », refusée{parent.motif_refus ? ` : « ${parent.motif_refus} »` : ''}.
-                    </p>
-                  </div>
-                )}
-
-                {d.description && (
-                  <p style={{ margin:'0 0 12px', fontSize:14, color:'#444', lineHeight:1.7, whiteSpace:'pre-wrap' }}>{d.description}</p>
-                )}
-
-                {details.length > 0 && (
-                  <div style={{ background:'#f9f9f9', borderRadius:12, padding:'12px 14px', marginBottom:12 }}>
-                    {details.map(([cle, val]) => (
-                      <div key={cle} style={{ display:'flex', gap:10, padding:'4px 0', alignItems:'baseline' }}>
-                        <span style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.4, minWidth:110, flexShrink:0 }}>{cle}</span>
-                        <span style={{ fontSize:13.5, color:'#444', lineHeight:1.6, whiteSpace:'pre-wrap', wordBreak:'break-word' }}>
-                          {typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {d.statut === 'refusee' && d.motif_refus && (
-                  <div style={{ background:'#fef2f2', border:'1.5px solid #fecaca', borderRadius:11, padding:'10px 13px', marginBottom:12, display:'flex', gap:9 }}>
-                    <AlertCircle size={15} strokeWidth={2} color="#b91c1c" style={{ flexShrink:0, marginTop:2 }} />
-                    <span style={{ fontSize:13, color:'#b91c1c', lineHeight:1.6 }}>Refusée : {d.motif_refus}</span>
-                  </div>
-                )}
-
-                {d.statut === 'en_attente' && peutDecider && (
-                  <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
-                    <button onClick={()=>{ setRefus(d); setMotif(''); }}
-                      style={{ flex:1, minWidth:140, height:46, borderRadius:11, border:'1.5px solid #fca5a5', background:'#fff', color:'#b91c1c', fontSize:14, fontWeight:800, cursor:'pointer' }}>
-                      Refuser
-                    </button>
-                    <button onClick={()=>decider(d, 'approuvee')}
-                      style={{ flex:2, minWidth:160, height:46, borderRadius:11, border:'none', background:'#16a34a', color:'#fff', fontSize:14, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
-                      <CheckCircle size={17} strokeWidth={2.2} /> Approuver
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Un refus sans motif ne sert à rien : l'assistant ne saurait pas quoi corriger. */}
       {refus && (
         <>
           <div onClick={()=>setRefus(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:5200 }} />
@@ -8587,7 +8678,7 @@ function ApprobationsPage({ showToast, user, onCountChange }) {
             <div style={{ display:'flex', flexDirection:'column', gap:7, marginBottom:14 }}>
               {MOTIFS_REFUS_APPRO.map(m => (
                 <button key={m} onClick={()=>setMotif(m)}
-                  style={{ minHeight:42, padding:'10px 13px', borderRadius:10, cursor:'pointer', fontSize:13.5, fontWeight:700, textAlign:'left',
+                  style={{ minHeight:44, padding:'11px 13px', borderRadius:10, cursor:'pointer', fontSize:13.5, fontWeight:700, textAlign:'left',
                     border: motif === m ? 'none' : '1.5px solid #eee',
                     background: motif === m ? '#E8C547' : '#fff',
                     color:'#111' }}>
@@ -11043,7 +11134,7 @@ function CRMApp({ user, onLogout }) {
   if (!isMobile && activeView === 'approbations') return (
     <>
       {sidebarDesktop}
-      <div style={{ marginLeft:120, minHeight:'100vh', background:'#f5f5f5', boxSizing:'border-box' }}>
+      <div style={{ marginLeft:120, height:'100vh', overflowY:'auto', background:'#f5f5f5', boxSizing:'border-box' }}>
         <ApprobationsPage showToast={showToast} user={user} onCountChange={setApproAttenteCount} />
       </div>
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}

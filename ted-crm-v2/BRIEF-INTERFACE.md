@@ -506,6 +506,21 @@ Actions : `creer`, `lire`, `lister`. La clé d'administration ne sort jamais du
 serveur. **Sans la variable d'environnement, la fonction refuse tout** — c'est
 volontaire.
 
+**Lisibilité — la règle du domaine d'abord.** Les demandes sont **regroupées par
+domaine** (Communication, Site internet, La carte, Tarifs, Réservations, Fichier
+clients, Divers), chacun avec son en-tête, son icône et **sa couleur**, reprise
+en liseré de 5 px sur le bord gauche de chaque carte. On sait de quoi on parle
+avant de lire une ligne. Ne jamais revenir à une liste à plat.
+
+**Le détail s'affiche selon ce dont il s'agit**, jamais en vidage clé/valeur
+générique :
+
+- un **message** (campagne) se lit comme un message — bulle blanche à liseré,
+  puis trois pastilles : canal, destinataires, date d'envoi ;
+- une **modification** se juge en comparant — deux colonnes *Aujourd'hui*
+  (barré, gris) et *Après la modification* (vert) ;
+- le reste en lignes libellé / valeur espacées.
+
 **Un refus doit être motivé** : le bouton reste inactif tant que le motif est
 vide, avec quatre motifs fréquents proposés. C'est ce motif que l'assistant
 relit pour proposer une version corrigée ; la révision affiche alors un bandeau
