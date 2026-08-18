@@ -3572,6 +3572,148 @@ function statsClickCollect(commandes, client) {
   };
 }
 
+// Volet Réservations de la fiche client, bâti sur le même modèle que le volet
+// Click and Collect : quatre tuiles, puis deux colonnes.
+function BlocReservations({ resas, client, compact = false }) {
+  const auj = dateLocale();
+  const siennes = (resas || []).filter(r => r.client_id === client.id);
+  const retenues = siennes.filter(r => r.statut !== 'annulee' && r.statut !== 'refusee');
+  const noshow = siennes.filter(r => r.statut === 'absente').length;
+  const total = retenues.length;
+  const pct = total > 0 ? Math.round((noshow / total) * 100) : 0;
+
+  const passees = retenues.filter(r => r.date <= auj).sort((a, b) => b.date.localeCompare(a.date));
+  const derniere = passees[0];
+  const prochaine = retenues.filter(r => r.date > auj).sort((a, b) => a.date.localeCompare(b.date))[0];
+  const joursDepuis = derniere
+    ? Math.round((new Date(auj + 'T12:00:00') - new Date(derniere.date + 'T12:00:00')) / 86400000)
+    : null;
+  const joursAvant = prochaine
+    ? Math.round((new Date(prochaine.date + 'T12:00:00') - new Date(auj + 'T12:00:00')) / 86400000)
+    : null;
+
+  const dateCourte = (d) => new Date(d + 'T12:00:00').toLocaleDateString('fr-FR', { day:'numeric', month:'short', year:'numeric' });
+
+  const STATUT_FICHE = {
+    confirmee: { bg:'#dcfce7', color:'#16a34a', label:'Confirmée' },
+    venue:     { bg:'#d1fae5', color:'#059669', label:'Venue' },
+    attente:   { bg:'#fef9c3', color:'#ca8a04', label:'En attente' },
+    absente:   { bg:'#fee2e2', color:'#dc2626', label:'No-show' },
+    annulee:   { bg:'#f3f4f6', color:'#6b7280', label:'Annulée' },
+  };
+
+  // Jours et services favoris, sur les six derniers mois.
+  const il6Mois = dateLocale(new Date(Date.now() - 180 * 86400000));
+  const JOURS = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const compte = {};
+  const svc = { midi:0, soir:0 };
+  retenues.filter(r => r.date >= il6Mois).forEach(r => {
+    const cle = `${JOURS[new Date(r.date + 'T12:00:00').getDay()]}|${r.service === 'midi' ? 'Midi' : 'Soir'}`;
+    compte[cle] = (compte[cle] || 0) + 1;
+    if (svc[r.service] !== undefined) svc[r.service] += 1;
+  });
+  const topJours = Object.entries(compte).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const maxJour = topJours.length ? topJours[0][1] : 1;
+  const servicePrefere = (svc.midi || svc.soir) ? (svc.midi >= svc.soir ? 'midi' : 'soir') : null;
+
+  const tuiles = [
+    { label:'RÉSERVATIONS',    valeur: total, sub: noshow > 0 ? `dont ${noshow} no-show` : 'aucun no-show' },
+    { label:'NO-SHOW',         valeur: noshow, sub: total ? `${pct} % des réservations` : '—' },
+    { label:'DERNIÈRE VISITE', valeur: derniere ? dateCourte(derniere.date) : 'Jamais',
+      sub: joursDepuis === null ? '' : joursDepuis === 0 ? "aujourd'hui" : `il y a ${joursDepuis} jour${joursDepuis > 1 ? 's' : ''}` },
+    { label:'PROCHAINE RÉSA',  valeur: prochaine ? dateCourte(prochaine.date) : 'Aucune',
+      sub: prochaine ? `dans ${joursAvant} j${prochaine.heure ? ` à ${prochaine.heure}` : ''}` : '' },
+  ];
+
+  const enTete = (
+    <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
+      <CalendarDays size={18} strokeWidth={2} color="#111" />
+      <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#111' }}>Réservations</h3>
+      {servicePrefere && (
+        <span style={{ marginLeft:'auto', display:'inline-flex', alignItems:'center', gap:5, fontSize:12, fontWeight:700,
+          padding:'4px 10px', borderRadius:20,
+          background: servicePrefere === 'midi' ? '#fffbea' : '#1e1b4b',
+          color:      servicePrefere === 'midi' ? '#92400e' : '#c7d2fe',
+          border:     servicePrefere === 'midi' ? '1.5px solid #fde68a' : '1.5px solid #4338ca' }}>
+          {servicePrefere === 'midi' ? <Sun size={12} strokeWidth={2.2} /> : <Moon size={12} strokeWidth={2.2} />}
+          Plutôt {servicePrefere} · {svc[servicePrefere]}
+        </span>
+      )}
+    </div>
+  );
+
+  if (siennes.length === 0) return (
+    <div style={{ background:'#fff', borderRadius:16, padding:'20px 24px', marginBottom:16 }}>
+      {enTete}
+      <p style={{ margin:0, fontSize:13, color:'#bbb' }}>Ce client n'a jamais réservé de table.</p>
+    </div>
+  );
+
+  const listeResas = (
+    <div>
+      <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 8px' }}>Dernières réservations</p>
+      {siennes.slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5).map((r, i, arr) => {
+        const st = STATUT_FICHE[r.statut] || STATUT_FICHE.confirmee;
+        return (
+          <div key={r.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 0', borderBottom: i < arr.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:'#111' }}>{dateCourte(r.date)}</div>
+              <div style={{ fontSize:11.5, color:'#999', display:'flex', alignItems:'center', gap:4 }}>
+                {r.service === 'midi' ? <Sun size={11} strokeWidth={2} /> : <Moon size={11} strokeWidth={2} />}
+                {r.heure || '—'} · {r.nb_personnes ? `${r.nb_personnes} pers.` : '—'}
+              </div>
+            </div>
+            <span style={{ background:st.bg, color:st.color, borderRadius:20, padding:'3px 9px', fontSize:10.5, fontWeight:700, flexShrink:0 }}>{st.label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  const listeJours = (
+    <div>
+      <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 8px' }}>Jours favoris · 6 derniers mois</p>
+      {topJours.length === 0
+        ? <p style={{ fontSize:13, color:'#bbb', margin:0 }}>Pas de données sur cette période</p>
+        : topJours.map(([cle, n], i) => {
+          const [jour, service] = cle.split('|');
+          return (
+            <div key={cle} style={{ padding:'7px 0', borderBottom: i < topJours.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
+              <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', gap:10, marginBottom:5 }}>
+                <span style={{ fontSize:13, fontWeight:700, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                  {jour} <span style={{ color:'#999', fontWeight:600 }}>· {service}</span>
+                </span>
+                <span style={{ fontSize:12, fontWeight:800, color:'#888', flexShrink:0 }}>×{n}</span>
+              </div>
+              <div style={{ height:5, borderRadius:3, background:'#f0f0f0', overflow:'hidden' }}>
+                <div style={{ width:`${Math.round(n / maxJour * 100)}%`, height:'100%', borderRadius:3, background:'#E8C547' }} />
+              </div>
+            </div>
+          );
+        })}
+    </div>
+  );
+
+  return (
+    <div style={{ background:'#fff', borderRadius:16, padding:'20px 24px', marginBottom:16 }}>
+      {enTete}
+      <div style={{ display:'grid', gridTemplateColumns: compact ? '1fr 1fr' : 'repeat(4, 1fr)', gap:12, marginBottom:18 }}>
+        {tuiles.map(t => (
+          <div key={t.label} style={{ background:'#f9f9f9', borderRadius:12, padding:'12px 14px' }}>
+            <p style={{ fontSize:9.5, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 4px' }}>{t.label}</p>
+            <p style={{ fontSize:16, fontWeight:900, color:'#111', margin:'0 0 2px' }}>{t.valeur}</p>
+            <p style={{ fontSize:11, color:'#999', margin:0 }}>{t.sub}</p>
+          </div>
+        ))}
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns: compact ? '1fr' : '1fr 1fr', gap: compact ? 18 : 28 }}>
+        {listeResas}
+        {listeJours}
+      </div>
+    </div>
+  );
+}
+
 // Volet Click and Collect de la fiche client. `compact` sert la fiche mobile :
 // mêmes chiffres, sans les colonnes côte à côte.
 function BlocClickCollect({ stats, compact = false }) {
@@ -10274,7 +10416,7 @@ function CRMApp({ user, onLogout }) {
   }
 
   async function chargerToutesStatsClients() {
-    const { data } = await safeQuery(() => supabase.from('reservations').select('client_id, statut, date, service'), { fallback: [], context: 'statsClients' });
+    const { data } = await safeQuery(() => supabase.from('reservations').select('id, client_id, statut, date, service, heure, nb_personnes'), { fallback: [], context: 'statsClients' });
     setResasData(data || []);
     // Le volet Click and Collect des fiches se sert de ces commandes.
     const { data: cmds } = await safeQuery(
@@ -11717,6 +11859,7 @@ function CRMApp({ user, onLogout }) {
                   </div>
                 );
               })()}
+              <BlocReservations resas={resasData} client={c} compact />
               <BlocClickCollect stats={statsClickCollect(commandesData, c)} compact />
             </div>
         );
@@ -11806,22 +11949,7 @@ function CRMApp({ user, onLogout }) {
                 </div>
               </div>
 
-              {/* 4 blocs stats */}
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16, marginBottom:16 }}>
-                {[
-                  { icon:<CalendarDays size={20} strokeWidth={2} color="#E8C547"/>, bg:'#fffbea', label:'RÉSA TOTALES', value:totalResas, sub:createdAtLabel?`Depuis le ${createdAtLabel}`:'' },
-                  { icon:<UserX size={20} strokeWidth={2} color="#ef4444"/>, bg:'#fef2f2', label:'NO-SHOW', value:noshowResas, sub:`${pct}% des résa` },
-                  { icon:<Clock size={20} strokeWidth={2} color="#3b82f6"/>, bg:'#eff6ff', label:'DERNIÈRE VISITE', value:derniereVisite?new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'Jamais', sub:derniereVisiteIlYA!==null?`Il y a ${derniereVisiteIlYA} jours`:'' },
-                  { icon:<CalendarDays size={20} strokeWidth={2} color="#22c55e"/>, bg:'#f0fdf4', label:'PROCHAINE RÉSA', value:prochaineResa?new Date(prochaineResa.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}):'Aucune', sub:prochaineResa?`Dans ${Math.ceil((new Date(prochaineResa.date+'T12:00:00')-new Date())/(1000*60*60*24))}j à ${prochaineResa.heure}`:'' }
-                ].map((stat,i)=>(
-                  <div key={i} style={{ background:'#fff', borderRadius:16, padding:'16px 20px' }}>
-                    <div style={{ width:36, height:36, borderRadius:10, background:stat.bg, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:10 }}>{stat.icon}</div>
-                    <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 4px' }}>{stat.label}</p>
-                    <p style={{ fontSize:18, fontWeight:900, color:'#111', margin:'0 0 2px' }}>{stat.value}</p>
-                    <p style={{ fontSize:11, color:'#999', margin:0 }}>{stat.sub}</p>
-                  </div>
-                ))}
-              </div>
+              <BlocReservations resas={resasData} client={c} />
 
               {/* Commentaire */}
               {c.commentaire && (
@@ -11841,65 +11969,6 @@ function CRMApp({ user, onLogout }) {
 
               <BlocClickCollect stats={statsClickCollect(commandesData, c)} />
 
-              {/* Grille historique + jours favoris */}
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 320px', gap:16, alignItems:'stretch' }}>
-                <div style={{ background:'#fff', borderRadius:16, padding:'20px 24px', display:'flex', flexDirection:'column', maxHeight:340 }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14, flexShrink:0 }}>
-                    <CalendarDays size={18} strokeWidth={2} color="#111" />
-                    <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#111' }}>Historique des réservations</h3>
-                  </div>
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', padding:'6px 0', borderBottom:'2px solid #f0f0f0', marginBottom:4, flexShrink:0 }}>
-                    {['DATE','SERVICE','COUVERTS','STATUT'].map(h=>(
-                      <span key={h} style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>{h}</span>
-                    ))}
-                  </div>
-                  <div style={{ overflowY:'auto', flex:1 }}>
-                    {resasData.filter(r=>r.client_id===c.id).sort((a,b)=>b.date.localeCompare(a.date)).map(r=>{
-                      const sc = statutColors2[r.statut] || statutColors2.confirmee;
-                      return (
-                        <div key={r.id} style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', alignItems:'center', padding:'10px 0', borderBottom:'1px solid #f5f5f5' }}>
-                          <div>
-                            <div style={{ fontWeight:600, fontSize:13, color:'#111' }}>{new Date(r.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})}</div>
-                            <div style={{ fontSize:11, color:'#999' }}>{r.heure}</div>
-                          </div>
-                          <div style={{ display:'flex', alignItems:'center', gap:4, fontSize:13, color:'#444' }}>
-                            {r.service==='midi'?<><Sun size={13} strokeWidth={2} color="#E8C547"/> Midi</>:<><Moon size={13} strokeWidth={2} color="#666"/> Soir</>}
-                          </div>
-                          <div style={{ fontSize:13, color:'#444' }}>{r.nb_personnes ? `${r.nb_personnes} pers.` : '—'}</div>
-                          <div><span style={{ background:sc.bg, color:sc.color, borderRadius:20, padding:'3px 8px', fontSize:11, fontWeight:700 }}>{sc.label}</span></div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div style={{ background:'#fff', borderRadius:16, padding:'20px 24px', display:'flex', flexDirection:'column', maxHeight:340 }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6, flexShrink:0 }}>
-                    <Star size={16} strokeWidth={2} color="#111" />
-                    <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#111' }}>Jours favoris</h3>
-                  </div>
-                  <p style={{ fontSize:11, color:'#999', margin:'0 0 14px', flexShrink:0 }}>Basé sur les 6 derniers mois</p>
-                  <div style={{ flex:1 }}>
-                    {top3Jours.length > 0 ? top3Jours.map(([key,count],i)=>{
-                      const [jour, service] = key.split('|');
-                      const abr = joursAbr[joursSemaine2.indexOf(jour)];
-                      return (
-                        <div key={key} style={{ display:'flex', alignItems:'center', gap:12, padding:'8px 0', borderBottom:i<top3Jours.length-1?'1px solid #f5f5f5':'none' }}>
-                          <div style={{ width:44, height:44, borderRadius:8, flexShrink:0, background:'#fffbea', border:'1.5px solid #E8C547', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:900, color:'#E8C547' }}>
-                            {abr}
-                          </div>
-                          <div style={{ flex:1 }}>
-                            <div style={{ fontWeight:700, fontSize:14, color:'#111' }}>{jour}</div>
-                            <div style={{ fontSize:12, color:'#999', display:'flex', alignItems:'center', gap:4 }}>
-                              {service==='Midi' ? <Sun size={12} style={{display:'inline',verticalAlign:'middle',marginRight:2}} /> : <Moon size={12} style={{display:'inline',verticalAlign:'middle',marginRight:2}} />} {service} · {count} résa
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    }) : <p style={{ fontSize:13, color:'#bbb', margin:0 }}>Pas encore de données</p>}
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         );

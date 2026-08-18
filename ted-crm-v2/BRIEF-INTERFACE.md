@@ -236,6 +236,22 @@ indicateur qui ne sert aucune de ces trois décisions n'a pas sa place ici.
 
 ---
 
+### Fiche client — deux volets bâtis pareil
+
+`BlocReservations` et `BlocClickCollect` partagent exactement la même grammaire,
+et toute évolution de l'un doit se répercuter sur l'autre :
+
+- carte blanche `borderRadius:16`, `padding:'20px 24px'` ;
+- en-tête : icône 18 + titre 15/800, et à droite le badge de service préféré ;
+- **quatre tuiles** grises `#f9f9f9` (libellé 9,5 px majuscules, valeur 16/900,
+  précision 11 px) ;
+- **deux colonnes** : un historique daté à gauche, un classement à barres
+  `#E8C547` à droite ;
+- version `compact` pour la fiche mobile : tuiles sur deux colonnes, listes empilées.
+
+Les tuiles à icône colorée et la grille « Historique / Jours favoris » d'origine
+ont été remplacées par ce volet.
+
 ### Volet Click and Collect de la fiche client
 
 Présent dans la fiche bureau (entre le commentaire et l'historique des réservations)
