@@ -540,9 +540,20 @@ sinon déposer une réservation ouvrait aussitôt son détail.
 (377 px, calé à droite) que le plan soit ouvert ou fermé. Le plan ne fait que
 l'élargir vers la gauche, séparé par un filet.
 
-Plan ouvert, la **ligne du titre** rassemble tout : `Réservations`, le bandeau
-**Demandes en attente** en version compacte, et **Nouvelle réservation**.
-Le bouton *Formulaire* disparaît.
+La **ligne du titre** court sur toute la largeur (`gridColumn: 1 / -1`) et
+rassemble `Réservations`, le bandeau **Demandes en attente** en version compacte
+— largeur au contenu, jamais étirée — et à droite la bascule de vue.
+Le bouton *Formulaire* est retiré.
+
+Cette bascule remplace l'ancien bouton du bandeau : **Plan de salle** ⇄
+**Vue calendrier**, jamais « Fermer ». Tous les boutons du haut sont calés sur
+ceux du Click and Collect : **38 px de haut, 13 px de texte** (14 pour l'action
+principale).
+
+**Nouvelle réservation** ne bouge pas : toujours au-dessus du bloc
+« Réservations du », en 377 px calés à droite quand le plan est ouvert.
+Plan ouvert, la colonne du calendrier est masquée (`display:none`), sinon elle
+pousse le bloc en bas de l'écran.
 
 Une table **libre** est en pointillés gris, **occupée** en jaune de marque avec
 le prénom, les couverts et l'heure, **en rouge** si les couverts dépassent les

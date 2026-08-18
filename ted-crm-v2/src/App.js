@@ -2534,7 +2534,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
       <div onClick={()=>setShowDemandesAttente(true)} className={nbAttente > 0 ? 'alarm-blink' : ''}
         style={{ background: nbAttente > 0 ? '#dc2626' : '#fff', border: nbAttente > 0 ? 'none' : '1.5px solid #f0f0f0',
           borderRadius: compact ? 10 : 16, padding: compact ? '0 14px' : (etroit ? '9px 16px' : '14px 20px'),
-          height: compact ? 38 : undefined, flex: compact ? 1 : undefined, minWidth: compact ? 0 : undefined,
+          height: compact ? 38 : undefined,
           display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, cursor:'pointer', flexShrink:0,
           transition:'background 0.1s', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
         <span style={{ fontSize: compact ? 13 : 15, fontWeight:800, color: nbAttente > 0 ? '#fff' : '#111', display:'flex', alignItems:'center', gap:8, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
@@ -2856,19 +2856,24 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
         </header>
       )}
 
-      <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? (planOuvert ? '1fr' : (etroit ? '1fr 268px' : '1fr 380px')) : undefined, gridTemplateRows: !isMobile && planOuvert ? 'auto 1fr' : undefined, gap: !isMobile ? (etroit ? 12 : 16) : undefined, padding: !isMobile ? (etroit ? '14px 16px' : '24px 32px') : undefined, maxWidth: !isMobile ? 1440 : undefined, margin: !isMobile ? '0 auto' : undefined, alignItems: !isMobile ? 'stretch' : 'start', height: !isMobile ? (etroit ? 'calc(100vh - 28px)' : 'calc(100vh - 48px)') : undefined, boxSizing: !isMobile ? 'border-box' : undefined, background: !isMobile ? '#f5f5f5' : undefined }}>
-      <main style={{ maxWidth: isMobile ? 800 : 'none', margin: isMobile ? '0 auto' : 0, padding: isMobile ? '12px 16px 100px' : '0', display: !isMobile ? 'flex' : 'block', flexDirection: !isMobile ? 'column' : undefined, gap: !isMobile ? (etroit ? 10 : 12) : undefined, height: !isMobile ? '100%' : undefined, overflow: !isMobile ? 'hidden' : undefined }}>
-
-        {!isMobile && (
+      <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? (planOuvert ? '1fr' : (etroit ? '1fr 268px' : '1fr 380px')) : undefined, gridTemplateRows: !isMobile ? 'auto 1fr' : undefined, gap: !isMobile ? (etroit ? 12 : 16) : undefined, padding: !isMobile ? (etroit ? '14px 16px' : '24px 32px') : undefined, maxWidth: !isMobile ? 1440 : undefined, margin: !isMobile ? '0 auto' : undefined, alignItems: !isMobile ? 'stretch' : 'start', height: !isMobile ? (etroit ? 'calc(100vh - 28px)' : 'calc(100vh - 48px)') : undefined, boxSizing: !isMobile ? 'border-box' : undefined, background: !isMobile ? '#f5f5f5' : undefined }}>
+      {!isMobile && (
+        <div style={{ gridColumn:'1 / -1' }}>
           <div style={{ display:'flex', alignItems:'center', gap:12, flexShrink:0, position:'relative' }}>
             <h1 style={{ fontSize:28, fontWeight:900, color:'#111', margin:0, flexShrink:0 }}>Réservations</h1>
-            {planOuvert && bandeauAttente(true)}
-            {planOuvert && (
-              <button onClick={()=>setShowAddResa(true)} style={{ ...btnPrimary, height:38, flexShrink:0, display:'flex', alignItems:'center', gap:6 }}>
-                <Plus size={16} strokeWidth={2.4} /> Nouvelle réservation
-              </button>
-            )}
-            <div style={{ position:'relative', display: planOuvert ? 'none' : 'block' }}>
+            {bandeauAttente(true)}
+            <span style={{ flex:1 }} />
+            <button onClick={()=>setPlanOuvert(v=>!v)}
+              style={{ height:38, padding:'0 14px', borderRadius:10, flexShrink:0, cursor:'pointer',
+                border: planOuvert ? 'none' : '1.5px solid #eee',
+                background: planOuvert ? '#111' : '#fff',
+                color: planOuvert ? '#E8C547' : '#666',
+                fontSize:13, fontWeight:600, display:'flex', alignItems:'center', gap:6, whiteSpace:'nowrap' }}>
+              {planOuvert
+                ? <><CalendarDays size={14} strokeWidth={2} color="#E8C547" /> Vue calendrier</>
+                : <><LayoutGrid size={14} strokeWidth={2} color="#666" /> Plan de salle</>}
+            </button>
+            <div style={{ position:'relative', display:'none' }}>
               <button onClick={()=>setShowFormDropdown(v=>!v)} style={{ display:'flex', alignItems:'center', gap:6, height:38, padding:'0 14px', background:'#fff', border:'1.5px solid #eee', borderRadius:10, fontSize:13, fontWeight:600, cursor:'pointer', color:'#666' }}>
                 <Link size={14} strokeWidth={2} /> Formulaire
               </button>
@@ -2884,9 +2889,10 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
               )}
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {!planOuvert && bandeauAttente(false)}
+      <main style={{ maxWidth: isMobile ? 800 : 'none', margin: isMobile ? '0 auto' : 0, padding: isMobile ? '12px 16px 100px' : '0', display: !isMobile ? (planOuvert ? 'none' : 'flex') : 'block', flexDirection: !isMobile ? 'column' : undefined, gap: !isMobile ? (etroit ? 10 : 12) : undefined, height: !isMobile ? '100%' : undefined, overflow: !isMobile ? 'hidden' : undefined }}>
 
         {/* ── Bloc unique : 7 jours + calendrier + Midi/Soir ── */}
         {!planOuvert && (() => {
@@ -3283,11 +3289,9 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
         return (
           <div style={{ height:'100%', display:'flex', flexDirection:'column', gap:10, minHeight:0 }}>
           {/* Prise de réservation : au-dessus du bloc, à la hauteur de « Nouvelle commande » */}
-          {!planOuvert && (
-            <button onClick={()=>setShowAddResa(true)} style={{ ...btnPrimary, width:'100%', height:38, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-              <Plus size={16} strokeWidth={2.4} /> Nouvelle réservation
-            </button>
-          )}
+          <button onClick={()=>setShowAddResa(true)} style={{ ...btnPrimary, width: planOuvert ? 377 : '100%', alignSelf: planOuvert ? 'flex-end' : 'stretch', height:38, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+            <Plus size={16} strokeWidth={2.4} /> Nouvelle réservation
+          </button>
           <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', flex:1, minHeight:0, display:'flex', flexDirection:'row', overflow:'hidden', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
 
           {/* Le plan partage le bloc avec la liste du service */}
@@ -3327,17 +3331,6 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                     <Download size={12} strokeWidth={2} color="#666"/> Télécharger
                   </button>
                 )}
-                <button onClick={()=>setPlanOuvert(v=>!v)} style={{
-                  height:28, padding:'0 10px', borderRadius:8,
-                  border: planOuvert ? 'none' : '1.5px solid #eee',
-                  background: planOuvert ? '#111' : '#fff',
-                  fontSize:11, fontWeight:700, cursor:'pointer',
-                  color: planOuvert ? '#E8C547' : '#666',
-                  display:'flex', alignItems:'center', gap:5, whiteSpace:'nowrap'
-                }}>
-                  <LayoutGrid size={12} strokeWidth={2} color={planOuvert ? '#E8C547' : '#666'} />
-                  {planOuvert ? 'Fermer le plan' : 'Plan de salle'}
-                </button>
               </div>
               <h3 style={{margin:'0 0 8px', fontSize:16, fontWeight:800, color:'#111'}}>
                 {calJourSelectionne ? new Date(calJourSelectionne+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}) : 'Sélectionner un jour'}
