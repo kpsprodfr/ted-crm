@@ -3562,12 +3562,23 @@ function statsClickCollect(commandes, client) {
   const servicePrefere = (svc.midi || svc.soir)
     ? (svc.midi >= svc.soir ? 'midi' : 'soir') : null;
 
+  // Les jours où ce client commande le plus, service compris.
+  const JOURS_SEM = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const compteJours = {};
+  retenues.forEach(c => {
+    const j = jour(c);
+    if (!j) return;
+    const cle = `${JOURS_SEM[new Date(j + 'T12:00:00').getDay()]}|${serviceDe(c) === 'midi' ? 'Midi' : 'Soir'}`;
+    compteJours[cle] = (compteJours[cle] || 0) + 1;
+  });
+  const topJours = Object.entries(compteJours).sort((a, b) => b[1] - a[1]).slice(0, 3);
+
   return {
     nb: payees.length, enCours, ca,
     panier: payees.length ? ca / payees.length : 0,
     derniere, ilYA, jourDeLaCommande: jour,
     dernieres: parDateDesc.slice(0, 5),
-    topArticles, svc, servicePrefere,
+    topArticles, svc, servicePrefere, topJours,
     aucune: retenues.length === 0,
   };
 }
@@ -3612,7 +3623,7 @@ function BlocReservations({ resas, client, compact = false }) {
     compte[cle] = (compte[cle] || 0) + 1;
     if (svc[r.service] !== undefined) svc[r.service] += 1;
   });
-  const topJours = Object.entries(compte).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const topJours = Object.entries(compte).sort((a, b) => b[1] - a[1]).slice(0, 3);
   const maxJour = topJours.length ? topJours[0][1] : 1;
   const servicePrefere = (svc.midi || svc.soir) ? (svc.midi >= svc.soir ? 'midi' : 'soir') : null;
 
@@ -3808,6 +3819,31 @@ function BlocClickCollect({ stats, compact = false }) {
     </div>
   );
 
+  const maxJourCmd = st.topJours.length ? st.topJours[0][1] : 1;
+  const listeJoursCmd = (
+    <div>
+      <p style={{ fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 8px' }}>Jours favoris</p>
+      {st.topJours.length === 0
+        ? <p style={{ fontSize:13, color:'#bbb', margin:0 }}>Pas encore de tendance</p>
+        : st.topJours.map(([cle, n], i) => {
+          const [j, service] = cle.split('|');
+          return (
+            <div key={cle} style={{ padding:'7px 0', borderBottom: i < st.topJours.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
+              <div style={{ display:'flex', alignItems:'baseline', justifyContent:'space-between', gap:10, marginBottom:5 }}>
+                <span style={{ fontSize:13, fontWeight:700, color:'#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                  {j} <span style={{ color:'#999', fontWeight:600 }}>· {service}</span>
+                </span>
+                <span style={{ fontSize:12, fontWeight:800, color:'#888', flexShrink:0 }}>×{n}</span>
+              </div>
+              <div style={{ height:5, borderRadius:3, background:'#f0f0f0', overflow:'hidden' }}>
+                <div style={{ width:`${Math.round(n / maxJourCmd * 100)}%`, height:'100%', borderRadius:3, background:'#E8C547' }} />
+              </div>
+            </div>
+          );
+        })}
+    </div>
+  );
+
   return (
     <div style={{ background:'#fff', borderRadius:16, padding:'20px 24px', marginBottom:16 }}>
       {enTete}
@@ -3820,9 +3856,10 @@ function BlocClickCollect({ stats, compact = false }) {
           </div>
         ))}
       </div>
-      <div style={{ display:'grid', gridTemplateColumns: compact ? '1fr' : '1fr 1fr', gap: compact ? 18 : 28 }}>
+      <div style={{ display:'grid', gridTemplateColumns: compact ? '1fr' : 'repeat(auto-fit, minmax(210px, 1fr))', gap: compact ? 18 : 26 }}>
         {listeCommandes}
         {listeArticles}
+        {listeJoursCmd}
       </div>
     </div>
   );
@@ -11932,20 +11969,31 @@ function CRMApp({ user, onLogout }) {
                 </button>
               </div>
 
-              {/* Infos + actions */}
-              <div style={{ background:'#fff', borderRadius:16, padding:'20px 24px', marginBottom:16, display:'flex', alignItems:'center', gap:24, flexWrap:'wrap' }}>
-                <div style={{ width:72, height:72, borderRadius:'50%', flexShrink:0, background:avatarBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, fontWeight:900, color:avatarColor }}>
-                  {(((c.prenom||c.entreprise||'?')[0])+(c.nom||'')[0]||'').toUpperCase()}
+              {/* Coordonnées — même grammaire que les deux volets ci-dessous */}
+              <div style={{ background:'#fff', borderRadius:16, padding:'20px 24px', marginBottom:16 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:14, flexWrap:'wrap' }}>
+                  <div style={{ width:38, height:38, borderRadius:'50%', flexShrink:0, background:avatarBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:900, color:avatarColor }}>
+                    {(((c.prenom||c.entreprise||'?')[0])+(c.nom||'')[0]||'').toUpperCase()}
+                  </div>
+                  <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#111' }}>Coordonnées</h3>
+                  <div style={{ marginLeft:'auto', display:'flex', gap:8, flexWrap:'wrap' }}>
+                    {c.tel && <a href={`tel:${c.tel}`} style={{ height:38, padding:'0 14px', borderRadius:10, border:'1.5px solid #eee', background:'#fff', color:'#111', textDecoration:'none', fontSize:13, fontWeight:700, display:'flex', alignItems:'center', gap:7 }}><Phone size={15} strokeWidth={2}/> Appeler</a>}
+                    {c.tel && <a href={`sms:${c.tel}`} style={{ height:38, padding:'0 14px', borderRadius:10, border:'1.5px solid #eee', background:'#fff', color:'#111', textDecoration:'none', fontSize:13, fontWeight:700, display:'flex', alignItems:'center', gap:7 }}><MessageSquare size={15} strokeWidth={2}/> SMS</a>}
+                    {!ficheClientReadOnly && <button onClick={()=>{ setModalEdit(c); }} style={{ height:38, padding:'0 14px', borderRadius:10, border:'none', background:'#E8C547', color:'#111', fontSize:13, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', gap:7 }}><Pencil size={15} strokeWidth={2}/> Modifier</button>}
+                  </div>
                 </div>
-                <div style={{ flex:1, display:'flex', flexDirection:'column', gap:6 }}>
-                  {c.tel && <div style={{ display:'flex', alignItems:'center', gap:10 }}><Phone size={16} strokeWidth={2} color="#666" /><span style={{ fontSize:16, fontWeight:600, color:'#111' }}>{c.tel}</span></div>}
-                  {c.mail && <div style={{ display:'flex', alignItems:'center', gap:10 }}><Mail size={16} strokeWidth={2} color="#666" /><span style={{ fontSize:15, color:'#3b82f6' }}>{c.mail}</span></div>}
-                  {createdAtLabel && <div style={{ display:'flex', alignItems:'center', gap:10 }}><User size={16} strokeWidth={2} color="#666" /><span style={{ fontSize:14, color:'#999' }}>Client depuis le {createdAtLabel}</span></div>}
-                </div>
-                <div style={{ display:'flex', gap:12 }}>
-                  {c.tel && <a href={`tel:${c.tel}`} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'12px 20px', borderRadius:12, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', minWidth:80, color:'#111', textDecoration:'none', fontSize:13, fontWeight:600 }}><Phone size={20} strokeWidth={2}/>Appeler</a>}
-                  {c.tel && <a href={`sms:${c.tel}`} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'12px 20px', borderRadius:12, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', minWidth:80, color:'#111', textDecoration:'none', fontSize:13, fontWeight:600 }}><MessageSquare size={20} strokeWidth={2}/>SMS</a>}
-                  {!ficheClientReadOnly && <button onClick={()=>{ setModalEdit(c); }} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6, padding:'12px 20px', borderRadius:12, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', minWidth:80, color:'#111', fontSize:13, fontWeight:600 }}><Pencil size={20} strokeWidth={2}/>Modifier</button>}
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(190px, 1fr))', gap:12 }}>
+                  {[
+                    { label:'TÉLÉPHONE',    valeur: c.tel || '—',  sub: c.tel ? 'appel et SMS' : 'non renseigné' },
+                    { label:'E-MAIL',       valeur: c.mail || '—', sub: c.mail ? 'envois groupés' : 'non renseigné' },
+                    { label:'CLIENT DEPUIS', valeur: createdAtLabel || '—', sub: c.genre || '' },
+                  ].map(t => (
+                    <div key={t.label} style={{ background:'#f9f9f9', borderRadius:12, padding:'12px 14px', minWidth:0 }}>
+                      <p style={{ fontSize:9.5, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 4px' }}>{t.label}</p>
+                      <p style={{ fontSize:15, fontWeight:900, color:'#111', margin:'0 0 2px', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.valeur}</p>
+                      <p style={{ fontSize:11, color:'#999', margin:0 }}>{t.sub}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
 
