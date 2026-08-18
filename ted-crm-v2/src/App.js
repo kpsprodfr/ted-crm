@@ -11995,25 +11995,31 @@ function CRMApp({ user, onLogout }) {
                     </div>
                   ))}
                 </div>
+
+                {/* Le commentaire fait partie de la fiche d'identité du client */}
+                {c.commentaire ? (
+                  <div style={{ marginTop:12, background:'#f9f9f9', borderRadius:12, padding:'12px 14px' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>
+                      <MessageSquare size={13} strokeWidth={2} color="#999" />
+                      <p style={{ fontSize:9.5, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0 }}>Commentaire</p>
+                      {!ficheClientReadOnly && (
+                        <button onClick={()=>setModalEdit(c)}
+                          style={{ marginLeft:'auto', border:'none', background:'none', color:'#999', fontSize:11.5, fontWeight:700, cursor:'pointer', padding:0 }}>
+                          Modifier
+                        </button>
+                      )}
+                    </div>
+                    <p style={{ margin:0, fontSize:13.5, color:'#444', lineHeight:1.7, whiteSpace:'pre-wrap' }}>{c.commentaire}</p>
+                  </div>
+                ) : !ficheClientReadOnly && (
+                  <button onClick={()=>setModalEdit(c)}
+                    style={{ width:'100%', marginTop:12, padding:'12px', border:'1.5px dashed #ddd', borderRadius:12, background:'transparent', cursor:'pointer', fontSize:13, color:'#999', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                    <Plus size={14} strokeWidth={2} color="#999"/> Ajouter un commentaire
+                  </button>
+                )}
               </div>
 
               <BlocReservations resas={resasData} client={c} />
-
-              {/* Commentaire */}
-              {c.commentaire && (
-                <div style={{ background:'#fff', borderRadius:16, padding:'20px 24px', marginBottom:16, border:'1.5px solid #f0f0f0' }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
-                    <MessageSquare size={18} strokeWidth={2} color="#111"/>
-                    <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#111' }}>Commentaire</h3>
-                  </div>
-                  <p style={{ margin:0, fontSize:14, color:'#444', lineHeight:1.7, whiteSpace:'pre-wrap' }}>{c.commentaire}</p>
-                </div>
-              )}
-              {!c.commentaire && !ficheClientReadOnly && (
-                <button onClick={()=>setModalEdit(c)} style={{ width:'100%', padding:'12px', marginBottom:16, border:'1.5px dashed #ddd', borderRadius:12, background:'transparent', cursor:'pointer', fontSize:13, color:'#999', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-                  <Plus size={14} strokeWidth={2} color="#999"/> Ajouter un commentaire
-                </button>
-              )}
 
               <BlocClickCollect stats={statsClickCollect(commandesData, c)} />
 
