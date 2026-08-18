@@ -526,6 +526,13 @@ vide, avec quatre motifs fréquents proposés. C'est ce motif que l'assistant
 relit pour proposer une version corrigée ; la révision affiche alors un bandeau
 rappelant la demande d'origine et la raison du refus.
 
+**Exemples de démonstration.** Tant que l'assistant n'est pas branché, l'écran
+vide propose **« Voir des exemples »** : six demandes couvrant les six domaines,
+marquées `demandeur = 'exemple'`. Un bandeau le dit et offre de les retirer.
+Deux politiques étroites autorisent **uniquement** l'insertion et la suppression
+de lignes `demandeur = 'exemple'`, et seulement pour propriétaire et manager :
+une vraie demande ne peut jamais être fabriquée depuis le navigateur.
+
 La table est ajoutée à la publication `supabase_realtime` — sans quoi une
 demande n'apparaît qu'au rechargement.
 

@@ -8393,6 +8393,50 @@ const DOMAINES = {
 const ORDRE_DOMAINES = ['campagne', 'site', 'menu', 'tarifs', 'reservation', 'clients', 'autre'];
 const domaineDe = (t) => DOMAINES[t] || DOMAINES.autre;
 
+// Un jeu de démonstration, pour voir l'écran vivant tant que l'assistant n'est
+// pas branché. Reconnaissables à leur demandeur, ils s'ajoutent et se retirent
+// en un bouton.
+const DEMANDEUR_EXEMPLE = 'exemple';
+const EXEMPLES_APPROBATION = [
+  {
+    type:'campagne', titre:'Relancer les clients qui ne sont pas revenus',
+    description:"42 clients n'ont pas réservé depuis plus de trois mois. Un SMS avec le dessert offert le midi peut en ramener une partie.",
+    contenu:{ canal:'SMS', destinataires:'42 clients inactifs depuis 90 jours',
+      message:"Bonjour {prenom}, cela fait un moment ! Le midi cette semaine, le dessert est offert. À très vite, LE TED.",
+      envoi:'jeudi à 11h00' },
+  },
+  {
+    type:'campagne', titre:"Annoncer la carte d'automne aux habitués",
+    description:'Un e-mail aux clients venus au moins trois fois cette année.',
+    contenu:{ canal:'E-mail', destinataires:'128 habitués',
+      message:"Bonjour {prenom},\n\nLa carte d'automne arrive lundi : nouveaux plats, mêmes producteurs.\nRéservez votre table dès maintenant.\n\nLE TED",
+      envoi:'vendredi à 09h00' },
+  },
+  {
+    type:'site', titre:'Corriger les horaires affichés sur le site',
+    description:"Le site annonce encore une ouverture 7j/7 alors que le dimanche est fermé.",
+    contenu:{ page:'leted.fr/horaires', avant:'Ouvert 7j/7, midi et soir',
+      apres:'Du lundi au samedi\n12h – 14h30 et 19h – 23h30' },
+  },
+  {
+    type:'menu', titre:'Retirer trois plats jamais commandés',
+    description:"Ces plats n'ont pas été commandés une seule fois depuis janvier. Les retirer allégerait la carte.",
+    contenu:{ plats:'Poké bowl, Avocado toast, Glaces', periode:'1er janvier au 18 août', commandes:'0 sur 8 mois' },
+  },
+  {
+    type:'tarifs', titre:'Ajuster le prix du Panier asiatique',
+    description:"C'est votre plat le plus vendu et son prix n'a pas bougé depuis l'ouverture.",
+    contenu:{ produit:'Panier asiatique', avant:'24,00 €', apres:'26,00 €',
+      effet:'≈ +8 € par service, sur la base des ventes des 30 derniers jours' },
+  },
+  {
+    type:'clients', titre:'Fusionner deux fiches en double',
+    description:'Deux fiches portent le même numéro de téléphone. Les fusionner évitera de compter deux fois le même client.',
+    contenu:{ fiches:'Camille Sounier · Camille S.', telephone:'06 58 74 16 04',
+      conserver:'Camille Sounier (la plus complète)', historique:'Réservations et commandes rattachées à la fiche conservée' },
+  },
+];
+
 const MOTIFS_REFUS_APPRO = [
   "Le ton ne correspond pas à l'établissement",
   'Mauvais moment pour cette action',
@@ -8514,6 +8558,28 @@ function ApprobationsPage({ showToast, user, onCountChange }) {
     );
   }, []);   // eslint-disable-line
 
+  async function ajouterExemples() {
+    const { error } = await safeQuery(
+      () => supabase.from('approbations').insert(
+        EXEMPLES_APPROBATION.map(e => ({ ...e, demandeur: DEMANDEUR_EXEMPLE }))
+      ),
+      { fallback: null, context: 'ajouterExemples' }
+    );
+    if (error) { showToast('Ajout impossible', 'error'); return; }
+    showToast('✅ Exemples ajoutés');
+    charger();
+  }
+
+  async function retirerExemples() {
+    const { error } = await safeQuery(
+      () => supabase.from('approbations').delete().eq('demandeur', DEMANDEUR_EXEMPLE),
+      { fallback: null, context: 'retirerExemples' }
+    );
+    if (error) { showToast('Suppression impossible', 'error'); return; }
+    showToast('Exemples retirés');
+    charger();
+  }
+
   async function decider(demande, statut, motifRefus) {
     const { error } = await safeQuery(
       () => supabase.from('approbations').update({
@@ -8532,6 +8598,7 @@ function ApprobationsPage({ showToast, user, onCountChange }) {
     <div style={{ textAlign:'center', paddingTop:80, fontSize:16, color:'#888' }}>Chargement des demandes…</div>
   );
 
+  const exemplesPresents = demandes.some(d => d.demandeur === DEMANDEUR_EXEMPLE);
   const enAttente = demandes.filter(d => d.statut === 'en_attente');
   const liste = filtre === 'en_attente' ? enAttente : demandes.filter(d => d.statut !== 'en_attente');
   const parId = Object.fromEntries(demandes.map(d => [d.id, d]));
@@ -8568,6 +8635,19 @@ function ApprobationsPage({ showToast, user, onCountChange }) {
         ))}
       </div>
 
+      {exemplesPresents && (
+        <div style={{ display:'flex', alignItems:'center', gap:12, background:'#fff', border:'1.5px dashed #ddd', borderRadius:12, padding:'11px 15px', marginBottom:18, flexWrap:'wrap' }}>
+          <span style={{ flex:1, minWidth:200, fontSize:13, color:'#666' }}>
+            Certaines demandes ci-dessous sont des <strong style={{ color:'#111' }}>exemples</strong>,
+            là pour vous montrer l'écran en attendant que l'assistant soit branché.
+          </span>
+          <button onClick={retirerExemples}
+            style={{ height:36, padding:'0 14px', borderRadius:10, border:'1.5px solid #e0e0e0', background:'#fff', color:'#555', fontSize:12.5, fontWeight:700, cursor:'pointer', flexShrink:0 }}>
+            Retirer les exemples
+          </button>
+        </div>
+      )}
+
       {!peutDecider && monRole && (
         <div style={{ background:'#fffbea', border:'1.5px solid #fde68a', borderRadius:12, padding:'11px 14px', marginBottom:18, fontSize:13, color:'#92400e' }}>
           Vous consultez les demandes, mais seuls un propriétaire ou un manager peuvent les approuver.
@@ -8585,6 +8665,12 @@ function ApprobationsPage({ showToast, user, onCountChange }) {
               ? "Les propositions de l'assistant arriveront ici."
               : 'Les demandes approuvées ou refusées apparaîtront ici.'}
           </p>
+          {filtre === 'en_attente' && !exemplesPresents && (
+            <button onClick={ajouterExemples}
+              style={{ marginTop:18, height:44, padding:'0 20px', borderRadius:11, border:'1.5px dashed #ddd', background:'transparent', color:'#666', fontSize:13.5, fontWeight:700, cursor:'pointer', display:'inline-flex', alignItems:'center', gap:8 }}>
+              <Plus size={16} strokeWidth={2.2} /> Voir des exemples
+            </button>
+          )}
         </div>
       ) : groupes.map(g => {
         const Icone = g.dom.icone;
