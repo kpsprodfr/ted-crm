@@ -12236,46 +12236,94 @@ function CRMApp({ user, onLogout }) {
       {modalCorbeille && !isMobile && <CorbeilleModal onClose={()=>{ setModalCorbeille(false); loadClients(true); }} showToast={showToast} />}
 
       {/* Modal Top 50 clients */}
-      {showTopClients && (
-        <>
-          <div onMouseDown={e=>{e.preventDefault();e.stopPropagation();}} onClick={()=>setShowTopClients(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:2999,pointerEvents:'all'}}/>
-          <div onClick={e=>e.stopPropagation()} style={{position:'fixed',top:'50%',left:'50%',transform:'translate(-50%,-50%)',background:'#fff',borderRadius:20,width:'min(520px, calc(100vw - 48px))',maxHeight:'80vh',display:'flex',flexDirection:'column',boxShadow:'0 32px 80px rgba(0,0,0,0.25)',zIndex:3000,overflow:'hidden'}}>
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'24px 28px 20px',flexShrink:0,borderBottom:'1px solid #f0f0f0'}}>
-              <h2 style={{margin:0,fontSize:20,fontWeight:800,color:'#111',display:'flex',alignItems:'center',gap:8}}><Trophy size={20} /> Classement clients</h2>
-              <button onClick={()=>setShowTopClients(false)} style={{width:36,height:36,borderRadius:'50%',border:'none',background:'#f0f0f0',cursor:'pointer',fontSize:18,color:'#666',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
-            </div>
-            <div style={{flex:1,overflowY:'auto',padding:'16px 28px'}}>
-              {clients
-                .map(c=>({...c, nb:resasData.filter(r=>r.client_id===c.id&&r.statut!=='absente'&&r.statut!=='annulee'&&r.statut!=='refusee').length}))
-                .filter(c=>c.nb>0)
-                .sort((a,b)=>b.nb-a.nb)
-                .slice(0,50)
-                .map((c,i)=>{
-                  const medals=[<Award size={18} color="#FFD700" key="or"/>,<Award size={18} color="#C0C0C0" key="arg"/>,<Award size={18} color="#CD7F32" key="bro"/>];
-                  const avatarBg=c.genre==='Homme'?'#dbeafe':c.genre==='Femme'?'#fce7f3':'#dcfce7';
-                  const avatarColor=c.genre==='Homme'?'#1d4ed8':c.genre==='Femme'?'#be185d':'#15803d';
-                  const initiales=c.genre==='Entreprise'?(c.entreprise||'?').slice(0,2).toUpperCase():`${(c.prenom||'?')[0]}${(c.nom||'')[0]||''}`.toUpperCase();
-                  return (
-                    <div key={c.id} onClick={()=>{setModalDetailClient(c);setShowTopClients(false);}} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 0',borderBottom:'1px solid #f5f5f5',cursor:'pointer'}}
-                      onMouseEnter={e=>e.currentTarget.style.background='#fafafa'}
-                      onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                      <span style={{fontSize:i<3?18:13,minWidth:28,textAlign:'center'}}>{i<3?medals[i]:`#${i+1}`}</span>
-                      <div style={{width:34,height:34,borderRadius:'50%',background:avatarBg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:800,color:avatarColor,flexShrink:0}}>{initiales}</div>
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontWeight:700,fontSize:14,color:'#111',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{c.genre==='Entreprise'?c.entreprise:`${c.prenom||''} ${c.nom||''}`}</div>
-                        <div style={{fontSize:12,color:'#999'}}>{c.tel}</div>
+      {showTopClients && (() => {
+        const classement = clients
+          .map(c => ({ ...c, nb: resasData.filter(r => r.client_id === c.id && r.statut !== 'absente' && r.statut !== 'annulee' && r.statut !== 'refusee').length }))
+          .filter(c => c.nb > 0)
+          .sort((a, b) => b.nb - a.nb);
+        const meneur = classement[0];
+        const totalResas = classement.reduce((s, c) => s + c.nb, 0);
+        const maxResas = meneur ? meneur.nb : 1;
+        const nomDe = (c) => c.genre === 'Entreprise' ? (c.entreprise || '—') : `${c.prenom || ''} ${c.nom || ''}`.trim();
+        const tuiles = [
+          { label:'MEILLEUR CLIENT', valeur: meneur ? nomDe(meneur) : '—', sub: meneur ? `${meneur.nb} réservations` : 'aucune donnée' },
+          { label:'CLIENTS CLASSÉS', valeur: classement.length, sub: 'au moins une réservation' },
+          { label:'RÉSERVATIONS',    valeur: totalResas, sub: classement.length ? `${Math.round(totalResas / classement.length)} en moyenne` : '—' },
+        ];
+        return (
+          <>
+            <div onMouseDown={e=>{e.preventDefault();e.stopPropagation();}} onClick={()=>setShowTopClients(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:2999,pointerEvents:'all'}}/>
+            <div onClick={e=>e.stopPropagation()} style={{position:'fixed',top:'50%',left:'50%',transform:'translate(-50%,-50%)',background:'#f5f5f5',borderRadius:20,width:'min(680px, calc(100vw - 32px))',maxHeight:'min(860px, calc(100vh - 32px))',display:'flex',flexDirection:'column',boxShadow:'0 32px 80px rgba(0,0,0,0.28)',zIndex:3000,overflow:'hidden'}}>
+
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,padding:'20px 24px 16px',background:'#fff',borderBottom:'1px solid #f0f0f0',flexShrink:0}}>
+                <h2 style={{margin:0,fontSize:20,fontWeight:900,color:'#111'}}>Classement clients</h2>
+                <button onClick={()=>setShowTopClients(false)} style={{width:34,height:34,borderRadius:'50%',border:'none',background:'#f0f0f0',cursor:'pointer',fontSize:16,color:'#666',flexShrink:0}}>✕</button>
+              </div>
+
+              <div style={{flex:1,minHeight:0,overflowY:'auto',padding:'16px 20px 20px'}}>
+                <div style={{background:'#fff',borderRadius:16,padding:'20px 24px'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14}}>
+                    <Trophy size={18} strokeWidth={2} color="#111" />
+                    <h3 style={{margin:0,fontSize:15,fontWeight:800,color:'#111'}}>Vos meilleurs clients</h3>
+                    <span style={{marginLeft:'auto',fontSize:12,fontWeight:700,padding:'4px 10px',borderRadius:20,background:'#fffbea',color:'#92400e',border:'1.5px solid #fde68a'}}>
+                      {classement.length} classé{classement.length > 1 ? 's' : ''}
+                    </span>
+                  </div>
+
+                  <div style={{display:'grid',gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',gap:12,marginBottom:18}}>
+                    {tuiles.map(t => (
+                      <div key={t.label} style={{background:'#f9f9f9',borderRadius:12,padding:'12px 14px',minWidth:0}}>
+                        <p style={{fontSize:9.5,fontWeight:700,color:'#999',textTransform:'uppercase',letterSpacing:0.5,margin:'0 0 4px'}}>{t.label}</p>
+                        <p style={{fontSize:15,fontWeight:900,color:'#111',margin:'0 0 2px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.valeur}</p>
+                        <p style={{fontSize:11,color:'#999',margin:0}}>{t.sub}</p>
                       </div>
-                      <span style={{background:'#fffbea',color:'#111',borderRadius:20,padding:'3px 12px',fontSize:13,fontWeight:800,flexShrink:0}}>{c.nb} résa</span>
-                    </div>
-                  );
-                })}
+                    ))}
+                  </div>
+
+                  {classement.length === 0 ? (
+                    <p style={{margin:0,fontSize:13,color:'#bbb'}}>Aucun client n'a encore réservé.</p>
+                  ) : (
+                    <>
+                      <p style={{fontSize:10,fontWeight:700,color:'#999',textTransform:'uppercase',letterSpacing:0.5,margin:'0 0 8px'}}>Classement</p>
+                      {classement.slice(0, 50).map((c, i) => {
+                        const medaille = ['#FFD700','#C0C0C0','#CD7F32'][i];
+                        const avatarBg = c.genre==='Homme'?'#dbeafe':c.genre==='Femme'?'#fce7f3':'#dcfce7';
+                        const avatarColor = c.genre==='Homme'?'#1d4ed8':c.genre==='Femme'?'#be185d':'#15803d';
+                        const initiales = c.genre==='Entreprise'
+                          ? (c.entreprise||'?').slice(0,2).toUpperCase()
+                          : `${(c.prenom||'?')[0]}${(c.nom||'')[0]||''}`.toUpperCase();
+                        return (
+                          <div key={c.id} onClick={()=>{setModalDetailClient(c);setShowTopClients(false);}}
+                            style={{padding:'9px 0',borderBottom: i < Math.min(classement.length,50) - 1 ? '1px solid #f5f5f5' : 'none',cursor:'pointer'}}>
+                            <div style={{display:'flex',alignItems:'center',gap:11,marginBottom:6}}>
+                              <span style={{minWidth:24,textAlign:'center',flexShrink:0,fontSize:12,fontWeight:800,color:'#bbb'}}>
+                                {medaille ? <Award size={17} color={medaille} /> : `${i+1}`}
+                              </span>
+                              <div style={{width:32,height:32,borderRadius:'50%',flexShrink:0,background:avatarBg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11.5,fontWeight:800,color:avatarColor}}>{initiales}</div>
+                              <div style={{flex:1,minWidth:0}}>
+                                <div style={{fontSize:13.5,fontWeight:700,color:'#111',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{nomDe(c)}</div>
+                                <div style={{fontSize:11.5,color:'#999'}}>{c.tel || '—'}</div>
+                              </div>
+                              <span style={{fontSize:12.5,fontWeight:800,color:'#888',flexShrink:0}}>×{c.nb}</span>
+                            </div>
+                            <div style={{height:5,borderRadius:3,background:'#f0f0f0',overflow:'hidden',marginLeft:35}}>
+                              <div style={{width:`${Math.round(c.nb / maxResas * 100)}%`,height:'100%',borderRadius:3,background:'#E8C547'}} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div style={{flexShrink:0,padding:'14px 20px calc(18px + env(safe-area-inset-bottom, 0px))',background:'#fff',borderTop:'1px solid #f0f0f0'}}>
+                <button onClick={()=>setShowTopClients(false)} style={{width:'100%',height:48,border:'none',borderRadius:12,background:'#111',color:'#fff',fontSize:14.5,fontWeight:800,cursor:'pointer'}}>Fermer</button>
+              </div>
             </div>
-            <div style={{flexShrink:0,padding:'16px 28px',borderTop:'1px solid #eee'}}>
-              <button onClick={()=>setShowTopClients(false)} style={{width:'100%',height:48,border:'1.5px solid #eee',borderRadius:12,background:'#fff',fontSize:14,fontWeight:600,cursor:'pointer',color:'#666'}}>Fermer</button>
-            </div>
-          </div>
-        </>
-      )}
+          </>
+        );
+      })()}
 
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
       {notifPrePromptModal}
