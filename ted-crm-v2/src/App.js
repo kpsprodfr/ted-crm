@@ -2873,6 +2873,9 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                 ? <><CalendarDays size={14} strokeWidth={2} color="#E8C547" /> Vue calendrier</>
                 : <><LayoutGrid size={14} strokeWidth={2} color="#666" /> Plan de salle</>}
             </button>
+            {/* Réserve la largeur de la colonne de droite : la bascule tombe
+                ainsi juste à gauche de « Nouvelle réservation ». */}
+            <span style={{ width: etroit ? 280 : 396, flexShrink:0 }} />
             <div style={{ position:'relative', display:'none' }}>
               <button onClick={()=>setShowFormDropdown(v=>!v)} style={{ display:'flex', alignItems:'center', gap:6, height:38, padding:'0 14px', background:'#fff', border:'1.5px solid #eee', borderRadius:10, fontSize:13, fontWeight:600, cursor:'pointer', color:'#666' }}>
                 <Link size={14} strokeWidth={2} /> Formulaire
