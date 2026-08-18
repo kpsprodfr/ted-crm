@@ -364,8 +364,28 @@ se clique pas. L'entrée active prend le fond noir et le jaune de marque, comme
 la barre latérale. Le panneau de droite rappelle le nom de l'entrée et sa ligne
 d'explication : les blocs qui répéteraient ce titre n'en portent pas.
 
-La **semaine type** liste les sept jours. Un jour dont les deux services sont
+La **semaine type** liste les sept jours. Un jour dont tous les services sont
 fermés est un jour de fermeture — il n'y a pas de frise séparée.
+
+Chaque journée porte une **liste de services** (jusqu'à `MAX_SERVICES` = 4) :
+`[{id, nom, ouvert, debut, fin}]`. Les deux premiers, `midi` et `soir`
+(`SERVICES_SOCLE`), ne sont ni renommables ni supprimables — **tout le reste de
+l'application s'appuie sur ces deux identifiants**. Les suivants (`service3`,
+`service4`) portent un nom libre et se retirent.
+
+`servicesDuJour()` accepte l'ancienne forme `{midi:{…}, soir:{…}}` comme la
+nouvelle : ne pas casser cette compatibilité.
+
+Chaque jour a un bouton **« Appliquer à toute la semaine »** qui recopie ses
+services sur les sept jours.
+
+Le champ *nom du service* garde sa saisie en **state local** et n'enregistre
+qu'au `blur` : écrire à chaque frappe déclenchait une écriture par caractère,
+qui entrait en course avec la recopie et perdait le nom.
+
+⚠️ Les services ajoutés sont **configurés mais pas encore exploités** :
+réservations, commandes, calendriers et statistiques raisonnent toujours en
+midi / soir.
 
 Le **logo** ouvre le bloc Identité, avant le nom de l'établissement.
 

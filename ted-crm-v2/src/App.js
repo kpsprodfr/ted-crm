@@ -8220,16 +8220,26 @@ function ChoixHeure({ valeur, onChange }) {
 }
 
 // Un service, sur une ligne : ouvert ou fermé, et ses deux bornes horaires.
-function LigneService({ label, valeur, onChange }) {
+// `onNom` et `onRetirer` ne sont fournis que pour les services ajoutés.
+function LigneService({ label, valeur, onChange, onNom, onRetirer }) {
   const v = valeur || { ouvert:false, debut:'12:00', fin:'14:30' };
+  const [nomSaisi, setNomSaisi] = useState(label);
+  useEffect(() => { setNomSaisi(label); }, [label]);
   return (
     <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+      {onNom ? (
+        <input value={nomSaisi} onChange={e=>setNomSaisi(e.target.value)}
+          onBlur={()=>{ if (nomSaisi !== label) onNom(nomSaisi.trim() || label); }}
+          onKeyDown={e=>{ if (e.key === 'Enter') e.currentTarget.blur(); }}
+          placeholder="Nom du service"
+          style={{ width:104, height:38, border:'1.5px solid #e0e0e0', borderRadius:10, padding:'0 10px', fontSize:12.5, fontWeight:800, outline:'none', boxSizing:'border-box', flexShrink:0 }} />
+      ) : null}
       <button onClick={()=>onChange({ ...v, ouvert: !v.ouvert })}
-        style={{ minWidth:92, height:38, borderRadius:10, cursor:'pointer', fontSize:12.5, fontWeight:800, flexShrink:0,
+        style={{ minWidth: onNom ? 78 : 92, height:38, borderRadius:10, cursor:'pointer', fontSize:12.5, fontWeight:800, flexShrink:0,
           border: v.ouvert ? 'none' : '1.5px solid #e0e0e0',
           background: v.ouvert ? '#16a34a' : '#fff',
           color: v.ouvert ? '#fff' : '#999' }}>
-        {label} · {v.ouvert ? 'ouvert' : 'fermé'}
+        {onNom ? (v.ouvert ? 'ouvert' : 'fermé') : `${label} · ${v.ouvert ? 'ouvert' : 'fermé'}`}
       </button>
       {v.ouvert && (
         <>
@@ -8237,6 +8247,12 @@ function LigneService({ label, valeur, onChange }) {
           <span style={{ fontSize:13, color:'#bbb', fontWeight:700 }}>→</span>
           <ChoixHeure valeur={v.fin} onChange={h=>onChange({ ...v, fin: h })} />
         </>
+      )}
+      {onRetirer && (
+        <button onClick={onRetirer} aria-label="Retirer ce service"
+          style={{ width:34, height:34, borderRadius:9, border:'1.5px solid #f0d0d0', background:'#fff', color:'#b91c1c', cursor:'pointer', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <Trash2 size={14} strokeWidth={2} />
+        </button>
       )}
     </div>
   );
@@ -8330,13 +8346,31 @@ function ReglageCreneaux({ label, type, plage, onChange, exemple }) {
   );
 }
 
+// Une journée porte une liste de services : Midi et Soir toujours en tête —
+// le reste de l'application s'appuie sur eux — puis jusqu'à deux services
+// supplémentaires que le restaurant nomme lui-même.
+const MAX_SERVICES = 4;
+const SERVICES_SOCLE = [
+  { id:'midi', nom:'Midi', ouvert:true,  debut:'12:00', fin:'14:30' },
+  { id:'soir', nom:'Soir', ouvert:true,  debut:'19:00', fin:'23:30' },
+];
+
+// Accepte l'ancienne forme { midi:{…}, soir:{…} } comme la nouvelle (tableau).
+function servicesDuJour(conf) {
+  if (Array.isArray(conf)) return conf;
+  if (conf && typeof conf === 'object') {
+    return SERVICES_SOCLE.map(base => ({ ...base, ouvert:false, ...(conf[base.id] || {}), id: base.id, nom: base.nom }));
+  }
+  return SERVICES_SOCLE.map(s2 => ({ ...s2 }));
+}
+
 // Horaires d'un service pour une date : la date particulière l'emporte sur la
 // semaine type.
 function horairesDuJour(dateIso, service) {
   const exception = (REGLAGES.fermetures || []).find(f => f.date === dateIso);
   if (exception) return exception[service] || { ouvert:false };
   const jour = new Date(dateIso + 'T12:00:00').getDay();
-  return (REGLAGES.horaires_semaine || {})[jour]?.[service] || { ouvert:false };
+  return servicesDuJour((REGLAGES.horaires_semaine || {})[jour]).find(sv => sv.id === service) || { ouvert:false };
 }
 
 const enMinutes = (h) => { const [a, b] = String(h || '0:0').split(':').map(Number); return a * 60 + b; };
@@ -9247,7 +9281,9 @@ function ParametresPage({ showToast, user }) {
   // Pour illustrer le réglage : le premier jour où le service est ouvert.
   const exempleOuverture = (service) => {
     const sem = lire('horaires_semaine') || {};
-    const trouve = JOURS_SEMAINE.map(j => sem[j.id]?.[service]).find(h => h?.ouvert);
+    const trouve = JOURS_SEMAINE
+      .map(j => servicesDuJour(sem[j.id]).find(sv => sv.id === service))
+      .find(h => h?.ouvert);
     return trouve || { debut:'12:00', fin: service === 'midi' ? '14:30' : '23:30' };
   };
   // Installer ajoute l'application à la maison et l'allume. Une fois installée,
@@ -9271,8 +9307,33 @@ function ParametresPage({ showToast, user }) {
   const autoDefaut = conf ? conf.acceptation_auto_defaut !== 'false' : true;
   const delai = conf ? (parseInt(conf.delai_minutes) || 30) : 30;
 
-  const majJour = (jourId, service, valeur) =>
-    enregistrer('horaires_semaine', { ...semaine, [jourId]: { ...(semaine[jourId] || {}), [service]: valeur } });
+  const majServices = (jourId, liste) =>
+    enregistrer('horaires_semaine', { ...semaine, [jourId]: liste });
+
+  const majService = (jourId, index, valeur) => {
+    const liste = servicesDuJour(semaine[jourId]).map((sv, k) => k === index ? { ...sv, ...valeur } : sv);
+    majServices(jourId, liste);
+  };
+
+  const ajouterService = (jourId) => {
+    const liste = servicesDuJour(semaine[jourId]);
+    if (liste.length >= MAX_SERVICES) return;
+    // Un identifiant stable, indépendant du nom que le restaurant choisira.
+    const id = `service${liste.length + 1}`;
+    majServices(jourId, [...liste, { id, nom:`Service ${liste.length + 1}`, ouvert:true, debut:'16:00', fin:'18:00' }]);
+  };
+
+  const retirerService = (jourId, index) =>
+    majServices(jourId, servicesDuJour(semaine[jourId]).filter((_, k) => k !== index));
+
+  // Le gain de temps : on règle un jour, on le recopie sur les sept.
+  const appliquerASemaine = (jourId) => {
+    const modele = servicesDuJour(semaine[jourId]);
+    const copie = {};
+    JOURS_SEMAINE.forEach(j => { copie[j.id] = modele.map(sv => ({ ...sv })); });
+    enregistrer('horaires_semaine', copie).then(charger);
+    showToast('✅ Horaires appliqués à toute la semaine');
+  };
 
   const ajouterFermeture = () => enregistrer('fermetures', [...fermetures, {
     date: '', motif: '',
@@ -9354,16 +9415,36 @@ function ParametresPage({ showToast, user }) {
 
     'etab-horaires': (
       <>
-        <Bloc aide="Les horaires de chaque service. Un clic sur Midi ou Soir ferme le service ; un jour dont les deux services sont fermés est un jour de fermeture.">
+        <Bloc aide="Les horaires de chaque journée. Un clic sur un service le ferme ; un jour dont tous les services sont fermés est un jour de fermeture. Vous pouvez ajouter jusqu'à quatre services par jour.">
             <div style={{ display:'flex', flexDirection:'column' }}>
               {JOURS_SEMAINE.map((j, i) => {
-                const jour = semaine[j.id] || {};
+                const services = servicesDuJour(semaine[j.id]);
                 return (
-                  <div key={j.id} style={{ display:'flex', alignItems:'flex-start', gap:14, padding:'12px 0', borderBottom: i < JOURS_SEMAINE.length - 1 ? '1px solid #f5f5f5' : 'none', flexWrap:'wrap' }}>
-                    <span style={{ width:86, flexShrink:0, fontSize:13.5, fontWeight:800, color:'#111', paddingTop:9 }}>{j.long}</span>
-                    <div style={{ display:'flex', flexDirection:'column', gap:8, flex:1, minWidth:0 }}>
-                      <LigneService label="Midi" valeur={jour.midi} onChange={v=>majJour(j.id, 'midi', v)} />
-                      <LigneService label="Soir" valeur={jour.soir} onChange={v=>majJour(j.id, 'soir', v)} />
+                  <div key={j.id} style={{ padding:'14px 0', borderBottom: i < JOURS_SEMAINE.length - 1 ? '1px solid #f5f5f5' : 'none' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:10, flexWrap:'wrap' }}>
+                      <span style={{ fontSize:13.5, fontWeight:800, color:'#111' }}>{j.long}</span>
+                      <span style={{ flex:1 }} />
+                      {services.length < MAX_SERVICES && (
+                        <button onClick={()=>ajouterService(j.id)}
+                          style={{ height:32, padding:'0 11px', borderRadius:9, border:'1.5px dashed #ddd', background:'transparent', color:'#666', fontSize:12, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+                          <Plus size={14} strokeWidth={2.2} /> Ajouter un service
+                        </button>
+                      )}
+                      <button onClick={()=>appliquerASemaine(j.id)}
+                        style={{ height:32, padding:'0 11px', borderRadius:9, border:'none', background:'#E8C547', color:'#111', fontSize:12, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+                        <Copy size={13} strokeWidth={2.2} /> Appliquer à toute la semaine
+                      </button>
+                    </div>
+                    <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                      {services.map((sv, k) => {
+                        const socle = k < SERVICES_SOCLE.length;
+                        return (
+                          <LigneService key={sv.id} label={sv.nom} valeur={sv}
+                            onChange={v=>majService(j.id, k, v)}
+                            onNom={socle ? null : (nom)=>majService(j.id, k, { ...sv, nom })}
+                            onRetirer={socle ? null : ()=>retirerService(j.id, k)} />
+                        );
+                      })}
                     </div>
                   </div>
                 );
