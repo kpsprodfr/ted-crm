@@ -350,10 +350,13 @@ avec la description complète et un bouton **Activer l'application**.
 
 `APPS_TOUJOURS_ACTIVES` (Réservations, Fichier clients) ne peuvent pas être coupées.
 
-`APPS_MASQUEES` retire des applications du sommaire **et** du catalogue sans
-toucher à leur code — actuellement **Communications et Menu**. Vider ce tableau
-les fait réapparaître. Leurs onglets de la barre latérale restent en place ;
-seuls leurs réglages disparaissent, **messages automatiques compris**.
+`APPS_MASQUEES` retire des applications du sommaire **et** du catalogue des
+Paramètres sans toucher à leur code. Actuellement **vide**.
+
+Ne pas confondre avec les **onglets de la barre latérale**, masqués séparément
+en commentant leur ligne dans le tableau de navigation — actuellement
+**Communications, Menu et Jeux**. Leurs pages et leurs réglages restent
+entièrement accessibles ; seul l'onglet disparaît.
 
 La page Paramètres n'a **pas de sous-titre** sous son titre, et le **sommaire de
 gauche est fixe** (`position: sticky`) : seule la colonne de droite défile.
