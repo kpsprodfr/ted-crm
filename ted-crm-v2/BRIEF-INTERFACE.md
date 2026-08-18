@@ -487,6 +487,35 @@ par service, e-mail de contact (les pages publiques `reserver.html` et
 
 ---
 
+## 8 ter. Approbations
+
+Onglet de la barre latérale, avec **pastille rouge** du nombre de demandes en
+attente, tenue par le shell comme celles des réservations et des commandes.
+
+Table `approbations` : `type` (campagne / site / menu / tarifs / reservation /
+autre), `titre`, `description`, `contenu` (jsonb — ce que l'assistant propose),
+`statut` (en_attente / approuvee / refusee), `motif_refus`, `revision_de`
+(pointe vers la demande corrigée), `decide_le`, `decide_par`.
+
+Politiques : **toute l'équipe lit**, seuls `proprietaire` et `manager`
+décident. Un rôle sans droit voit un bandeau qui le dit, et aucun bouton.
+
+Point d'entrée de l'assistant : fonction **`approbations`**, `verify_jwt: false`
+mais protégée par la clé secrète `CLE_ASSISTANT` (en-tête `x-cle-assistant`).
+Actions : `creer`, `lire`, `lister`. La clé d'administration ne sort jamais du
+serveur. **Sans la variable d'environnement, la fonction refuse tout** — c'est
+volontaire.
+
+**Un refus doit être motivé** : le bouton reste inactif tant que le motif est
+vide, avec quatre motifs fréquents proposés. C'est ce motif que l'assistant
+relit pour proposer une version corrigée ; la révision affiche alors un bandeau
+rappelant la demande d'origine et la raison du refus.
+
+La table est ajoutée à la publication `supabase_realtime` — sans quoi une
+demande n'apparaît qu'au rechargement.
+
+---
+
 ## 9. Chantiers ouverts
 
 À traiter uniquement sur demande, mais à connaître :

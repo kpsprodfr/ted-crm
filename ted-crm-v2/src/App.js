@@ -8372,6 +8372,248 @@ function MenuPage({ showToast }) {
 
 const TABLES_BACKUP = ['clients','reservations','roue_gains','roue_recompenses','roue_config','parametres','menu_produits','menu_categories','menu_cartes','menu_soirees','menu_plat_jour','menu_origines'];
 
+// ─── Approbations ─────────────────────────────────────────────────────────────
+// Ce que l'assistant IA propose de faire, et que personne ne fera sans qu'un
+// responsable ait tranché. Un refus doit être motivé : c'est ce motif qui
+// permet à l'assistant de revenir avec une version corrigée.
+const TYPES_APPROBATION = {
+  campagne:    { label:'Campagne',    icone:Megaphone,       teinte:'#fdf2f8' },
+  site:        { label:'Site web',    icone:ExternalLink,    teinte:'#eff6ff' },
+  menu:        { label:'Carte',       icone:UtensilsCrossed, teinte:'#f0fdf4' },
+  tarifs:      { label:'Tarifs',      icone:BarChart3,       teinte:'#fffbea' },
+  reservation: { label:'Réservations', icone:CalendarDays,   teinte:'#fffbea' },
+  autre:       { label:'Autre',       icone:ClipboardList,   teinte:'#f5f5f5' },
+};
+const typeAppro = (t) => TYPES_APPROBATION[t] || TYPES_APPROBATION.autre;
+
+// Les motifs qui reviennent le plus, pour ne pas avoir à tout écrire.
+const MOTIFS_REFUS_APPRO = [
+  "Le ton ne correspond pas à l'établissement",
+  'Mauvais moment pour cette action',
+  'Informations inexactes',
+  'Trop coûteux',
+];
+
+function ApprobationsPage({ showToast, user, onCountChange }) {
+  const [demandes, setDemandes] = useState(null);
+  const [filtre, setFiltre] = useState('en_attente');
+  const [refus, setRefus] = useState(null);       // demande en cours de refus
+  const [motif, setMotif] = useState('');
+  const [monRole, setMonRole] = useState(null);
+  const isMobile = useIsMobile();
+  const etroit = useEcranEtroit();
+
+  const peutDecider = monRole === 'proprietaire' || monRole === 'manager';
+
+  async function charger() {
+    const { data } = await safeQuery(
+      () => supabase.from('approbations').select('*').order('created_at', { ascending: false }).limit(200),
+      { fallback: [], context: 'chargerApprobations' }
+    );
+    const liste = data || [];
+    setDemandes(liste);
+    if (onCountChange) onCountChange(liste.filter(d => d.statut === 'en_attente').length);
+  }
+
+  async function chargerRole() {
+    const { data } = await safeQuery(
+      () => supabase.from('collaborateurs').select('role').eq('id', user?.id).maybeSingle(),
+      { fallback: null, context: 'monRoleApprobations' }
+    );
+    setMonRole(data?.role || null);
+  }
+
+  useEffect(() => { charger(); chargerRole(); }, []);   // eslint-disable-line
+
+  // Une décision prise ailleurs doit apparaître ici sans recharger la page.
+  useEffect(() => {
+    return resilientChannel(supabase, 'approbations-rt', (chan) => chan
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'approbations' }, () => charger())
+    );
+  }, []);   // eslint-disable-line
+
+  async function decider(demande, statut, motifRefus) {
+    const { error } = await safeQuery(
+      () => supabase.from('approbations').update({
+        statut, motif_refus: motifRefus || null,
+        decide_le: new Date().toISOString(), decide_par: user?.id || null,
+      }).eq('id', demande.id),
+      { fallback: null, context: 'deciderApprobation' }
+    );
+    if (error) { showToast('Décision impossible', 'error'); return; }
+    showToast(statut === 'approuvee' ? '✅ Demande approuvée' : 'Demande refusée — l\'assistant en sera informé');
+    setRefus(null); setMotif('');
+    charger();
+  }
+
+  if (demandes === null) return (
+    <div style={{ textAlign:'center', paddingTop:80, fontSize:16, color:'#888' }}>Chargement des demandes…</div>
+  );
+
+  const enAttente = demandes.filter(d => d.statut === 'en_attente');
+  const liste = filtre === 'en_attente' ? enAttente : demandes.filter(d => d.statut !== 'en_attente');
+  const parId = Object.fromEntries(demandes.map(d => [d.id, d]));
+
+  const filtres = [
+    { id:'en_attente', label:'À traiter', nb: enAttente.length },
+    { id:'traitees',   label:'Traitées',  nb: demandes.length - enAttente.length },
+  ];
+
+  const dateLongue = (iso) => new Date(iso).toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' })
+    + ' à ' + new Date(iso).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+
+  return (
+    <div style={{ padding: isMobile ? '16px 14px 90px' : (etroit ? '14px 16px 28px' : '24px 28px'), minHeight:'100vh', boxSizing:'border-box', background:'#f5f5f5' }}>
+
+      <div style={{ marginBottom:16 }}>
+        <h1 style={{ margin:0, fontSize: isMobile ? 22 : 26, fontWeight:900, color:'#111' }}>Approbations</h1>
+        <p style={{ margin:'4px 0 0', fontSize:13, color:'#888' }}>
+          Ce que l'assistant propose. Rien n'est exécuté tant que vous n'avez pas tranché.
+        </p>
+      </div>
+
+      <div style={{ display:'flex', gap:8, marginBottom:16, flexWrap:'wrap' }}>
+        {filtres.map(f => (
+          <button key={f.id} onClick={()=>setFiltre(f.id)}
+            style={{ height:36, padding:'0 15px', borderRadius:10, border:'none', cursor:'pointer', fontSize:13, fontWeight:800,
+              background: filtre === f.id ? '#111' : '#fff',
+              color: filtre === f.id ? '#E8C547' : '#666' }}>
+            {f.label} ({f.nb})
+          </button>
+        ))}
+      </div>
+
+      {!peutDecider && monRole && (
+        <div style={{ background:'#fffbea', border:'1.5px solid #fde68a', borderRadius:12, padding:'11px 14px', marginBottom:16, fontSize:13, color:'#92400e' }}>
+          Vous consultez les demandes, mais seuls un propriétaire ou un manager peuvent les approuver.
+        </div>
+      )}
+
+      {liste.length === 0 ? (
+        <div style={{ background:'#fff', borderRadius:16, padding:'48px 24px', textAlign:'center' }}>
+          <ClipboardList size={32} strokeWidth={1.5} color="#ddd" style={{ marginBottom:12 }} />
+          <p style={{ margin:0, fontSize:14, color:'#bbb' }}>
+            {filtre === 'en_attente' ? 'Aucune demande en attente.' : 'Aucune demande traitée pour l\'instant.'}
+          </p>
+        </div>
+      ) : (
+        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          {liste.map(d => {
+            const t = typeAppro(d.type);
+            const Icone = t.icone;
+            const parent = d.revision_de ? parId[d.revision_de] : null;
+            const details = Object.entries(d.contenu || {}).filter(([, v]) => v !== null && v !== '');
+            return (
+              <div key={d.id} style={{ background:'#fff', borderRadius:16, padding:'18px 22px' }}>
+
+                <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:12, flexWrap:'wrap' }}>
+                  <div style={{ width:40, height:40, borderRadius:11, flexShrink:0, background:t.teinte, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    <Icone size={19} strokeWidth={1.9} color="#111" />
+                  </div>
+                  <div style={{ flex:1, minWidth:180 }}>
+                    <div style={{ fontSize:15.5, fontWeight:800, color:'#111' }}>{d.titre}</div>
+                    <div style={{ fontSize:12, color:'#999' }}>
+                      {t.label} · {d.demandeur} · {dateLongue(d.created_at)}
+                    </div>
+                  </div>
+                  <span style={{ flexShrink:0, fontSize:11.5, fontWeight:800, padding:'5px 11px', borderRadius:20,
+                    background: d.statut === 'en_attente' ? '#fef9c3' : d.statut === 'approuvee' ? '#dcfce7' : '#fee2e2',
+                    color:      d.statut === 'en_attente' ? '#92400e' : d.statut === 'approuvee' ? '#15803d' : '#b91c1c' }}>
+                    {d.statut === 'en_attente' ? 'À traiter' : d.statut === 'approuvee' ? 'Approuvée' : 'Refusée'}
+                  </span>
+                </div>
+
+                {parent && (
+                  <div style={{ background:'#fffbea', border:'1.5px solid #fde68a', borderRadius:11, padding:'10px 13px', marginBottom:12 }}>
+                    <p style={{ margin:0, fontSize:12.5, color:'#92400e', lineHeight:1.6 }}>
+                      Nouvelle version de « {parent.titre} », refusée{parent.motif_refus ? ` : « ${parent.motif_refus} »` : ''}.
+                    </p>
+                  </div>
+                )}
+
+                {d.description && (
+                  <p style={{ margin:'0 0 12px', fontSize:14, color:'#444', lineHeight:1.7, whiteSpace:'pre-wrap' }}>{d.description}</p>
+                )}
+
+                {details.length > 0 && (
+                  <div style={{ background:'#f9f9f9', borderRadius:12, padding:'12px 14px', marginBottom:12 }}>
+                    {details.map(([cle, val]) => (
+                      <div key={cle} style={{ display:'flex', gap:10, padding:'4px 0', alignItems:'baseline' }}>
+                        <span style={{ fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.4, minWidth:110, flexShrink:0 }}>{cle}</span>
+                        <span style={{ fontSize:13.5, color:'#444', lineHeight:1.6, whiteSpace:'pre-wrap', wordBreak:'break-word' }}>
+                          {typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {d.statut === 'refusee' && d.motif_refus && (
+                  <div style={{ background:'#fef2f2', border:'1.5px solid #fecaca', borderRadius:11, padding:'10px 13px', marginBottom:12, display:'flex', gap:9 }}>
+                    <AlertCircle size={15} strokeWidth={2} color="#b91c1c" style={{ flexShrink:0, marginTop:2 }} />
+                    <span style={{ fontSize:13, color:'#b91c1c', lineHeight:1.6 }}>Refusée : {d.motif_refus}</span>
+                  </div>
+                )}
+
+                {d.statut === 'en_attente' && peutDecider && (
+                  <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+                    <button onClick={()=>{ setRefus(d); setMotif(''); }}
+                      style={{ flex:1, minWidth:140, height:46, borderRadius:11, border:'1.5px solid #fca5a5', background:'#fff', color:'#b91c1c', fontSize:14, fontWeight:800, cursor:'pointer' }}>
+                      Refuser
+                    </button>
+                    <button onClick={()=>decider(d, 'approuvee')}
+                      style={{ flex:2, minWidth:160, height:46, borderRadius:11, border:'none', background:'#16a34a', color:'#fff', fontSize:14, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                      <CheckCircle size={17} strokeWidth={2.2} /> Approuver
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Un refus sans motif ne sert à rien : l'assistant ne saurait pas quoi corriger. */}
+      {refus && (
+        <>
+          <div onClick={()=>setRefus(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:5200 }} />
+          <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:18, width:'min(500px, calc(100vw - 32px))', maxHeight:'calc(100vh - 32px)', overflowY:'auto', padding:'24px 26px', boxShadow:'0 32px 80px rgba(0,0,0,0.3)', zIndex:5201 }}>
+            <h3 style={{ margin:'0 0 8px', fontSize:17, fontWeight:800, color:'#111' }}>Pourquoi refuser ?</h3>
+            <p style={{ margin:'0 0 16px', fontSize:13.5, color:'#666', lineHeight:1.7 }}>
+              L'assistant repartira de votre motif pour proposer une version corrigée.
+              Soyez précis : « trop long » aide moins que « trois lignes maximum, sans emoji ».
+            </p>
+
+            <div style={{ display:'flex', flexDirection:'column', gap:7, marginBottom:14 }}>
+              {MOTIFS_REFUS_APPRO.map(m => (
+                <button key={m} onClick={()=>setMotif(m)}
+                  style={{ minHeight:42, padding:'10px 13px', borderRadius:10, cursor:'pointer', fontSize:13.5, fontWeight:700, textAlign:'left',
+                    border: motif === m ? 'none' : '1.5px solid #eee',
+                    background: motif === m ? '#E8C547' : '#fff',
+                    color:'#111' }}>
+                  {m}
+                </button>
+              ))}
+            </div>
+
+            <textarea value={motif} onChange={e=>setMotif(e.target.value)} rows={3}
+              placeholder="Ou écrivez votre propre motif…"
+              style={{ width:'100%', border:'1.5px solid #e0e0e0', borderRadius:11, padding:'11px 13px', fontSize:14, lineHeight:1.6, outline:'none', boxSizing:'border-box', resize:'vertical', fontFamily:'inherit', marginBottom:18 }} />
+
+            <div style={{ display:'flex', gap:10 }}>
+              <button onClick={()=>setRefus(null)} style={{ flex:1, height:46, border:'1.5px solid #ddd', borderRadius:11, background:'#fff', fontSize:14, fontWeight:700, cursor:'pointer', color:'#666' }}>Annuler</button>
+              <button onClick={()=>decider(refus, 'refusee', motif.trim())} disabled={!motif.trim()}
+                style={{ flex:1, height:46, border:'none', borderRadius:11, background: motif.trim() ? '#dc2626' : '#f0f0f0', color: motif.trim() ? '#fff' : '#bbb', fontSize:14, fontWeight:800, cursor: motif.trim() ? 'pointer' : 'not-allowed' }}>
+                Refuser
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ─── Paramètres ───────────────────────────────────────────────────────────────
 // Tout ce qui était écrit en dur dans le code se règle ici. Par opposition au
 // « Statut du jour » du Click and Collect, qui ne vaut que pour la journée.
@@ -10227,6 +10469,23 @@ function CRMApp({ user, onLogout }) {
   const [showResaPage, setShowResaPage] = useState(false);
   const [resaAttenteCount, setResaAttenteCount] = useState(0);
   const [cmdNouvellesCount, setCmdNouvellesCount] = useState(0);
+  const [approAttenteCount, setApproAttenteCount] = useState(0);
+
+  // Le compte des demandes en attente est tenu par le shell : la pastille reste
+  // juste même quand l'onglet Approbations n'est pas ouvert.
+  useEffect(() => {
+    let vivant = true;
+    const compter = async () => {
+      const { count } = await supabase.from('approbations')
+        .select('id', { count:'exact', head:true }).eq('statut', 'en_attente');
+      if (vivant) setApproAttenteCount(count || 0);
+    };
+    compter();
+    const stop = resilientChannel(supabase, 'sidebar-approbations', (chan) => chan
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'approbations' }, compter)
+    );
+    return () => { vivant = false; if (typeof stop === 'function') stop(); };
+  }, []);
   const [showPlusSheet, setShowPlusSheet] = useState(false);
   const [mobileTab, setMobileTab] = useState(window.innerWidth < 768 ? 'reservations' : 'clients'); // 'clients' | 'reservations'
   const [showAddResa, setShowAddResa] = useState(false);
@@ -10622,13 +10881,15 @@ function CRMApp({ user, onLogout }) {
         { id:'commandes', label:'Click and Collect', icon:<ShoppingBag size={24} strokeWidth={1.8} /> },
         { id:'clients', label:'Clients', icon:<Users size={24} strokeWidth={1.8} /> },
         { id:'communications', label:'Communications', icon:<Megaphone size={24} strokeWidth={1.8} /> },
+        { id:'approbations', label:'Approbations', icon:<BadgeCheck size={24} strokeWidth={1.8} /> },
         // Onglets masqués — décommenter pour les réafficher (les pages existent toujours)
         // { id:'roue', label:'Jeux', icon:<Dices size={24} strokeWidth={1.8} /> },
         { id:'menu', label:'Menu', icon:<UtensilsCrossed size={24} strokeWidth={1.8} /> },
         // { id:'systeme', label:'Système', icon:<Settings size={24} strokeWidth={1.8} /> },
       ].map(item => {
         const nbAttenteSidebar = item.id === 'reservations' ? resaAttenteCount
-          : item.id === 'commandes' ? cmdNouvellesCount : 0;
+          : item.id === 'commandes' ? cmdNouvellesCount
+          : item.id === 'approbations' ? approAttenteCount : 0;
         return (
           <button key={item.id} onClick={()=>setActiveView(item.id)} style={{ width:'100%', padding:'12px 8px', border:'none', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer', marginBottom:4, borderLeft: activeView===item.id ? '3px solid #E8C547' : '3px solid transparent', background: activeView===item.id ? 'rgba(232,197,71,0.1)' : 'transparent', color: activeView===item.id ? '#E8C547' : '#555', position:'relative' }}>
             {item.icon}
@@ -10776,6 +11037,16 @@ function CRMApp({ user, onLogout }) {
       <div style={{ marginLeft:120, minHeight:'100vh', background:'#f5f5f5', overflowY:'auto', boxSizing:'border-box' }}>
         <RouePage showToast={showToast} />
       </div>
+    </>
+  );
+
+  if (!isMobile && activeView === 'approbations') return (
+    <>
+      {sidebarDesktop}
+      <div style={{ marginLeft:120, minHeight:'100vh', background:'#f5f5f5', boxSizing:'border-box' }}>
+        <ApprobationsPage showToast={showToast} user={user} onCountChange={setApproAttenteCount} />
+      </div>
+      {toast && <Toast msg={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
     </>
   );
 
