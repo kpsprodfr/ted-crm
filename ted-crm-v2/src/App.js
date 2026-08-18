@@ -1007,7 +1007,7 @@ function gabaritTable(t) {
   return { l: 12, h: 12, radius:'50%' };   // ronde
 }
 
-function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, onFermer }) {
+function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleGlisse }) {
   const plan = REGLAGES.plan_salle && REGLAGES.plan_salle.zones ? REGLAGES.plan_salle : PLAN_SALLE_DEFAUT;
   const [zoneId, setZoneId] = useState(plan.zones[0].id);
   const [tableOuverte, setTableOuverte] = useState(null);
@@ -1107,8 +1107,10 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, onFerm
                   title={occupee ? dessus.map(nomDe).join(', ') : `Table ${t.nom} — ${t.places} places`}
                   style={{ position:'absolute', inset:0, width:'100%', height:'100%',
                     borderRadius:g.radius, cursor:'pointer', padding:2, boxSizing:'border-box',
-                    border: trop ? '2px solid #dc2626' : occupee ? 'none' : '2px dashed #d4d4d4',
-                    background: occupee ? '#E8C547' : '#fff',
+                    border: cibleGlisse === t.id ? '3px solid #16a34a'
+                      : trop ? '2px solid #dc2626' : occupee ? 'none' : '2px dashed #d4d4d4',
+                    background: cibleGlisse === t.id ? '#dcfce7' : occupee ? '#E8C547' : '#fff',
+                    transform: cibleGlisse === t.id ? 'scale(1.08)' : 'none', transition:'transform 0.12s',
                     display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:1,
                     boxShadow: occupee ? '0 3px 10px rgba(232,197,71,0.45)' : 'none', overflow:'hidden' }}>
                   {occupee ? (
@@ -2526,34 +2528,48 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
   const [showFormDropdown, setShowFormDropdown] = useState(false);
   const [planOuvert, setPlanOuvert] = useState(false);
   // Glisser une réservation vers une table : appui maintenu, puis dépôt.
+  // Tout l'état vivant est dans une ref — les gestionnaires gardent sinon une
+  // version périmée de l'état React, et le dépôt rate.
   const [glisse, setGlisse] = useState(null);
   const glisseRef = useRef(null);
 
   function demarrerGlisse(resa, e) {
-    if (!planOuvert) return;
-    const depart = { x: e.clientX, y: e.clientY };
-    const minuteur = setTimeout(() => {
-      glisseRef.current = { resa, actif: true };
-      setGlisse({ resa, x: depart.x, y: depart.y, cible: null });
-    }, 320);
-    glisseRef.current = { resa, minuteur, actif: false };
+    if (!planOuvert || e.button === 2) return;
+    // Le pointeur reste dirigé vers cette ligne, même quand le doigt en sort.
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* déjà capturé */ }
+    const x = e.clientX, y = e.clientY;
+    const g = { resa, actif:false, cible:null, x, y, depart:{ x, y } };
+    g.minuteur = setTimeout(() => {
+      g.actif = true;
+      setGlisse({ resa, x: g.x, y: g.y, cible: g.cible });
+    }, 260);
+    glisseRef.current = g;
   }
 
   function suivreGlisse(e) {
     const g = glisseRef.current;
     if (!g) return;
-    if (!g.actif) return;                    // l'appui n'a pas encore duré
+    g.x = e.clientX; g.y = e.clientY;
+
+    // Un vrai déplacement déclenche la saisie sans attendre le délai.
+    if (!g.actif) {
+      if (Math.hypot(e.clientX - g.depart.x, e.clientY - g.depart.y) < 8) return;
+      clearTimeout(g.minuteur);
+      g.actif = true;
+    }
     e.preventDefault();
     const sous = document.elementFromPoint(e.clientX, e.clientY);
-    const cible = sous?.closest?.('[data-table]')?.getAttribute('data-table') || null;
-    setGlisse(prev => prev ? { ...prev, x: e.clientX, y: e.clientY, cible } : prev);
+    g.cible = sous?.closest?.('[data-table]')?.getAttribute('data-table') || null;
+    setGlisse({ resa: g.resa, x: g.x, y: g.y, cible: g.cible });
   }
 
-  function finirGlisse() {
+  function finirGlisse(e) {
     const g = glisseRef.current;
-    if (g?.minuteur) clearTimeout(g.minuteur);
-    if (g?.actif && glisse?.cible) placerSurTable(g.resa, glisse.cible);
     glisseRef.current = null;
+    if (!g) return;
+    clearTimeout(g.minuteur);
+    try { e?.currentTarget?.releasePointerCapture?.(e.pointerId); } catch { /* déjà relâché */ }
+    if (g.actif && g.cible) placerSurTable(g.resa, g.cible);
     setGlisse(null);
   }
 
@@ -2835,7 +2851,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
         )}
 
         {/* ── Bouton Demandes en attente ── */}
-        {!planOuvert && (() => {
+        {(() => {
           const nbAttente = resaList.filter(r => r.statut === 'attente').length;
           return (
             <div onClick={()=>setShowDemandesAttente(true)} className={nbAttente > 0 ? 'alarm-blink' : ''} style={{ background: nbAttente > 0 ? '#dc2626' : '#fff', border: nbAttente > 0 ? 'none' : '1.5px solid #f0f0f0', borderRadius:16, padding: etroit ? '9px 16px' : '14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', flexShrink:0, transition:'background 0.1s', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
@@ -3247,7 +3263,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
         return (
           <div style={{ height:'100%', display:'flex', flexDirection:'column', gap:10, minHeight:0 }}>
           {/* Prise de réservation : au-dessus du bloc, à la hauteur de « Nouvelle commande » */}
-          <button onClick={()=>setShowAddResa(true)} style={{ ...btnPrimary, width:'100%', height:38, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+          <button onClick={()=>setShowAddResa(true)} style={{ ...btnPrimary, width: planOuvert ? 372 : '100%', alignSelf: planOuvert ? 'flex-end' : 'stretch', height:38, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
             <Plus size={16} strokeWidth={2.4} /> Nouvelle réservation
           </button>
           <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', flex:1, minHeight:0, display:'flex', flexDirection:'row', overflow:'hidden', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
@@ -3262,6 +3278,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                   service={calServiceSelectionne || serviceActuel()}
                   onJour={setCalJourSelectionne}
                   onService={setCalServiceSelectionne}
+                  cibleGlisse={glisse?.cible}
                   onPlacer={placerSurTable} />
               </div>
               <div style={{ width:1, background:'#f0f0f0', flexShrink:0 }} />
@@ -3342,7 +3359,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                     onPointerMove={suivreGlisse}
                     onPointerUp={finirGlisse}
                     onPointerCancel={finirGlisse}
-                    style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 20px', borderBottom:'1px solid #f5f5f5', cursor: planOuvert ? 'grab' : 'pointer', touchAction: planOuvert ? 'none' : 'auto', opacity: glisse?.resa?.id === r.id ? 0.4 : 1 }}
+                    style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 20px', borderBottom:'1px solid #f5f5f5', cursor: planOuvert ? 'grab' : 'pointer', touchAction: planOuvert ? 'none' : 'auto', userSelect: planOuvert ? 'none' : 'auto', WebkitUserSelect: planOuvert ? 'none' : 'auto', opacity: glisse?.resa?.id === r.id ? 0.4 : 1 }}
                     onMouseEnter={e=>e.currentTarget.style.background='#fafafa'}
                     onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                     <span style={{ fontSize:14, fontWeight:800, color:'#111', minWidth:44, flexShrink:0 }}>{r.heure||'—'}</span>

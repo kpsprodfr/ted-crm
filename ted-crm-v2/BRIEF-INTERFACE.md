@@ -518,12 +518,23 @@ entre le haut et le bas. Elles débordent du cadre de la table — **les positio
 doivent laisser assez d'espace pour qu'aucune table, chaises comprises, n'en
 touche une autre**. À vérifier par mesure après tout déplacement.
 
-**Glisser-déposer** : un appui maintenu de 320 ms sur une ligne de « Réservations
-du » saisit la réservation ; une vignette suit le doigt et annonce la table
-survolée ; le dépôt place. Les tables portent `data-table` et sont retrouvées
-par `elementFromPoint` — la souris comme le doigt fonctionnent (`touchAction:none`
-pendant le glissement). Une réservation placée porte un badge **Table X** dans
-la liste ; sinon « à placer » tant que le plan est ouvert.
+**Glisser-déposer.** La saisie part soit d'un appui maintenu de 260 ms, soit
+d'un déplacement de plus de 8 px — on n'attend pas le délai si le doigt bouge
+déjà. Trois points sont indispensables à la fluidité, ne pas les défaire :
+
+- `setPointerCapture` sur la ligne, sinon les événements se perdent dès que le
+  doigt en sort ;
+- **tout l'état vivant dans une ref** (`glisseRef`), jamais dans l'état React :
+  les gestionnaires garderaient une version périmée et le dépôt raterait ;
+- `touchAction:'none'` et `userSelect:'none'` pendant le glissement.
+
+Les tables portent `data-table`, retrouvées par `elementFromPoint`. La table
+survolée s'agrandit et passe en vert ; la vignette annonce « Déposer sur la
+table X ». Une réservation placée porte un badge **Table X** dans la liste,
+sinon « à placer » tant que le plan est ouvert.
+
+Plan ouvert, le bandeau **Demandes en attente** reste visible et le bouton
+**Nouvelle réservation** garde sa largeur de 372 px, aligné à droite.
 
 Une table **libre** est en pointillés gris, **occupée** en jaune de marque avec
 le prénom, les couverts et l'heure, **en rouge** si les couverts dépassent les
