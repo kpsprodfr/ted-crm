@@ -899,6 +899,280 @@ function useEcranEtroit(seuil = 1180) {
   return etroit;
 }
 
+// ─── Plan de salle ────────────────────────────────────────────────────────────
+// Le service vu d'en haut : où sont les tables, qui est assis dessus, et ce
+// qu'il y a autour — le bar, l'entrée, l'escalier. Les positions sont en
+// pourcentage de la surface, pour que le plan tienne à toutes les tailles.
+const PLAN_SALLE_DEFAUT = {
+  zones: [
+    {
+      id: 'salle', nom: 'Salle',
+      decor: [
+        { type:'bar',      nom:'Bar',      x:4,  y:6,  l:12, h:52 },
+        { type:'entree',   nom:'Entrée',   x:44, y:92, l:14, h:7  },
+        { type:'escalier', nom:'Escalier', x:84, y:6,  l:12, h:22 },
+        { type:'cuisine',  nom:'Cuisine',  x:84, y:74, l:12, h:22 },
+      ],
+      tables: [
+        { id:'T1', nom:'1',  forme:'ronde',  places:2, x:24, y:12 },
+        { id:'T2', nom:'2',  forme:'ronde',  places:2, x:40, y:12 },
+        { id:'T3', nom:'3',  forme:'carree', places:4, x:57, y:11 },
+        { id:'T4', nom:'4',  forme:'carree', places:4, x:24, y:36 },
+        { id:'T5', nom:'5',  forme:'ovale',  places:6, x:41, y:37 },
+        { id:'T6', nom:'6',  forme:'carree', places:4, x:62, y:36 },
+        { id:'T7', nom:'7',  forme:'ronde',  places:2, x:24, y:63 },
+        { id:'T8', nom:'8',  forme:'ovale',  places:8, x:40, y:62 },
+        { id:'T9', nom:'9',  forme:'carree', places:4, x:63, y:63 },
+      ],
+    },
+    {
+      id: 'terrasse', nom: 'Terrasse',
+      decor: [{ type:'entree', nom:'Accès salle', x:2, y:44, l:9, h:14 }],
+      tables: [
+        { id:'E1', nom:'E1', forme:'ronde',  places:2, x:20, y:16 },
+        { id:'E2', nom:'E2', forme:'ronde',  places:2, x:38, y:16 },
+        { id:'E3', nom:'E3', forme:'ronde',  places:2, x:56, y:16 },
+        { id:'E4', nom:'E4', forme:'carree', places:4, x:20, y:52 },
+        { id:'E5', nom:'E5', forme:'carree', places:4, x:40, y:52 },
+        { id:'E6', nom:'E6', forme:'ovale',  places:6, x:60, y:53 },
+      ],
+    },
+    {
+      id: 'etage', nom: 'Étage',
+      decor: [
+        { type:'escalier', nom:'Escalier', x:4, y:6, l:12, h:22 },
+        { type:'bar',      nom:'Bar',      x:82, y:6, l:14, h:34 },
+      ],
+      tables: [
+        { id:'A1', nom:'A1', forme:'ovale',  places:8,  x:26, y:16 },
+        { id:'A2', nom:'A2', forme:'ovale',  places:10, x:26, y:50 },
+        { id:'A3', nom:'A3', forme:'carree', places:4,  x:62, y:52 },
+      ],
+    },
+  ],
+};
+
+const DECOR_STYLE = {
+  bar:      { fond:'#111',     texte:'#E8C547', icone:null },
+  entree:   { fond:'#f0fdf4',  texte:'#15803d', icone:null },
+  escalier: { fond:'#eff6ff',  texte:'#1d4ed8', icone:null },
+  cuisine:  { fond:'#fff7ed',  texte:'#c2410c', icone:null },
+};
+
+const decaleJour = (iso, n) => {
+  const d = new Date(iso + 'T12:00:00');
+  d.setDate(d.getDate() + n);
+  return dateLocale(d);
+};
+
+// Dimensions d'une table selon sa forme et sa capacité.
+function gabaritTable(t) {
+  const grand = t.places >= 8, moyen = t.places >= 5;
+  if (t.forme === 'ovale')  return { l: grand ? 26 : 21, h: moyen ? 13 : 11, radius:'50%' };
+  if (t.forme === 'carree') return { l: moyen ? 16 : 13, h: moyen ? 16 : 13, radius:'12px' };
+  return { l: 12, h: 12, radius:'50%' };   // ronde
+}
+
+function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, onFermer }) {
+  const plan = REGLAGES.plan_salle && REGLAGES.plan_salle.zones ? REGLAGES.plan_salle : PLAN_SALLE_DEFAUT;
+  const [zoneId, setZoneId] = useState(plan.zones[0].id);
+  const [tableOuverte, setTableOuverte] = useState(null);
+  const zone = plan.zones.find(z => z.id === zoneId) || plan.zones[0];
+
+  // Les réservations du service affiché, seules concernées par le placement.
+  const duService = (resas || []).filter(r =>
+    r.date === jour && r.service === service && (r.statut === 'confirmee' || r.statut === 'venue'));
+  const parTable = {};
+  duService.forEach(r => { if (r.table_plan) (parTable[r.table_plan] = parTable[r.table_plan] || []).push(r); });
+  const aPlacer = duService.filter(r => !r.table_plan);
+
+  const nomDe = (r) => r.clients?.genre === 'Entreprise'
+    ? (r.clients?.entreprise || 'Entreprise')
+    : `${r.clients?.prenom || ''} ${r.clients?.nom || ''}`.trim() || 'Client';
+
+  const placesOccupees = Object.values(parTable).flat().reduce((s, r) => s + (r.nb_personnes || 0), 0);
+  const placesTotal = zone.tables.reduce((s, t) => s + t.places, 0);
+
+  return (
+    <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', display:'flex', flexDirection:'column', height:'100%', minHeight:0, overflow:'hidden' }}>
+
+      {/* Jour et service : le plan reste pilotable sans le calendrier */}
+      <div style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 18px', borderBottom:'1px solid #f5f5f5', flexWrap:'wrap', flexShrink:0 }}>
+        <button onClick={()=>onJour && onJour(decaleJour(jour, -1))}
+          style={{ width:32, height:32, borderRadius:9, border:'1.5px solid #e4e4e4', background:'#fff', cursor:'pointer', fontSize:15, color:'#666' }}>‹</button>
+        <span style={{ fontSize:14.5, fontWeight:800, color:'#111', textTransform:'capitalize', minWidth:170 }}>
+          {new Date(jour + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' })}
+        </span>
+        <button onClick={()=>onJour && onJour(decaleJour(jour, 1))}
+          style={{ width:32, height:32, borderRadius:9, border:'1.5px solid #e4e4e4', background:'#fff', cursor:'pointer', fontSize:15, color:'#666' }}>›</button>
+        <div style={{ display:'flex', gap:5, background:'#f5f5f5', borderRadius:10, padding:3, marginLeft:6 }}>
+          {[{ id:'midi', label:'Midi', Icone:Sun }, { id:'soir', label:'Soir', Icone:Moon }].map(o => (
+            <button key={o.id} onClick={()=>onService && onService(o.id)}
+              style={{ height:30, padding:'0 12px', borderRadius:8, border:'none', cursor:'pointer', fontSize:12.5, fontWeight:800, display:'flex', alignItems:'center', gap:5,
+                background: service === o.id ? '#111' : 'transparent',
+                color: service === o.id ? '#E8C547' : '#777' }}>
+              <o.Icone size={13} strokeWidth={2.2} /> {o.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* En-tête : les zones, et ce que pèse le service */}
+      <div style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 18px', borderBottom:'1px solid #f5f5f5', flexWrap:'wrap', flexShrink:0 }}>
+        <div style={{ display:'flex', gap:6, background:'#f5f5f5', borderRadius:11, padding:4 }}>
+          {plan.zones.map(z => (
+            <button key={z.id} onClick={()=>{ setZoneId(z.id); setTableOuverte(null); }}
+              style={{ height:34, padding:'0 14px', borderRadius:8, border:'none', cursor:'pointer', fontSize:13, fontWeight:800,
+                background: zoneId === z.id ? '#111' : 'transparent',
+                color: zoneId === z.id ? '#E8C547' : '#777' }}>
+              {z.nom}
+            </button>
+          ))}
+        </div>
+        <span style={{ flex:1 }} />
+        <span style={{ fontSize:12.5, color:'#888', fontWeight:600 }}>
+          {placesOccupees} / {placesTotal} couverts placés
+        </span>
+        {aPlacer.length > 0 && (
+          <span style={{ fontSize:12, fontWeight:800, padding:'5px 11px', borderRadius:20, background:'#fef9c3', color:'#92400e' }}>
+            {aPlacer.length} à placer
+          </span>
+        )}
+        <button onClick={onFermer}
+          style={{ height:34, padding:'0 12px', borderRadius:9, border:'1.5px solid #e0e0e0', background:'#fff', color:'#666', fontSize:12.5, fontWeight:700, cursor:'pointer' }}>
+          Fermer
+        </button>
+      </div>
+
+      {/* La salle vue d'en haut */}
+      <div style={{ flex:1, minHeight:0, overflow:'auto', padding:16, background:'#fafafa' }}>
+        <div style={{ position:'relative', width:'100%', paddingTop:'62%', background:'#fff', border:'1.5px solid #eee', borderRadius:14,
+          backgroundImage:'radial-gradient(#f0f0f0 1px, transparent 1px)', backgroundSize:'22px 22px' }}>
+
+          {zone.decor.map((d, i) => {
+            const st = DECOR_STYLE[d.type] || { fond:'#f5f5f5', texte:'#666' };
+            return (
+              <div key={i} style={{ position:'absolute', left:`${d.x}%`, top:`${d.y}%`, width:`${d.l}%`, height:`${d.h}%`,
+                background:st.fond, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center',
+                fontSize:11, fontWeight:800, color:st.texte, textAlign:'center', letterSpacing:0.3, padding:4, boxSizing:'border-box' }}>
+                {d.nom}
+              </div>
+            );
+          })}
+
+          {zone.tables.map(t => {
+            const g = gabaritTable(t);
+            const dessus = parTable[t.id] || [];
+            const occupee = dessus.length > 0;
+            const couverts = dessus.reduce((s, r) => s + (r.nb_personnes || 0), 0);
+            const trop = couverts > t.places;
+            return (
+              <button key={t.id} onClick={()=>setTableOuverte(t)}
+                title={occupee ? dessus.map(nomDe).join(', ') : `Table ${t.nom} — ${t.places} places`}
+                style={{ position:'absolute', left:`${t.x}%`, top:`${t.y}%`, width:`${g.l}%`, height:`${g.h}%`,
+                  borderRadius:g.radius, cursor:'pointer', padding:2, boxSizing:'border-box',
+                  border: trop ? '2px solid #dc2626' : occupee ? 'none' : '2px dashed #d4d4d4',
+                  background: occupee ? '#E8C547' : '#fff',
+                  display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:1,
+                  boxShadow: occupee ? '0 3px 10px rgba(232,197,71,0.45)' : 'none', overflow:'hidden' }}>
+                {occupee ? (
+                  <>
+                    <span style={{ fontSize:10.5, fontWeight:900, color:'#111', maxWidth:'96%', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                      {nomDe(dessus[0]).split(' ')[0]}
+                    </span>
+                    <span style={{ fontSize:9.5, fontWeight:800, color:'#7a5c00' }}>
+                      {couverts}/{t.places}
+                      {dessus[0].heure ? ` · ${dessus[0].heure}` : ''}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span style={{ fontSize:11.5, fontWeight:900, color:'#999' }}>{t.nom}</span>
+                    <span style={{ fontSize:9.5, fontWeight:700, color:'#c4c4c4' }}>{t.places} pl.</span>
+                  </>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{ display:'flex', gap:16, flexWrap:'wrap', marginTop:12, fontSize:11.5, color:'#999' }}>
+          <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
+            <span style={{ width:12, height:12, borderRadius:'50%', border:'2px dashed #d4d4d4' }} /> libre
+          </span>
+          <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
+            <span style={{ width:12, height:12, borderRadius:'50%', background:'#E8C547' }} /> occupée
+          </span>
+          <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
+            <span style={{ width:12, height:12, borderRadius:'50%', border:'2px solid #dc2626' }} /> plus de couverts que de places
+          </span>
+        </div>
+      </div>
+
+      {/* Qui est à cette table, et qui reste à placer */}
+      {tableOuverte && (() => {
+        const dessus = parTable[tableOuverte.id] || [];
+        return (
+          <>
+            <div onClick={()=>setTableOuverte(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:5200 }} />
+            <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:18, width:'min(460px, calc(100vw - 32px))', maxHeight:'calc(100vh - 32px)', overflowY:'auto', padding:'22px 24px', boxShadow:'0 32px 80px rgba(0,0,0,0.3)', zIndex:5201 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:4 }}>
+                <h3 style={{ margin:0, fontSize:18, fontWeight:900, color:'#111' }}>Table {tableOuverte.nom}</h3>
+                <span style={{ fontSize:12.5, color:'#999' }}>
+                  {tableOuverte.forme} · {tableOuverte.places} places
+                </span>
+                <button onClick={()=>setTableOuverte(null)} style={{ marginLeft:'auto', width:32, height:32, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:15, color:'#666' }}>✕</button>
+              </div>
+
+              {dessus.length > 0 ? (
+                <div style={{ margin:'14px 0 6px' }}>
+                  <p style={{ fontSize:10.5, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 8px' }}>À cette table</p>
+                  {dessus.map(r => (
+                    <div key={r.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 0', borderBottom:'1px solid #f5f5f5' }}>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:14, fontWeight:700, color:'#111' }}>{nomDe(r)}</div>
+                        <div style={{ fontSize:12, color:'#999' }}>{r.heure || '—'} · {r.nb_personnes || '?'} pers.{r.occasion ? ` · ${r.occasion}` : ''}</div>
+                      </div>
+                      <button onClick={()=>{ onPlacer(r, null); setTableOuverte(null); }}
+                        style={{ height:34, padding:'0 12px', borderRadius:9, border:'1.5px solid #e0e0e0', background:'#fff', color:'#666', fontSize:12.5, fontWeight:700, cursor:'pointer', flexShrink:0 }}>
+                        Retirer
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ margin:'14px 0', fontSize:13.5, color:'#bbb' }}>Table libre pour ce service.</p>
+              )}
+
+              <p style={{ fontSize:10.5, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'16px 0 8px' }}>
+                Placer une réservation
+              </p>
+              {aPlacer.length === 0 ? (
+                <p style={{ margin:0, fontSize:13.5, color:'#bbb' }}>Toutes les réservations du service sont placées.</p>
+              ) : (
+                <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
+                  {aPlacer.map(r => (
+                    <button key={r.id} onClick={()=>{ onPlacer(r, tableOuverte.id); setTableOuverte(null); }}
+                      style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 13px', borderRadius:11, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', textAlign:'left' }}>
+                      <span style={{ flex:1, minWidth:0 }}>
+                        <span style={{ display:'block', fontSize:13.5, fontWeight:700, color:'#111' }}>{nomDe(r)}</span>
+                        <span style={{ display:'block', fontSize:12, color:'#999' }}>{r.heure || '—'} · {r.nb_personnes || '?'} pers.</span>
+                      </span>
+                      {(r.nb_personnes || 0) > tableOuverte.places && (
+                        <span style={{ fontSize:11, fontWeight:800, color:'#b91c1c', flexShrink:0 }}>trop grand</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        );
+      })()}
+    </div>
+  );
+}
+
 // ─── Réservations Page ────────────────────────────────────────────────────────
 const FORM_URL = "https://ted-crm.pages.dev/reserver";
 
@@ -913,6 +1187,7 @@ const REGLAGES_DEFAUT = {
   email: '',
   site: 'https://leted.fr',
   logo: '',
+  plan_salle: null,
   messages_auto: {},
   applications_installees: ['reservations','commandes','clients','menu','communications'],
   applications_actives:    ['reservations','commandes','clients','menu','communications'],
@@ -949,7 +1224,7 @@ const REGLAGES_DEFAUT = {
 // Objet vivant, lu au rendu par toute l'application.
 const REGLAGES = { ...REGLAGES_DEFAUT };
 
-const REGLAGES_JSON = ['messages_auto','applications_installees','applications_actives','fermetures','horaires_semaine','plage_resa_midi','plage_resa_soir','plage_retrait_midi','plage_retrait_soir'];
+const REGLAGES_JSON = ['plan_salle','messages_auto','applications_installees','applications_actives','fermetures','horaires_semaine','plage_resa_midi','plage_resa_soir','plage_retrait_midi','plage_retrait_soir'];
 const REGLAGES_NOMBRES = ['bascule_soir','fin_de_nuit','capacite_midi','capacite_soir'];
 
 // Applique une ligne de configuration à l'objet vivant.
@@ -2212,6 +2487,18 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
   const [resaSearchPanel, setResaSearchPanel] = useState('');
 const [showDemandesAttente, setShowDemandesAttente] = useState(false);
   const [showFormDropdown, setShowFormDropdown] = useState(false);
+  const [planOuvert, setPlanOuvert] = useState(false);
+
+  // Placer une réservation sur une table, ou l'en retirer.
+  async function placerSurTable(resa, tableId) {
+    setResaList(prev => prev.map(r => r.id === resa.id ? { ...r, table_plan: tableId } : r));
+    const { error } = await safeQuery(
+      () => supabase.from('reservations').update({ table_plan: tableId }).eq('id', resa.id),
+      { fallback: null, context: 'placerSurTable' }
+    );
+    if (error) { showToast('Placement impossible', 'error'); loadResa(); return; }
+    showToast(tableId ? `✅ Placée en table ${tableId}` : 'Retirée du plan');
+  }
   const isMobile = useIsMobile();
   const etroit = useEcranEtroit();
   const qr = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(FORM_URL)}`;
@@ -2479,8 +2766,22 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           </div>
         )}
 
+        {/* Le plan de salle prend la place du calendrier tant qu'il est ouvert */}
+        {!isMobile && planOuvert && (
+          <div style={{ flex:1, minHeight:0 }}>
+            <PlanDeSalle
+              resas={resaList}
+              jour={calJourSelectionne || dateLocale()}
+              service={calServiceSelectionne || serviceActuel()}
+              onJour={setCalJourSelectionne}
+              onService={setCalServiceSelectionne}
+              onPlacer={placerSurTable}
+              onFermer={()=>setPlanOuvert(false)} />
+          </div>
+        )}
+
         {/* ── Bouton Demandes en attente ── */}
-        {(() => {
+        {!planOuvert && (() => {
           const nbAttente = resaList.filter(r => r.statut === 'attente').length;
           return (
             <div onClick={()=>setShowDemandesAttente(true)} className={nbAttente > 0 ? 'alarm-blink' : ''} style={{ background: nbAttente > 0 ? '#dc2626' : '#fff', border: nbAttente > 0 ? 'none' : '1.5px solid #f0f0f0', borderRadius:16, padding: etroit ? '9px 16px' : '14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', flexShrink:0, transition:'background 0.1s', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
@@ -2498,7 +2799,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
         })()}
 
         {/* ── Bloc unique : 7 jours + calendrier + Midi/Soir ── */}
-        {(() => {
+        {!planOuvert && (() => {
           const nowLocal = new Date();
           const todayStr = `${nowLocal.getFullYear()}-${String(nowLocal.getMonth()+1).padStart(2,'0')}-${String(nowLocal.getDate()).padStart(2,'0')}`;
           const quinzeJours = Array.from({length:15}, (_,i) => {
@@ -2898,7 +3199,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', flex:1, minHeight:0, display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
             {/* Header fixe */}
             <div style={{padding:'16px 20px 12px', flexShrink:0, borderBottom:'1px solid #f5f5f5'}}>
-              <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8}}>
+              <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:6, marginBottom:8, flexWrap:'wrap'}}>
                 <p style={{fontSize:10, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:1, margin:0}}>
                   Réservations du
                 </p>
@@ -2915,6 +3216,17 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                     <Download size={12} strokeWidth={2} color="#666"/> Télécharger
                   </button>
                 )}
+                <button onClick={()=>setPlanOuvert(v=>!v)} style={{
+                  height:28, padding:'0 10px', borderRadius:8,
+                  border: planOuvert ? 'none' : '1.5px solid #eee',
+                  background: planOuvert ? '#111' : '#fff',
+                  fontSize:11, fontWeight:700, cursor:'pointer',
+                  color: planOuvert ? '#E8C547' : '#666',
+                  display:'flex', alignItems:'center', gap:5, whiteSpace:'nowrap'
+                }}>
+                  <LayoutGrid size={12} strokeWidth={2} color={planOuvert ? '#E8C547' : '#666'} />
+                  {planOuvert ? 'Fermer le plan' : 'Plan de salle'}
+                </button>
               </div>
               <h3 style={{margin:'0 0 8px', fontSize:16, fontWeight:800, color:'#111'}}>
                 {calJourSelectionne ? new Date(calJourSelectionne+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}) : 'Sélectionner un jour'}

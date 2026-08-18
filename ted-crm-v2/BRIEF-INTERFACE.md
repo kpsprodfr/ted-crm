@@ -492,6 +492,34 @@ par service, e-mail de contact (les pages publiques `reserver.html` et
 
 ---
 
+## 8 quater. Plan de salle
+
+Bouton **« Plan de salle »** dans le bandeau du panneau de droite, à côté de
+Télécharger. Il devient **« Fermer le plan »** une fois ouvert. Le plan prend la
+place du calendrier dans la colonne de gauche.
+
+Le plan reste **pilotable seul** : son en-tête porte ‹ date › et la bascule
+Midi / Soir, puisque le calendrier n'est plus visible.
+
+`PLAN_SALLE_DEFAUT` décrit trois zones — Salle, Terrasse, Étage — chacune avec :
+
+- `decor` : bar, entrée, escalier, cuisine (position et taille en **pourcentage**
+  de la surface, pour tenir à toutes les tailles d'écran) ;
+- `tables` : `{ id, nom, forme: ronde|carree|ovale, places, x, y }`.
+  `gabaritTable()` déduit la taille de la forme et de la capacité.
+
+Le plan est un réglage (`plan_salle`) : il pourra être édité sans toucher au code.
+
+Une table **libre** est en pointillés gris, **occupée** en jaune de marque avec
+le prénom, les couverts et l'heure, **en rouge** si les couverts dépassent les
+places. Un clic ouvre la table : qui y est assis, et la liste des réservations
+du service restant à placer.
+
+Le placement vit dans `reservations.table_plan` (texte, facultatif) — une
+réservation sans table reste parfaitement valide.
+
+---
+
 ## 8 ter. Approbations
 
 Onglet de la barre latérale, avec **pastille rouge** du nombre de demandes en
