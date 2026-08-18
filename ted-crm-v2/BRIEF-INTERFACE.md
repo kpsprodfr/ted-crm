@@ -533,8 +533,16 @@ survolée s'agrandit et passe en vert ; la vignette annonce « Déposer sur la
 table X ». Une réservation placée porte un badge **Table X** dans la liste,
 sinon « à placer » tant que le plan est ouvert.
 
-Plan ouvert, le bandeau **Demandes en attente** reste visible et le bouton
-**Nouvelle réservation** garde sa largeur de 372 px, aligné à droite.
+Le relâchement du glissement **avale le clic qui suit** (`vientDeGlisser`),
+sinon déposer une réservation ouvrait aussitôt son détail.
+
+**Le bloc « Réservations du » ne bouge jamais** : mêmes position et largeur
+(377 px, calé à droite) que le plan soit ouvert ou fermé. Le plan ne fait que
+l'élargir vers la gauche, séparé par un filet.
+
+Plan ouvert, la **ligne du titre** rassemble tout : `Réservations`, le bandeau
+**Demandes en attente** en version compacte, et **Nouvelle réservation**.
+Le bouton *Formulaire* disparaît.
 
 Une table **libre** est en pointillés gris, **occupée** en jaune de marque avec
 le prénom, les couverts et l'heure, **en rouge** si les couverts dépassent les

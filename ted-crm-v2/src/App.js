@@ -2527,11 +2527,38 @@ function ReservationsPage({ onBack, showToast, user, onLogout, inline = false, o
 const [showDemandesAttente, setShowDemandesAttente] = useState(false);
   const [showFormDropdown, setShowFormDropdown] = useState(false);
   const [planOuvert, setPlanOuvert] = useState(false);
+  // Les demandes en attente, en pleine largeur ou serrées sur la ligne du titre.
+  function bandeauAttente(compact) {
+    const nbAttente = resaList.filter(r => r.statut === 'attente').length;
+    return (
+      <div onClick={()=>setShowDemandesAttente(true)} className={nbAttente > 0 ? 'alarm-blink' : ''}
+        style={{ background: nbAttente > 0 ? '#dc2626' : '#fff', border: nbAttente > 0 ? 'none' : '1.5px solid #f0f0f0',
+          borderRadius: compact ? 10 : 16, padding: compact ? '0 14px' : (etroit ? '9px 16px' : '14px 20px'),
+          height: compact ? 38 : undefined, flex: compact ? 1 : undefined, minWidth: compact ? 0 : undefined,
+          display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, cursor:'pointer', flexShrink:0,
+          transition:'background 0.1s', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
+        <span style={{ fontSize: compact ? 13 : 15, fontWeight:800, color: nbAttente > 0 ? '#fff' : '#111', display:'flex', alignItems:'center', gap:8, minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+          <ClipboardList size={compact ? 14 : 16} strokeWidth={2} color={nbAttente > 0 ? '#fff' : '#666'} />
+          {compact ? 'Demandes en attente' : 'Demandes de réservation en attente'}
+        </span>
+        <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+          {nbAttente > 0 ? (
+            <span style={{ background:'#fff', color:'#dc2626', borderRadius:'50%', width: compact ? 22 : 26, height: compact ? 22 : 26, display:'flex', alignItems:'center', justifyContent:'center', fontSize: compact ? 12 : 13, fontWeight:800 }}>{nbAttente}</span>
+          ) : (
+            <span style={{ fontSize:13, color:'#999', fontWeight:600 }}>Aucune</span>
+          )}
+          <span style={{ color: nbAttente > 0 ? '#fff' : '#ccc', fontSize:18 }}>›</span>
+        </div>
+      </div>
+    );
+  }
+
   // Glisser une réservation vers une table : appui maintenu, puis dépôt.
   // Tout l'état vivant est dans une ref — les gestionnaires gardent sinon une
   // version périmée de l'état React, et le dépôt rate.
   const [glisse, setGlisse] = useState(null);
   const glisseRef = useRef(null);
+  const vientDeGlisser = useRef(false);
 
   function demarrerGlisse(resa, e) {
     if (!planOuvert || e.button === 2) return;
@@ -2569,7 +2596,10 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
     if (!g) return;
     clearTimeout(g.minuteur);
     try { e?.currentTarget?.releasePointerCapture?.(e.pointerId); } catch { /* déjà relâché */ }
-    if (g.actif && g.cible) placerSurTable(g.resa, g.cible);
+    if (g.actif) {
+      vientDeGlisser.current = true;        // avale le clic qui suit
+      if (g.cible) placerSurTable(g.resa, g.cible);
+    }
     setGlisse(null);
   }
 
@@ -2831,8 +2861,14 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
 
         {!isMobile && (
           <div style={{ display:'flex', alignItems:'center', gap:12, flexShrink:0, position:'relative' }}>
-            <h1 style={{ fontSize:28, fontWeight:900, color:'#111', margin:0 }}>Réservations</h1>
-            <div style={{ position:'relative' }}>
+            <h1 style={{ fontSize:28, fontWeight:900, color:'#111', margin:0, flexShrink:0 }}>Réservations</h1>
+            {planOuvert && bandeauAttente(true)}
+            {planOuvert && (
+              <button onClick={()=>setShowAddResa(true)} style={{ ...btnPrimary, height:38, flexShrink:0, display:'flex', alignItems:'center', gap:6 }}>
+                <Plus size={16} strokeWidth={2.4} /> Nouvelle réservation
+              </button>
+            )}
+            <div style={{ position:'relative', display: planOuvert ? 'none' : 'block' }}>
               <button onClick={()=>setShowFormDropdown(v=>!v)} style={{ display:'flex', alignItems:'center', gap:6, height:38, padding:'0 14px', background:'#fff', border:'1.5px solid #eee', borderRadius:10, fontSize:13, fontWeight:600, cursor:'pointer', color:'#666' }}>
                 <Link size={14} strokeWidth={2} /> Formulaire
               </button>
@@ -2850,23 +2886,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
           </div>
         )}
 
-        {/* ── Bouton Demandes en attente ── */}
-        {(() => {
-          const nbAttente = resaList.filter(r => r.statut === 'attente').length;
-          return (
-            <div onClick={()=>setShowDemandesAttente(true)} className={nbAttente > 0 ? 'alarm-blink' : ''} style={{ background: nbAttente > 0 ? '#dc2626' : '#fff', border: nbAttente > 0 ? 'none' : '1.5px solid #f0f0f0', borderRadius:16, padding: etroit ? '9px 16px' : '14px 20px', display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', flexShrink:0, transition:'background 0.1s', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
-              <span style={{ fontSize:15, fontWeight:800, color: nbAttente > 0 ? '#fff' : '#111', display:'flex', alignItems:'center', gap:8 }}><ClipboardList size={16} strokeWidth={2} color={nbAttente > 0 ? '#fff' : '#666'} /> Demandes de réservation en attente</span>
-              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                {nbAttente > 0 ? (
-                  <span style={{ background:'#fff', color:'#dc2626', borderRadius:'50%', width:26, height:26, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800 }}>{nbAttente}</span>
-                ) : (
-                  <span style={{ fontSize:13, color:'#999', fontWeight:600 }}>Aucune</span>
-                )}
-                <span style={{ color: nbAttente > 0 ? '#fff' : '#ccc', fontSize:18 }}>›</span>
-              </div>
-            </div>
-          );
-        })()}
+        {!planOuvert && bandeauAttente(false)}
 
         {/* ── Bloc unique : 7 jours + calendrier + Midi/Soir ── */}
         {!planOuvert && (() => {
@@ -3263,9 +3283,11 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
         return (
           <div style={{ height:'100%', display:'flex', flexDirection:'column', gap:10, minHeight:0 }}>
           {/* Prise de réservation : au-dessus du bloc, à la hauteur de « Nouvelle commande » */}
-          <button onClick={()=>setShowAddResa(true)} style={{ ...btnPrimary, width: planOuvert ? 372 : '100%', alignSelf: planOuvert ? 'flex-end' : 'stretch', height:38, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-            <Plus size={16} strokeWidth={2.4} /> Nouvelle réservation
-          </button>
+          {!planOuvert && (
+            <button onClick={()=>setShowAddResa(true)} style={{ ...btnPrimary, width:'100%', height:38, flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+              <Plus size={16} strokeWidth={2.4} /> Nouvelle réservation
+            </button>
+          )}
           <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', flex:1, minHeight:0, display:'flex', flexDirection:'row', overflow:'hidden', boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }}>
 
           {/* Le plan partage le bloc avec la liste du service */}
@@ -3285,7 +3307,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
             </>
           )}
 
-          <div style={{ width: planOuvert ? 372 : '100%', flexShrink:0, display:'flex', flexDirection:'column', minHeight:0 }}>
+          <div style={{ width: planOuvert ? 377 : '100%', flexShrink:0, display:'flex', flexDirection:'column', minHeight:0 }}>
             {/* Header fixe */}
             <div style={{padding:'16px 20px 12px', flexShrink:0, borderBottom:'1px solid #f5f5f5'}}>
               <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', gap:6, marginBottom:8, flexWrap:'wrap'}}>
@@ -3354,7 +3376,10 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                 };
                 const s = statutColors[r.statut] || statutColors['confirmee'];
                 return (
-                  <div key={r.id} onClick={()=>{ if (!glisse) setDetailResa(r); }}
+                  <div key={r.id} onClick={()=>{
+                      if (vientDeGlisser.current) { vientDeGlisser.current = false; return; }
+                      if (!glisse) setDetailResa(r);
+                    }}
                     onPointerDown={e=>demarrerGlisse(r, e)}
                     onPointerMove={suivreGlisse}
                     onPointerUp={finirGlisse}
