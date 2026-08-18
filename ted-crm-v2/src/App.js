@@ -9490,6 +9490,9 @@ const APPLICATIONS = [
   },
 ];
 const APPS_TOUJOURS_ACTIVES = ['reservations', 'clients'];
+// Applications retirées des Paramètres pour l'instant — vider ce tableau pour
+// les faire réapparaître dans le sommaire comme dans le catalogue.
+const APPS_MASQUEES = ['communications', 'menu'];
 
 // Interrupteur d'activation, en tête des réglages d'une application.
 function InterrupteurApp({ app, active, onBasculer }) {
@@ -10305,8 +10308,9 @@ function ParametresPage({ showToast, user }) {
           </button>
         );
       };
-      const actives = APPLICATIONS.filter(a => appsInstallees.includes(a.id));
-      const inactives = APPLICATIONS.filter(a => !appsInstallees.includes(a.id));
+      const visibles = APPLICATIONS.filter(a => !APPS_MASQUEES.includes(a.id));
+      const actives = visibles.filter(a => appsInstallees.includes(a.id));
+      const inactives = visibles.filter(a => !appsInstallees.includes(a.id));
       const grille = { display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:12 };
       return (
         <>
@@ -10498,7 +10502,8 @@ function ParametresPage({ showToast, user }) {
                   <span style={{ fontSize:11, fontWeight:800, color:'#999', textTransform:'uppercase', letterSpacing:0.8 }}>{g.titre}</span>
                 </div>
                 <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
-                  {g.entrees.filter(e => !e.id.startsWith('mod-') || appsInstallees.includes(e.id.slice(4))).map(e => {
+                  {g.entrees.filter(e => !e.id.startsWith('mod-')
+                    || (appsInstallees.includes(e.id.slice(4)) && !APPS_MASQUEES.includes(e.id.slice(4)))).map(e => {
                     const actif = section === e.id;
                     return (
                       <button key={e.id} onClick={()=>setSection(e.id)}
