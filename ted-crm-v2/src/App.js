@@ -1373,7 +1373,7 @@ function PlanCanvas({
           {/* Le sol */}
           <rect x={etendue.x1 + PLAN_MARGE / 2} y={etendue.y1 + PLAN_MARGE / 2}
             width={etendue.x2 - etendue.x1 - PLAN_MARGE} height={etendue.y2 - etendue.y1 - PLAN_MARGE}
-            fill="#fff" stroke="#f0f0f0" strokeWidth={2 * P} rx={16} />
+            fill="#fff" stroke="none" rx={16} />
 
           {/* Décors */}
           {decors.map(d0 => {
