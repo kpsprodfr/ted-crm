@@ -497,84 +497,98 @@ par service, e-mail de contact (les pages publiques `reserver.html` et
 
 ## 8 quater. Plan de salle
 
-Bouton **« Plan de salle »** dans le bandeau du panneau de droite, à côté de
-Télécharger. Il devient **« Fermer le plan »** une fois ouvert. Le plan prend la
-place du calendrier dans la colonne de gauche.
+Éditeur de plan de salle dans la page Réservations. Le plan n'est pas un dessin :
+c'est l'outil du service. Bascule **Plan de salle ⇄ Vue calendrier** dans la
+ligne du titre ; le plan prend la colonne de gauche, le bloc « Réservations du »
+ne bouge jamais (377 px, calé à droite).
 
-Le plan reste **pilotable seul** : son en-tête tient sur **une seule ligne**,
-pour laisser le maximum de hauteur aux tables. On y trouve, dans l'ordre :
+**Aucune table en base.** Le plan vit dans le réglage `plan_salle`
+(`commandes_config`), les placements dans `reservations.table_plan`. Les deux
+existaient déjà : la fonctionnalité complète n'a demandé aucune migration.
 
-- la **date en bouton** (icône calendrier + chevron qui pivote) ; au clic, le
-  `CalendrierDate` s'ouvre en surcouche juste dessous — même dessin et mêmes
-  animations que celui des réservations, avec un capteur de clic en plein écran
-  derrière pour le refermer ;
-- la bascule **Midi / Soir** ;
-- les **zones** — Salle, Terrasse, Étage — chacune annonçant son remplissage,
-  `Salle (2/10)` : couverts assis sur places totales de la zone.
+### Le modèle
 
-Le cadre du plan est serré (10 px de marge, 7 px d'écart) pour que les tables
-soient aussi grandes que possible dans le bloc.
+Coordonnées en **centimètres**, jamais en pixels ni en pourcentage — le plan est
+indépendant de la taille de l'écran et une table ronde est vraiment ronde.
 
-`PLAN_SALLE_DEFAUT` décrit trois zones — Salle, Terrasse, Étage — chacune avec :
+```
+{ v:2, zones:[ { id, nom, type:'salle|etage|terrasse|bar', largeur, hauteur,
+                 tables:[ {id, nom, forme, places, x, y, l, h, rot, statut, notes} ],
+                 decor: [ {id, nom, type, x, y, l, h, rot} ] } ] }
+```
 
-- `decor` : bar, entrée, escalier, cuisine (position et taille en **pourcentage**
-  de la surface, pour tenir à toutes les tailles d'écran) ;
-- `tables` : `{ id, nom, forme: ronde|carree|ovale, places, x, y }`.
-  `gabaritTable()` déduit la taille de la forme et de la capacité.
+`normaliserPlan()` accepte l'ancien format en pourcentage et le convertit à la
+volée — rien à migrer. `PLAN_SALLE_DEFAUT` est le plan livré (3 espaces,
+18 tables, 7 décors), utilisé tant que rien n'a été enregistré.
 
-Le plan est un réglage (`plan_salle`) : il pourra être édité sans toucher au code.
+Les **décors** (bar, entrée, escalier, cuisine, WC, bloc) sont séparés des
+tables : pas de couverts, jamais comptés, jamais assignables.
 
-`chaisesAutour()` dessine les chaises : deux sur les côtés, le reste partagé
-entre le haut et le bas. Elles débordent du cadre de la table — **les positions
-doivent laisser assez d'espace pour qu'aucune table, chaises comprises, n'en
-touche une autre**. À vérifier par mesure après tout déplacement.
+### Le canvas (`PlanCanvas`)
 
-**Glisser-déposer.** La saisie part soit d'un appui maintenu de 260 ms, soit
-d'un déplacement de plus de 8 px — on n'attend pas le délai si le doigt bouge
-déjà. Trois points sont indispensables à la fluidité, ne pas les défaire :
+Un SVG dont on pilote le cadrage par `translate/scale` — un seul transform, net
+à tous les zooms et léger au doigt.
 
-- `setPointerCapture` sur la ligne, sinon les événements se perdent dès que le
-  doigt en sort ;
-- **tout l'état vivant dans une ref** (`glisseRef`), jamais dans l'état React :
-  les gestionnaires garderaient une version périmée et le dépôt raterait ;
-- `touchAction:'none'` et `userSelect:'none'` pendant le glissement.
+- zoom molette (écouteur natif **non passif**, sinon `preventDefault` est ignoré),
+  pincement à deux doigts, déplacement sur le vide, bouton « ajuster à l'écran » ;
+- `etendueZone()` calcule les bornes **depuis le contenu** : approcher une table
+  du bord agrandit le plan tout seul, il n'y a jamais de mur ;
+- épaisseurs et poignées dimensionnées en `1/k` : taille constante à l'écran
+  quel que soit le zoom ; cibles ≥ 44 px.
 
-Les tables portent `data-table`, retrouvées par `elementFromPoint`. La table
-survolée s'agrandit et passe en vert ; la vignette annonce « Déposer sur la
-table X ». Une réservation placée porte un badge **Table X** dans la liste,
-sinon « à placer » tant que le plan est ouvert.
+Trois pièges déjà payés, à ne pas défaire :
 
-Le relâchement du glissement **avale le clic qui suit** (`vientDeGlisser`),
-sinon déposer une réservation ouvrait aussitôt son détail.
+- **le cadrage ne se recalcule qu'au changement d'espace** (`zoneRef`), sinon le
+  plan saute à chaque table déplacée ;
+- **l'objet manipulé vit dans une ref** (`provRef`) autant que dans l'état : le
+  relâchement peut suivre le déplacement dans la même frame et lirait sinon un
+  état périmé — le déplacement serait perdu ;
+- **la table visée est retenue dès l'appui** (`geste.current.table`) : la capture
+  du pointeur redirige le `pointerup` vers le SVG, on ne saurait plus sur quoi le
+  doigt s'est posé et un simple tap n'ouvrirait jamais la fiche de table.
 
-**Le bloc « Réservations du » ne bouge jamais** : mêmes position et largeur
-(377 px, calé à droite) que le plan soit ouvert ou fermé. Le plan ne fait que
-l'élargir vers la gauche, séparé par un filet.
+### Mode édition
 
-La **ligne du titre** court sur toute la largeur (`gridColumn: 1 / -1`) et
-rassemble `Réservations`, le bandeau **Demandes en attente** en version compacte
-— largeur au contenu, jamais étirée — et à droite la bascule de vue.
-Le bouton *Formulaire* est retiré.
+Par défaut on ne voit que le plan et la palette. Les options d'une table
+n'apparaissent **qu'à la sélection**, dans un panneau latéral.
 
-Cette bascule remplace l'ancien bouton du bandeau : **Plan de salle** ⇄
-**Vue calendrier**, jamais « Fermer ». Elle est suivie de **Nouvelle
-réservation** : les deux terminent la ligne du titre, calés à droite,
-au-dessus du bloc « Réservations du ». Tous les boutons du haut sont calés sur
-ceux du Click and Collect : **38 px de haut, 13 px de texte** (14 pour l'action
-principale).
+- palette à glisser-déposer (ronde, ovale, carrée, rectangle, banquette + décors),
+  posée par des écouteurs `window` et `apiRef.versPlan()` ;
+- déplacer, tourner (pas de 15°), redimensionner aux 4 coins, dupliquer, supprimer ;
+- grille de 5 cm + **guides magnétiques** sur les bords et centres des voisins
+  (9 cm d'accrochage) ; chevauchement signalé en orange, jamais bloqué ;
+- espaces : ajouter, renommer, changer de type, réordonner, supprimer ;
+- undo/redo (pile de 80), autosave débouncé 600 ms avec témoin « Enregistré » ;
+- raccourcis : `Suppr`, `⌘D`, flèches (5 cm, 25 avec `Maj`), `⌘Z` / `⌘⇧Z`.
 
-Plan ouvert, la colonne du calendrier est masquée (`display:none`), sinon elle
-pousse le bloc en bas de l'écran.
+### Mode service
 
-Une table **libre** est en pointillés gris, **occupée** en jaune de marque avec
-le prénom, les couverts et l'heure, **en rouge** si les couverts dépassent les
-places. Un clic ouvre la table : qui y est assis, et la liste des réservations
-du service restant à placer.
+Date + service repris de la page (pas de second sélecteur à maintenir).
 
-Le placement vit dans `reservations.table_plan` (texte, facultatif) — une
-réservation sans table reste parfaitement valide.
+- code couleur **jamais seul** : la table porte le prénom, les couverts et l'heure ;
+- glisser une réservation de la liste sur une table (le glisser-déposer de la page
+  est inchangé, les tables portent `data-table`) ; ou clic table → choisir la résa ;
+- **combinaison** : `table_plan` accepte plusieurs identifiants séparés par une
+  virgule (`tablesDeResa`). La capacité d'un groupe est la **somme** des tables,
+  sinon 9 personnes sur 6+8 s'afficheraient en dépassement. Contour violet ;
+  « Séparer » revient à une seule table ;
+- compteurs : chaque espace annonce `Salle (13/32)`, le pied donne les couverts
+  placés et les tables libres.
 
----
+### En-tête
+
+Une seule ligne dès qu'il y a la place : date en bouton (calendrier en surcouche),
+Midi/Soir, espaces chiffrés, puis le crayon d'édition. Sur écran étroit la date
+perd son jour de semaine et les services passent en icônes seules ; en dessous de
+~1180 px la ligne se replie plutôt que de cacher un espace derrière un
+défilement — c'est l'occupation qu'on vient y lire.
+
+⚠️ La piste de grille `1fr` a pour largeur minimale son min-content : elle refuse
+de rétrécir et fait déborder la page entière. C'est `minmax(0,1fr)` qu'il faut.
+
+Le plan n'existe qu'au-dessus de 900 px (`useIsMobile`) : en dessous, la page
+Réservations garde sa vue mobile en liste, sans plan.
+
 
 ## 8 ter. Approbations
 

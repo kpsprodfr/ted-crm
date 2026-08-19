@@ -103,7 +103,8 @@
       "Bash(git -C /Users/karlsounier/Desktop/Ted_crm commit -m \"Fix menu du jour - prix sous le nom \\(gauche\\) comme dans le design de référence\")",
       "Bash(git -C /Users/karlsounier/Desktop/Ted_crm commit -m \"Fix suggestion du chef - même fond crème que Menu du jour\")",
       "Bash(git -C /Users/karlsounier/Desktop/Ted_crm commit -m \"Ajoute suppression de catégorie avec confirmation si elle contient des produits\")",
-      "Bash(git -C /Users/karlsounier/Desktop/Ted_crm commit -m \"Fix icônes menu du jour + unification couleur jaune #E8C547 sur tous les textes dorés\")"
+      "Bash(git -C /Users/karlsounier/Desktop/Ted_crm commit -m \"Fix icônes menu du jour + unification couleur jaune #E8C547 sur tous les textes dorés\")",
+      "mcp__3bbf1c99-77e9-4e3c-bc3d-68a86a4f456b__execute_sql"
     ]
   }
 }

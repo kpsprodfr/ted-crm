@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus, UserPlus, Trophy, ArrowUpDown, LayoutGrid, Settings, MapPin, Dices, Bell, X, Award, Gift, Image as ImageIcon, BadgeCheck, ShoppingBag, BarChart3, Info } from 'lucide-react';
+import { Mail, LockKeyhole, Eye, EyeOff, RefreshCw, ShieldCheck, MonitorSmartphone, Headphones, ArrowRight, AlertCircle, Users, UtensilsCrossed, Phone, Download, CalendarDays, Megaphone, Link, LogOut, Copy, ExternalLink, Share2, ClipboardList, CircleCheck, User, ChevronRight, ChevronDown, Pencil, Sun, Moon, ArrowLeft, MessageSquare, UserX, Clock, Star, Trash2, Send, History, Building2, CheckCircle, Check, Search, RotateCcw, Save, Plus, UserPlus, Trophy, ArrowUpDown, LayoutGrid, Settings, MapPin, Dices, Bell, X, Award, Gift, Image as ImageIcon, BadgeCheck, ShoppingBag, BarChart3, Info, Maximize2 } from 'lucide-react';
 import { supabase } from "./supabase";
 import { safeQuery, resilientChannel, logError } from "./lib/db";
 
@@ -900,306 +900,1199 @@ function useEcranEtroit(seuil = 1180) {
 }
 
 // ─── Plan de salle ────────────────────────────────────────────────────────────
-// Le service vu d'en haut : où sont les tables, qui est assis dessus, et ce
-// qu'il y a autour — le bar, l'entrée, l'escalier. Les positions sont en
-// pourcentage de la surface, pour que le plan tienne à toutes les tailles.
+// ─── Plan de salle ────────────────────────────────────────────────────────────
+// Le service vu d'en haut. Le plan n'est pas un dessin : c'est l'outil qui dit
+// où sont les tables, qui y est assis et ce qu'il reste de libre.
+//
+// Les coordonnées sont en CENTIMÈTRES, pas en pourcentage ni en pixels : une
+// table ronde est vraiment ronde, et le plan ne se déforme pas avec l'écran.
+// Le rendu est un SVG dont on pilote le cadrage (zoom + déplacement).
+
+const PLAN_GRILLE = 5;      // pas de la grille aimantée, en cm
+const PLAN_MARGE = 100;     // marge de sol autour des tables, en cm
+const PLAN_AIMANT = 9;      // distance d'accrochage aux guides, en cm
+const PLAN_MIN = 40;        // plus petite table possible, en cm
+
+// La palette : ce qu'on peut poser sur le plan, avec un gabarit de départ.
+const PLAN_FORMES = [
+  { id:'ronde',     nom:'Ronde',     l:70,  h:70,  places:2 },
+  { id:'carree',    nom:'Carrée',    l:90,  h:90,  places:4 },
+  { id:'rectangle', nom:'Rectangle', l:160, h:80,  places:6 },
+  { id:'ovale',     nom:'Ovale',     l:220, h:90,  places:8 },
+  { id:'banquette', nom:'Banquette', l:200, h:60,  places:4 },
+];
+
+const PLAN_DECORS = [
+  { type:'bar',      nom:'Bar',      l:140, h:400 },
+  { type:'entree',   nom:'Entrée',   l:170, h:60  },
+  { type:'escalier', nom:'Escalier', l:140, h:160 },
+  { type:'cuisine',  nom:'Cuisine',  l:140, h:160 },
+  { type:'wc',       nom:'WC',       l:110, h:110 },
+  { type:'bloc',     nom:'Bloc',     l:120, h:120 },
+];
+
+const DECOR_STYLE = {
+  bar:      { fond:'#111',    texte:'#E8C547' },
+  entree:   { fond:'#f0fdf4', texte:'#15803d' },
+  escalier: { fond:'#eff6ff', texte:'#1d4ed8' },
+  cuisine:  { fond:'#fff7ed', texte:'#c2410c' },
+  wc:       { fond:'#faf5ff', texte:'#7e22ce' },
+  bloc:     { fond:'#f5f5f5', texte:'#666'    },
+};
+
+const TYPES_ZONE = [
+  { id:'salle', nom:'Salle' }, { id:'etage', nom:'Étage' },
+  { id:'terrasse', nom:'Terrasse' }, { id:'bar', nom:'Bar' },
+];
+
+const idPlan = (p) => `${p}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`;
+
+// Le plan livré d'origine, en centimètres. Sert de repli tant que rien n'a été
+// dessiné, et de point de départ à l'éditeur.
 const PLAN_SALLE_DEFAUT = {
+  v: 2,
   zones: [
     {
-      id: 'salle', nom: 'Salle',
+      id:'salle', nom:'Salle', type:'salle', largeur:1200, hauteur:800,
       decor: [
-        { type:'bar',      nom:'Bar',      x:3,  y:8,  l:12, h:50 },
-        { type:'entree',   nom:'Entrée',   x:43, y:91, l:14, h:7  },
-        { type:'escalier', nom:'Escalier', x:85, y:8,  l:12, h:20 },
-        { type:'cuisine',  nom:'Cuisine',  x:85, y:70, l:12, h:20 },
+        { id:'d1', nom:'Bar',      type:'bar',      x:36,   y:64,  l:144, h:400, rot:0 },
+        { id:'d2', nom:'Entrée',   type:'entree',   x:516,  y:728, l:168, h:56,  rot:0 },
+        { id:'d3', nom:'Escalier', type:'escalier', x:1020, y:64,  l:144, h:160, rot:0 },
+        { id:'d4', nom:'Cuisine',  type:'cuisine',  x:1020, y:560, l:144, h:160, rot:0 },
       ],
       tables: [
-        { id:'T1', nom:'1', forme:'ronde',  places:2, x:23, y:9  },
-        { id:'T2', nom:'2', forme:'ronde',  places:2, x:42, y:9  },
-        { id:'T3', nom:'3', forme:'ronde',  places:2, x:61, y:9  },
-        { id:'T4', nom:'4', forme:'carree', places:4, x:23, y:34 },
-        { id:'T5', nom:'5', forme:'carree', places:4, x:45, y:34 },
-        { id:'T6', nom:'6', forme:'carree', places:4, x:67, y:34 },
-        { id:'T7', nom:'7', forme:'ovale',  places:6, x:23, y:64 },
-        { id:'T8', nom:'8', forme:'ovale',  places:8, x:52, y:64 },
+        { id:'T1', nom:'1', forme:'ronde',  places:2, x:276, y:72,  l:70,  h:70, rot:0 },
+        { id:'T2', nom:'2', forme:'ronde',  places:2, x:504, y:72,  l:70,  h:70, rot:0 },
+        { id:'T3', nom:'3', forme:'ronde',  places:2, x:732, y:72,  l:70,  h:70, rot:0 },
+        { id:'T4', nom:'4', forme:'carree', places:4, x:276, y:272, l:90,  h:90, rot:0 },
+        { id:'T5', nom:'5', forme:'carree', places:4, x:540, y:272, l:90,  h:90, rot:0 },
+        { id:'T6', nom:'6', forme:'carree', places:4, x:804, y:272, l:90,  h:90, rot:0 },
+        { id:'T7', nom:'7', forme:'ovale',  places:6, x:276, y:512, l:180, h:90, rot:0 },
+        { id:'T8', nom:'8', forme:'ovale',  places:8, x:624, y:512, l:220, h:90, rot:0 },
       ],
     },
     {
-      id: 'terrasse', nom: 'Terrasse',
-      decor: [{ type:'entree', nom:'Accès salle', x:2, y:42, l:9, h:16 }],
+      id:'terrasse', nom:'Terrasse', type:'terrasse', largeur:1200, hauteur:800,
+      decor: [{ id:'d5', nom:'Accès salle', type:'entree', x:24, y:336, l:108, h:128, rot:0 }],
       tables: [
-        { id:'E1', nom:'E1', forme:'ronde',  places:2, x:22, y:14 },
-        { id:'E2', nom:'E2', forme:'ronde',  places:2, x:41, y:14 },
-        { id:'E3', nom:'E3', forme:'ronde',  places:2, x:60, y:14 },
-        { id:'E4', nom:'E4', forme:'carree', places:4, x:22, y:48 },
-        { id:'E5', nom:'E5', forme:'carree', places:4, x:44, y:48 },
-        { id:'E6', nom:'E6', forme:'ovale',  places:6, x:64, y:49 },
+        { id:'E1', nom:'E1', forme:'ronde',  places:2, x:264, y:112, l:70,  h:70, rot:0 },
+        { id:'E2', nom:'E2', forme:'ronde',  places:2, x:492, y:112, l:70,  h:70, rot:0 },
+        { id:'E3', nom:'E3', forme:'ronde',  places:2, x:720, y:112, l:70,  h:70, rot:0 },
+        { id:'E4', nom:'E4', forme:'carree', places:4, x:264, y:384, l:90,  h:90, rot:0 },
+        { id:'E5', nom:'E5', forme:'carree', places:4, x:528, y:384, l:90,  h:90, rot:0 },
+        { id:'E6', nom:'E6', forme:'ovale',  places:6, x:768, y:392, l:180, h:90, rot:0 },
       ],
     },
     {
-      id: 'etage', nom: 'Étage',
+      id:'etage', nom:'Étage', type:'etage', largeur:1200, hauteur:800,
       decor: [
-        { type:'escalier', nom:'Escalier', x:3,  y:8, l:12, h:20 },
-        { type:'bar',      nom:'Bar',      x:84, y:8, l:13, h:32 },
+        { id:'d6', nom:'Escalier', type:'escalier', x:36,   y:64, l:144, h:160, rot:0 },
+        { id:'d7', nom:'Bar',      type:'bar',      x:1008, y:64, l:156, h:256, rot:0 },
       ],
       tables: [
-        { id:'A1', nom:'A1', forme:'ovale',  places:8,  x:24, y:14 },
-        { id:'A2', nom:'A2', forme:'ovale',  places:10, x:24, y:52 },
-        { id:'A3', nom:'A3', forme:'carree', places:4,  x:62, y:14 },
-        { id:'A4', nom:'A4', forme:'carree', places:4,  x:62, y:52 },
+        { id:'A1', nom:'A1', forme:'ovale',  places:8,  x:288, y:112, l:220, h:90, rot:0 },
+        { id:'A2', nom:'A2', forme:'ovale',  places:10, x:288, y:416, l:260, h:90, rot:0 },
+        { id:'A3', nom:'A3', forme:'carree', places:4,  x:744, y:112, l:90,  h:90, rot:0 },
+        { id:'A4', nom:'A4', forme:'carree', places:4,  x:744, y:416, l:90,  h:90, rot:0 },
       ],
     },
   ],
 };
 
-const DECOR_STYLE = {
-  bar:      { fond:'#111',     texte:'#E8C547', icone:null },
-  entree:   { fond:'#f0fdf4',  texte:'#15803d', icone:null },
-  escalier: { fond:'#eff6ff',  texte:'#1d4ed8', icone:null },
-  cuisine:  { fond:'#fff7ed',  texte:'#c2410c', icone:null },
-};
+// Ancien gabarit (plan en pourcentage) — sert uniquement à convertir.
+function gabaritV1(t) {
+  const grand = t.places >= 8, moyen = t.places >= 5;
+  if (t.forme === 'ovale')  return { l: grand ? 26 : 21, h: moyen ? 13 : 11 };
+  if (t.forme === 'carree') return { l: moyen ? 16 : 13, h: moyen ? 16 : 13 };
+  return { l: 12, h: 12 };
+}
 
-const decaleJour = (iso, n) => {
-  const d = new Date(iso + 'T12:00:00');
-  d.setDate(d.getDate() + n);
-  return dateLocale(d);
-};
+// Accepte l'ancien format (positions en % de la surface) comme le nouveau.
+function normaliserPlan(brut) {
+  if (!brut || !Array.isArray(brut.zones) || !brut.zones.length) return PLAN_SALLE_DEFAUT;
+  if (brut.v === 2) return brut;
+  const L = 1200, H = 800;
+  return {
+    v: 2,
+    zones: brut.zones.map(z => ({
+      id: z.id || idPlan('z'), nom: z.nom || 'Salle',
+      type: TYPES_ZONE.some(t => t.id === z.id) ? z.id : 'salle',
+      largeur: L, hauteur: H,
+      decor: (z.decor || []).map((d, i) => ({
+        id: d.id || `d${i}`, nom: d.nom || '', type: d.type || 'bloc', rot: 0,
+        x: Math.round(d.x / 100 * L), y: Math.round(d.y / 100 * H),
+        l: Math.round(d.l / 100 * L), h: Math.round(d.h / 100 * H),
+      })),
+      tables: (z.tables || []).map(t => {
+        const g = gabaritV1(t);
+        return {
+          id: t.id || idPlan('t'), nom: t.nom || '?', forme: t.forme || 'ronde',
+          places: t.places || 2, rot: 0,
+          x: Math.round(t.x / 100 * L), y: Math.round(t.y / 100 * H),
+          l: Math.round(g.l / 100 * L), h: Math.round(g.h / 100 * H),
+        };
+      }),
+    })),
+  };
+}
 
-// Répartition des chaises autour d'une table : deux sur les côtés, le reste
-// partagé entre le haut et le bas. Positions en % du cadre de la table.
-function chaisesAutour(places, forme) {
-  const n = Math.max(1, places);
-  const chaises = [];
-  const ep = 15;              // épaisseur d'une chaise, en % du cadre
-  const ecart = 20;           // distance au bord de la table
+const planActuel = () => normaliserPlan(REGLAGES.plan_salle);
 
-  if (n <= 2 && forme !== 'ovale') {
-    chaises.push({ left:-ecart, top:50 - ep/2, w:ep, h:ep });
-    if (n === 2) chaises.push({ left:100 + ecart - ep, top:50 - ep/2, w:ep, h:ep });
-    return chaises;
+// Écriture du plan : même table de réglages que le reste des Paramètres.
+async function enregistrerPlanSalle(plan) {
+  const brut = JSON.stringify(plan);
+  appliquerReglage('plan_salle', brut);
+  const { error } = await safeQuery(
+    () => supabase.from('commandes_config').upsert(
+      { cle:'plan_salle', valeur:brut, updated_at:new Date().toISOString() }, { onConflict:'cle' }),
+    { fallback:null, context:'enregistrerPlanSalle' }
+  );
+  return !error;
+}
+
+// Une réservation peut occuper plusieurs tables (grand groupe) : on stocke les
+// identifiants séparés par une virgule dans reservations.table_plan.
+const tablesDeResa = (r) => (r?.table_plan ? String(r.table_plan).split(',').filter(Boolean) : []);
+
+// Le libellé lisible d'une table, pour les badges hors du plan.
+function libelleTables(valeur) {
+  const ids = String(valeur || '').split(',').filter(Boolean);
+  if (!ids.length) return '';
+  const toutes = [];
+  planActuel().zones.forEach(z => z.tables.forEach(t => toutes.push(t)));
+  return ids.map(id => (toutes.find(t => t.id === id)?.nom) || id).join(' + ');
+}
+
+// Répartition des chaises autour d'une table, en cm relatifs à son cadre.
+function chaisesAutour(t) {
+  const n = Math.max(1, t.places || 0);
+  const C = 34, E = 11;                       // taille d'une chaise, écart au bord
+  const out = [];
+  const poser = (nb, y) => {
+    for (let i = 0; i < nb; i++) out.push({ x: (t.l / (nb + 1)) * (i + 1) - C / 2, y, w:C, h:C });
+  };
+  if (t.forme === 'banquette') { poser(n, -E - C); return out; }
+  if (n <= 2 && t.l <= t.h * 1.4) {
+    out.push({ x:-E - C, y: t.h / 2 - C / 2, w:C, h:C });
+    if (n === 2) out.push({ x: t.l + E, y: t.h / 2 - C / 2, w:C, h:C });
+    return out;
   }
-
   const cotes = n >= 4 ? 2 : 0;
   const reste = n - cotes;
   const haut = Math.ceil(reste / 2);
-  const bas = reste - haut;
-
-  const poser = (combien, y) => {
-    for (let i = 0; i < combien; i++) {
-      const pas = 100 / (combien + 1);
-      chaises.push({ left: pas * (i + 1) - ep / 2, top: y, w: ep, h: ep });
-    }
-  };
-  poser(haut, -ecart);
-  poser(bas, 100 + ecart - ep);
+  poser(haut, -E - C);
+  poser(reste - haut, t.h + E);
   if (cotes) {
-    chaises.push({ left:-ecart, top:50 - ep/2, w:ep, h:ep });
-    chaises.push({ left:100 + ecart - ep, top:50 - ep/2, w:ep, h:ep });
+    out.push({ x:-E - C, y: t.h / 2 - C / 2, w:C, h:C });
+    out.push({ x: t.l + E, y: t.h / 2 - C / 2, w:C, h:C });
   }
-  return chaises;
+  return out;
 }
 
-// Dimensions d'une table selon sa forme et sa capacité.
-function gabaritTable(t) {
-  const grand = t.places >= 8, moyen = t.places >= 5;
-  if (t.forme === 'ovale')  return { l: grand ? 26 : 21, h: moyen ? 13 : 11, radius:'50%' };
-  if (t.forme === 'carree') return { l: moyen ? 16 : 13, h: moyen ? 16 : 13, radius:'12px' };
-  return { l: 12, h: 12, radius:'50%' };   // ronde
+// L'étendue réelle du contenu, chaises comprises — c'est elle qui fait grandir
+// le plan toute seule quand une table s'approche du bord.
+function etendueZone(zone) {
+  let x1 = 0, y1 = 0, x2 = zone.largeur || 1200, y2 = zone.hauteur || 800;
+  const prendre = (x, y, l, h) => {
+    x1 = Math.min(x1, x); y1 = Math.min(y1, y);
+    x2 = Math.max(x2, x + l); y2 = Math.max(y2, y + h);
+  };
+  (zone.tables || []).forEach(t => prendre(t.x - 50, t.y - 50, t.l + 100, t.h + 100));
+  (zone.decor || []).forEach(d => prendre(d.x, d.y, d.l, d.h));
+  return { x1: x1 - PLAN_MARGE, y1: y1 - PLAN_MARGE, x2: x2 + PLAN_MARGE, y2: y2 + PLAN_MARGE };
 }
+
+const arrondiGrille = (v) => Math.round(v / PLAN_GRILLE) * PLAN_GRILLE;
+
+// Deux rectangles se chevauchent-ils ? (anti-chevauchement souple : on prévient,
+// on ne bloque pas.)
+const seChevauchent = (a, b) =>
+  a.x < b.x + b.l && a.x + a.l > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+
+// ─── Le canvas ────────────────────────────────────────────────────────────────
+// Un SVG dont on pilote le cadrage. Zoom molette, pincement à deux doigts,
+// déplacement au doigt sur le vide. En édition, manipulation directe des tables.
+
+function PlanCanvas({
+  zone, edition, parTable, selection, onSelection, onMajTable, onMajDecor,
+  cibleGlisse, onOuvrirTable, nomDe, combinaison, apiRef,
+}) {
+  const boiteRef = useRef(null);
+  const svgRef = useRef(null);
+  const [vue, setVue] = useState({ x:0, y:0, k:0.4 });
+  const vueRef = useRef(vue);
+  vueRef.current = vue;
+  const [provisoire, setProvisoire] = useState(null);   // objet en cours de manipulation
+  const provRef = useRef(null);
+  // L'objet manipulé vit dans une ref autant que dans l'état : le relâchement
+  // peut suivre le déplacement dans la même frame, et lirait sinon un état périmé.
+  const poser = (o) => { provRef.current = o; setProvisoire(o); };
+  const [guides, setGuides] = useState([]);
+  const geste = useRef(null);
+  const pointeurs = useRef(new Map());
+
+  const tables = zone.tables || [];
+  const decors = zone.decor || [];
+
+  // Le cadrage qui montre tout le plan. Il ne se recalcule QUE sur demande ou au
+  // changement d'espace : sinon le plan sauterait à chaque table déplacée.
+  const zoneRef = useRef(zone);
+  zoneRef.current = zone;
+  const ajuster = useCallback(() => {
+    const boite = boiteRef.current;
+    if (!boite) return;
+    const { width:w, height:h } = boite.getBoundingClientRect();
+    if (!w || !h) return;
+    const e = etendueZone(zoneRef.current);
+    const k = Math.min(w / (e.x2 - e.x1), h / (e.y2 - e.y1)) * 0.97;
+    setVue({ k, x: (w - (e.x2 - e.x1) * k) / 2 - e.x1 * k, y: (h - (e.y2 - e.y1) * k) / 2 - e.y1 * k });
+  }, []);
+
+  useEffect(() => { ajuster(); }, [zone.id, ajuster]);
+  useEffect(() => {
+    const boite = boiteRef.current;
+    if (!boite || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => ajuster());
+    ro.observe(boite);
+    return () => ro.disconnect();
+  }, [ajuster]);
+
+  // Écran → plan (en cm).
+  const versPlan = (px, py) => {
+    const r = svgRef.current.getBoundingClientRect();
+    const v = vueRef.current;
+    return { x: (px - r.left - v.x) / v.k, y: (py - r.top - v.y) / v.k };
+  };
+
+  const zoomVers = (px, py, facteur) => {
+    const r = svgRef.current.getBoundingClientRect();
+    setVue(v => {
+      const k = Math.min(4, Math.max(0.08, v.k * facteur));
+      const f = k / v.k;
+      return { k, x: (px - r.left) - ((px - r.left) - v.x) * f, y: (py - r.top) - ((py - r.top) - v.y) * f };
+    });
+  };
+
+  // La palette a besoin de convertir un point de l'écran en point du plan.
+  useEffect(() => {
+    if (!apiRef) return;
+    apiRef.current = {
+      versPlan,
+      ajuster,
+      dansLeCanvas: (px, py) => {
+        const r = svgRef.current?.getBoundingClientRect();
+        return !!r && px >= r.left && px <= r.right && py >= r.top && py <= r.bottom;
+      },
+    };
+  });
+
+  // La molette doit pouvoir annuler le défilement : écouteur natif non passif.
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const onWheel = (e) => { e.preventDefault(); zoomVers(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.0016)); };
+    svg.addEventListener('wheel', onWheel, { passive:false });
+    return () => svg.removeEventListener('wheel', onWheel);
+  }, []);
+
+  // ── Gestes ────────────────────────────────────────────────────────────────
+  function onPointerDown(e) {
+    pointeurs.current.set(e.pointerId, { x:e.clientX, y:e.clientY });
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* déjà capturé */ }
+
+    if (pointeurs.current.size === 2) {
+      const [a, b] = [...pointeurs.current.values()];
+      geste.current = { type:'pinch', dist: Math.hypot(a.x - b.x, a.y - b.y), k: vueRef.current.k };
+      return;
+    }
+
+    const cible = e.target.closest?.('[data-poignee]');
+    const surTable = e.target.closest?.('[data-table]');
+    const surDecor = e.target.closest?.('[data-decor]');
+
+    if (edition && cible) {
+      const role = cible.getAttribute('data-poignee');
+      const id = cible.getAttribute('data-pour');
+      const obj = tables.find(t => t.id === id) || decors.find(d => d.id === id);
+      if (obj) { geste.current = { type: role === 'rot' ? 'rotate' : 'resize', coin: role, obj: { ...obj }, estTable: !!tables.find(t => t.id === id) }; return; }
+    }
+
+    if (edition && (surTable || surDecor)) {
+      const id = (surTable || surDecor).getAttribute('data-table') || (surDecor && surDecor.getAttribute('data-decor'));
+      const estTable = !!surTable;
+      const obj = estTable ? tables.find(t => t.id === id) : decors.find(d => d.id === id);
+      if (obj) {
+        const p = versPlan(e.clientX, e.clientY);
+        onSelection(estTable ? { type:'table', id } : { type:'decor', id });
+        geste.current = { type:'move', obj:{ ...obj }, estTable, dx: p.x - obj.x, dy: p.y - obj.y, bouge:false };
+        return;
+      }
+    }
+
+    // Sinon : on déplace le cadrage. La table visée est retenue dès l'appui —
+    // la capture du pointeur redirige le relâchement vers le SVG, et on ne
+    // saurait plus sur quoi le doigt s'est posé.
+    geste.current = { type:'pan', x:e.clientX, y:e.clientY, v:{ ...vueRef.current }, bouge:false,
+      table: surTable ? surTable.getAttribute('data-table') : null };
+  }
+
+  function onPointerMove(e) {
+    if (pointeurs.current.has(e.pointerId)) pointeurs.current.set(e.pointerId, { x:e.clientX, y:e.clientY });
+    const g = geste.current;
+    if (!g) return;
+
+    if (g.type === 'pinch') {
+      if (pointeurs.current.size < 2) return;
+      const [a, b] = [...pointeurs.current.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      const r = svgRef.current.getBoundingClientRect();
+      const cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
+      setVue(v => {
+        const k = Math.min(4, Math.max(0.08, g.k * (d / g.dist)));
+        const f = k / v.k;
+        return { k, x: (cx - r.left) - ((cx - r.left) - v.x) * f, y: (cy - r.top) - ((cy - r.top) - v.y) * f };
+      });
+      return;
+    }
+
+    if (g.type === 'pan') {
+      if (!g.bouge && Math.hypot(e.clientX - g.x, e.clientY - g.y) < 4) return;
+      g.bouge = true;
+      setVue({ k:g.v.k, x:g.v.x + (e.clientX - g.x), y:g.v.y + (e.clientY - g.y) });
+      return;
+    }
+
+    const p = versPlan(e.clientX, e.clientY);
+
+    if (g.type === 'move') {
+      g.bouge = true;
+      let x = arrondiGrille(p.x - g.dx), y = arrondiGrille(p.y - g.dy);
+      const lignes = [];
+      // Guides magnétiques : bords et centres des autres objets.
+      const autres = [...tables, ...decors].filter(o => o.id !== g.obj.id);
+      const candX = [], candY = [];
+      autres.forEach(o => { candX.push(o.x, o.x + o.l / 2, o.x + o.l); candY.push(o.y, o.y + o.h / 2, o.y + o.h); });
+      [['x', x, g.obj.l, candX], ['y', y, g.obj.h, candY]].forEach(([axe, val, taille, cands]) => {
+        const miens = [val, val + taille / 2, val + taille];
+        let best = null;
+        cands.forEach(c => miens.forEach((m, i) => {
+          const d = Math.abs(m - c);
+          if (d <= PLAN_AIMANT && (!best || d < best.d)) best = { d, c, i };
+        }));
+        if (best) {
+          const delta = best.c - [val, val + taille / 2, val + taille][best.i];
+          if (axe === 'x') x += delta; else y += delta;
+          lignes.push({ axe, v: best.c });
+        }
+      });
+      setGuides(lignes);
+      poser({ ...g.obj, x, y, estTable: g.estTable });
+      return;
+    }
+
+    if (g.type === 'resize') {
+      const o = g.obj;
+      let { x, y, l, h } = o;
+      const droite = g.coin.includes('e'), bas = g.coin.includes('s');
+      if (droite) l = Math.max(PLAN_MIN, arrondiGrille(p.x - o.x));
+      else { const nx = Math.min(arrondiGrille(p.x), o.x + o.l - PLAN_MIN); l = o.x + o.l - nx; x = nx; }
+      if (bas) h = Math.max(PLAN_MIN, arrondiGrille(p.y - o.y));
+      else { const ny = Math.min(arrondiGrille(p.y), o.y + o.h - PLAN_MIN); h = o.y + o.h - ny; y = ny; }
+      poser({ ...o, x, y, l, h, estTable: g.estTable });
+      return;
+    }
+
+    if (g.type === 'rotate') {
+      const o = g.obj;
+      const a = Math.atan2(p.y - (o.y + o.h / 2), p.x - (o.x + o.l / 2)) * 180 / Math.PI + 90;
+      poser({ ...o, rot: Math.round(a / 15) * 15, estTable: g.estTable });
+      return;
+    }
+  }
+
+  function onPointerUp(e) {
+    pointeurs.current.delete(e.pointerId);
+    const g = geste.current;
+    const prov = provRef.current;
+    geste.current = null;
+    provRef.current = null;
+    setGuides([]);
+    setProvisoire(null);
+    if (!g) return;
+    if (g.type === 'pinch') return;
+
+    if (prov && (g.type === 'move' || g.type === 'resize' || g.type === 'rotate')) {
+      const patch = { x:prov.x, y:prov.y, l:prov.l, h:prov.h, rot:prov.rot };
+      if (g.estTable) onMajTable(prov.id, patch); else onMajDecor(prov.id, patch);
+      return;
+    }
+    // Un simple appui sur une table, hors édition : on l'ouvre.
+    if (!edition && g.type === 'pan' && !g.bouge) {
+      const table = g.table && tables.find(x => x.id === g.table);
+      if (table) onOuvrirTable(table); else onSelection(null);
+    }
+  }
+
+  // ── Rendu ─────────────────────────────────────────────────────────────────
+  const etendue = etendueZone(zone);
+  const rendu = (o, estTable) =>
+    provisoire && provisoire.id === o.id && provisoire.estTable === estTable ? { ...o, ...provisoire } : o;
+
+  // Une réservation étalée sur plusieurs tables dispose de la somme de leurs
+  // places : sans ça un groupe de 9 sur 6+8 s'afficherait en dépassement.
+  const placesDe = (id) => (tables.find(x => x.id === id)?.places || 0);
+  const capaciteDe = (r) => tablesDeResa(r).reduce((s, id) => s + placesDe(id), 0);
+
+  const chevauche = (t) => {
+    const moi = rendu(t, true);
+    return tables.some(a => a.id !== t.id && seChevauchent(moi, rendu(a, true)));
+  };
+
+  const P = 1 / vue.k;   // pour garder une épaisseur constante à l'écran
+
+  return (
+    <div ref={boiteRef} style={{ position:'relative', flex:1, minHeight:0, width:'100%', background:'#fff',
+      border:'1.5px solid #eee', borderRadius:14, overflow:'hidden' }}>
+
+      <svg ref={svgRef} width="100%" height="100%"
+        onPointerDown={onPointerDown} onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
+        style={{ display:'block', touchAction:'none', userSelect:'none', WebkitUserSelect:'none',
+          cursor: edition ? 'default' : 'grab', background:'#fbfbfb' }}>
+
+        <defs>
+          <pattern id="grillePlan" width={50 * vue.k} height={50 * vue.k} patternUnits="userSpaceOnUse"
+            x={vue.x} y={vue.y}>
+            <circle cx="1" cy="1" r="1" fill="#ececec" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grillePlan)" />
+
+        <g transform={`translate(${vue.x},${vue.y}) scale(${vue.k})`}>
+
+          {/* Le sol */}
+          <rect x={etendue.x1 + PLAN_MARGE / 2} y={etendue.y1 + PLAN_MARGE / 2}
+            width={etendue.x2 - etendue.x1 - PLAN_MARGE} height={etendue.y2 - etendue.y1 - PLAN_MARGE}
+            fill="#fff" stroke="#f0f0f0" strokeWidth={2 * P} rx={16} />
+
+          {/* Décors */}
+          {decors.map(d0 => {
+            const d = rendu(d0, false);
+            const st = DECOR_STYLE[d.type] || DECOR_STYLE.bloc;
+            const actif = selection?.type === 'decor' && selection.id === d.id;
+            return (
+              <g key={d.id} data-decor={d.id} transform={`rotate(${d.rot || 0} ${d.x + d.l / 2} ${d.y + d.h / 2})`}
+                style={{ cursor: edition ? 'move' : 'default' }}>
+                <rect x={d.x} y={d.y} width={d.l} height={d.h} rx={14} fill={st.fond}
+                  stroke={actif ? '#111' : 'none'} strokeWidth={3 * P} strokeDasharray={`${6 * P} ${4 * P}`} />
+                <text x={d.x + d.l / 2} y={d.y + d.h / 2} textAnchor="middle" dominantBaseline="central"
+                  fill={st.texte} fontSize={Math.min(34, d.l / 4.5)} fontWeight="800">{d.nom}</text>
+              </g>
+            );
+          })}
+
+          {/* Guides d'alignement */}
+          {guides.map((g, i) => g.axe === 'x'
+            ? <line key={i} x1={g.v} y1={etendue.y1} x2={g.v} y2={etendue.y2} stroke="#E8C547" strokeWidth={1.5 * P} />
+            : <line key={i} x1={etendue.x1} y1={g.v} x2={etendue.x2} y2={g.v} stroke="#E8C547" strokeWidth={1.5 * P} />)}
+
+          {/* Tables */}
+          {tables.map(t0 => {
+            const t = rendu(t0, true);
+            const dessus = parTable[t.id] || [];
+            const occupee = dessus.length > 0;
+            const couverts = dessus.reduce((s, r) => s + (r.nb_personnes || 0), 0);
+            const capacite = dessus.length ? Math.max(t.places, ...dessus.map(capaciteDe)) : t.places;
+            const trop = couverts > capacite;
+            const hs = t.statut === 'hors_service';
+            const visee = cibleGlisse === t.id;
+            const actif = selection?.type === 'table' && selection.id === t.id;
+            const groupe = combinaison.includes(t.id);
+            const rond = t.forme === 'ronde' || t.forme === 'ovale';
+            const fond = hs ? '#f3f4f6' : visee ? '#dcfce7' : occupee ? '#E8C547' : '#fff';
+            const trait = visee ? '#16a34a' : trop ? '#dc2626' : groupe ? '#7c3aed'
+              : actif ? '#111' : occupee ? 'none' : (edition && chevauche(t0) ? '#f97316' : '#d4d4d4');
+
+            return (
+              <g key={t.id} data-table={t.id}
+                transform={`rotate(${t.rot || 0} ${t.x + t.l / 2} ${t.y + t.h / 2})`}
+                style={{ cursor: edition ? 'move' : 'pointer' }}>
+
+                {chaisesAutour(t).map((c, i) => (
+                  <rect key={i} x={t.x + c.x} y={t.y + c.y} width={c.w} height={c.h} rx={8}
+                    fill={hs ? '#e5e7eb' : occupee ? '#d9ae23' : '#e8e8e8'} />
+                ))}
+
+                {rond
+                  ? <ellipse cx={t.x + t.l / 2} cy={t.y + t.h / 2} rx={t.l / 2} ry={t.h / 2}
+                      fill={fond} stroke={trait === 'none' ? 'transparent' : trait}
+                      strokeWidth={(visee || actif || groupe ? 4 : 2.5) * P}
+                      strokeDasharray={occupee || hs ? 'none' : `${9 * P} ${7 * P}`} />
+                  : <rect x={t.x} y={t.y} width={t.l} height={t.h} rx={t.forme === 'banquette' ? 8 : 14}
+                      fill={fond} stroke={trait === 'none' ? 'transparent' : trait}
+                      strokeWidth={(visee || actif || groupe ? 4 : 2.5) * P}
+                      strokeDasharray={occupee || hs ? 'none' : `${9 * P} ${7 * P}`} />}
+
+                {/* La table s'agrandit un peu quand on la vise avec une réservation */}
+                {visee && (rond
+                  ? <ellipse cx={t.x + t.l / 2} cy={t.y + t.h / 2} rx={t.l / 2 + 14} ry={t.h / 2 + 14}
+                      fill="none" stroke="#16a34a" strokeWidth={2 * P} strokeDasharray={`${8 * P} ${6 * P}`} />
+                  : <rect x={t.x - 14} y={t.y - 14} width={t.l + 28} height={t.h + 28} rx={18}
+                      fill="none" stroke="#16a34a" strokeWidth={2 * P} strokeDasharray={`${8 * P} ${6 * P}`} />)}
+
+                {hs ? (
+                  <text x={t.x + t.l / 2} y={t.y + t.h / 2} textAnchor="middle" dominantBaseline="central"
+                    fill="#9ca3af" fontSize={22} fontWeight="800">hors service</text>
+                ) : occupee ? (
+                  <>
+                    <text x={t.x + t.l / 2} y={t.y + t.h / 2 - 12} textAnchor="middle" dominantBaseline="central"
+                      fill="#111" fontSize={26} fontWeight="900">
+                      {nomDe(dessus[0]).split(' ')[0].slice(0, 11)}
+                    </text>
+                    <text x={t.x + t.l / 2} y={t.y + t.h / 2 + 17} textAnchor="middle" dominantBaseline="central"
+                      fill="#7a5c00" fontSize={21} fontWeight="800">
+                      {couverts}/{capacite}{dessus[0].heure ? ` · ${dessus[0].heure}` : ''}
+                    </text>
+                  </>
+                ) : (
+                  <>
+                    <text x={t.x + t.l / 2} y={t.y + t.h / 2 - 10} textAnchor="middle" dominantBaseline="central"
+                      fill="#9a9a9a" fontSize={28} fontWeight="900">{t.nom}</text>
+                    <text x={t.x + t.l / 2} y={t.y + t.h / 2 + 16} textAnchor="middle" dominantBaseline="central"
+                      fill="#c4c4c4" fontSize={20} fontWeight="700">{t.places} pl.</text>
+                  </>
+                )}
+
+                {/* Poignées : seulement sur l'objet sélectionné, en édition */}
+                {edition && actif && (
+                  <>
+                    {[['nw', t.x, t.y], ['ne', t.x + t.l, t.y], ['sw', t.x, t.y + t.h], ['se', t.x + t.l, t.y + t.h]].map(([coin, cx, cy]) => (
+                      <rect key={coin} data-poignee={coin} data-pour={t.id}
+                        x={cx - 11 * P} y={cy - 11 * P} width={22 * P} height={22 * P} rx={5 * P}
+                        fill="#fff" stroke="#111" strokeWidth={2 * P} style={{ cursor:'nwse-resize' }} />
+                    ))}
+                    <line x1={t.x + t.l / 2} y1={t.y} x2={t.x + t.l / 2} y2={t.y - 46 * P}
+                      stroke="#111" strokeWidth={1.5 * P} />
+                    <circle data-poignee="rot" data-pour={t.id}
+                      cx={t.x + t.l / 2} cy={t.y - 46 * P} r={12 * P}
+                      fill="#111" style={{ cursor:'grab' }} />
+                  </>
+                )}
+              </g>
+            );
+          })}
+
+          {/* Poignées des décors */}
+          {edition && selection?.type === 'decor' && decors.filter(d => d.id === selection.id).map(d0 => {
+            const d = rendu(d0, false);
+            return [['nw', d.x, d.y], ['ne', d.x + d.l, d.y], ['sw', d.x, d.y + d.h], ['se', d.x + d.l, d.y + d.h]].map(([coin, cx, cy]) => (
+              <rect key={coin} data-poignee={coin} data-pour={d.id}
+                x={cx - 11 * P} y={cy - 11 * P} width={22 * P} height={22 * P} rx={5 * P}
+                fill="#fff" stroke="#111" strokeWidth={2 * P} style={{ cursor:'nwse-resize' }} />
+            ));
+          })}
+        </g>
+      </svg>
+
+      {/* Zoom */}
+      <div style={{ position:'absolute', right:10, bottom:10, display:'flex', flexDirection:'column', gap:6 }}>
+        {[
+          { t:'+', f:() => { const r = svgRef.current.getBoundingClientRect(); zoomVers(r.left + r.width / 2, r.top + r.height / 2, 1.25); } },
+          { t:'−', f:() => { const r = svgRef.current.getBoundingClientRect(); zoomVers(r.left + r.width / 2, r.top + r.height / 2, 0.8); } },
+        ].map(b => (
+          <button key={b.t} onClick={b.f} style={{ width:44, height:44, borderRadius:12, border:'1.5px solid #e8e8e8',
+            background:'#fff', cursor:'pointer', fontSize:19, fontWeight:800, color:'#666', lineHeight:1,
+            boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>{b.t}</button>
+        ))}
+        <button onClick={ajuster} title="Ajuster à l'écran"
+          style={{ width:44, height:44, borderRadius:12, border:'1.5px solid #e8e8e8', background:'#fff',
+            cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center',
+            boxShadow:'0 2px 8px rgba(0,0,0,0.06)' }}>
+          <Maximize2 size={17} strokeWidth={2.2} color="#666" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Le plan, en service et en édition ────────────────────────────────────────
 
 function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleGlisse }) {
-  const plan = REGLAGES.plan_salle && REGLAGES.plan_salle.zones ? REGLAGES.plan_salle : PLAN_SALLE_DEFAUT;
-  const [zoneId, setZoneId] = useState(plan.zones[0].id);
+  const [plan, setPlan] = useState(() => planActuel());
+  const [zoneId, setZoneId] = useState(() => planActuel().zones[0].id);
+  const [edition, setEdition] = useState(false);
+  const [selection, setSelection] = useState(null);
   const [tableOuverte, setTableOuverte] = useState(null);
   const [calOuvert, setCalOuvert] = useState(false);
+  const [etatSauve, setEtatSauve] = useState('');
+  const [tick, setTick] = useState(0);
+  const [pose, setPose] = useState(null);          // forme en cours de dépôt
+  const etroit = useEcranEtroit();
+  const apiCanvas = useRef(null);
+  const minuteurSauve = useRef(null);
+  const histo = useRef(null);
+  if (!histo.current) histo.current = { pile: [JSON.stringify(plan)], i: 0 };
+
   const zone = plan.zones.find(z => z.id === zoneId) || plan.zones[0];
 
-  // Les réservations du service affiché, seules concernées par le placement.
+  // ── Enregistrement automatique ────────────────────────────────────────────
+  const sauver = useCallback((next) => {
+    setEtatSauve('encours');
+    clearTimeout(minuteurSauve.current);
+    minuteurSauve.current = setTimeout(async () => {
+      const ok = await enregistrerPlanSalle(next);
+      setEtatSauve(ok ? 'ok' : 'erreur');
+      setTimeout(() => setEtatSauve(e => (e === 'ok' ? '' : e)), 2000);
+    }, 600);
+  }, []);
+
+  // Toute modification passe par ici : elle est historisée puis enregistrée.
+  const appliquer = useCallback((next) => {
+    const h = histo.current;
+    h.pile = h.pile.slice(0, h.i + 1);
+    h.pile.push(JSON.stringify(next));
+    if (h.pile.length > 80) h.pile.shift();
+    h.i = h.pile.length - 1;
+    setTick(t => t + 1);
+    setPlan(next);
+    sauver(next);
+  }, [sauver]);
+
+  const majZone = useCallback((patch) => {
+    appliquer({ ...plan, zones: plan.zones.map(z => z.id === zone.id ? { ...z, ...patch } : z) });
+  }, [appliquer, plan, zone]);
+
+  const majTable = useCallback((id, patch) => {
+    majZone({ tables: zone.tables.map(t => t.id === id ? { ...t, ...patch } : t) });
+  }, [majZone, zone]);
+
+  const majDecor = useCallback((id, patch) => {
+    majZone({ decor: zone.decor.map(d => d.id === id ? { ...d, ...patch } : d) });
+  }, [majZone, zone]);
+
+  function annuler() {
+    const h = histo.current;
+    if (h.i <= 0) return;
+    h.i -= 1;
+    const p = JSON.parse(h.pile[h.i]);
+    setTick(t => t + 1); setPlan(p); sauver(p);
+  }
+  function refaire() {
+    const h = histo.current;
+    if (h.i >= h.pile.length - 1) return;
+    h.i += 1;
+    const p = JSON.parse(h.pile[h.i]);
+    setTick(t => t + 1); setPlan(p); sauver(p);
+  }
+
+  // ── Ce que porte le service affiché ───────────────────────────────────────
   const duService = (resas || []).filter(r =>
     r.date === jour && r.service === service && (r.statut === 'confirmee' || r.statut === 'venue'));
   const parTable = {};
-  duService.forEach(r => { if (r.table_plan) (parTable[r.table_plan] = parTable[r.table_plan] || []).push(r); });
-  const aPlacer = duService.filter(r => !r.table_plan);
+  duService.forEach(r => tablesDeResa(r).forEach(id => (parTable[id] = parTable[id] || []).push(r)));
+  const aPlacer = duService.filter(r => !tablesDeResa(r).length);
+  const combinaison = duService.filter(r => tablesDeResa(r).length > 1).flatMap(tablesDeResa);
 
   const nomDe = (r) => r.clients?.genre === 'Entreprise'
     ? (r.clients?.entreprise || 'Entreprise')
     : `${r.clients?.prenom || ''} ${r.clients?.nom || ''}`.trim() || 'Client';
 
+  const objetSel = selection && (selection.type === 'table'
+    ? zone.tables.find(t => t.id === selection.id)
+    : zone.decor.find(d => d.id === selection.id));
+
+  // ── Ajout / suppression ───────────────────────────────────────────────────
+  function ajouterTable(forme, x, y) {
+    const n = zone.tables.length + 1;
+    const t = { id: idPlan('t'), nom: String(n), forme: forme.id, places: forme.places,
+      x: arrondiGrille(x - forme.l / 2), y: arrondiGrille(y - forme.h / 2), l: forme.l, h: forme.h, rot: 0, statut: 'active' };
+    majZone({ tables: [...zone.tables, t] });
+    setSelection({ type:'table', id:t.id });
+  }
+  function ajouterDecor(modele, x, y) {
+    const d = { id: idPlan('d'), nom: modele.nom, type: modele.type,
+      x: arrondiGrille(x - modele.l / 2), y: arrondiGrille(y - modele.h / 2), l: modele.l, h: modele.h, rot: 0 };
+    majZone({ decor: [...zone.decor, d] });
+    setSelection({ type:'decor', id:d.id });
+  }
+  function supprimerSel() {
+    if (!selection) return;
+    if (selection.type === 'table') majZone({ tables: zone.tables.filter(t => t.id !== selection.id) });
+    else majZone({ decor: zone.decor.filter(d => d.id !== selection.id) });
+    setSelection(null);
+  }
+  function dupliquerSel() {
+    if (!objetSel) return;
+    const copie = { ...objetSel, id: idPlan(selection.type === 'table' ? 't' : 'd'), x: objetSel.x + 60, y: objetSel.y + 60 };
+    if (selection.type === 'table') { copie.nom = `${objetSel.nom}'`; majZone({ tables: [...zone.tables, copie] }); }
+    else majZone({ decor: [...zone.decor, copie] });
+    setSelection({ type: selection.type, id: copie.id });
+  }
+
+  // ── Espaces ───────────────────────────────────────────────────────────────
+  function ajouterZone() {
+    const z = { id: idPlan('z'), nom: `Espace ${plan.zones.length + 1}`, type:'salle',
+      largeur:1000, hauteur:700, tables: [], decor: [] };
+    appliquer({ ...plan, zones: [...plan.zones, z] });
+    setZoneId(z.id); setSelection(null);
+  }
+  function supprimerZone() {
+    if (plan.zones.length <= 1) return;
+    const restantes = plan.zones.filter(z => z.id !== zone.id);
+    appliquer({ ...plan, zones: restantes });
+    setZoneId(restantes[0].id); setSelection(null);
+  }
+  function deplacerZone(sens) {
+    const i = plan.zones.findIndex(z => z.id === zone.id);
+    const j = i + sens;
+    if (j < 0 || j >= plan.zones.length) return;
+    const zs = [...plan.zones];
+    [zs[i], zs[j]] = [zs[j], zs[i]];
+    appliquer({ ...plan, zones: zs });
+  }
+
+  // ── Raccourcis clavier ────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!edition) return;
+    function onKey(e) {
+      const dansUnChamp = /input|textarea|select/i.test(e.target.tagName);
+      if (dansUnChamp) return;
+      const meta = e.metaKey || e.ctrlKey;
+      if (meta && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? refaire() : annuler(); return; }
+      if (meta && e.key.toLowerCase() === 'd') { e.preventDefault(); dupliquerSel(); return; }
+      if (!selection) return;
+      if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); supprimerSel(); return; }
+      const pas = e.shiftKey ? 25 : PLAN_GRILLE;
+      const d = { ArrowLeft:[-pas,0], ArrowRight:[pas,0], ArrowUp:[0,-pas], ArrowDown:[0,pas] }[e.key];
+      if (d && objetSel) {
+        e.preventDefault();
+        const patch = { x: objetSel.x + d[0], y: objetSel.y + d[1] };
+        selection.type === 'table' ? majTable(selection.id, patch) : majDecor(selection.id, patch);
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [edition, selection, objetSel, majTable, majDecor]);
+
+  // ── Dépôt depuis la palette ───────────────────────────────────────────────
+  function demarrerPose(modele, estDecor, e) {
+    e.preventDefault();
+    setPose({ modele, estDecor, x:e.clientX, y:e.clientY });
+    const bouger = (ev) => setPose(p => p && { ...p, x:ev.clientX, y:ev.clientY });
+    const finir = (ev) => {
+      window.removeEventListener('pointermove', bouger);
+      window.removeEventListener('pointerup', finir);
+      setPose(null);
+      const api = apiCanvas.current;
+      if (!api) return;
+      const p = api.versPlan(ev.clientX, ev.clientY);
+      if (!api.dansLeCanvas(ev.clientX, ev.clientY)) return;
+      estDecor ? ajouterDecor(modele, p.x, p.y) : ajouterTable(modele, p.x, p.y);
+    };
+    window.addEventListener('pointermove', bouger);
+    window.addEventListener('pointerup', finir);
+  }
+
+  const btn = (actif) => ({
+    height:30, padding: etroit ? '0 8px' : '0 10px', borderRadius:8, border:'none', cursor:'pointer',
+    fontSize: etroit ? 11.5 : 12,
+    fontWeight:800, whiteSpace:'nowrap', background: actif ? '#111' : 'transparent', color: actif ? '#E8C547' : '#777',
+  });
+
   return (
-    <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', display:'flex', flexDirection:'column', height:'100%', minHeight:0, overflow:'hidden' }}>
+    <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', display:'flex',
+      flexDirection:'column', height:'100%', minHeight:0, minWidth:0, overflow:'hidden' }}>
 
-      {/* Une seule ligne : la date, le service, et l'état de chaque zone */}
-      <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 16px', borderBottom:'1px solid #f5f5f5', flexWrap:'wrap', flexShrink:0, position:'relative' }}>
+      {/* ── En-tête : une seule ligne ─────────────────────────────────────── */}
+      <div style={{ display:'flex', alignItems:'center', gap:7, padding:'10px 14px',
+        borderBottom:'1px solid #f5f5f5', flexWrap:'wrap', flexShrink:0, position:'relative' }}>
 
-        <button onClick={()=>setCalOuvert(v=>!v)}
-          style={{ height:36, padding:'0 13px', borderRadius:10, cursor:'pointer', flexShrink:0,
-            border: calOuvert ? 'none' : '1.5px solid #e4e4e4', background: calOuvert ? '#111' : '#fff',
-            color: calOuvert ? '#E8C547' : '#111', fontSize:13.5, fontWeight:800,
-            display:'flex', alignItems:'center', gap:8, textTransform:'capitalize' }}>
-          <CalendarDays size={15} strokeWidth={2} color={calOuvert ? '#E8C547' : '#888'} />
-          {new Date(jour + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' })}
-          <ChevronDown size={14} strokeWidth={2.4} color={calOuvert ? '#E8C547' : '#bbb'}
-            style={{ transform: calOuvert ? 'rotate(180deg)' : 'none', transition:'transform 0.2s' }} />
-        </button>
-
-        {calOuvert && (
+        {!edition && (
           <>
-            <div onClick={()=>setCalOuvert(false)} style={{ position:'fixed', inset:0, zIndex:300 }} />
-            <div style={{ position:'absolute', top:'calc(100% - 2px)', left:16, width:300, zIndex:301 }}>
-              <CalendrierDate valeur={jour} autoriserPasse
-                onChoisir={iso => onJour && onJour(iso)}
-                onFermer={()=>setCalOuvert(false)} />
+            <button onClick={()=>setCalOuvert(v=>!v)}
+              style={{ height:36, padding:'0 13px', borderRadius:10, cursor:'pointer', flexShrink:0,
+                border: calOuvert ? 'none' : '1.5px solid #e4e4e4', background: calOuvert ? '#111' : '#fff',
+                color: calOuvert ? '#E8C547' : '#111', fontSize:13.5, fontWeight:800,
+                display:'flex', alignItems:'center', gap:8, textTransform:'capitalize' }}>
+              <CalendarDays size={15} strokeWidth={2} color={calOuvert ? '#E8C547' : '#888'} />
+              {new Date(jour + 'T12:00:00').toLocaleDateString('fr-FR',
+                etroit ? { day:'numeric', month:'short' } : { weekday:'long', day:'numeric', month:'long' })}
+              <ChevronDown size={14} strokeWidth={2.4} color={calOuvert ? '#E8C547' : '#bbb'}
+                style={{ transform: calOuvert ? 'rotate(180deg)' : 'none', transition:'transform 0.2s' }} />
+            </button>
+
+            {calOuvert && (
+              <>
+                <div onClick={()=>setCalOuvert(false)} style={{ position:'fixed', inset:0, zIndex:300 }} />
+                <div style={{ position:'absolute', top:'calc(100% - 2px)', left:16, width:300, zIndex:301 }}>
+                  <CalendrierDate valeur={jour} autoriserPasse
+                    onChoisir={iso => onJour && onJour(iso)} onFermer={()=>setCalOuvert(false)} />
+                </div>
+              </>
+            )}
+
+            <div style={{ display:'flex', gap:4, background:'#f5f5f5', borderRadius:10, padding:3, flexShrink:0 }}>
+              {[{ id:'midi', label:'Midi', Icone:Sun }, { id:'soir', label:'Soir', Icone:Moon }].map(o => (
+                <button key={o.id} onClick={()=>onService && onService(o.id)} title={o.label}
+                  style={{ ...btn(service === o.id), display:'flex', alignItems:'center', gap:5,
+                    padding: etroit ? '0 11px' : '0 10px' }}>
+                  <o.Icone size={13} strokeWidth={2.2} />{etroit ? '' : ` ${o.label}`}
+                </button>
+              ))}
             </div>
           </>
         )}
 
-        {/* Midi / Soir */}
-        <div style={{ display:'flex', gap:4, background:'#f5f5f5', borderRadius:10, padding:3, flexShrink:0 }}>
-          {[{ id:'midi', label:'Midi', Icone:Sun }, { id:'soir', label:'Soir', Icone:Moon }].map(o => (
-            <button key={o.id} onClick={()=>onService && onService(o.id)}
-              style={{ height:30, padding:'0 12px', borderRadius:8, border:'none', cursor:'pointer', fontSize:12.5, fontWeight:800, display:'flex', alignItems:'center', gap:5,
-                background: service === o.id ? '#111' : 'transparent',
-                color: service === o.id ? '#E8C547' : '#777' }}>
-              <o.Icone size={13} strokeWidth={2.2} /> {o.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Chaque zone annonce ce qu'elle porte : placés sur places */}
+        {/* Les espaces : en service ils annoncent leur remplissage. */}
         <div style={{ display:'flex', gap:4, background:'#f5f5f5', borderRadius:10, padding:3, flexShrink:0 }}>
           {plan.zones.map(z => {
-            const idsZone = z.tables.map(t => t.id);
-            const assis = duService
-              .filter(r => idsZone.includes(r.table_plan))
-              .reduce((s2, r) => s2 + (r.nb_personnes || 0), 0);
-            const total = z.tables.reduce((s2, t) => s2 + t.places, 0);
-            const actif = zoneId === z.id;
+            const ids = z.tables.map(t => t.id);
+            const assis = duService.filter(r => tablesDeResa(r).some(id => ids.includes(id)))
+              .reduce((s, r) => s + (r.nb_personnes || 0), 0);
+            const total = z.tables.reduce((s, t) => s + (t.statut === 'hors_service' ? 0 : t.places), 0);
             return (
-              <button key={z.id} onClick={()=>{ setZoneId(z.id); setTableOuverte(null); }}
-                style={{ height:30, padding:'0 12px', borderRadius:8, border:'none', cursor:'pointer', fontSize:12.5, fontWeight:800, whiteSpace:'nowrap',
-                  background: actif ? '#111' : 'transparent',
-                  color: actif ? '#E8C547' : '#777' }}>
-                {z.nom} <span style={{ fontWeight:700, opacity:0.75 }}>({assis}/{total})</span>
+              <button key={z.id} onClick={()=>{ setZoneId(z.id); setTableOuverte(null); setSelection(null); }}
+                style={btn(zone.id === z.id)}>
+                {z.nom}{!edition && <span style={{ fontWeight:700, opacity:0.75 }}> ({assis}/{total})</span>}
               </button>
             );
           })}
+          {edition && (
+            <button onClick={ajouterZone} title="Ajouter un espace" style={{ ...btn(false), padding:'0 10px' }}>
+              <Plus size={15} strokeWidth={2.6} />
+            </button>
+          )}
         </div>
 
         <span style={{ flex:1 }} />
-        {aPlacer.length > 0 && (
-          <span style={{ fontSize:12, fontWeight:800, padding:'5px 11px', borderRadius:20, background:'#fef9c3', color:'#92400e', flexShrink:0 }}>
-            {aPlacer.length} à placer
-          </span>
+
+        {edition ? (
+          <>
+            <span style={{ fontSize:11.5, fontWeight:700, color: etatSauve === 'erreur' ? '#dc2626' : '#bbb', minWidth:78, textAlign:'right' }}>
+              {etatSauve === 'encours' ? 'Enregistrement…' : etatSauve === 'ok' ? 'Enregistré ✓' : etatSauve === 'erreur' ? 'Échec' : ''}
+            </span>
+            <button onClick={annuler} disabled={histo.current.i <= 0} title="Annuler"
+              style={{ width:36, height:36, borderRadius:10, border:'1.5px solid #e4e4e4', background:'#fff',
+                cursor: histo.current.i > 0 ? 'pointer' : 'not-allowed', opacity: histo.current.i > 0 ? 1 : 0.4,
+                display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <RotateCcw size={15} strokeWidth={2.2} color="#666" />
+            </button>
+            <button onClick={refaire} disabled={histo.current.i >= histo.current.pile.length - 1} title="Rétablir"
+              style={{ width:36, height:36, borderRadius:10, border:'1.5px solid #e4e4e4', background:'#fff',
+                cursor: histo.current.i < histo.current.pile.length - 1 ? 'pointer' : 'not-allowed',
+                opacity: histo.current.i < histo.current.pile.length - 1 ? 1 : 0.4,
+                display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <RotateCcw size={15} strokeWidth={2.2} color="#666" style={{ transform:'scaleX(-1)' }} />
+            </button>
+            <button onClick={()=>{ setEdition(false); setSelection(null); }}
+              style={{ height:36, padding:'0 15px', borderRadius:10, border:'none', background:'#E8C547',
+                color:'#111', fontSize:13, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', gap:7 }}>
+              <Check size={15} strokeWidth={2.6} /> Terminer
+            </button>
+          </>
+        ) : (
+          <>
+            {aPlacer.length > 0 && (
+              <span title={`${aPlacer.length} réservation(s) à placer`}
+                style={{ fontSize:11.5, fontWeight:800, padding:'5px 9px', borderRadius:20,
+                background:'#fef9c3', color:'#92400e', flexShrink:0, whiteSpace:'nowrap' }}>
+                {aPlacer.length}{etroit ? '' : ' à placer'}
+              </span>
+            )}
+            <button onClick={()=>{ setEdition(true); setTableOuverte(null); }} title="Éditer le plan"
+              style={{ width:36, height:36, borderRadius:10, border:'1.5px solid #e4e4e4', background:'#fff',
+                cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+              <Pencil size={15} strokeWidth={2.3} color="#888" />
+            </button>
+          </>
         )}
       </div>
 
-      {/* La salle vue d'en haut */}
-      <div style={{ flex:1, minHeight:0, display:'flex', flexDirection:'column', gap:7, padding:10, background:'#fafafa' }}>
-        <div style={{ position:'relative', flex:1, minHeight:0, width:'100%', background:'#fff', border:'1.5px solid #eee', borderRadius:14,
-          backgroundImage:'radial-gradient(#f0f0f0 1px, transparent 1px)', backgroundSize:'22px 22px' }}>
+      {/* ── Le plan ───────────────────────────────────────────────────────── */}
+      <div style={{ flex:1, minHeight:0, display:'flex', gap:8, padding:10, background:'#fafafa' }}>
 
-          {zone.decor.map((d, i) => {
-            const st = DECOR_STYLE[d.type] || { fond:'#f5f5f5', texte:'#666' };
-            return (
-              <div key={i} style={{ position:'absolute', left:`${d.x}%`, top:`${d.y}%`, width:`${d.l}%`, height:`${d.h}%`,
-                background:st.fond, borderRadius:10, display:'flex', alignItems:'center', justifyContent:'center',
-                fontSize:11, fontWeight:800, color:st.texte, textAlign:'center', letterSpacing:0.3, padding:4, boxSizing:'border-box' }}>
-                {d.nom}
-              </div>
-            );
-          })}
+        {edition && (
+          <div style={{ width:78, flexShrink:0, display:'flex', flexDirection:'column', gap:5, overflowY:'auto' }}>
+            <p style={{ margin:'0 0 1px', fontSize:9.5, fontWeight:800, color:'#bbb', textTransform:'uppercase', letterSpacing:0.5 }}>Tables</p>
+            {PLAN_FORMES.map(f => (
+              <button key={f.id} onPointerDown={(e)=>demarrerPose(f, false, e)} title={`${f.nom} — glisser sur le plan`}
+                style={{ height:52, borderRadius:11, border:'1.5px solid #ececec', background:'#fff', cursor:'grab',
+                  display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:3, touchAction:'none' }}>
+                <svg width="26" height="17" viewBox="0 0 26 17">
+                  {f.id === 'ronde' && <circle cx="13" cy="8.5" r="7" fill="none" stroke="#888" strokeWidth="1.8" />}
+                  {f.id === 'ovale' && <ellipse cx="13" cy="8.5" rx="11" ry="6" fill="none" stroke="#888" strokeWidth="1.8" />}
+                  {f.id === 'carree' && <rect x="6" y="1.5" width="14" height="14" rx="3" fill="none" stroke="#888" strokeWidth="1.8" />}
+                  {f.id === 'rectangle' && <rect x="1.5" y="3" width="23" height="11" rx="2.5" fill="none" stroke="#888" strokeWidth="1.8" />}
+                  {f.id === 'banquette' && <rect x="1.5" y="6" width="23" height="7" rx="2" fill="#ddd" stroke="#888" strokeWidth="1.5" />}
+                </svg>
+                <span style={{ fontSize:9.5, fontWeight:700, color:'#999' }}>{f.nom}</span>
+              </button>
+            ))}
+            <p style={{ margin:'8px 0 1px', fontSize:9.5, fontWeight:800, color:'#bbb', textTransform:'uppercase', letterSpacing:0.5 }}>Décor</p>
+            {PLAN_DECORS.map(d => {
+              const st = DECOR_STYLE[d.type];
+              return (
+                <button key={d.type} onPointerDown={(e)=>demarrerPose(d, true, e)} title={`${d.nom} — glisser sur le plan`}
+                  style={{ height:36, borderRadius:10, border:'1.5px solid #ececec', background:st.fond, color:st.texte,
+                    fontSize:10.5, fontWeight:800, cursor:'grab', touchAction:'none' }}>{d.nom}</button>
+              );
+            })}
+          </div>
+        )}
 
-          {zone.tables.map(t => {
-            const g = gabaritTable(t);
-            const dessus = parTable[t.id] || [];
-            const occupee = dessus.length > 0;
-            const couverts = dessus.reduce((s, r) => s + (r.nb_personnes || 0), 0);
-            const trop = couverts > t.places;
-            return (
-              <div key={t.id} style={{ position:'absolute', left:`${t.x}%`, top:`${t.y}%`, width:`${g.l}%`, height:`${g.h}%` }}>
-                {chaisesAutour(t.places, t.forme).map((c, i) => (
-                  <span key={i} style={{ position:'absolute', left:`${c.left}%`, top:`${c.top}%`, width:`${c.w}%`, height:`${c.h}%`,
-                    borderRadius:4, background: occupee ? '#d9ae23' : '#e8e8e8' }} />
-                ))}
-                <button onClick={()=>setTableOuverte(t)}
-                  data-table={t.id}
-                  title={occupee ? dessus.map(nomDe).join(', ') : `Table ${t.nom} — ${t.places} places`}
-                  style={{ position:'absolute', inset:0, width:'100%', height:'100%',
-                    borderRadius:g.radius, cursor:'pointer', padding:2, boxSizing:'border-box',
-                    border: cibleGlisse === t.id ? '3px solid #16a34a'
-                      : trop ? '2px solid #dc2626' : occupee ? 'none' : '2px dashed #d4d4d4',
-                    background: cibleGlisse === t.id ? '#dcfce7' : occupee ? '#E8C547' : '#fff',
-                    transform: cibleGlisse === t.id ? 'scale(1.08)' : 'none', transition:'transform 0.12s',
-                    display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:1,
-                    boxShadow: occupee ? '0 3px 10px rgba(232,197,71,0.45)' : 'none', overflow:'hidden' }}>
-                  {occupee ? (
-                    <>
-                      <span style={{ fontSize:10.5, fontWeight:900, color:'#111', maxWidth:'96%', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                        {nomDe(dessus[0]).split(' ')[0]}
-                      </span>
-                      <span style={{ fontSize:9.5, fontWeight:800, color:'#7a5c00' }}>
-                        {couverts}/{t.places}
-                        {dessus[0].heure ? ` · ${dessus[0].heure}` : ''}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <span style={{ fontSize:11.5, fontWeight:900, color:'#999' }}>{t.nom}</span>
-                      <span style={{ fontSize:9.5, fontWeight:700, color:'#c4c4c4' }}>{t.places} pl.</span>
-                    </>
-                  )}
+        <div style={{ flex:1, minWidth:0, display:'flex', flexDirection:'column', gap:7 }}>
+          <PlanCanvas key={zone.id} zone={zone} edition={edition} parTable={parTable}
+            selection={selection} onSelection={setSelection}
+            onMajTable={majTable} onMajDecor={majDecor}
+            cibleGlisse={cibleGlisse} onOuvrirTable={setTableOuverte} nomDe={nomDe}
+            combinaison={combinaison} apiRef={apiCanvas} />
+
+          <div style={{ display:'flex', gap:16, flexWrap:'wrap', fontSize:11, color:'#bbb', flexShrink:0, alignItems:'center' }}>
+            {edition ? (
+              <>
+                <span>Glisser une forme sur le plan · déplacer, tourner, redimensionner au doigt</span>
+                <span style={{ flex:1 }} />
+                <span>{zone.tables.length} tables · {zone.tables.reduce((s,t)=>s+(t.statut==='hors_service'?0:t.places),0)} couverts</span>
+              </>
+            ) : (
+              <>
+                <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
+                  <span style={{ width:12, height:12, borderRadius:'50%', border:'2px dashed #d4d4d4' }} /> libre
+                </span>
+                <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
+                  <span style={{ width:12, height:12, borderRadius:'50%', background:'#E8C547' }} /> occupée
+                </span>
+                <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
+                  <span style={{ width:12, height:12, borderRadius:'50%', border:'2px solid #7c3aed' }} /> combinée
+                </span>
+                <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
+                  <span style={{ width:12, height:12, borderRadius:'50%', border:'2px solid #dc2626' }} /> trop de couverts
+                </span>
+                <span style={{ flex:1 }} />
+                {(() => {
+                  const ids = zone.tables.map(t => t.id);
+                  const places = duService.filter(r => tablesDeResa(r).some(id => ids.includes(id))).reduce((s,r)=>s+(r.nb_personnes||0),0);
+                  const cap = zone.tables.reduce((s,t)=>s+(t.statut==='hors_service'?0:t.places),0);
+                  const libres = zone.tables.filter(t => t.statut !== 'hors_service' && !(parTable[t.id]||[]).length).length;
+                  return <span style={{ fontWeight:700, color:'#999' }}>{places}/{cap} couverts placés · {libres} tables libres</span>;
+                })()}
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Les options n'apparaissent qu'à la sélection. */}
+        {edition && objetSel && (
+          <div style={{ width:236, flexShrink:0, background:'#fff', border:'1.5px solid #eee', borderRadius:14,
+            padding:'14px 15px', overflowY:'auto' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>
+              <span style={{ fontSize:13.5, fontWeight:900, color:'#111' }}>
+                {selection.type === 'table' ? `Table ${objetSel.nom}` : objetSel.nom || 'Décor'}
+              </span>
+              <button onClick={()=>setSelection(null)} style={{ marginLeft:'auto', width:26, height:26, borderRadius:'50%',
+                border:'none', background:'#f3f3f3', cursor:'pointer', color:'#888', fontSize:13 }}>✕</button>
+            </div>
+
+            <label style={{ fontSize:10.5, fontWeight:800, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>
+              {selection.type === 'table' ? 'Libellé' : 'Nom'}
+            </label>
+            <input defaultValue={objetSel.nom} key={`nom-${objetSel.id}`}
+              onBlur={e => (selection.type === 'table' ? majTable : majDecor)(objetSel.id, { nom: e.target.value.trim() || objetSel.nom })}
+              style={{ width:'100%', height:38, marginTop:5, marginBottom:12, borderRadius:9, border:'1.5px solid #eee',
+                padding:'0 10px', fontSize:13.5, fontWeight:700, boxSizing:'border-box' }} />
+
+            {selection.type === 'table' ? (
+              <>
+                <label style={{ fontSize:10.5, fontWeight:800, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Couverts</label>
+                <div style={{ display:'flex', alignItems:'center', gap:8, margin:'6px 0 12px' }}>
+                  <button onClick={()=>majTable(objetSel.id, { places: Math.max(1, objetSel.places - 1) })}
+                    style={{ width:44, height:44, borderRadius:11, border:'1.5px solid #eee', background:'#fff', fontSize:18, fontWeight:800, cursor:'pointer', color:'#666' }}>−</button>
+                  <span style={{ flex:1, textAlign:'center', fontSize:18, fontWeight:900, color:'#111' }}>{objetSel.places}</span>
+                  <button onClick={()=>majTable(objetSel.id, { places: Math.min(30, objetSel.places + 1) })}
+                    style={{ width:44, height:44, borderRadius:11, border:'1.5px solid #eee', background:'#fff', fontSize:18, fontWeight:800, cursor:'pointer', color:'#666' }}>+</button>
+                </div>
+
+                <label style={{ fontSize:10.5, fontWeight:800, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Forme</label>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:5, margin:'6px 0 12px' }}>
+                  {PLAN_FORMES.map(f => (
+                    <button key={f.id} onClick={()=>majTable(objetSel.id, { forme:f.id })}
+                      style={{ height:32, padding:'0 10px', borderRadius:8, cursor:'pointer', fontSize:11.5, fontWeight:700,
+                        border: objetSel.forme === f.id ? 'none' : '1.5px solid #eee',
+                        background: objetSel.forme === f.id ? '#111' : '#fff',
+                        color: objetSel.forme === f.id ? '#E8C547' : '#777' }}>{f.nom}</button>
+                  ))}
+                </div>
+
+                <label style={{ fontSize:10.5, fontWeight:800, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Statut</label>
+                <button onClick={()=>majTable(objetSel.id, { statut: objetSel.statut === 'hors_service' ? 'active' : 'hors_service' })}
+                  style={{ width:'100%', height:40, margin:'6px 0 12px', borderRadius:10, cursor:'pointer', fontSize:12.5, fontWeight:800,
+                    border: objetSel.statut === 'hors_service' ? 'none' : '1.5px solid #eee',
+                    background: objetSel.statut === 'hors_service' ? '#fee2e2' : '#fff',
+                    color: objetSel.statut === 'hors_service' ? '#b91c1c' : '#777' }}>
+                  {objetSel.statut === 'hors_service' ? 'Hors service' : 'En service'}
                 </button>
-              </div>
-            );
-          })}
-        </div>
 
-        <div style={{ display:'flex', gap:16, flexWrap:'wrap', fontSize:11, color:'#bbb', flexShrink:0 }}>
-          <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
-            <span style={{ width:12, height:12, borderRadius:'50%', border:'2px dashed #d4d4d4' }} /> libre
-          </span>
-          <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
-            <span style={{ width:12, height:12, borderRadius:'50%', background:'#E8C547' }} /> occupée
-          </span>
-          <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
-            <span style={{ width:12, height:12, borderRadius:'50%', border:'2px solid #dc2626' }} /> plus de couverts que de places
-          </span>
-        </div>
+                <label style={{ fontSize:10.5, fontWeight:800, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Notes</label>
+                <textarea defaultValue={objetSel.notes || ''} key={`n-${objetSel.id}`} rows={2}
+                  onBlur={e => majTable(objetSel.id, { notes: e.target.value.trim() })}
+                  placeholder="Près de la fenêtre…"
+                  style={{ width:'100%', marginTop:5, marginBottom:12, borderRadius:9, border:'1.5px solid #eee',
+                    padding:'8px 10px', fontSize:12.5, resize:'vertical', boxSizing:'border-box', fontFamily:'inherit' }} />
+              </>
+            ) : (
+              <>
+                <label style={{ fontSize:10.5, fontWeight:800, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Type</label>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:5, margin:'6px 0 12px' }}>
+                  {PLAN_DECORS.map(d => (
+                    <button key={d.type} onClick={()=>majDecor(objetSel.id, { type:d.type })}
+                      style={{ height:32, padding:'0 10px', borderRadius:8, cursor:'pointer', fontSize:11.5, fontWeight:700,
+                        border: objetSel.type === d.type ? 'none' : '1.5px solid #eee',
+                        background: objetSel.type === d.type ? '#111' : '#fff',
+                        color: objetSel.type === d.type ? '#E8C547' : '#777' }}>{d.nom}</button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <div style={{ display:'flex', gap:6 }}>
+              <button onClick={dupliquerSel} style={{ flex:1, height:42, borderRadius:10, border:'1.5px solid #eee',
+                background:'#fff', cursor:'pointer', fontSize:12.5, fontWeight:700, color:'#666',
+                display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                <Copy size={14} strokeWidth={2.2} /> Dupliquer
+              </button>
+              <button onClick={supprimerSel} style={{ width:52, height:42, borderRadius:10, border:'1.5px solid #fecaca',
+                background:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <Trash2 size={15} strokeWidth={2.2} color="#dc2626" />
+              </button>
+            </div>
+
+            {selection.type === 'table' && (
+              <p style={{ margin:'12px 0 0', fontSize:11, color:'#c4c4c4', lineHeight:1.6 }}>
+                {objetSel.l} × {objetSel.h} cm{objetSel.rot ? ` · ${objetSel.rot}°` : ''}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Réglages de l'espace, quand rien n'est sélectionné */}
+        {edition && !objetSel && (
+          <div style={{ width:236, flexShrink:0, background:'#fff', border:'1.5px solid #eee', borderRadius:14, padding:'14px 15px' }}>
+            <p style={{ margin:'0 0 12px', fontSize:13.5, fontWeight:900, color:'#111' }}>Espace</p>
+
+            <label style={{ fontSize:10.5, fontWeight:800, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Nom</label>
+            <input defaultValue={zone.nom} key={`z-${zone.id}`}
+              onBlur={e => majZone({ nom: e.target.value.trim() || zone.nom })}
+              style={{ width:'100%', height:38, marginTop:5, marginBottom:12, borderRadius:9, border:'1.5px solid #eee',
+                padding:'0 10px', fontSize:13.5, fontWeight:700, boxSizing:'border-box' }} />
+
+            <label style={{ fontSize:10.5, fontWeight:800, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Type</label>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:5, margin:'6px 0 12px' }}>
+              {TYPES_ZONE.map(t => (
+                <button key={t.id} onClick={()=>majZone({ type:t.id })}
+                  style={{ height:32, padding:'0 10px', borderRadius:8, cursor:'pointer', fontSize:11.5, fontWeight:700,
+                    border: zone.type === t.id ? 'none' : '1.5px solid #eee',
+                    background: zone.type === t.id ? '#111' : '#fff',
+                    color: zone.type === t.id ? '#E8C547' : '#777' }}>{t.nom}</button>
+              ))}
+            </div>
+
+            <label style={{ fontSize:10.5, fontWeight:800, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Ordre</label>
+            <div style={{ display:'flex', gap:6, margin:'6px 0 12px' }}>
+              <button onClick={()=>deplacerZone(-1)} style={{ flex:1, height:40, borderRadius:10, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', fontSize:14, color:'#666' }}>←</button>
+              <button onClick={()=>deplacerZone(1)} style={{ flex:1, height:40, borderRadius:10, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', fontSize:14, color:'#666' }}>→</button>
+            </div>
+
+            <button onClick={supprimerZone} disabled={plan.zones.length <= 1}
+              style={{ width:'100%', height:42, borderRadius:10, border:'1.5px solid #fecaca', background:'#fff',
+                cursor: plan.zones.length > 1 ? 'pointer' : 'not-allowed', opacity: plan.zones.length > 1 ? 1 : 0.4,
+                fontSize:12.5, fontWeight:700, color:'#dc2626', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+              <Trash2 size={14} strokeWidth={2.2} /> Supprimer l'espace
+            </button>
+
+            <p style={{ margin:'14px 0 0', fontSize:11, color:'#c4c4c4', lineHeight:1.6 }}>
+              Sélectionne une table pour la régler. Suppr efface, ⌘D duplique, les flèches déplacent.
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Qui est à cette table, et qui reste à placer */}
+      {/* La forme qu'on est en train de poser suit le doigt */}
+      {pose && (
+        <div style={{ position:'fixed', left:pose.x - 40, top:pose.y - 20, width:80, height:40, borderRadius:10,
+          background:'rgba(232,197,71,0.28)', border:'2px solid #E8C547', pointerEvents:'none', zIndex:9000,
+          display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:800, color:'#7a5c00' }}>
+          {pose.modele.nom}
+        </div>
+      )}
+
+      {/* ── Qui est à cette table ─────────────────────────────────────────── */}
       {tableOuverte && (() => {
-        const dessus = parTable[tableOuverte.id] || [];
+        const t = zone.tables.find(x => x.id === tableOuverte.id) || tableOuverte;
+        const dessus = parTable[t.id] || [];
+        const libres = zone.tables.filter(x => x.id !== t.id && x.statut !== 'hors_service' && !(parTable[x.id] || []).length);
         return (
           <>
             <div onClick={()=>setTableOuverte(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:5200 }} />
-            <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)', background:'#fff', borderRadius:18, width:'min(460px, calc(100vw - 32px))', maxHeight:'calc(100vh - 32px)', overflowY:'auto', padding:'22px 24px', boxShadow:'0 32px 80px rgba(0,0,0,0.3)', zIndex:5201 }}>
+            <div onClick={e=>e.stopPropagation()} style={{ position:'fixed', top:'50%', left:'50%', transform:'translate(-50%,-50%)',
+              background:'#fff', borderRadius:18, width:'min(460px, calc(100vw - 32px))', maxHeight:'calc(100vh - 32px)',
+              overflowY:'auto', padding:'22px 24px', boxShadow:'0 32px 80px rgba(0,0,0,0.3)', zIndex:5201 }}>
+
               <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:4 }}>
-                <h3 style={{ margin:0, fontSize:18, fontWeight:900, color:'#111' }}>Table {tableOuverte.nom}</h3>
-                <span style={{ fontSize:12.5, color:'#999' }}>
-                  {tableOuverte.forme} · {tableOuverte.places} places
-                </span>
-                <button onClick={()=>setTableOuverte(null)} style={{ marginLeft:'auto', width:32, height:32, borderRadius:'50%', border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:15, color:'#666' }}>✕</button>
+                <h3 style={{ margin:0, fontSize:18, fontWeight:900, color:'#111' }}>Table {t.nom}</h3>
+                <span style={{ fontSize:12.5, color:'#999' }}>{t.forme} · {t.places} places</span>
+                <button onClick={()=>setTableOuverte(null)} style={{ marginLeft:'auto', width:32, height:32, borderRadius:'50%',
+                  border:'none', background:'#f0f0f0', cursor:'pointer', fontSize:15, color:'#666' }}>✕</button>
               </div>
 
               {dessus.length > 0 ? (
                 <div style={{ margin:'14px 0 6px' }}>
                   <p style={{ fontSize:10.5, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'0 0 8px' }}>À cette table</p>
-                  {dessus.map(r => (
-                    <div key={r.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 0', borderBottom:'1px solid #f5f5f5' }}>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:14, fontWeight:700, color:'#111' }}>{nomDe(r)}</div>
-                        <div style={{ fontSize:12, color:'#999' }}>{r.heure || '—'} · {r.nb_personnes || '?'} pers.{r.occasion ? ` · ${r.occasion}` : ''}</div>
+                  {dessus.map(r => {
+                    const ses = tablesDeResa(r);
+                    return (
+                      <div key={r.id} style={{ padding:'10px 0', borderBottom:'1px solid #f5f5f5' }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ fontSize:14, fontWeight:700, color:'#111' }}>{nomDe(r)}</div>
+                            <div style={{ fontSize:12, color:'#999' }}>
+                              {r.heure || '—'} · {r.nb_personnes || '?'} pers.{r.occasion ? ` · ${r.occasion}` : ''}
+                              {ses.length > 1 && <span style={{ color:'#7c3aed', fontWeight:700 }}> · {ses.length} tables</span>}
+                            </div>
+                          </div>
+                          <button onClick={()=>{ onPlacer(r, null); setTableOuverte(null); }}
+                            style={{ height:40, padding:'0 12px', borderRadius:9, border:'1.5px solid #e0e0e0', background:'#fff',
+                              color:'#666', fontSize:12.5, fontWeight:700, cursor:'pointer', flexShrink:0 }}>Retirer</button>
+                        </div>
+
+                        {/* Combiner : un grand groupe sur plusieurs tables */}
+                        {ses.length > 1 ? (
+                          <button onClick={()=>{ onPlacer(r, t.id); setTableOuverte(null); }}
+                            style={{ marginTop:8, height:38, padding:'0 12px', borderRadius:9, border:'1.5px solid #ddd6fe',
+                              background:'#faf5ff', color:'#6d28d9', fontSize:12.5, fontWeight:700, cursor:'pointer' }}>
+                            Séparer — ne garder que la table {t.nom}
+                          </button>
+                        ) : libres.length > 0 && (
+                          <details style={{ marginTop:8 }}>
+                            <summary style={{ cursor:'pointer', fontSize:12.5, fontWeight:700, color:'#6d28d9' }}>Combiner avec une autre table</summary>
+                            <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:8 }}>
+                              {libres.map(x => (
+                                <button key={x.id} onClick={()=>{ onPlacer(r, [...ses, x.id].join(',')); setTableOuverte(null); }}
+                                  style={{ height:40, padding:'0 13px', borderRadius:9, border:'1.5px solid #eee', background:'#fff',
+                                    fontSize:12.5, fontWeight:700, color:'#555', cursor:'pointer' }}>
+                                  {x.nom} <span style={{ color:'#bbb' }}>{x.places} pl.</span>
+                                </button>
+                              ))}
+                            </div>
+                          </details>
+                        )}
                       </div>
-                      <button onClick={()=>{ onPlacer(r, null); setTableOuverte(null); }}
-                        style={{ height:34, padding:'0 12px', borderRadius:9, border:'1.5px solid #e0e0e0', background:'#fff', color:'#666', fontSize:12.5, fontWeight:700, cursor:'pointer', flexShrink:0 }}>
-                        Retirer
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
-                <p style={{ margin:'14px 0', fontSize:13.5, color:'#bbb' }}>Table libre pour ce service.</p>
+                <p style={{ margin:'14px 0', fontSize:13.5, color:'#bbb' }}>
+                  {t.statut === 'hors_service' ? 'Table hors service.' : 'Table libre pour ce service.'}
+                </p>
               )}
 
               <p style={{ fontSize:10.5, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:'16px 0 8px' }}>
@@ -1210,13 +2103,14 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
               ) : (
                 <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
                   {aPlacer.map(r => (
-                    <button key={r.id} onClick={()=>{ onPlacer(r, tableOuverte.id); setTableOuverte(null); }}
-                      style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 13px', borderRadius:11, border:'1.5px solid #eee', background:'#fff', cursor:'pointer', textAlign:'left' }}>
+                    <button key={r.id} onClick={()=>{ onPlacer(r, t.id); setTableOuverte(null); }}
+                      style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 13px', borderRadius:11,
+                        border:'1.5px solid #eee', background:'#fff', cursor:'pointer', textAlign:'left', minHeight:44 }}>
                       <span style={{ flex:1, minWidth:0 }}>
                         <span style={{ display:'block', fontSize:13.5, fontWeight:700, color:'#111' }}>{nomDe(r)}</span>
                         <span style={{ display:'block', fontSize:12, color:'#999' }}>{r.heure || '—'} · {r.nb_personnes || '?'} pers.</span>
                       </span>
-                      {(r.nb_personnes || 0) > tableOuverte.places && (
+                      {(r.nb_personnes || 0) > t.places && (
                         <span style={{ fontSize:11, fontWeight:800, color:'#b91c1c', flexShrink:0 }}>trop grand</span>
                       )}
                     </button>
@@ -2630,7 +3524,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
       { fallback: null, context: 'placerSurTable' }
     );
     if (error) { showToast('Placement impossible', 'error'); loadResa(); return; }
-    showToast(tableId ? `✅ Placée en table ${tableId}` : 'Retirée du plan');
+    showToast(tableId ? `✅ Placée en table ${libelleTables(tableId)}` : 'Retirée du plan');
   }
   const isMobile = useIsMobile();
   const etroit = useEcranEtroit();
@@ -2875,7 +3769,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
         </header>
       )}
 
-      <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? (planOuvert ? '1fr' : (etroit ? '1fr 268px' : '1fr 380px')) : undefined, gridTemplateRows: !isMobile ? 'auto 1fr' : undefined, gap: !isMobile ? (etroit ? 12 : 16) : undefined, padding: !isMobile ? (etroit ? '14px 16px' : '24px 32px') : undefined, maxWidth: !isMobile ? 1440 : undefined, margin: !isMobile ? '0 auto' : undefined, alignItems: !isMobile ? 'stretch' : 'start', height: !isMobile ? (etroit ? 'calc(100vh - 28px)' : 'calc(100vh - 48px)') : undefined, boxSizing: !isMobile ? 'border-box' : undefined, background: !isMobile ? '#f5f5f5' : undefined }}>
+      <div style={{ display: !isMobile ? 'grid' : 'block', gridTemplateColumns: !isMobile ? (planOuvert ? 'minmax(0,1fr)' : (etroit ? 'minmax(0,1fr) 268px' : 'minmax(0,1fr) 380px')) : undefined, gridTemplateRows: !isMobile ? 'auto 1fr' : undefined, gap: !isMobile ? (etroit ? 12 : 16) : undefined, padding: !isMobile ? (etroit ? '14px 16px' : '24px 32px') : undefined, maxWidth: !isMobile ? 1440 : undefined, margin: !isMobile ? '0 auto' : undefined, alignItems: !isMobile ? 'stretch' : 'start', height: !isMobile ? (etroit ? 'calc(100vh - 28px)' : 'calc(100vh - 48px)') : undefined, boxSizing: !isMobile ? 'border-box' : undefined, background: !isMobile ? '#f5f5f5' : undefined }}>
       {!isMobile && (
         <div style={{ gridColumn:'1 / -1' }}>
           <div style={{ display:'flex', alignItems:'center', gap:12, flexShrink:0, position:'relative' }}>
@@ -3407,7 +4301,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                       <div style={{ fontSize:12, color:'#999', display:'flex', alignItems:'center', gap:6 }}>
                         {r.nb_personnes} pers.
                         {r.table_plan
-                          ? <span style={{ fontSize:11, fontWeight:800, color:'#111', background:'#E8C547', borderRadius:20, padding:'2px 8px' }}>Table {r.table_plan}</span>
+                          ? <span style={{ fontSize:11, fontWeight:800, color:'#111', background:'#E8C547', borderRadius:20, padding:'2px 8px' }}>Table {libelleTables(r.table_plan)}</span>
                           : planOuvert && <span style={{ fontSize:11, fontWeight:700, color:'#bbb' }}>à placer</span>}
                       </div>
                     </div>
