@@ -521,8 +521,23 @@ indépendant de la taille de l'écran et une table ronde est vraiment ronde.
 volée — rien à migrer. `PLAN_SALLE_DEFAUT` est le plan livré (3 espaces,
 18 tables, 7 décors), utilisé tant que rien n'a été enregistré.
 
-Les **décors** (bar, entrée, escalier, cuisine, WC, bloc) sont séparés des
-tables : pas de couverts, jamais comptés, jamais assignables.
+Les **décors** sont séparés des tables : pas de couverts, jamais comptés, jamais
+assignables. Deux d'entre eux sont dessinés à part, pour donner au plan son
+allure de plan d'architecte :
+
+- **mur** — barre grise pleine, coins droits, sans libellé. C'est lui qui dessine
+  le contour de la salle, les cloisons et les box ; on l'étire et on le tourne
+  comme n'importe quel objet ;
+- **porte** — symbole d'architecte : le battant plein plus son débattement en
+  pointillés, **l'arc centré sur la charnière** (en bas à gauche avant rotation).
+
+La **cuisine** est remplie de hachures (`url(#hachuresPlan)`), comme sur un plan.
+
+Les tables ont une **teinte** (`couleur`, `TEINTES_TABLE` : neutre, bleu, vert,
+rose, ambre, violet), choisie au nuancier dans leur panneau. Elle colore le fond,
+le contour et les chaises, et **ne vaut que pour une table libre** — occupée, la
+table repasse au jaune de marque : l'information de service prime sur la
+décoration. Seule la teinte neutre garde le contour en pointillés.
 
 ### Le canvas (`PlanCanvas`)
 

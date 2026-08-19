@@ -923,6 +923,8 @@ const PLAN_FORMES = [
 ];
 
 const PLAN_DECORS = [
+  { type:'mur',      nom:'Mur',      l:400, h:22  },
+  { type:'porte',    nom:'Porte',    l:90,  h:90  },
   { type:'bar',      nom:'Bar',      l:140, h:400 },
   { type:'entree',   nom:'Entrée',   l:170, h:60  },
   { type:'escalier', nom:'Escalier', l:140, h:160 },
@@ -932,6 +934,8 @@ const PLAN_DECORS = [
 ];
 
 const DECOR_STYLE = {
+  mur:      { fond:'#b4b4b4', texte:'#fff'    },
+  porte:    { fond:'none',    texte:'#9a9a9a' },
   bar:      { fond:'#111',    texte:'#E8C547' },
   entree:   { fond:'#f0fdf4', texte:'#15803d' },
   escalier: { fond:'#eff6ff', texte:'#1d4ed8' },
@@ -939,6 +943,16 @@ const DECOR_STYLE = {
   wc:       { fond:'#faf5ff', texte:'#7e22ce' },
   bloc:     { fond:'#f5f5f5', texte:'#666'    },
 };
+
+const TEINTES_TABLE = {
+  neutre: { nom:'Neutre', fond:'#fff',    trait:'#d4d4d4', chaise:'#e8e8e8' },
+  bleu:   { nom:'Bleu',   fond:'#dbeafe', trait:'#60a5fa', chaise:'#93c5fd' },
+  vert:   { nom:'Vert',   fond:'#dcfce7', trait:'#4ade80', chaise:'#86efac' },
+  rose:   { nom:'Rose',   fond:'#fce7f3', trait:'#f472b6', chaise:'#f9a8d4' },
+  ambre:  { nom:'Ambre',  fond:'#fef3c7', trait:'#fbbf24', chaise:'#fcd34d' },
+  violet: { nom:'Violet', fond:'#ede9fe', trait:'#a78bfa', chaise:'#c4b5fd' },
+};
+const teinteDe = (t) => TEINTES_TABLE[t?.couleur] || TEINTES_TABLE.neutre;
 
 const TYPES_ZONE = [
   { id:'salle', nom:'Salle' }, { id:'etage', nom:'Étage' },
@@ -1371,6 +1385,11 @@ function PlanCanvas({
           cursor:'grab', background:'#fbfbfb' }}>
 
         <defs>
+          <pattern id="hachuresPlan" width="14" height="14" patternUnits="userSpaceOnUse"
+            patternTransform="rotate(45)">
+            <rect width="14" height="14" fill="#fdf6ef" />
+            <line x1="0" y1="0" x2="0" y2="14" stroke="#f0d5bb" strokeWidth="4" />
+          </pattern>
           <pattern id="grillePlan" width={50 * vue.k} height={50 * vue.k} patternUnits="userSpaceOnUse"
             x={vue.x} y={vue.y}>
             <circle cx="1" cy="1" r="1" fill="#ececec" />
@@ -1388,10 +1407,31 @@ function PlanCanvas({
             return (
               <g key={d.id} data-decor={d.id} transform={`rotate(${d.rot || 0} ${d.x + d.l / 2} ${d.y + d.h / 2})`}
                 style={{ cursor: edition ? 'move' : 'default' }}>
-                <rect x={d.x} y={d.y} width={d.l} height={d.h} rx={14} fill={st.fond}
-                  stroke={actif ? '#111' : 'none'} strokeWidth={3 * P} strokeDasharray={`${6 * P} ${4 * P}`} />
-                <text x={d.x + d.l / 2} y={d.y + d.h / 2} textAnchor="middle" dominantBaseline="central"
-                  fill={st.texte} fontSize={Math.min(34, d.l / 4.5)} fontWeight="800">{d.nom}</text>
+                {d.type === 'porte' ? (
+                  <>
+                    {/* Le symbole d'architecte : le battant et son débattement */}
+                    <rect x={d.x} y={d.y} width={d.l} height={d.h} fill="transparent" />
+                    {/* Le débattement est centré sur la charnière, en bas à gauche */}
+                    <path d={`M ${d.x} ${d.y} A ${d.l} ${d.h} 0 0 1 ${d.x + d.l} ${d.y + d.h}`}
+                      fill="none" stroke="#c4c4c4" strokeWidth={2 * P} strokeDasharray={`${8 * P} ${6 * P}`} />
+                    <line x1={d.x} y1={d.y + d.h} x2={d.x} y2={d.y} stroke="#9a9a9a" strokeWidth={7 * P} />
+                  </>
+                ) : (
+                  <rect x={d.x} y={d.y} width={d.l} height={d.h}
+                    rx={d.type === 'mur' ? 2 : 14}
+                    fill={d.type === 'cuisine' ? 'url(#hachuresPlan)' : st.fond}
+                    stroke={actif ? '#111' : (d.type === 'cuisine' ? '#f3d9c4' : 'none')}
+                    strokeWidth={(actif ? 3 : 2) * P}
+                    strokeDasharray={actif ? `${6 * P} ${4 * P}` : 'none'} />
+                )}
+                {d.nom && d.type !== 'mur' && d.type !== 'porte' && (
+                  <text x={d.x + d.l / 2} y={d.y + d.h / 2} textAnchor="middle" dominantBaseline="central"
+                    fill={st.texte} fontSize={Math.min(34, d.l / 4.5)} fontWeight="800">{d.nom}</text>
+                )}
+                {actif && (d.type === 'mur' || d.type === 'porte') && (
+                  <rect x={d.x} y={d.y} width={d.l} height={d.h} fill="none"
+                    stroke="#111" strokeWidth={3 * P} strokeDasharray={`${6 * P} ${4 * P}`} />
+                )}
               </g>
             );
           })}
@@ -1414,9 +1454,12 @@ function PlanCanvas({
             const actif = selection?.type === 'table' && selection.id === t.id;
             const groupe = combinaison.includes(t.id);
             const rond = t.forme === 'ronde' || t.forme === 'ovale';
-            const fond = hs ? '#f3f4f6' : visee ? '#dcfce7' : occupee ? '#E8C547' : '#fff';
+            const teinte = teinteDe(t);
+            const fond = hs ? '#f3f4f6' : visee ? '#dcfce7' : occupee ? '#E8C547' : teinte.fond;
             const trait = visee ? '#16a34a' : trop ? '#dc2626' : groupe ? '#7c3aed'
-              : actif ? '#111' : occupee ? 'none' : (edition && chevauche(t0) ? '#f97316' : '#d4d4d4');
+              : actif ? '#111' : occupee ? 'none' : (edition && chevauche(t0) ? '#f97316' : teinte.trait);
+            // Une table colorée est pleine ; seule la neutre garde ses pointillés.
+            const pointille = !occupee && !hs && (!t.couleur || t.couleur === 'neutre');
 
             return (
               <g key={t.id} data-table={t.id}
@@ -1425,18 +1468,18 @@ function PlanCanvas({
 
                 {chaisesAutour(t).map((c, i) => (
                   <rect key={i} x={t.x + c.x} y={t.y + c.y} width={c.w} height={c.h} rx={8}
-                    fill={hs ? '#e5e7eb' : occupee ? '#d9ae23' : '#e8e8e8'} />
+                    fill={hs ? '#e5e7eb' : occupee ? '#d9ae23' : teinte.chaise} />
                 ))}
 
                 {rond
                   ? <ellipse cx={t.x + t.l / 2} cy={t.y + t.h / 2} rx={t.l / 2} ry={t.h / 2}
                       fill={fond} stroke={trait === 'none' ? 'transparent' : trait}
                       strokeWidth={(visee || actif || groupe ? 4 : 2.5) * P}
-                      strokeDasharray={occupee || hs ? 'none' : `${9 * P} ${7 * P}`} />
+                      strokeDasharray={pointille ? `${9 * P} ${7 * P}` : 'none'} />
                   : <rect x={t.x} y={t.y} width={t.l} height={t.h} rx={t.forme === 'banquette' ? 8 : 14}
                       fill={fond} stroke={trait === 'none' ? 'transparent' : trait}
                       strokeWidth={(visee || actif || groupe ? 4 : 2.5) * P}
-                      strokeDasharray={occupee || hs ? 'none' : `${9 * P} ${7 * P}`} />}
+                      strokeDasharray={pointille ? `${9 * P} ${7 * P}` : 'none'} />}
 
                 {/* La table s'agrandit un peu quand on la vise avec une réservation */}
                 {visee && (rond
@@ -1844,8 +1887,20 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
               const st = DECOR_STYLE[d.type];
               return (
                 <button key={d.type} onPointerDown={(e)=>demarrerPose(d, true, e)} title={`${d.nom} — glisser sur le plan`}
-                  style={{ height:44, borderRadius:11, border:'1.5px solid #ececec', background:st.fond, color:st.texte,
-                    fontSize:11.5, fontWeight:800, cursor:'grab', touchAction:'none' }}>{d.nom}</button>
+                  style={{ height:44, borderRadius:11, border:'1.5px solid #ececec',
+                    background: d.type === 'mur' || d.type === 'porte' ? '#fff' : st.fond,
+                    color: d.type === 'mur' || d.type === 'porte' ? '#999' : st.texte,
+                    fontSize:11.5, fontWeight:800, cursor:'grab', touchAction:'none',
+                    display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                  {d.type === 'mur' && <svg width="24" height="8"><rect width="24" height="8" rx="1.5" fill="#b4b4b4" /></svg>}
+                  {d.type === 'porte' && (
+                    <svg width="18" height="18" viewBox="0 0 18 18">
+                      <path d="M 2 16 A 14 14 0 0 1 16 2" fill="none" stroke="#c4c4c4" strokeWidth="1.6" strokeDasharray="3 2" />
+                      <line x1="2" y1="16" x2="2" y2="2" stroke="#9a9a9a" strokeWidth="3" />
+                    </svg>
+                  )}
+                  {d.nom}
+                </button>
               );
             })}
           </div>
@@ -1933,6 +1988,18 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
                         background: objetSel.forme === f.id ? '#111' : '#fff',
                         color: objetSel.forme === f.id ? '#E8C547' : '#777' }}>{f.nom}</button>
                   ))}
+                </div>
+
+                <label style={{ fontSize:10.5, fontWeight:800, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Couleur</label>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:7, margin:'7px 0 12px' }}>
+                  {Object.entries(TEINTES_TABLE).map(([cle, teinte]) => {
+                    const choisie = (objetSel.couleur || 'neutre') === cle;
+                    return (
+                      <button key={cle} onClick={()=>majTable(objetSel.id, { couleur:cle })} title={teinte.nom}
+                        style={{ width:44, height:44, borderRadius:11, cursor:'pointer', background:teinte.fond,
+                          border: choisie ? '3px solid #111' : `2px solid ${teinte.trait}` }} />
+                    );
+                  })}
                 </div>
 
                 <label style={{ fontSize:10.5, fontWeight:800, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Statut</label>
