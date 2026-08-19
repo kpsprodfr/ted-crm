@@ -1700,8 +1700,13 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
   });
 
   return (
-    <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', display:'flex',
-      flexDirection:'column', height:'100%', minHeight:0, minWidth:0, overflow:'hidden' }}>
+    // En édition, le plan prend tout l'écran : on dessine des tables de 70 cm,
+    // il faut de la place. « Terminer » rend la main au bloc habituel.
+    <div style={{ background:'#fff', display:'flex', flexDirection:'column',
+      minHeight:0, minWidth:0, overflow:'hidden',
+      ...(edition
+        ? { position:'fixed', inset:0, zIndex:4000, borderRadius:0, border:'none' }
+        : { height:'100%', borderRadius:16, border:'1.5px solid #f0f0f0' }) }}>
 
       {/* ── En-tête : une seule ligne ─────────────────────────────────────── */}
       <div style={{ display:'flex', alignItems:'center', gap:7, padding:'10px 14px',
@@ -1809,23 +1814,24 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
       </div>
 
       {/* ── Le plan ───────────────────────────────────────────────────────── */}
-      <div style={{ flex:1, minHeight:0, display:'flex', gap:8, padding:10, background:'#fafafa' }}>
+      <div style={{ flex:1, minHeight:0, display:'flex', gap: edition ? 12 : 8,
+        padding: edition ? 14 : 10, background:'#fafafa' }}>
 
         {edition && (
-          <div style={{ width:78, flexShrink:0, display:'flex', flexDirection:'column', gap:5, overflowY:'auto' }}>
+          <div style={{ width:96, flexShrink:0, display:'flex', flexDirection:'column', gap:6, overflowY:'auto' }}>
             <p style={{ margin:'0 0 1px', fontSize:9.5, fontWeight:800, color:'#bbb', textTransform:'uppercase', letterSpacing:0.5 }}>Tables</p>
             {PLAN_FORMES.map(f => (
               <button key={f.id} onPointerDown={(e)=>demarrerPose(f, false, e)} title={`${f.nom} — glisser sur le plan`}
-                style={{ height:52, borderRadius:11, border:'1.5px solid #ececec', background:'#fff', cursor:'grab',
-                  display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:3, touchAction:'none' }}>
-                <svg width="26" height="17" viewBox="0 0 26 17">
+                style={{ height:64, borderRadius:12, border:'1.5px solid #ececec', background:'#fff', cursor:'grab',
+                  display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:5, touchAction:'none' }}>
+                <svg width="34" height="22" viewBox="0 0 26 17">
                   {f.id === 'ronde' && <circle cx="13" cy="8.5" r="7" fill="none" stroke="#888" strokeWidth="1.8" />}
                   {f.id === 'ovale' && <ellipse cx="13" cy="8.5" rx="11" ry="6" fill="none" stroke="#888" strokeWidth="1.8" />}
                   {f.id === 'carree' && <rect x="6" y="1.5" width="14" height="14" rx="3" fill="none" stroke="#888" strokeWidth="1.8" />}
                   {f.id === 'rectangle' && <rect x="1.5" y="3" width="23" height="11" rx="2.5" fill="none" stroke="#888" strokeWidth="1.8" />}
                   {f.id === 'banquette' && <rect x="1.5" y="6" width="23" height="7" rx="2" fill="#ddd" stroke="#888" strokeWidth="1.5" />}
                 </svg>
-                <span style={{ fontSize:9.5, fontWeight:700, color:'#999' }}>{f.nom}</span>
+                <span style={{ fontSize:10.5, fontWeight:700, color:'#999' }}>{f.nom}</span>
               </button>
             ))}
             <p style={{ margin:'8px 0 1px', fontSize:9.5, fontWeight:800, color:'#bbb', textTransform:'uppercase', letterSpacing:0.5 }}>Décor</p>
@@ -1833,8 +1839,8 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
               const st = DECOR_STYLE[d.type];
               return (
                 <button key={d.type} onPointerDown={(e)=>demarrerPose(d, true, e)} title={`${d.nom} — glisser sur le plan`}
-                  style={{ height:36, borderRadius:10, border:'1.5px solid #ececec', background:st.fond, color:st.texte,
-                    fontSize:10.5, fontWeight:800, cursor:'grab', touchAction:'none' }}>{d.nom}</button>
+                  style={{ height:44, borderRadius:11, border:'1.5px solid #ececec', background:st.fond, color:st.texte,
+                    fontSize:11.5, fontWeight:800, cursor:'grab', touchAction:'none' }}>{d.nom}</button>
               );
             })}
           </div>
@@ -1883,8 +1889,8 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
 
         {/* Les options n'apparaissent qu'à la sélection. */}
         {edition && objetSel && (
-          <div style={{ width:236, flexShrink:0, background:'#fff', border:'1.5px solid #eee', borderRadius:14,
-            padding:'14px 15px', overflowY:'auto' }}>
+          <div style={{ width:276, flexShrink:0, background:'#fff', border:'1.5px solid #eee', borderRadius:14,
+            padding:'16px 18px', overflowY:'auto' }}>
             <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>
               <span style={{ fontSize:13.5, fontWeight:900, color:'#111' }}>
                 {selection.type === 'table' ? `Table ${objetSel.nom}` : objetSel.nom || 'Décor'}
@@ -1976,7 +1982,7 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
 
         {/* Réglages de l'espace, quand rien n'est sélectionné */}
         {edition && !objetSel && (
-          <div style={{ width:236, flexShrink:0, background:'#fff', border:'1.5px solid #eee', borderRadius:14, padding:'14px 15px' }}>
+          <div style={{ width:276, flexShrink:0, background:'#fff', border:'1.5px solid #eee', borderRadius:14, padding:'16px 18px' }}>
             <p style={{ margin:'0 0 12px', fontSize:13.5, fontWeight:900, color:'#111' }}>Espace</p>
 
             <label style={{ fontSize:10.5, fontWeight:800, color:'#999', textTransform:'uppercase', letterSpacing:0.5 }}>Nom</label>

@@ -549,6 +549,10 @@ Trois pièges déjà payés, à ne pas défaire :
 
 ### Mode édition
 
+**Plein écran** (`position:fixed; inset:0`) : on dessine des tables de 70 cm, le
+bloc de la page est trop petit pour y voir quoi que ce soit. « Terminer » rend la
+main. La palette et le panneau y sont élargis (96 px / 276 px).
+
 Par défaut on ne voit que le plan et la palette. Les options d'une table
 n'apparaissent **qu'à la sélection**, dans un panneau latéral.
 
