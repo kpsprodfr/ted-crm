@@ -1011,6 +1011,7 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
   const plan = REGLAGES.plan_salle && REGLAGES.plan_salle.zones ? REGLAGES.plan_salle : PLAN_SALLE_DEFAUT;
   const [zoneId, setZoneId] = useState(plan.zones[0].id);
   const [tableOuverte, setTableOuverte] = useState(null);
+  const [calOuvert, setCalOuvert] = useState(false);
   const zone = plan.zones.find(z => z.id === zoneId) || plan.zones[0];
 
   // Les réservations du service affiché, seules concernées par le placement.
@@ -1024,22 +1025,36 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
     ? (r.clients?.entreprise || 'Entreprise')
     : `${r.clients?.prenom || ''} ${r.clients?.nom || ''}`.trim() || 'Client';
 
-  const placesOccupees = Object.values(parTable).flat().reduce((s, r) => s + (r.nb_personnes || 0), 0);
-  const placesTotal = zone.tables.reduce((s, t) => s + t.places, 0);
-
   return (
     <div style={{ background:'#fff', borderRadius:16, border:'1.5px solid #f0f0f0', display:'flex', flexDirection:'column', height:'100%', minHeight:0, overflow:'hidden' }}>
 
-      {/* Jour et service : le plan reste pilotable sans le calendrier */}
-      <div style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 18px', borderBottom:'1px solid #f5f5f5', flexWrap:'wrap', flexShrink:0 }}>
-        <button onClick={()=>onJour && onJour(decaleJour(jour, -1))}
-          style={{ width:32, height:32, borderRadius:9, border:'1.5px solid #e4e4e4', background:'#fff', cursor:'pointer', fontSize:15, color:'#666' }}>‹</button>
-        <span style={{ fontSize:14.5, fontWeight:800, color:'#111', textTransform:'capitalize', minWidth:170 }}>
+      {/* Une seule ligne : la date, le service, et l'état de chaque zone */}
+      <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 16px', borderBottom:'1px solid #f5f5f5', flexWrap:'wrap', flexShrink:0, position:'relative' }}>
+
+        <button onClick={()=>setCalOuvert(v=>!v)}
+          style={{ height:36, padding:'0 13px', borderRadius:10, cursor:'pointer', flexShrink:0,
+            border: calOuvert ? 'none' : '1.5px solid #e4e4e4', background: calOuvert ? '#111' : '#fff',
+            color: calOuvert ? '#E8C547' : '#111', fontSize:13.5, fontWeight:800,
+            display:'flex', alignItems:'center', gap:8, textTransform:'capitalize' }}>
+          <CalendarDays size={15} strokeWidth={2} color={calOuvert ? '#E8C547' : '#888'} />
           {new Date(jour + 'T12:00:00').toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' })}
-        </span>
-        <button onClick={()=>onJour && onJour(decaleJour(jour, 1))}
-          style={{ width:32, height:32, borderRadius:9, border:'1.5px solid #e4e4e4', background:'#fff', cursor:'pointer', fontSize:15, color:'#666' }}>›</button>
-        <div style={{ display:'flex', gap:5, background:'#f5f5f5', borderRadius:10, padding:3, marginLeft:6 }}>
+          <ChevronDown size={14} strokeWidth={2.4} color={calOuvert ? '#E8C547' : '#bbb'}
+            style={{ transform: calOuvert ? 'rotate(180deg)' : 'none', transition:'transform 0.2s' }} />
+        </button>
+
+        {calOuvert && (
+          <>
+            <div onClick={()=>setCalOuvert(false)} style={{ position:'fixed', inset:0, zIndex:300 }} />
+            <div style={{ position:'absolute', top:'calc(100% - 2px)', left:16, width:300, zIndex:301 }}>
+              <CalendrierDate valeur={jour} autoriserPasse
+                onChoisir={iso => onJour && onJour(iso)}
+                onFermer={()=>setCalOuvert(false)} />
+            </div>
+          </>
+        )}
+
+        {/* Midi / Soir */}
+        <div style={{ display:'flex', gap:4, background:'#f5f5f5', borderRadius:10, padding:3, flexShrink:0 }}>
           {[{ id:'midi', label:'Midi', Icone:Sun }, { id:'soir', label:'Soir', Icone:Moon }].map(o => (
             <button key={o.id} onClick={()=>onService && onService(o.id)}
               style={{ height:30, padding:'0 12px', borderRadius:8, border:'none', cursor:'pointer', fontSize:12.5, fontWeight:800, display:'flex', alignItems:'center', gap:5,
@@ -1049,33 +1064,37 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
             </button>
           ))}
         </div>
-      </div>
 
-      {/* En-tête : les zones, et ce que pèse le service */}
-      <div style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 18px', borderBottom:'1px solid #f5f5f5', flexWrap:'wrap', flexShrink:0 }}>
-        <div style={{ display:'flex', gap:6, background:'#f5f5f5', borderRadius:11, padding:4 }}>
-          {plan.zones.map(z => (
-            <button key={z.id} onClick={()=>{ setZoneId(z.id); setTableOuverte(null); }}
-              style={{ height:34, padding:'0 14px', borderRadius:8, border:'none', cursor:'pointer', fontSize:13, fontWeight:800,
-                background: zoneId === z.id ? '#111' : 'transparent',
-                color: zoneId === z.id ? '#E8C547' : '#777' }}>
-              {z.nom}
-            </button>
-          ))}
+        {/* Chaque zone annonce ce qu'elle porte : placés sur places */}
+        <div style={{ display:'flex', gap:4, background:'#f5f5f5', borderRadius:10, padding:3, flexShrink:0 }}>
+          {plan.zones.map(z => {
+            const idsZone = z.tables.map(t => t.id);
+            const assis = duService
+              .filter(r => idsZone.includes(r.table_plan))
+              .reduce((s2, r) => s2 + (r.nb_personnes || 0), 0);
+            const total = z.tables.reduce((s2, t) => s2 + t.places, 0);
+            const actif = zoneId === z.id;
+            return (
+              <button key={z.id} onClick={()=>{ setZoneId(z.id); setTableOuverte(null); }}
+                style={{ height:30, padding:'0 12px', borderRadius:8, border:'none', cursor:'pointer', fontSize:12.5, fontWeight:800, whiteSpace:'nowrap',
+                  background: actif ? '#111' : 'transparent',
+                  color: actif ? '#E8C547' : '#777' }}>
+                {z.nom} <span style={{ fontWeight:700, opacity:0.75 }}>({assis}/{total})</span>
+              </button>
+            );
+          })}
         </div>
+
         <span style={{ flex:1 }} />
-        <span style={{ fontSize:12.5, color:'#888', fontWeight:600 }}>
-          {placesOccupees} / {placesTotal} couverts placés
-        </span>
         {aPlacer.length > 0 && (
-          <span style={{ fontSize:12, fontWeight:800, padding:'5px 11px', borderRadius:20, background:'#fef9c3', color:'#92400e' }}>
+          <span style={{ fontSize:12, fontWeight:800, padding:'5px 11px', borderRadius:20, background:'#fef9c3', color:'#92400e', flexShrink:0 }}>
             {aPlacer.length} à placer
           </span>
         )}
       </div>
 
       {/* La salle vue d'en haut */}
-      <div style={{ flex:1, minHeight:0, display:'flex', flexDirection:'column', gap:10, padding:16, background:'#fafafa' }}>
+      <div style={{ flex:1, minHeight:0, display:'flex', flexDirection:'column', gap:7, padding:10, background:'#fafafa' }}>
         <div style={{ position:'relative', flex:1, minHeight:0, width:'100%', background:'#fff', border:'1.5px solid #eee', borderRadius:14,
           backgroundImage:'radial-gradient(#f0f0f0 1px, transparent 1px)', backgroundSize:'22px 22px' }}>
 
@@ -1135,7 +1154,7 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
           })}
         </div>
 
-        <div style={{ display:'flex', gap:16, flexWrap:'wrap', marginTop:12, fontSize:11.5, color:'#999' }}>
+        <div style={{ display:'flex', gap:16, flexWrap:'wrap', fontSize:11, color:'#bbb', flexShrink:0 }}>
           <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
             <span style={{ width:12, height:12, borderRadius:'50%', border:'2px dashed #d4d4d4' }} /> libre
           </span>

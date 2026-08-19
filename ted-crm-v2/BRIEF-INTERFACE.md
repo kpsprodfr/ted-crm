@@ -501,8 +501,19 @@ Bouton **« Plan de salle »** dans le bandeau du panneau de droite, à côté d
 Télécharger. Il devient **« Fermer le plan »** une fois ouvert. Le plan prend la
 place du calendrier dans la colonne de gauche.
 
-Le plan reste **pilotable seul** : son en-tête porte ‹ date › et la bascule
-Midi / Soir, puisque le calendrier n'est plus visible.
+Le plan reste **pilotable seul** : son en-tête tient sur **une seule ligne**,
+pour laisser le maximum de hauteur aux tables. On y trouve, dans l'ordre :
+
+- la **date en bouton** (icône calendrier + chevron qui pivote) ; au clic, le
+  `CalendrierDate` s'ouvre en surcouche juste dessous — même dessin et mêmes
+  animations que celui des réservations, avec un capteur de clic en plein écran
+  derrière pour le refermer ;
+- la bascule **Midi / Soir** ;
+- les **zones** — Salle, Terrasse, Étage — chacune annonçant son remplissage,
+  `Salle (2/10)` : couverts assis sur places totales de la zone.
+
+Le cadre du plan est serré (10 px de marge, 7 px d'écart) pour que les tables
+soient aussi grandes que possible dans le bloc.
 
 `PLAN_SALLE_DEFAUT` décrit trois zones — Salle, Terrasse, Étage — chacune avec :
 
