@@ -1190,7 +1190,11 @@ function PlanCanvas({
   useEffect(() => {
     const svg = svgRef.current;
     if (!svg) return;
-    const onWheel = (e) => { e.preventDefault(); zoomVers(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.0016)); };
+    const onWheel = (e) => {
+      e.preventDefault();
+      if (e.ctrlKey || e.metaKey) zoomVers(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.012));
+      else setVue(v => ({ ...v, x: v.x - e.deltaX, y: v.y - e.deltaY }));
+    };
     svg.addEventListener('wheel', onWheel, { passive:false });
     return () => svg.removeEventListener('wheel', onWheel);
   }, []);
@@ -1202,7 +1206,8 @@ function PlanCanvas({
 
     if (pointeurs.current.size === 2) {
       const [a, b] = [...pointeurs.current.values()];
-      geste.current = { type:'pinch', dist: Math.hypot(a.x - b.x, a.y - b.y), k: vueRef.current.k };
+      geste.current = { type:'pinch', dist: Math.hypot(a.x - b.x, a.y - b.y),
+        mid: { x:(a.x + b.x) / 2, y:(a.y + b.y) / 2 }, v:{ ...vueRef.current } };
       return;
     }
 
@@ -1229,10 +1234,13 @@ function PlanCanvas({
       }
     }
 
-    // Sinon : on déplace le cadrage. La table visée est retenue dès l'appui —
-    // la capture du pointeur redirige le relâchement vers le SVG, et on ne
-    // saurait plus sur quoi le doigt s'est posé.
-    geste.current = { type:'pan', x:e.clientX, y:e.clientY, v:{ ...vueRef.current }, bouge:false,
+    // Sur le vide. En édition on ne déplace rien — sinon on croit attraper une
+    // table et c'est toute la salle qui suit le doigt. Hors édition, le doigt
+    // promène le cadrage.
+    // La table visée est retenue dès l'appui : la capture du pointeur redirige
+    // le relâchement vers le SVG, on ne saurait plus sur quoi le doigt s'est posé.
+    geste.current = { type: edition ? 'vide' : 'pan', x:e.clientX, y:e.clientY,
+      v:{ ...vueRef.current }, bouge:false,
       table: surTable ? surTable.getAttribute('data-table') : null };
   }
 
@@ -1247,11 +1255,11 @@ function PlanCanvas({
       const d = Math.hypot(a.x - b.x, a.y - b.y);
       const r = svgRef.current.getBoundingClientRect();
       const cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
-      setVue(v => {
-        const k = Math.min(4, Math.max(0.08, g.k * (d / g.dist)));
-        const f = k / v.k;
-        return { k, x: (cx - r.left) - ((cx - r.left) - v.x) * f, y: (cy - r.top) - ((cy - r.top) - v.y) * f };
-      });
+      const k = Math.min(4, Math.max(0.08, g.v.k * (d / g.dist)));
+      const f = k / g.v.k;
+      setVue({ k,
+        x: (cx - r.left) - ((g.mid.x - r.left) - g.v.x) * f,
+        y: (cy - r.top)  - ((g.mid.y - r.top)  - g.v.y) * f });
       return;
     }
 
@@ -1326,6 +1334,8 @@ function PlanCanvas({
       if (g.estTable) onMajTable(prov.id, patch); else onMajDecor(prov.id, patch);
       return;
     }
+    if (g.type === 'vide') { if (!g.bouge) onSelection(null); return; }
+
     // Un simple appui sur une table, hors édition : on l'ouvre.
     if (!edition && g.type === 'pan' && !g.bouge) {
       const table = g.table && tables.find(x => x.id === g.table);
@@ -1369,11 +1379,6 @@ function PlanCanvas({
         <rect width="100%" height="100%" fill="url(#grillePlan)" />
 
         <g transform={`translate(${vue.x},${vue.y}) scale(${vue.k})`}>
-
-          {/* Le sol */}
-          <rect x={etendue.x1 + PLAN_MARGE / 2} y={etendue.y1 + PLAN_MARGE / 2}
-            width={etendue.x2 - etendue.x1 - PLAN_MARGE} height={etendue.y2 - etendue.y1 - PLAN_MARGE}
-            fill="#fff" stroke="none" rx={16} />
 
           {/* Décors */}
           {decors.map(d0 => {
@@ -1856,7 +1861,8 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
           <div style={{ display:'flex', gap:16, flexWrap:'wrap', fontSize:11, color:'#bbb', flexShrink:0, alignItems:'center' }}>
             {edition ? (
               <>
-                <span>Glisser une forme sur le plan · déplacer, tourner, redimensionner au doigt</span>
+                <span>Glisser une forme sur le plan · déplacer, tourner, redimensionner au doigt ·
+                  deux doigts pour se déplacer et zoomer</span>
                 <span style={{ flex:1 }} />
                 <span>{zone.tables.length} tables · {zone.tables.reduce((s,t)=>s+(t.statut==='hors_service'?0:t.places),0)} couverts</span>
               </>

@@ -529,8 +529,14 @@ tables : pas de couverts, jamais comptés, jamais assignables.
 Un SVG dont on pilote le cadrage par `translate/scale` — un seul transform, net
 à tous les zooms et léger au doigt.
 
-- zoom molette (écouteur natif **non passif**, sinon `preventDefault` est ignoré),
-  pincement à deux doigts, déplacement sur le vide, bouton « ajuster à l'écran » ;
+- pas de sol dessiné : les tables et les décors reposent directement sur la grille ;
+- **en édition, glisser sur le vide ne déplace rien** — on croyait attraper une
+  table et c'est toute la salle qui suivait le doigt. Le cadrage se règle au
+  pincement (qui zoome *et* déplace), au défilement à deux doigts, ou par les
+  boutons. Hors édition, le doigt promène le cadrage comme avant ;
+- molette : convention trackpad — `ctrl`/`⌘` zoome, le reste défile. Écouteur
+  natif **non passif**, sinon `preventDefault` est ignoré ;
+- bouton « ajuster à l'écran » ;
 - `etendueZone()` calcule les bornes **depuis le contenu** : approcher une table
   du bord agrandit le plan tout seul, il n'y a jamais de mur ;
 - épaisseurs et poignées dimensionnées en `1/k` : taille constante à l'écran
