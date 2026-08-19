@@ -530,10 +530,10 @@ Un SVG dont on pilote le cadrage par `translate/scale` — un seul transform, ne
 à tous les zooms et léger au doigt.
 
 - pas de sol dessiné : les tables et les décors reposent directement sur la grille ;
-- **en édition, glisser sur le vide ne déplace rien** — on croyait attraper une
-  table et c'est toute la salle qui suivait le doigt. Le cadrage se règle au
-  pincement (qui zoome *et* déplace), au défilement à deux doigts, ou par les
-  boutons. Hors édition, le doigt promène le cadrage comme avant ;
+- **glisser sur le vide promène le cadrage**, en édition comme en service ; sur un
+  objet, on ne déplace que cet objet. Ce n'est plus ambigu depuis que le sol blanc
+  a disparu : le vide se voit. En édition, un appui sans déplacement sur le vide
+  désélectionne. Le pincement zoome *et* déplace ;
 - molette : convention trackpad — `ctrl`/`⌘` zoome, le reste défile. Écouteur
   natif **non passif**, sinon `preventDefault` est ignoré ;
 - bouton « ajuster à l'écran » ;

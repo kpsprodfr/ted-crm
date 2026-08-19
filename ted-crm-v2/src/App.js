@@ -1234,12 +1234,11 @@ function PlanCanvas({
       }
     }
 
-    // Sur le vide. En édition on ne déplace rien — sinon on croit attraper une
-    // table et c'est toute la salle qui suit le doigt. Hors édition, le doigt
-    // promène le cadrage.
+    // Sur le vide : le doigt promène le cadrage, en édition comme en service.
+    // Ce n'est plus ambigu depuis que le sol blanc a disparu — le vide se voit.
     // La table visée est retenue dès l'appui : la capture du pointeur redirige
     // le relâchement vers le SVG, on ne saurait plus sur quoi le doigt s'est posé.
-    geste.current = { type: edition ? 'vide' : 'pan', x:e.clientX, y:e.clientY,
+    geste.current = { type:'pan', x:e.clientX, y:e.clientY,
       v:{ ...vueRef.current }, bouge:false,
       table: surTable ? surTable.getAttribute('data-table') : null };
   }
@@ -1334,7 +1333,8 @@ function PlanCanvas({
       if (g.estTable) onMajTable(prov.id, patch); else onMajDecor(prov.id, patch);
       return;
     }
-    if (g.type === 'vide') { if (!g.bouge) onSelection(null); return; }
+    // Un appui sans déplacement sur le vide, en édition : on désélectionne.
+    if (edition && g.type === 'pan' && !g.bouge && !g.table) { onSelection(null); return; }
 
     // Un simple appui sur une table, hors édition : on l'ouvre.
     if (!edition && g.type === 'pan' && !g.bouge) {
@@ -1368,7 +1368,7 @@ function PlanCanvas({
         onPointerDown={onPointerDown} onPointerMove={onPointerMove}
         onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
         style={{ display:'block', touchAction:'none', userSelect:'none', WebkitUserSelect:'none',
-          cursor: edition ? 'default' : 'grab', background:'#fbfbfb' }}>
+          cursor:'grab', background:'#fbfbfb' }}>
 
         <defs>
           <pattern id="grillePlan" width={50 * vue.k} height={50 * vue.k} patternUnits="userSpaceOnUse"
@@ -1862,7 +1862,7 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
             {edition ? (
               <>
                 <span>Glisser une forme sur le plan · déplacer, tourner, redimensionner au doigt ·
-                  deux doigts pour se déplacer et zoomer</span>
+                  glisser sur le vide pour se déplacer, pincer pour zoomer</span>
                 <span style={{ flex:1 }} />
                 <span>{zone.tables.length} tables · {zone.tables.reduce((s,t)=>s+(t.statut==='hors_service'?0:t.places),0)} couverts</span>
               </>
