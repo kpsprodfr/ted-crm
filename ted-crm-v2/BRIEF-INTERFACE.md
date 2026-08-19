@@ -529,7 +529,8 @@ allure de plan d'architecte :
   le contour de la salle, les cloisons et les box ; on l'étire et on le tourne
   comme n'importe quel objet ;
 - **porte** — symbole d'architecte : le battant plein plus son débattement en
-  pointillés, **l'arc centré sur la charnière** (en bas à gauche avant rotation).
+  pointillés, **l'arc centré sur la charnière** (en bas à gauche avant rotation) ;
+- **bar courbe** — un arc épais, pour le comptoir en demi-lune.
 
 La **cuisine** est remplie de hachures (`url(#hachuresPlan)`), comme sur un plan.
 

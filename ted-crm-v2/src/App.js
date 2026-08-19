@@ -920,12 +920,14 @@ const PLAN_FORMES = [
   { id:'rectangle', nom:'Rectangle', l:160, h:80,  places:6 },
   { id:'ovale',     nom:'Ovale',     l:220, h:90,  places:8 },
   { id:'banquette', nom:'Banquette', l:200, h:60,  places:4 },
+  { id:'box',       nom:'Box',       l:260, h:200, places:6 },
 ];
 
 const PLAN_DECORS = [
   { type:'mur',      nom:'Mur',      l:400, h:22  },
   { type:'porte',    nom:'Porte',    l:90,  h:90  },
   { type:'bar',      nom:'Bar',      l:140, h:400 },
+  { type:'barcourbe', nom:'Bar courbe', l:300, h:240 },
   { type:'entree',   nom:'Entrée',   l:170, h:60  },
   { type:'escalier', nom:'Escalier', l:140, h:160 },
   { type:'cuisine',  nom:'Cuisine',  l:140, h:160 },
@@ -937,6 +939,7 @@ const DECOR_STYLE = {
   mur:      { fond:'#b4b4b4', texte:'#fff'    },
   porte:    { fond:'none',    texte:'#9a9a9a' },
   bar:      { fond:'#111',    texte:'#E8C547' },
+  barcourbe:{ fond:'#111',    texte:'#E8C547' },
   entree:   { fond:'#f0fdf4', texte:'#15803d' },
   escalier: { fond:'#eff6ff', texte:'#1d4ed8' },
   cuisine:  { fond:'#fff7ed', texte:'#c2410c' },
@@ -1079,28 +1082,54 @@ function libelleTables(valeur) {
 
 // Répartition des chaises autour d'une table, en cm relatifs à son cadre.
 function chaisesAutour(t) {
+  if (t.forme === 'box') return [];           // le box a ses banquettes, pas des chaises
   const n = Math.max(1, t.places || 0);
   const C = 34, E = 11;                       // taille d'une chaise, écart au bord
   const out = [];
-  const poser = (nb, y) => {
-    for (let i = 0; i < nb; i++) out.push({ x: (t.l / (nb + 1)) * (i + 1) - C / 2, y, w:C, h:C });
+  const poser = (nb, y, sens) => {
+    for (let i = 0; i < nb; i++) out.push({ x: (t.l / (nb + 1)) * (i + 1) - C / 2, y, w:C, h:C, sens });
   };
-  if (t.forme === 'banquette') { poser(n, -E - C); return out; }
+  const gauche = () => out.push({ x:-E - C, y: t.h / 2 - C / 2, w:C, h:C, sens:'gauche' });
+  const droite = () => out.push({ x: t.l + E, y: t.h / 2 - C / 2, w:C, h:C, sens:'droite' });
+
+  if (t.forme === 'banquette') { poser(n, -E - C, 'haut'); return out; }
   if (n <= 2 && t.l <= t.h * 1.4) {
-    out.push({ x:-E - C, y: t.h / 2 - C / 2, w:C, h:C });
-    if (n === 2) out.push({ x: t.l + E, y: t.h / 2 - C / 2, w:C, h:C });
+    gauche();
+    if (n === 2) droite();
     return out;
   }
   const cotes = n >= 4 ? 2 : 0;
   const reste = n - cotes;
   const haut = Math.ceil(reste / 2);
-  poser(haut, -E - C);
-  poser(reste - haut, t.h + E);
-  if (cotes) {
-    out.push({ x:-E - C, y: t.h / 2 - C / 2, w:C, h:C });
-    out.push({ x: t.l + E, y: t.h / 2 - C / 2, w:C, h:C });
-  }
+  poser(haut, -E - C, 'haut');
+  poser(reste - haut, t.h + E, 'bas');
+  if (cotes) { gauche(); droite(); }
   return out;
+}
+
+// Le dossier d'une chaise : une barre plus épaisse, du côté opposé à la table.
+function dossierDe(c) {
+  const D = 9;
+  if (c.sens === 'haut')   return { x:c.x, y:c.y, w:c.w, h:D };
+  if (c.sens === 'bas')    return { x:c.x, y:c.y + c.h - D, w:c.w, h:D };
+  if (c.sens === 'gauche') return { x:c.x, y:c.y, w:D, h:c.h };
+  return { x:c.x + c.w - D, y:c.y, w:D, h:c.h };
+}
+
+// Les deux banquettes courbes d'un box, et la table entre elles.
+function geometrieBox(t) {
+  const cx = t.x + t.l / 2, cy = t.y + t.h / 2;
+  const a = t.l * 0.36, b = t.h * 0.42;
+  // Les deux banquettes s'arrêtent avant de se rejoindre : sans ce jeu en haut
+  // et en bas elles forment un anneau fermé et on ne lit plus un box.
+  const dx = a * 0.52, dy = b * 0.85;
+  return {
+    cx, cy,
+    epaisseur: Math.max(16, t.l * 0.13),
+    gauche: `M ${cx - dx} ${cy - dy} A ${a} ${b} 0 0 0 ${cx - dx} ${cy + dy}`,
+    droite: `M ${cx + dx} ${cy - dy} A ${a} ${b} 0 0 1 ${cx + dx} ${cy + dy}`,
+    rx: t.l * 0.17, ry: t.h * 0.27,
+  };
 }
 
 // L'étendue réelle du contenu, chaises comprises — c'est elle qui fait grandir
@@ -1407,7 +1436,13 @@ function PlanCanvas({
             return (
               <g key={d.id} data-decor={d.id} transform={`rotate(${d.rot || 0} ${d.x + d.l / 2} ${d.y + d.h / 2})`}
                 style={{ cursor: edition ? 'move' : 'default' }}>
-                {d.type === 'porte' ? (
+                {d.type === 'barcourbe' ? (
+                  <>
+                    <rect x={d.x} y={d.y} width={d.l} height={d.h} fill="transparent" />
+                    <path d={`M ${d.x} ${d.y} A ${d.l} ${d.h} 0 0 1 ${d.x} ${d.y + d.h}`}
+                      fill="none" stroke="#111" strokeWidth={Math.max(16, d.l * 0.14)} strokeLinecap="round" />
+                  </>
+                ) : d.type === 'porte' ? (
                   <>
                     {/* Le symbole d'architecte : le battant et son débattement */}
                     <rect x={d.x} y={d.y} width={d.l} height={d.h} fill="transparent" />
@@ -1458,6 +1493,8 @@ function PlanCanvas({
             const fond = hs ? '#f3f4f6' : visee ? '#dcfce7' : occupee ? '#E8C547' : teinte.fond;
             const trait = visee ? '#16a34a' : trop ? '#dc2626' : groupe ? '#7c3aed'
               : actif ? '#111' : occupee ? 'none' : (edition && chevauche(t0) ? '#f97316' : teinte.trait);
+            const assise  = hs ? '#e5e7eb' : occupee ? '#d9ae23' : teinte.chaise;
+            const dossier = hs ? '#d1d5db' : occupee ? '#b8860b' : teinte.trait;
             // Une table colorée est pleine ; seule la neutre garde ses pointillés.
             const pointille = !occupee && !hs && (!t.couleur || t.couleur === 'neutre');
 
@@ -1466,12 +1503,29 @@ function PlanCanvas({
                 transform={`rotate(${t.rot || 0} ${t.x + t.l / 2} ${t.y + t.h / 2})`}
                 style={{ cursor: edition ? 'move' : 'pointer' }}>
 
-                {chaisesAutour(t).map((c, i) => (
-                  <rect key={i} x={t.x + c.x} y={t.y + c.y} width={c.w} height={c.h} rx={8}
-                    fill={hs ? '#e5e7eb' : occupee ? '#d9ae23' : teinte.chaise} />
-                ))}
+                {chaisesAutour(t).map((c, i) => {
+                  const d = dossierDe(c);
+                  return (
+                    <g key={i}>
+                      <rect x={t.x + c.x} y={t.y + c.y} width={c.w} height={c.h} rx={8} fill={assise} />
+                      <rect x={t.x + d.x} y={t.y + d.y} width={d.w} height={d.h} rx={4} fill={dossier} />
+                    </g>
+                  );
+                })}
 
-                {rond
+                {t.forme === 'box' ? (() => {
+                  const b = geometrieBox(t);
+                  return (
+                    <>
+                      <path d={b.gauche} fill="none" stroke={assise} strokeWidth={b.epaisseur} strokeLinecap="round" />
+                      <path d={b.droite} fill="none" stroke={assise} strokeWidth={b.epaisseur} strokeLinecap="round" />
+                      <ellipse cx={b.cx} cy={b.cy} rx={b.rx} ry={b.ry}
+                        fill={fond} stroke={trait === 'none' ? 'transparent' : trait}
+                        strokeWidth={(visee || actif || groupe ? 4 : 2.5) * P}
+                        strokeDasharray={pointille ? `${9 * P} ${7 * P}` : 'none'} />
+                    </>
+                  );
+                })() : rond
                   ? <ellipse cx={t.x + t.l / 2} cy={t.y + t.h / 2} rx={t.l / 2} ry={t.h / 2}
                       fill={fond} stroke={trait === 'none' ? 'transparent' : trait}
                       strokeWidth={(visee || actif || groupe ? 4 : 2.5) * P}
@@ -1878,6 +1932,13 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
                   {f.id === 'carree' && <rect x="6" y="1.5" width="14" height="14" rx="3" fill="none" stroke="#888" strokeWidth="1.8" />}
                   {f.id === 'rectangle' && <rect x="1.5" y="3" width="23" height="11" rx="2.5" fill="none" stroke="#888" strokeWidth="1.8" />}
                   {f.id === 'banquette' && <rect x="1.5" y="6" width="23" height="7" rx="2" fill="#ddd" stroke="#888" strokeWidth="1.5" />}
+                  {f.id === 'box' && (
+                    <>
+                      <path d="M 13 2 A 7 6.5 0 0 0 13 15" fill="none" stroke="#bbb" strokeWidth="3" strokeLinecap="round" />
+                      <path d="M 13 2 A 7 6.5 0 0 1 13 15" fill="none" stroke="#bbb" strokeWidth="3" strokeLinecap="round" />
+                      <ellipse cx="13" cy="8.5" rx="3" ry="4" fill="none" stroke="#888" strokeWidth="1.6" />
+                    </>
+                  )}
                 </svg>
                 <span style={{ fontSize:10.5, fontWeight:700, color:'#999' }}>{f.nom}</span>
               </button>
@@ -1893,6 +1954,11 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
                     fontSize:11.5, fontWeight:800, cursor:'grab', touchAction:'none',
                     display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
                   {d.type === 'mur' && <svg width="24" height="8"><rect width="24" height="8" rx="1.5" fill="#b4b4b4" /></svg>}
+                  {d.type === 'barcourbe' && (
+                    <svg width="16" height="18" viewBox="0 0 16 18">
+                      <path d="M 3 2 A 11 8 0 0 1 3 16" fill="none" stroke="#111" strokeWidth="3.4" strokeLinecap="round" />
+                    </svg>
+                  )}
                   {d.type === 'porte' && (
                     <svg width="18" height="18" viewBox="0 0 18 18">
                       <path d="M 2 16 A 14 14 0 0 1 16 2" fill="none" stroke="#c4c4c4" strokeWidth="1.6" strokeDasharray="3 2" />
