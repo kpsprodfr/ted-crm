@@ -1080,6 +1080,17 @@ function libelleTables(valeur) {
   return ids.map(id => (toutes.find(t => t.id === id)?.nom) || id).join(' + ');
 }
 
+// L'accord promotionnel : un seul réglage pour le client, quel que soit le canal.
+// Les deux colonnes restent écrites ensemble — le futur envoi pourra toujours
+// filtrer par canal si le besoin apparaît.
+const ETATS_PROMO = {
+  true:  { court:'Accepté',     signe:'✓', fond:'#dcfce7', texte:'#15803d', bord:'#bbf7d0' },
+  false: { court:'Refusé',      signe:'✕', fond:'#fee2e2', texte:'#b91c1c', bord:'#fecaca' },
+  null:  { court:'Non demandé', signe:'?', fond:'#f5f5f5', texte:'#aaa',    bord:'#ececec' },
+};
+const consentementPromo = (c) => (c?.consentement_email ?? c?.consentement_sms ?? null);
+const etatPromo = (c) => ETATS_PROMO[String(consentementPromo(c))] || ETATS_PROMO.null;
+
 // Répartition des chaises autour d'une table, en cm relatifs à son cadre.
 function chaisesAutour(t) {
   if (t.forme === 'box') return [];           // le box a ses banquettes, pas des chaises
@@ -13910,6 +13921,17 @@ function CRMApp({ user, onLogout }) {
                         {prochaineResa ? `${new Date(prochaineResa.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}${prochaineResa.heure?` à ${prochaineResa.heure}`:''}` : '—'}
                       </div>
                     </div>
+                    {(() => {
+                      const e = etatPromo(c);
+                      return (
+                        <span title={`Communications promotionnelles — ${e.court}`}
+                          style={{ flexShrink:0, fontSize:11, fontWeight:800, padding:'4px 10px',
+                            borderRadius:20, background:e.fond, color:e.texte,
+                            border:`1px solid ${e.bord}`, whiteSpace:'nowrap' }}>
+                          Promos {e.signe}
+                        </span>
+                      );
+                    })()}
                     <ChevronRight size={14} strokeWidth={2} color="#ddd" style={{flexShrink:0}}/>
                   </div>
                 );
@@ -14200,46 +14222,35 @@ function CRMApp({ user, onLogout }) {
 
                 {/* Consentement aux promotions — sans lui, aucun envoi commercial
                     n'est possible : c'est la loi, et c'est ce que filtre l'envoi.
-                    Tenu sur une seule ligne : c'est un réglage, pas le sujet de la fiche. */}
+                    Un seul réglage : le client accepte d'être sollicité, ou non. */}
                 <div style={{ marginTop:12, background:'#f9f9f9', borderRadius:12, padding:'9px 14px',
-                  display:'flex', alignItems:'center', gap:14, flexWrap:'wrap' }}>
-                  <span title="Offres, soirées, nouveautés. Sans accord explicite, ce client ne reçoit rien."
+                  display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
+                  <span title="Offres, soirées, nouveautés, par e-mail ou SMS. Sans accord explicite, ce client ne reçoit rien."
                     style={{ display:'flex', alignItems:'center', gap:7, fontSize:9.5, fontWeight:700,
                       color:'#999', textTransform:'uppercase', letterSpacing:0.5, flexShrink:0 }}>
-                    <Megaphone size={13} strokeWidth={2} color="#999" /> Promotions
+                    <Megaphone size={13} strokeWidth={2} color="#999" /> Communications promotionnelles
                   </span>
 
-                  {[
-                    { cle:'consentement_email', label:'E-mail', manque: !c.mail },
-                    { cle:'consentement_sms',   label:'SMS',    manque: !c.tel  },
-                  ].map(canal => (
-                    <span key={canal.cle} style={{ display:'flex', alignItems:'center', gap:7 }}>
-                      <span title={canal.manque ? 'coordonnée manquante' : undefined}
-                        style={{ fontSize:12.5, fontWeight:700, color: canal.manque ? '#c8c8c8' : '#555' }}>
-                        {canal.label}
-                      </span>
-                      <span style={{ display:'flex', gap:3, background:'#f0f0f0', borderRadius:9, padding:3 }}>
-                        {[
-                          { v:true,  nom:'Accepté',     fond:'#dcfce7', texte:'#15803d' },
-                          { v:false, nom:'Refusé',      fond:'#fee2e2', texte:'#b91c1c' },
-                          { v:null,  nom:'Non demandé', fond:'#fff',    texte:'#777'    },
-                        ].map(opt => {
-                          const actif = (c[canal.cle] ?? null) === opt.v;
-                          return (
-                            <button key={String(opt.v)} disabled={ficheClientReadOnly}
-                              onClick={()=>majConsentement(c, { [canal.cle]: opt.v })}
-                              style={{ height:32, padding:'0 10px', borderRadius:7, border:'none',
-                                fontSize:11.5, fontWeight:800, whiteSpace:'nowrap',
-                                cursor: ficheClientReadOnly ? 'not-allowed' : 'pointer',
-                                background: actif ? opt.fond : 'transparent',
-                                color: actif ? opt.texte : '#b4b4b4' }}>
-                              {opt.nom}
-                            </button>
-                          );
-                        })}
-                      </span>
-                    </span>
-                  ))}
+                  <span style={{ display:'flex', gap:3, background:'#f0f0f0', borderRadius:9, padding:3 }}>
+                    {[
+                      { v:true,  nom:'Accepté',     fond:'#dcfce7', texte:'#15803d' },
+                      { v:false, nom:'Refusé',      fond:'#fee2e2', texte:'#b91c1c' },
+                      { v:null,  nom:'Non demandé', fond:'#fff',    texte:'#777'    },
+                    ].map(opt => {
+                      const actif = consentementPromo(c) === opt.v;
+                      return (
+                        <button key={String(opt.v)} disabled={ficheClientReadOnly}
+                          onClick={()=>majConsentement(c, { consentement_email: opt.v, consentement_sms: opt.v })}
+                          style={{ height:32, padding:'0 12px', borderRadius:7, border:'none',
+                            fontSize:11.5, fontWeight:800, whiteSpace:'nowrap',
+                            cursor: ficheClientReadOnly ? 'not-allowed' : 'pointer',
+                            background: actif ? opt.fond : 'transparent',
+                            color: actif ? opt.texte : '#b4b4b4' }}>
+                          {opt.nom}
+                        </button>
+                      );
+                    })}
+                  </span>
 
                   {c.consentement_date && (
                     <span style={{ marginLeft:'auto', fontSize:10.5, color:'#c4c4c4', whiteSpace:'nowrap' }}>

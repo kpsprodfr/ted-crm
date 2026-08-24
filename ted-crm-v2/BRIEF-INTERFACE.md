@@ -689,11 +689,19 @@ Colonnes ajoutées à `clients` : `consentement_email`, `consentement_sms`
 un consentement se recueille, il ne se suppose pas. Les clients existants sont
 donc tous en « non demandé », c'est-à-dire **sans droit d'envoi**.
 
+**Un seul réglage, pas un par canal.** Le client accepte d'être sollicité ou non ;
+les deux colonnes sont écrites ensemble (`consentementPromo()` lit l'une puis
+l'autre). Le découpage e-mail / SMS existe toujours en base si le besoin apparaît,
+mais il n'encombre pas l'écran.
+
 Réglage dans la fiche client, sous le commentaire, dans le bloc Coordonnées :
-une ligne par canal, trois boutons (Accepté / Refusé / Non demandé). Chaque
-changement écrit la date et l'origine du recueil — c'est la preuve à produire
-en cas de contrôle. Un canal sans coordonnée est signalé (« pas d'adresse »)
-mais reste réglable.
+une ligne, trois boutons (Accepté / Refusé / Non demandé). Chaque changement
+écrit la date et l'origine du recueil — c'est la preuve à produire en cas de
+contrôle.
+
+Dans la **liste des clients**, une pastille en fin de ligne — `Promos ✓` vert,
+`Promos ✕` rouge, `Promos ?` gris — donne l'état sans ouvrir la fiche. Le signe
+double la couleur : jamais d'information portée par la couleur seule.
 
 ⚠️ **Tout futur envoi commercial doit filtrer sur ces colonnes.** Deux index
 partiels existent pour ça. Les envois de service (confirmation, rappel de
