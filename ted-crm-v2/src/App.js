@@ -12653,6 +12653,21 @@ function CRMApp({ user, onLogout }) {
     setClients(prev => prev.map(x => x.id === tempId ? data : x));
   }
 
+  // Le consentement aux communications promotionnelles se recueille, il ne se
+  // suppose pas : rien n'est coché par défaut, et on garde la date et l'origine
+  // du recueil — c'est la preuve à produire en cas de contrôle.
+  async function majConsentement(c, patch) {
+    const maj = { ...patch, consentement_date: new Date().toISOString(), consentement_source: 'fiche client' };
+    setClients(prev => prev.map(x => x.id === c.id ? { ...x, ...maj } : x));
+    setModalDetailClient(prev => prev && prev.id === c.id ? { ...prev, ...maj } : prev);
+    const { error } = await safeQuery(
+      () => supabase.from('clients').update(maj).eq('id', c.id),
+      { fallback:null, context:'majConsentement' }
+    );
+    if (error) { showToast('Enregistrement impossible', 'error'); loadClients(true); }
+    else showToast('Consentement enregistré ✓');
+  }
+
   async function editClient(c) {
     setClients(prev => prev.map(x => x.id === c.id ? {...x, ...c} : x));
     setModalDetailClient(prev => prev && prev.id === c.id ? {...prev, ...c} : prev);
@@ -14182,6 +14197,59 @@ function CRMApp({ user, onLogout }) {
                     <Plus size={14} strokeWidth={2} color="#999"/> Ajouter un commentaire
                   </button>
                 )}
+
+                {/* Consentement aux promotions — sans lui, aucun envoi commercial
+                    n'est possible : c'est la loi, et c'est ce que filtre l'envoi. */}
+                <div style={{ marginTop:12, background:'#f9f9f9', borderRadius:12, padding:'14px 16px' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3 }}>
+                    <Megaphone size={13} strokeWidth={2} color="#999" />
+                    <p style={{ fontSize:9.5, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0 }}>
+                      Communications promotionnelles
+                    </p>
+                  </div>
+                  <p style={{ margin:'0 0 12px', fontSize:11.5, color:'#aaa', lineHeight:1.6 }}>
+                    Offres, soirées, nouveautés. Sans accord explicite, ce client ne reçoit rien.
+                  </p>
+
+                  {[
+                    { cle:'consentement_email', label:'E-mail', manque: !c.mail, absent:'pas d\'adresse' },
+                    { cle:'consentement_sms',   label:'SMS',    manque: !c.tel,  absent:'pas de numéro' },
+                  ].map(canal => (
+                    <div key={canal.cle} style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 0', flexWrap:'wrap' }}>
+                      <span style={{ fontSize:13, fontWeight:700, color: canal.manque ? '#c4c4c4' : '#111', width:62, flexShrink:0 }}>
+                        {canal.label}
+                      </span>
+                      {canal.manque && <span style={{ fontSize:11.5, color:'#c4c4c4' }}>{canal.absent}</span>}
+                      <div style={{ display:'flex', gap:5, marginLeft:'auto' }}>
+                        {[
+                          { v:true,  nom:'Accepté',     fond:'#dcfce7', texte:'#15803d', bord:'#86efac' },
+                          { v:false, nom:'Refusé',      fond:'#fee2e2', texte:'#b91c1c', bord:'#fca5a5' },
+                          { v:null,  nom:'Non demandé', fond:'#f0f0f0', texte:'#777',    bord:'#e0e0e0' },
+                        ].map(opt => {
+                          const actif = (c[canal.cle] ?? null) === opt.v;
+                          return (
+                            <button key={String(opt.v)} disabled={ficheClientReadOnly}
+                              onClick={()=>majConsentement(c, { [canal.cle]: opt.v })}
+                              style={{ height:38, padding:'0 12px', borderRadius:9, fontSize:12, fontWeight:800,
+                                cursor: ficheClientReadOnly ? 'not-allowed' : 'pointer',
+                                border: actif ? `1.5px solid ${opt.bord}` : '1.5px solid #ececec',
+                                background: actif ? opt.fond : '#fff',
+                                color: actif ? opt.texte : '#bbb' }}>
+                              {opt.nom}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+
+                  {c.consentement_date && (
+                    <p style={{ margin:'10px 0 0', fontSize:11, color:'#bbb' }}>
+                      Recueilli le {new Date(c.consentement_date).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}
+                      {c.consentement_source ? ` — ${c.consentement_source}` : ''}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <BlocReservations resas={resasData} client={c} />

@@ -679,6 +679,28 @@ demande n'apparaît qu'au rechargement.
 
 ---
 
+## 8 sexies. Consentement aux communications promotionnelles
+
+Colonnes ajoutées à `clients` : `consentement_email`, `consentement_sms`
+(booléens **nullables**), `consentement_date`, `consentement_source`.
+
+**Trois états volontaires** : `NULL` = jamais demandé · `false` = refusé ·
+`true` = accepté. Rien n'est coché par défaut et aucun backfill n'a été fait :
+un consentement se recueille, il ne se suppose pas. Les clients existants sont
+donc tous en « non demandé », c'est-à-dire **sans droit d'envoi**.
+
+Réglage dans la fiche client, sous le commentaire, dans le bloc Coordonnées :
+une ligne par canal, trois boutons (Accepté / Refusé / Non demandé). Chaque
+changement écrit la date et l'origine du recueil — c'est la preuve à produire
+en cas de contrôle. Un canal sans coordonnée est signalé (« pas d'adresse »)
+mais reste réglable.
+
+⚠️ **Tout futur envoi commercial doit filtrer sur ces colonnes.** Deux index
+partiels existent pour ça. Les envois de service (confirmation, rappel de
+réservation) n'y sont pas soumis : ils ne sont pas de la prospection.
+
+---
+
 ## 9. Chantiers ouverts
 
 À traiter uniquement sur demande, mais à connaître :
