@@ -14199,55 +14199,53 @@ function CRMApp({ user, onLogout }) {
                 )}
 
                 {/* Consentement aux promotions — sans lui, aucun envoi commercial
-                    n'est possible : c'est la loi, et c'est ce que filtre l'envoi. */}
-                <div style={{ marginTop:12, background:'#f9f9f9', borderRadius:12, padding:'14px 16px' }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3 }}>
-                    <Megaphone size={13} strokeWidth={2} color="#999" />
-                    <p style={{ fontSize:9.5, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:0.5, margin:0 }}>
-                      Communications promotionnelles
-                    </p>
-                  </div>
-                  <p style={{ margin:'0 0 12px', fontSize:11.5, color:'#aaa', lineHeight:1.6 }}>
-                    Offres, soirées, nouveautés. Sans accord explicite, ce client ne reçoit rien.
-                  </p>
+                    n'est possible : c'est la loi, et c'est ce que filtre l'envoi.
+                    Tenu sur une seule ligne : c'est un réglage, pas le sujet de la fiche. */}
+                <div style={{ marginTop:12, background:'#f9f9f9', borderRadius:12, padding:'9px 14px',
+                  display:'flex', alignItems:'center', gap:14, flexWrap:'wrap' }}>
+                  <span title="Offres, soirées, nouveautés. Sans accord explicite, ce client ne reçoit rien."
+                    style={{ display:'flex', alignItems:'center', gap:7, fontSize:9.5, fontWeight:700,
+                      color:'#999', textTransform:'uppercase', letterSpacing:0.5, flexShrink:0 }}>
+                    <Megaphone size={13} strokeWidth={2} color="#999" /> Promotions
+                  </span>
 
                   {[
-                    { cle:'consentement_email', label:'E-mail', manque: !c.mail, absent:'pas d\'adresse' },
-                    { cle:'consentement_sms',   label:'SMS',    manque: !c.tel,  absent:'pas de numéro' },
+                    { cle:'consentement_email', label:'E-mail', manque: !c.mail },
+                    { cle:'consentement_sms',   label:'SMS',    manque: !c.tel  },
                   ].map(canal => (
-                    <div key={canal.cle} style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 0', flexWrap:'wrap' }}>
-                      <span style={{ fontSize:13, fontWeight:700, color: canal.manque ? '#c4c4c4' : '#111', width:62, flexShrink:0 }}>
+                    <span key={canal.cle} style={{ display:'flex', alignItems:'center', gap:7 }}>
+                      <span title={canal.manque ? 'coordonnée manquante' : undefined}
+                        style={{ fontSize:12.5, fontWeight:700, color: canal.manque ? '#c8c8c8' : '#555' }}>
                         {canal.label}
                       </span>
-                      {canal.manque && <span style={{ fontSize:11.5, color:'#c4c4c4' }}>{canal.absent}</span>}
-                      <div style={{ display:'flex', gap:5, marginLeft:'auto' }}>
+                      <span style={{ display:'flex', gap:3, background:'#f0f0f0', borderRadius:9, padding:3 }}>
                         {[
-                          { v:true,  nom:'Accepté',     fond:'#dcfce7', texte:'#15803d', bord:'#86efac' },
-                          { v:false, nom:'Refusé',      fond:'#fee2e2', texte:'#b91c1c', bord:'#fca5a5' },
-                          { v:null,  nom:'Non demandé', fond:'#f0f0f0', texte:'#777',    bord:'#e0e0e0' },
+                          { v:true,  nom:'Accepté',     fond:'#dcfce7', texte:'#15803d' },
+                          { v:false, nom:'Refusé',      fond:'#fee2e2', texte:'#b91c1c' },
+                          { v:null,  nom:'Non demandé', fond:'#fff',    texte:'#777'    },
                         ].map(opt => {
                           const actif = (c[canal.cle] ?? null) === opt.v;
                           return (
                             <button key={String(opt.v)} disabled={ficheClientReadOnly}
                               onClick={()=>majConsentement(c, { [canal.cle]: opt.v })}
-                              style={{ height:38, padding:'0 12px', borderRadius:9, fontSize:12, fontWeight:800,
+                              style={{ height:32, padding:'0 10px', borderRadius:7, border:'none',
+                                fontSize:11.5, fontWeight:800, whiteSpace:'nowrap',
                                 cursor: ficheClientReadOnly ? 'not-allowed' : 'pointer',
-                                border: actif ? `1.5px solid ${opt.bord}` : '1.5px solid #ececec',
-                                background: actif ? opt.fond : '#fff',
-                                color: actif ? opt.texte : '#bbb' }}>
+                                background: actif ? opt.fond : 'transparent',
+                                color: actif ? opt.texte : '#b4b4b4' }}>
                               {opt.nom}
                             </button>
                           );
                         })}
-                      </div>
-                    </div>
+                      </span>
+                    </span>
                   ))}
 
                   {c.consentement_date && (
-                    <p style={{ margin:'10px 0 0', fontSize:11, color:'#bbb' }}>
-                      Recueilli le {new Date(c.consentement_date).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}
-                      {c.consentement_source ? ` — ${c.consentement_source}` : ''}
-                    </p>
+                    <span style={{ marginLeft:'auto', fontSize:10.5, color:'#c4c4c4', whiteSpace:'nowrap' }}>
+                      {new Date(c.consentement_date).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})}
+                      {c.consentement_source ? ` · ${c.consentement_source}` : ''}
+                    </span>
                   )}
                 </div>
               </div>
