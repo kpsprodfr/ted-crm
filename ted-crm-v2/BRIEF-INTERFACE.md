@@ -699,8 +699,8 @@ une ligne, trois boutons (Accepté / Refusé / Non demandé). Chaque changement
 écrit la date et l'origine du recueil — c'est la preuve à produire en cas de
 contrôle.
 
-Dans la **liste des clients**, une pastille en fin de ligne — `Promos ✓` vert,
-`Promos ✕` rouge, `Promos ?` gris — donne l'état sans ouvrir la fiche. Le signe
+Dans la **liste des clients**, une pastille en fin de ligne — `Marketing ✓` vert,
+`Marketing ✕` rouge, `Marketing ?` gris — donne l'état sans ouvrir la fiche. Le signe
 double la couleur : jamais d'information portée par la couleur seule.
 
 ⚠️ **Tout futur envoi commercial doit filtrer sur ces colonnes.** Deux index

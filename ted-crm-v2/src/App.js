@@ -13924,11 +13924,11 @@ function CRMApp({ user, onLogout }) {
                     {(() => {
                       const e = etatPromo(c);
                       return (
-                        <span title={`Communications promotionnelles — ${e.court}`}
+                        <span title={`Communications marketing — ${e.court}`}
                           style={{ flexShrink:0, fontSize:11, fontWeight:800, padding:'4px 10px',
                             borderRadius:20, background:e.fond, color:e.texte,
                             border:`1px solid ${e.bord}`, whiteSpace:'nowrap' }}>
-                          Promos {e.signe}
+                          Marketing {e.signe}
                         </span>
                       );
                     })()}
@@ -14228,7 +14228,7 @@ function CRMApp({ user, onLogout }) {
                   <span title="Offres, soirées, nouveautés, par e-mail ou SMS. Sans accord explicite, ce client ne reçoit rien."
                     style={{ display:'flex', alignItems:'center', gap:7, fontSize:9.5, fontWeight:700,
                       color:'#999', textTransform:'uppercase', letterSpacing:0.5, flexShrink:0 }}>
-                    <Megaphone size={13} strokeWidth={2} color="#999" /> Communications promotionnelles
+                    <Megaphone size={13} strokeWidth={2} color="#999" /> Communications marketing
                   </span>
 
                   <span style={{ display:'flex', gap:3, background:'#f0f0f0', borderRadius:9, padding:3 }}>
