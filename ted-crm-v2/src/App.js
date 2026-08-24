@@ -12774,9 +12774,9 @@ function CRMApp({ user, onLogout }) {
         { id:'reservations', label:'Réservations', icon:<CalendarDays size={24} strokeWidth={1.8} /> },
         { id:'commandes', label:'Click and Collect', icon:<ShoppingBag size={24} strokeWidth={1.8} /> },
         { id:'clients', label:'Clients', icon:<Users size={24} strokeWidth={1.8} /> },
-        // Onglets masqués — décommenter pour les réafficher (les pages existent toujours)
-        // { id:'communications', label:'Communications', icon:<Megaphone size={24} strokeWidth={1.8} /> },
+        { id:'communications', label:'Communications', icon:<Megaphone size={24} strokeWidth={1.8} /> },
         { id:'approbations', label:'Approbations', icon:<BadgeCheck size={24} strokeWidth={1.8} /> },
+        // Onglets masqués — décommenter pour les réafficher (les pages existent toujours)
         // { id:'roue', label:'Jeux', icon:<Dices size={24} strokeWidth={1.8} /> },
         // { id:'menu', label:'Menu', icon:<UtensilsCrossed size={24} strokeWidth={1.8} /> },
         // { id:'systeme', label:'Système', icon:<Settings size={24} strokeWidth={1.8} /> },
