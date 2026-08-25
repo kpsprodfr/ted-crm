@@ -587,7 +587,37 @@ n'apparaissent **qu'à la sélection**, dans un panneau latéral.
 - undo/redo (pile de 80), autosave débouncé 600 ms avec témoin « Enregistré » ;
 - raccourcis : `Suppr`, `⌘D`, flèches (5 cm, 25 avec `Maj`), `⌘Z` / `⌘⇧Z`.
 
-### Mode service
+### Mode service — le temps est la clé
+
+**Une table n'est pas « occupée pour le service » : elle l'est de telle heure à
+telle heure.** C'est ce qui permet de la faire tourner deux fois, et c'est le
+modèle qu'utilisent les outils du marché (Zenchef parle de « durée de repas »,
+qui alimente à la fois le plan et la disponibilité en ligne).
+
+- `dureeRepas(service)` réutilise `plage_resa_<service>.dureeService`, déjà
+  réglable dans Paramètres (45 min midi, 90 min soir par défaut) ;
+- `creneauResa(r, service)` → `{debut, fin}` en minutes ;
+- `creneauxSeChevauchent()` détecte deux assises qui se marchent dessus sur la
+  même table → contour rouge, comme un dépassement de couverts ;
+- `assiseA(table, instant)` / `prochaineAssise()` : la salle se lit **à une heure
+  donnée**, pas en bloc.
+
+**La frise du service** (au-dessus du plan) fait deux choses en un seul objet :
+les couverts créneau par créneau (pression du service, barres) **et** le curseur
+temporel — cliquer un créneau montre la salle à cette heure-là. Bouton
+« Maintenant » quand on est sur le jour même ; les créneaux passés sont estompés.
+
+Sur une table : l'assise en cours au grand format, l'heure de la **prochaine**
+en doré si la table est libre à l'instant regardé, et la liste des assises sous
+la table dès qu'il y en a plusieurs.
+
+**Placement automatique** (bouton « Placer ») : la plus petite table qui accueille
+le groupe **et qui est libre sur son créneau**. Ne déplace jamais une réservation
+déjà placée à la main. Se limite à l'espace affiché et dit combien n'ont pas pu
+être placées.
+
+Le pied de plan dit ce qui est vrai **à l'heure regardée** (« à 20:30 : 12 à
+table · 5 tables libres ») et rappelle le total du service.
 
 Date + service repris de la page (pas de second sélecteur à maintenir).
 

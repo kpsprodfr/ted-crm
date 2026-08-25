@@ -1091,6 +1091,24 @@ const ETATS_PROMO = {
 const consentementPromo = (c) => (c?.consentement_email ?? c?.consentement_sms ?? null);
 const etatPromo = (c) => ETATS_PROMO[String(consentementPromo(c))] || ETATS_PROMO.null;
 
+// ─── Le temps dans le plan de salle ──────────────────────────────────────────
+// Une table n'est pas « occupée pour le service » : elle l'est de telle heure à
+// telle heure. C'est ce qui permet de la faire tourner deux fois dans un même
+// service, et de savoir à quoi ressemble la salle à un instant donné.
+
+// La durée à table, déjà paramétrée dans Réservations (Paramètres → créneaux).
+const dureeRepas = (service) =>
+  Number((REGLAGES[`plage_resa_${service}`] || {}).dureeService) || (service === 'soir' ? 90 : 45);
+
+// Le créneau qu'occupe une réservation, en minutes depuis minuit.
+function creneauResa(r, service) {
+  const debut = enMinutes(r.heure || '0:0');
+  return { debut, fin: debut + dureeRepas(service) };
+}
+
+const creneauxSeChevauchent = (a, b) => a.debut < b.fin && b.debut < a.fin;
+const creneauContient = (c, instant) => instant >= c.debut && instant < c.fin;
+
 // Répartition des chaises autour d'une table, en cm relatifs à son cadre.
 function chaisesAutour(t) {
   if (t.forme === 'box') return [];           // le box a ses banquettes, pas des chaises
@@ -1169,7 +1187,7 @@ const seChevauchent = (a, b) =>
 
 function PlanCanvas({
   zone, edition, parTable, selection, onSelection, onMajTable, onMajDecor,
-  cibleGlisse, onOuvrirTable, nomDe, combinaison, apiRef,
+  cibleGlisse, onOuvrirTable, nomDe, combinaison, apiRef, instant, service,
 }) {
   const boiteRef = useRef(null);
   const svgRef = useRef(null);
@@ -1490,10 +1508,18 @@ function PlanCanvas({
           {/* Tables */}
           {tables.map(t0 => {
             const t = rendu(t0, true);
-            const dessus = parTable[t.id] || [];
-            const occupee = dessus.length > 0;
-            const couverts = dessus.reduce((s, r) => s + (r.nb_personnes || 0), 0);
-            const capacite = dessus.length ? Math.max(t.places, ...dessus.map(capaciteDe)) : t.places;
+            // Une table se lit à l'heure qu'on regarde : qui y est assis
+            // maintenant, et qui arrive ensuite dans le même service.
+            const sittings = (parTable[t.id] || [])
+              .slice().sort((x, y) => enMinutes(x.heure || '0:0') - enMinutes(y.heure || '0:0'));
+            const courante = sittings.find(r => creneauContient(creneauResa(r, service), instant));
+            const suivante = sittings.find(r => creneauResa(r, service).debut > instant);
+            const conflit = sittings.some((r, i) => sittings.some((autre, j) => i !== j &&
+              creneauxSeChevauchent(creneauResa(r, service), creneauResa(autre, service))));
+            const dessus = courante ? [courante] : [];
+            const occupee = !!courante;
+            const couverts = courante ? (courante.nb_personnes || 0) : 0;
+            const capacite = courante ? Math.max(t.places, capaciteDe(courante)) : t.places;
             const trop = couverts > capacite;
             const hs = t.statut === 'hors_service';
             const visee = cibleGlisse === t.id;
@@ -1502,7 +1528,7 @@ function PlanCanvas({
             const rond = t.forme === 'ronde' || t.forme === 'ovale';
             const teinte = teinteDe(t);
             const fond = hs ? '#f3f4f6' : visee ? '#dcfce7' : occupee ? '#E8C547' : teinte.fond;
-            const trait = visee ? '#16a34a' : trop ? '#dc2626' : groupe ? '#7c3aed'
+            const trait = visee ? '#16a34a' : (trop || conflit) ? '#dc2626' : groupe ? '#7c3aed'
               : actif ? '#111' : occupee ? 'none' : (edition && chevauche(t0) ? '#f97316' : teinte.trait);
             const assise  = hs ? '#e5e7eb' : occupee ? '#d9ae23' : teinte.chaise;
             const dossier = hs ? '#d1d5db' : occupee ? '#b8860b' : teinte.trait;
@@ -1567,6 +1593,15 @@ function PlanCanvas({
                       {couverts}/{capacite}{dessus[0].heure ? ` · ${dessus[0].heure}` : ''}
                     </text>
                   </>
+                ) : suivante ? (
+                  <>
+                    <text x={t.x + t.l / 2} y={t.y + t.h / 2 - 11} textAnchor="middle" dominantBaseline="central"
+                      fill="#9a9a9a" fontSize={26} fontWeight="900">{t.nom}</text>
+                    <text x={t.x + t.l / 2} y={t.y + t.h / 2 + 15} textAnchor="middle" dominantBaseline="central"
+                      fill="#b8860b" fontSize={21} fontWeight="800">
+                      {suivante.heure}
+                    </text>
+                  </>
                 ) : (
                   <>
                     <text x={t.x + t.l / 2} y={t.y + t.h / 2 - 10} textAnchor="middle" dominantBaseline="central"
@@ -1575,6 +1610,17 @@ function PlanCanvas({
                       fill="#c4c4c4" fontSize={20} fontWeight="700">{t.places} pl.</text>
                   </>
                 )}
+
+                {/* Les assises suivantes, alignées sous la table — la rotation
+                    se lit sans changer d'heure. */}
+                {!edition && sittings.length > 1 && sittings.map((r, i) => (
+                  <text key={r.id} x={t.x + t.l / 2} y={t.y + t.h + 26 + i * 20}
+                    textAnchor="middle" dominantBaseline="central"
+                    fill={r === courante ? '#7a5c00' : '#bbb'} fontSize={17}
+                    fontWeight={r === courante ? 900 : 700}>
+                    {r.heure} · {r.nb_personnes}p
+                  </text>
+                ))}
 
                 {/* Poignées : seulement sur l'objet sélectionné, en édition */}
                 {edition && actif && (
@@ -1630,7 +1676,7 @@ function PlanCanvas({
 
 // ─── Le plan, en service et en édition ────────────────────────────────────────
 
-function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleGlisse }) {
+function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleGlisse, onMessage }) {
   const [plan, setPlan] = useState(() => planActuel());
   const [zoneId, setZoneId] = useState(() => planActuel().zones[0].id);
   const [edition, setEdition] = useState(false);
@@ -1700,11 +1746,59 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
 
   // ── Ce que porte le service affiché ───────────────────────────────────────
   const duService = (resas || []).filter(r =>
-    r.date === jour && r.service === service && (r.statut === 'confirmee' || r.statut === 'venue'));
+    r.date === jour && r.service === service && (r.statut === 'confirmee' || r.statut === 'venue'))
+    .sort((x, y) => (x.heure || '').localeCompare(y.heure || ''));
+
+  // Toutes les assises d'une table dans le service, dans l'ordre — une table
+  // peut tourner deux fois, c'est tout l'intérêt de connaître la durée à table.
   const parTable = {};
   duService.forEach(r => tablesDeResa(r).forEach(id => (parTable[id] = parTable[id] || []).push(r)));
   const aPlacer = duService.filter(r => !tablesDeResa(r).length);
   const combinaison = duService.filter(r => tablesDeResa(r).length > 1).flatMap(tablesDeResa);
+
+  // ── L'heure qu'on regarde ─────────────────────────────────────────────────
+  const horaires = horairesDuJour(jour, service);
+  const debutService = horaires.ouvert ? enMinutes(horaires.debut) : 12 * 60;
+  const finService   = horaires.ouvert ? enMinutes(horaires.fin)   : 23 * 60;
+  const maintenant = (() => {
+    const d = new Date();
+    return jour === dateLocale() ? d.getHours() * 60 + d.getMinutes() : null;
+  })();
+  const instantParDefaut = maintenant !== null && maintenant >= debutService && maintenant < finService
+    ? maintenant
+    : (duService[0] ? enMinutes(duService[0].heure || enHeure(debutService)) : debutService);
+  const [instant, setInstant] = useState(instantParDefaut);
+  const jourServiceRef = useRef(`${jour}|${service}`);
+  useEffect(() => {
+    const cle = `${jour}|${service}`;
+    if (jourServiceRef.current !== cle) { jourServiceRef.current = cle; setInstant(instantParDefaut); }
+  }, [jour, service, instantParDefaut]);
+
+  // Ce qui est assis à cette table à l'instant regardé, et ce qui vient après.
+  const assiseA = (id, quand) => (parTable[id] || [])
+    .find(r => creneauContient(creneauResa(r, service), quand));
+  const prochaineAssise = (id, quand) => (parTable[id] || [])
+    .filter(r => creneauResa(r, service).debut > quand)
+    .sort((x, y) => enMinutes(x.heure) - enMinutes(y.heure))[0];
+
+  // Deux réservations qui se marchent dessus sur la même table : le conflit se
+  // voit sur le plan, il ne se découvre pas au moment d'asseoir les gens.
+  const enConflit = (id) => {
+    const l = parTable[id] || [];
+    return l.some((r, i) => l.some((autre, j) => i !== j &&
+      creneauxSeChevauchent(creneauResa(r, service), creneauResa(autre, service))));
+  };
+
+  // ── La frise du service : les couverts par créneau, et le curseur ─────────
+  const pasFrise = 30;
+  const frise = [];
+  for (let m = debutService; m < finService; m += pasFrise) {
+    const couverts = duService
+      .filter(r => { const c = creneauResa(r, service); return c.debut >= m && c.debut < m + pasFrise; })
+      .reduce((s, r) => s + (r.nb_personnes || 0), 0);
+    frise.push({ m, couverts });
+  }
+  const maxFrise = Math.max(1, ...frise.map(f => f.couverts));
 
   const nomDe = (r) => r.clients?.genre === 'Entreprise'
     ? (r.clients?.entreprise || 'Entreprise')
@@ -1713,6 +1807,34 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
   const objetSel = selection && (selection.type === 'table'
     ? zone.tables.find(t => t.id === selection.id)
     : zone.decor.find(d => d.id === selection.id));
+
+  // ── Placement automatique ─────────────────────────────────────────────────
+  // La plus petite table qui accueille le groupe et qui est libre sur son
+  // créneau. On ne déplace jamais une réservation déjà placée à la main.
+  const [placementEnCours, setPlacementEnCours] = useState(false);
+  async function placerAutomatiquement() {
+    if (placementEnCours || !aPlacer.length) return;
+    setPlacementEnCours(true);
+    const occupations = {};
+    zone.tables.forEach(t => { occupations[t.id] = (parTable[t.id] || []).map(r => creneauResa(r, service)); });
+    const candidates = zone.tables.filter(t => t.statut !== 'hors_service');
+    let places = 0;
+    for (const r of aPlacer) {
+      const c = creneauResa(r, service);
+      const t = candidates
+        .filter(x => x.places >= (r.nb_personnes || 1))
+        .filter(x => !(occupations[x.id] || []).some(o => creneauxSeChevauchent(o, c)))
+        .sort((x, y) => x.places - y.places)[0];
+      if (!t) continue;
+      occupations[t.id] = [...(occupations[t.id] || []), c];
+      await onPlacer(r, t.id, true);
+      places++;
+    }
+    setPlacementEnCours(false);
+    onMessage && onMessage(places === aPlacer.length
+      ? `✅ ${places} réservation${places > 1 ? 's' : ''} placée${places > 1 ? 's' : ''}`
+      : `${places} placée(s) — ${aPlacer.length - places} sans table libre dans ${zone.nom}`);
+  }
 
   // ── Ajout / suppression ───────────────────────────────────────────────────
   function ajouterTable(forme, x, y) {
@@ -1911,6 +2033,15 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
         ) : (
           <>
             {aPlacer.length > 0 && (
+              <button onClick={placerAutomatiquement} disabled={placementEnCours}
+                title="Placer automatiquement les réservations sans table"
+                style={{ height:36, padding:'0 12px', borderRadius:10, border:'1.5px solid #e4e4e4',
+                  background:'#fff', color:'#111', fontSize:12.5, fontWeight:800, flexShrink:0,
+                  cursor: placementEnCours ? 'wait' : 'pointer', whiteSpace:'nowrap' }}>
+                {placementEnCours ? 'Placement…' : 'Placer'}
+              </button>
+            )}
+            {aPlacer.length > 0 && (
               <span title={`${aPlacer.length} réservation(s) à placer`}
                 style={{ fontSize:11.5, fontWeight:800, padding:'5px 9px', borderRadius:20,
                 background:'#fef9c3', color:'#92400e', flexShrink:0, whiteSpace:'nowrap' }}>
@@ -1984,7 +2115,48 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
         )}
 
         <div style={{ flex:1, minWidth:0, display:'flex', flexDirection:'column', gap:7 }}>
+
+          {/* La frise du service : les couverts créneau par créneau, et l'heure
+              qu'on regarde. Un seul objet pour la pression du service et pour
+              se déplacer dans le temps. */}
+          {!edition && (
+            <div style={{ display:'flex', alignItems:'flex-end', gap:2, background:'#fff',
+              border:'1.5px solid #eee', borderRadius:12, padding:'7px 10px', flexShrink:0, overflowX:'auto' }}>
+              {maintenant !== null && (
+                <button onClick={()=>setInstant(maintenant)} title="Revenir à l'heure qu'il est"
+                  style={{ height:44, padding:'0 11px', marginRight:6, borderRadius:9, flexShrink:0,
+                    border:'1.5px solid #e4e4e4', background:'#fff', color:'#666',
+                    fontSize:11.5, fontWeight:800, cursor:'pointer', whiteSpace:'nowrap' }}>
+                  Maintenant
+                </button>
+              )}
+              {frise.map(f => {
+                const actif = instant >= f.m && instant < f.m + pasFrise;
+                const passe = maintenant !== null && f.m + pasFrise <= maintenant;
+                return (
+                  <button key={f.m} onClick={()=>setInstant(f.m)}
+                    title={`${enHeure(f.m)} — ${f.couverts} couvert${f.couverts > 1 ? 's' : ''}`}
+                    style={{ flex:'1 1 0', minWidth:34, height:44, border:'none', borderRadius:8, cursor:'pointer',
+                      padding:'3px 2px', display:'flex', flexDirection:'column', alignItems:'center',
+                      justifyContent:'flex-end', gap:2,
+                      background: actif ? '#111' : 'transparent', opacity: passe && !actif ? 0.45 : 1 }}>
+                    <span style={{ fontSize:9.5, fontWeight:800, color: actif ? '#E8C547' : (f.couverts ? '#999' : '#ddd') }}>
+                      {f.couverts || ''}
+                    </span>
+                    <span style={{ width:'72%', borderRadius:3, flexShrink:0,
+                      height: Math.max(3, Math.round((f.couverts / maxFrise) * 15)),
+                      background: actif ? '#E8C547' : (f.couverts ? '#e2d08a' : '#f0f0f0') }} />
+                    <span style={{ fontSize:9, fontWeight:700, color: actif ? '#fff' : '#bbb', whiteSpace:'nowrap' }}>
+                      {f.m % 60 === 0 ? enHeure(f.m) : enHeure(f.m).slice(3)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           <PlanCanvas key={zone.id} zone={zone} edition={edition} parTable={parTable}
+            instant={instant} service={service}
             selection={selection} onSelection={setSelection}
             onMajTable={majTable} onMajDecor={majDecor}
             cibleGlisse={cibleGlisse} onOuvrirTable={setTableOuverte} nomDe={nomDe}
@@ -2017,8 +2189,15 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
                   const ids = zone.tables.map(t => t.id);
                   const places = duService.filter(r => tablesDeResa(r).some(id => ids.includes(id))).reduce((s,r)=>s+(r.nb_personnes||0),0);
                   const cap = zone.tables.reduce((s,t)=>s+(t.statut==='hors_service'?0:t.places),0);
-                  const libres = zone.tables.filter(t => t.statut !== 'hors_service' && !(parTable[t.id]||[]).length).length;
-                  return <span style={{ fontWeight:700, color:'#999' }}>{places}/{cap} couverts placés · {libres} tables libres</span>;
+                  const enService = zone.tables.filter(t => t.statut !== 'hors_service');
+                  const libres = enService.filter(t => !assiseA(t.id, instant)).length;
+                  const assis = enService.reduce((s,t) => { const r = assiseA(t.id, instant); return s + (r ? (r.nb_personnes||0) : 0); }, 0);
+                  return (
+                    <span style={{ fontWeight:700, color:'#999' }}>
+                      à {enHeure(instant)} : {assis} à table · {libres} tables libres
+                      <span style={{ color:'#ccc' }}> — {places}/{cap} sur le service</span>
+                    </span>
+                  );
                 })()}
               </>
             )}
@@ -2184,8 +2363,12 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
       {/* ── Qui est à cette table ─────────────────────────────────────────── */}
       {tableOuverte && (() => {
         const t = zone.tables.find(x => x.id === tableOuverte.id) || tableOuverte;
-        const dessus = parTable[t.id] || [];
-        const libres = zone.tables.filter(x => x.id !== t.id && x.statut !== 'hors_service' && !(parTable[x.id] || []).length);
+        const dessus = (parTable[t.id] || []).slice()
+          .sort((x, y) => enMinutes(x.heure || '0:0') - enMinutes(y.heure || '0:0'));
+        const libreSur = (id, c) => !(parTable[id] || [])
+          .some(r => creneauxSeChevauchent(creneauResa(r, service), c));
+        const libres = zone.tables.filter(x => x.id !== t.id && x.statut !== 'hors_service'
+          && !(parTable[x.id] || []).length);
         return (
           <>
             <div onClick={()=>setTableOuverte(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:5200 }} />
@@ -2211,7 +2394,9 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
                           <div style={{ flex:1, minWidth:0 }}>
                             <div style={{ fontSize:14, fontWeight:700, color:'#111' }}>{nomDe(r)}</div>
                             <div style={{ fontSize:12, color:'#999' }}>
-                              {r.heure || '—'} · {r.nb_personnes || '?'} pers.{r.occasion ? ` · ${r.occasion}` : ''}
+                              {r.heure || '—'}
+                              {r.heure && <span style={{ color:'#c4c4c4' }}> → {enHeure(creneauResa(r, service).fin)}</span>}
+                              {' · '}{r.nb_personnes || '?'} pers.{r.occasion ? ` · ${r.occasion}` : ''}
                               {ses.length > 1 && <span style={{ color:'#7c3aed', fontWeight:700 }}> · {ses.length} tables</span>}
                             </div>
                           </div>
@@ -2268,6 +2453,9 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
                       </span>
                       {(r.nb_personnes || 0) > t.places && (
                         <span style={{ fontSize:11, fontWeight:800, color:'#b91c1c', flexShrink:0 }}>trop grand</span>
+                      )}
+                      {!libreSur(t.id, creneauResa(r, service)) && (
+                        <span style={{ fontSize:11, fontWeight:800, color:'#c2410c', flexShrink:0 }}>table déjà prise</span>
                       )}
                     </button>
                   ))}
@@ -3673,14 +3861,14 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
   }
 
   // Placer une réservation sur une table, ou l'en retirer.
-  async function placerSurTable(resa, tableId) {
+  async function placerSurTable(resa, tableId, silencieux = false) {
     setResaList(prev => prev.map(r => r.id === resa.id ? { ...r, table_plan: tableId } : r));
     const { error } = await safeQuery(
       () => supabase.from('reservations').update({ table_plan: tableId }).eq('id', resa.id),
       { fallback: null, context: 'placerSurTable' }
     );
     if (error) { showToast('Placement impossible', 'error'); loadResa(); return; }
-    showToast(tableId ? `✅ Placée en table ${libelleTables(tableId)}` : 'Retirée du plan');
+    if (!silencieux) showToast(tableId ? `✅ Placée en table ${libelleTables(tableId)}` : 'Retirée du plan');
   }
   const isMobile = useIsMobile();
   const etroit = useEcranEtroit();
@@ -4374,7 +4562,8 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                   onJour={setCalJourSelectionne}
                   onService={setCalServiceSelectionne}
                   cibleGlisse={glisse?.cible}
-                  onPlacer={placerSurTable} />
+                  onPlacer={placerSurTable}
+                  onMessage={showToast} />
               </div>
               <div style={{ width:1, background:'#f0f0f0', flexShrink:0 }} />
             </>
