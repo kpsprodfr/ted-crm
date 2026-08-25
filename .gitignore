@@ -9,3 +9,6 @@ audit_uxui/
 *.log
 dist/
 .DS_Store
+
+# Projet séparé, présent dans le dossier mais hors de ce dépôt
+allocom-app/
