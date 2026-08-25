@@ -1516,6 +1516,11 @@ function PlanCanvas({
             const suivante = sittings.find(r => creneauResa(r, service).debut > instant);
             const conflit = sittings.some((r, i) => sittings.some((autre, j) => i !== j &&
               creneauxSeChevauchent(creneauResa(r, service), creneauResa(autre, service))));
+            // Le suivi d'arrivée, visible sans ouvrir la fiche : la table dit
+            // si le client attendu est là, ou s'il se fait attendre (10 min).
+            const justeArrivee = courante && courante.statut === 'arrivee';
+            const enRetard = courante && courante.statut === 'confirmee'
+              && instant - creneauResa(courante, service).debut >= 10;
             const dessus = courante ? [courante] : [];
             const occupee = !!courante;
             const couverts = courante ? (courante.nb_personnes || 0) : 0;
@@ -1611,6 +1616,25 @@ function PlanCanvas({
                   </>
                 )}
 
+                {/* Arrivé ou en retard : une puce au-dessus de la table, qui ne
+                    dépend d'aucun clic pour se voir pendant le service. */}
+                {!edition && (justeArrivee || enRetard) && (
+                  <g transform={`translate(${t.x + t.l - 8}, ${t.y - 8})`}>
+                    {/* « En retard » pulse pour se voir sans qu'on ait à fixer le plan —
+                        box-shadow (les pastilles CSS de l'app) n'a aucun effet en SVG :
+                        l'animation native <animate> est la seule qui marche ici. */}
+                    {enRetard && (
+                      <circle r={13} fill="none" stroke="#dc2626" strokeWidth={2.5}>
+                        <animate attributeName="r" values="13;20;13" dur="1.6s" repeatCount="indefinite" />
+                        <animate attributeName="opacity" values="0.7;0;0.7" dur="1.6s" repeatCount="indefinite" />
+                      </circle>
+                    )}
+                    <circle r={13} fill={justeArrivee ? '#2563eb' : '#dc2626'} />
+                    <text textAnchor="middle" dominantBaseline="central" y={1}
+                      fill="#fff" fontSize={15} fontWeight="900">{justeArrivee ? '✓' : '!'}</text>
+                  </g>
+                )}
+
                 {/* Les assises suivantes, alignées sous la table — la rotation
                     se lit sans changer d'heure. */}
                 {!edition && sittings.length > 1 && sittings.map((r, i) => (
@@ -1676,7 +1700,7 @@ function PlanCanvas({
 
 // ─── Le plan, en service et en édition ────────────────────────────────────────
 
-function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleGlisse, onMessage }) {
+function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, onStatut, cibleGlisse, onMessage }) {
   const [plan, setPlan] = useState(() => planActuel());
   const [zoneId, setZoneId] = useState(() => planActuel().zones[0].id);
   const [edition, setEdition] = useState(false);
@@ -1746,7 +1770,7 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
 
   // ── Ce que porte le service affiché ───────────────────────────────────────
   const duService = (resas || []).filter(r =>
-    r.date === jour && r.service === service && (r.statut === 'confirmee' || r.statut === 'venue'))
+    r.date === jour && r.service === service && (r.statut === 'confirmee' || r.statut === 'venue' || r.statut === 'arrivee' || r.statut === 'assis'))
     .sort((x, y) => (x.heure || '').localeCompare(y.heure || ''));
 
   // Toutes les assises d'une table dans le service, dans l'ordre — une table
@@ -2405,6 +2429,24 @@ function PlanDeSalle({ resas, jour, service, onJour, onService, onPlacer, cibleG
                               color:'#666', fontSize:12.5, fontWeight:700, cursor:'pointer', flexShrink:0 }}>Retirer</button>
                         </div>
 
+                        {/* Suivi d'arrivée : on avance le statut sans quitter le plan. */}
+                        {r.statut !== 'assis' && (
+                          <div style={{ display:'flex', gap:6, marginTop:2 }}>
+                            {r.statut !== 'arrivee' && (
+                              <button onClick={()=>onStatut(r, 'arrivee')}
+                                style={{ flex:1, height:36, borderRadius:9, border:'1.5px solid #dbeafe', background:'#eff6ff',
+                                  color:'#2563eb', fontSize:12, fontWeight:700, cursor:'pointer' }}>
+                                Marquer arrivée
+                              </button>
+                            )}
+                            <button onClick={()=>onStatut(r, 'assis')}
+                              style={{ flex:1, height:36, borderRadius:9, border:'1.5px solid #ccfbf1', background:'#f0fdfa',
+                                color:'#0d9488', fontSize:12, fontWeight:700, cursor:'pointer' }}>
+                              Marquer installée
+                            </button>
+                          </div>
+                        )}
+
                         {/* Combiner : un grand groupe sur plusieurs tables */}
                         {ses.length > 1 ? (
                           <button onClick={()=>{ onPlacer(r, t.id); setTableOuverte(null); }}
@@ -2654,7 +2696,7 @@ function AddResaModal({ onClose, onSaved, showToast, user, initialResa, onViewCl
       if (resas) {
         const total = resas.filter(r => r.statut !== 'annulee' && r.statut !== 'absente' && r.statut !== 'refusee').length;
         const noshow = resas.filter(r => r.statut === 'absente').length;
-        const derniereVisite = resas.filter(r => r.statut === 'venue' || r.statut === 'confirmee').sort((a,b) => b.date.localeCompare(a.date))[0];
+        const derniereVisite = resas.filter(r => (r.statut === 'venue' || r.statut === 'confirmee' || r.statut === 'arrivee' || r.statut === 'assis')).sort((a,b) => b.date.localeCompare(a.date))[0];
         setStatsClient({
           total,
           noshow,
@@ -3507,6 +3549,8 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
 
   const STATUTS_COLORS = [
     { value:'confirmee', label:'Confirmée',  desc:'La réservation est confirmée',    color:'#16a34a' },
+    { value:'arrivee',   label:'Arrivée',    desc:'Le client est arrivé au restaurant', color:'#2563eb' },
+    { value:'assis',     label:'Installée',  desc:'Le client est installé à table',  color:'#0d9488' },
     { value:'attente',   label:'En attente', desc:'Demande en attente',              color:'#f59e0b' },
     { value:'absente',   label:'Absente',    desc:"Le client ne s'est pas présenté", color:'#dc2626' },
     { value:'annulee',   label:'Annulée',    desc:'Réservation annulée',             color:'#9ca3af' },
@@ -3530,7 +3574,7 @@ function DetailResaModal({ resa, onClose, onSaved, onEdit, resaList = [], showTo
   const totalResas = resasClient.filter(r => r.statut !== 'annulee' && r.statut !== 'absente' && r.statut !== 'refusee').length;
   const noshow = nbAbsentes;
   const derniereVisite = resasClient
-    .filter(r => (r.statut === 'venue' || r.statut === 'confirmee') && r.date <= aujourd)
+    .filter(r => ((r.statut === 'venue' || r.statut === 'confirmee' || r.statut === 'arrivee' || r.statut === 'assis')) && r.date <= aujourd)
     .sort((a,b) => b.date.localeCompare(a.date))[0];
   const derniereVisiteFormatee = derniereVisite
     ? new Date(derniereVisite.date+'T12:00:00').toLocaleDateString('fr-FR', {day:'numeric', month:'long', year:'numeric'})
@@ -3869,6 +3913,19 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
     );
     if (error) { showToast('Placement impossible', 'error'); loadResa(); return; }
     if (!silencieux) showToast(tableId ? `✅ Placée en table ${libelleTables(tableId)}` : 'Retirée du plan');
+  }
+
+  // Suivi d'arrivée depuis le plan : pas besoin d'ouvrir la fiche complète
+  // pour dire qu'un client est là, ou installé à sa table.
+  const LABEL_STATUT_RAPIDE = { arrivee:'Arrivée · ', assis:'Installée · ' };
+  async function changerStatutResa(resa, statut) {
+    setResaList(prev => prev.map(r => r.id === resa.id ? { ...r, statut } : r));
+    const { error } = await safeQuery(
+      () => supabase.from('reservations').update({ statut, updated_at: new Date().toISOString() }).eq('id', resa.id),
+      { fallback: null, context: 'changerStatutResa' }
+    );
+    if (error) { showToast('Mise à jour impossible', 'error'); loadResa(); return; }
+    showToast(`${LABEL_STATUT_RAPIDE[statut] || ''}mis à jour ✓`);
   }
   const isMobile = useIsMobile();
   const etroit = useEcranEtroit();
@@ -4415,7 +4472,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                       <span/>
                     </div>
                     {resasDuJour.map((r,ri) => {
-                      const sMobile = ({confirmee:{bg:'#dcfce7',color:'#16a34a',label:'Confirmée'},attente:{bg:'#fef9c3',color:'#ca8a04',label:'En attente'},venue:{bg:'#d1fae5',color:'#059669',label:'Venue'},absente:{bg:'#fee2e2',color:'#dc2626',label:'No-show'},annulee:{bg:'#f3f4f6',color:'#6b7280',label:'Annulée'}})[r.statut]||{bg:'#f3f4f6',color:'#666',label:r.statut};
+                      const sMobile = ({confirmee:{bg:'#dcfce7',color:'#16a34a',label:'Confirmée'},arrivee:{bg:'#dbeafe',color:'#2563eb',label:'Arrivée'},assis:{bg:'#ccfbf1',color:'#0d9488',label:'Installée'},attente:{bg:'#fef9c3',color:'#ca8a04',label:'En attente'},venue:{bg:'#d1fae5',color:'#059669',label:'Venue'},absente:{bg:'#fee2e2',color:'#dc2626',label:'No-show'},annulee:{bg:'#f3f4f6',color:'#6b7280',label:'Annulée'}})[r.statut]||{bg:'#f3f4f6',color:'#666',label:r.statut};
                       return (
                       <div key={r.id} onClick={() => setDetailResa(r)} style={{display:'flex', alignItems:'center', gap:12, padding:'10px 0', borderBottom: ri<resasDuJour.length-1?'1px solid #f5f5f5':'none', cursor:'pointer'}}>
                         <span style={{fontSize:13, fontWeight:800, color:'#111', minWidth:40, flexShrink:0}}>{r.heure||'—'}</span>
@@ -4563,6 +4620,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
                   onService={setCalServiceSelectionne}
                   cibleGlisse={glisse?.cible}
                   onPlacer={placerSurTable}
+                  onStatut={changerStatutResa}
                   onMessage={showToast} />
               </div>
               <div style={{ width:1, background:'#f0f0f0', flexShrink:0 }} />
@@ -4620,6 +4678,8 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
               {resasDuJourFiltrees.map(r => {
                 const statutColors = {
                   'confirmee': {bg:'#dcfce7', color:'#16a34a', label:'Confirmée'},
+  'arrivee':   {bg:'#dbeafe', color:'#2563eb', label:'Arrivée'},
+  'assis':     {bg:'#ccfbf1', color:'#0d9488', label:'Installée'},
                   'attente':   {bg:'#fef9c3', color:'#ca8a04', label:'En attente'},
                   'venue':     {bg:'#d1fae5', color:'#059669', label:'Venue'},
                   'absente':   {bg:'#fee2e2', color:'#dc2626', label:'No-show'},
@@ -4697,7 +4757,7 @@ const [showDemandesAttente, setShowDemandesAttente] = useState(false);
         const aujourd = new Date().toISOString().split('T')[0];
         const total = resasC.filter(r=>r.statut!=='annulee'&&r.statut!=='absente').length;
         const noshow = resasC.filter(r => r.statut === 'absente').length;
-        const derniereVisite = resasC.filter(r => (r.statut==='venue'||r.statut==='confirmee') && r.date <= aujourd).sort((a,b)=>b.date.localeCompare(a.date))[0];
+        const derniereVisite = resasC.filter(r => ((r.statut==='venue'||r.statut==='confirmee' || r.statut === 'arrivee' || r.statut === 'assis')) && r.date <= aujourd).sort((a,b)=>b.date.localeCompare(a.date))[0];
         const prochaineResa = resasC.filter(r => r.date >= aujourd && (r.statut==='confirmee'||r.statut==='attente')).sort((a,b)=>a.date.localeCompare(b.date))[0];
         const nomAffiche = c.genre==='Entreprise' ? (c.entreprise||c.nom||'—') : `${c.prenom||''} ${c.nom||''}`.trim()||'—';
         return (
@@ -5309,6 +5369,8 @@ function BlocReservations({ resas, client, compact = false }) {
 
   const STATUT_FICHE = {
     confirmee: { bg:'#dcfce7', color:'#16a34a', label:'Confirmée' },
+    arrivee:   { bg:'#dbeafe', color:'#2563eb', label:'Arrivée' },
+    assis:     { bg:'#ccfbf1', color:'#0d9488', label:'Installée' },
     venue:     { bg:'#d1fae5', color:'#059669', label:'Venue' },
     attente:   { bg:'#fef9c3', color:'#ca8a04', label:'En attente' },
     absente:   { bg:'#fee2e2', color:'#dc2626', label:'No-show' },
@@ -12821,11 +12883,11 @@ function CRMApp({ user, onLogout }) {
       if (!stats[r.client_id]) stats[r.client_id] = { total:0, noshow:0, derniereVisite:null };
       stats[r.client_id].total++;
       if (r.statut === 'absente') stats[r.client_id].noshow++;
-      if (r.statut === 'venue' || r.statut === 'confirmee') {
+      if (r.statut === 'venue' || r.statut === 'confirmee' || r.statut === 'arrivee' || r.statut === 'assis') {
         if (!stats[r.client_id].derniereVisite || r.date > stats[r.client_id].derniereVisite)
           stats[r.client_id].derniereVisite = r.date;
       }
-      if ((r.statut === 'confirmee' || r.statut === 'venue') && r.date) {
+      if ((r.statut === 'confirmee' || r.statut === 'venue' || r.statut === 'arrivee' || r.statut === 'assis') && r.date) {
         const jour = joursSemaine[new Date(r.date+'T12:00:00').getDay()];
         const service = r.service === 'midi' ? 'Midi' : 'Soir';
         const key = `${jour} ${service}`;
@@ -13196,11 +13258,11 @@ function CRMApp({ user, onLogout }) {
         const resasC = resasData.filter(r => r.client_id === c.id);
         const aResaFuture = resasC.some(r => r.date > aujourd && (r.statut === 'confirmee' || r.statut === 'attente'));
         if (aResaFuture) return false;
-        const derniereResa = resasC.filter(r => r.date <= aujourd && (r.statut === 'venue' || r.statut === 'confirmee')).sort((a,b) => b.date.localeCompare(a.date))[0];
+        const derniereResa = resasC.filter(r => r.date <= aujourd && ((r.statut === 'venue' || r.statut === 'confirmee' || r.statut === 'arrivee' || r.statut === 'assis'))).sort((a,b) => b.date.localeCompare(a.date))[0];
         if (derniereResa && derniereResa.date >= limiteCommDate) return false;
       }
       if (filtreJours.size > 0 || filtreServices.size > 0) {
-        const resasC = resasData.filter(r => r.client_id === c.id && (r.statut === 'confirmee' || r.statut === 'venue') && r.date >= il6MoisComm);
+        const resasC = resasData.filter(r => r.client_id === c.id && (r.statut === 'confirmee' || r.statut === 'venue' || r.statut === 'arrivee' || r.statut === 'assis') && r.date >= il6MoisComm);
         const compteJ = {};
         resasC.forEach(r => { const key = `${joursSem[new Date(r.date+'T12:00:00').getDay()]}_${r.service}`; compteJ[key] = (compteJ[key]||0)+1; });
         const top3 = Object.entries(compteJ).sort((a,b)=>b[1]-a[1]).slice(0,3).map(e=>e[0]);
@@ -14076,7 +14138,7 @@ function CRMApp({ user, onLogout }) {
               ) : clientsFiltres.map((c, idx) => {
                 const resasClient = resasData.filter(r=>r.client_id===c.id);
                 const total = resasClient.filter(r=>r.statut!=='absente'&&r.statut!=='annulee'&&r.statut!=='refusee').length;
-                const derniereVisite = resasClient.filter(r=>r.date<=aujourd&&(r.statut==='venue'||r.statut==='confirmee')).sort((a,b)=>b.date.localeCompare(a.date))[0];
+                const derniereVisite = resasClient.filter(r=>r.date<=aujourd&&((r.statut==='venue'||r.statut==='confirmee' || r.statut === 'arrivee' || r.statut === 'assis'))).sort((a,b)=>b.date.localeCompare(a.date))[0];
                 const prochaineResa = resasClient.filter(r=>r.date>aujourd&&(r.statut==='confirmee'||r.statut==='attente')).sort((a,b)=>a.date.localeCompare(b.date))[0];
                 const avatarBg = c.genre==='Homme'?'#dbeafe':c.genre==='Femme'?'#fce7f3':'#dcfce7';
                 const avatarColor = c.genre==='Homme'?'#1d4ed8':c.genre==='Femme'?'#be185d':'#15803d';
@@ -14262,7 +14324,7 @@ function CRMApp({ user, onLogout }) {
                 const periodeLabel = `${il6Mois.toLocaleDateString('fr-FR',{month:'short',year:'numeric'})} — ${aujourd2.toLocaleDateString('fr-FR',{month:'short',year:'numeric'})}`;
                 const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
                 const compteJours = {};
-                resasData.filter(r => r.client_id === c.id && (r.statut === 'confirmee' || r.statut === 'venue') && r.date >= il6MoisStr).forEach(r => {
+                resasData.filter(r => r.client_id === c.id && (r.statut === 'confirmee' || r.statut === 'venue' || r.statut === 'arrivee' || r.statut === 'assis') && r.date >= il6MoisStr).forEach(r => {
                   const jour = jours[new Date(r.date+'T12:00:00').getDay()];
                   const service = r.service === 'midi' ? 'Midi' : 'Soir';
                   const key = `${jour} ${service}`;
@@ -14320,17 +14382,17 @@ function CRMApp({ user, onLogout }) {
         const totalResas = resasClient.filter(r => r.statut !== 'absente' && r.statut !== 'annulee' && r.statut !== 'refusee').length;
         const noshowResas = resasClient.filter(r => r.statut === 'absente').length;
         const pct = totalResas > 0 ? Math.round(noshowResas / totalResas * 100) : 0;
-        const derniereVisite = resasClient.filter(r => r.date <= aujourd && (r.statut === 'venue' || r.statut === 'confirmee')).sort((a,b) => b.date.localeCompare(a.date))[0];
+        const derniereVisite = resasClient.filter(r => r.date <= aujourd && ((r.statut === 'venue' || r.statut === 'confirmee' || r.statut === 'arrivee' || r.statut === 'assis'))).sort((a,b) => b.date.localeCompare(a.date))[0];
         const prochaineResa = resasClient.filter(r => r.date > aujourd && (r.statut === 'confirmee' || r.statut === 'attente')).sort((a,b) => a.date.localeCompare(b.date))[0];
         const derniereVisiteIlYA = derniereVisite ? Math.floor((new Date() - new Date(derniereVisite.date+'T12:00:00')) / (1000*60*60*24)) : null;
         const createdAtLabel = c.created_at ? new Date(c.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) : '';
         const avatarBg = c.genre==='Homme'?'#dbeafe':c.genre==='Femme'?'#fce7f3':'#dcfce7';
         const avatarColor = c.genre==='Homme'?'#1d4ed8':c.genre==='Femme'?'#be185d':'#15803d';
-        const statutColors2 = {confirmee:{bg:'#dcfce7',color:'#16a34a',label:'Confirmée'},attente:{bg:'#fef9c3',color:'#ca8a04',label:'En attente'},venue:{bg:'#d1fae5',color:'#059669',label:'Venue'},absente:{bg:'#fee2e2',color:'#dc2626',label:'No-show'},annulee:{bg:'#f3f4f6',color:'#6b7280',label:'Annulée'}};
+        const statutColors2 = {confirmee:{bg:'#dcfce7',color:'#16a34a',label:'Confirmée'},arrivee:{bg:'#dbeafe',color:'#2563eb',label:'Arrivée'},assis:{bg:'#ccfbf1',color:'#0d9488',label:'Installée'},attente:{bg:'#fef9c3',color:'#ca8a04',label:'En attente'},venue:{bg:'#d1fae5',color:'#059669',label:'Venue'},absente:{bg:'#fee2e2',color:'#dc2626',label:'No-show'},annulee:{bg:'#f3f4f6',color:'#6b7280',label:'Annulée'}};
         const joursSemaine2=['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
         const joursAbr=['DIM','LUN','MAR','MER','JEU','VEN','SAM'];
         const il6MoisStr2 = new Date(Date.now()-180*24*60*60*1000).toISOString().split('T')[0];
-        const resasFav = resasData.filter(r => r.client_id===c.id && (r.statut==='confirmee'||r.statut==='venue') && r.date>=il6MoisStr2);
+        const resasFav = resasData.filter(r => r.client_id===c.id && ((r.statut==='confirmee'||r.statut==='venue' || r.statut === 'arrivee' || r.statut === 'assis')) && r.date>=il6MoisStr2);
         const compteJoursFav = {};
         resasFav.forEach(r => { const j = joursSemaine2[new Date(r.date+'T12:00:00').getDay()]; const service = r.service==='midi'?'Midi':'Soir'; const key=`${j}|${service}`; compteJoursFav[key]=(compteJoursFav[key]||0)+1; });
         const top3Jours = Object.entries(compteJoursFav).sort((a,b)=>b[1]-a[1]).slice(0,3);
